@@ -1,2 +1,2 @@
 # causalpaca
-Causal Super Climate Emulator
+Creating an Ensemble Climate Emulator that can incorporate causality.
