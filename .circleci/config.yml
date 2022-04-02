@@ -18,5 +18,5 @@ jobs:
           name: "run linter and tests"
           command: |
             . venv/bin/activate
-            flake8 . --max-line-length 120
+            flake8 . --max-line-length 120 --exclude venv
 # pytest -v --cov=test
