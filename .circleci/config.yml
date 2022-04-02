@@ -13,6 +13,7 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
             pip install flake8
+            ls .
       - run:
           name: "run linter and tests"
           command: |
