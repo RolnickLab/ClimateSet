@@ -6,7 +6,3 @@ class Testing(unittest.TestCase):
         a = True
         b = True
         self.assertEqual(a, b)
-
-
-if __name__ == "__main__":
-    unittest.main()
