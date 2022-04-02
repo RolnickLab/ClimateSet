@@ -15,6 +15,6 @@ def main():
     output = xr.open_dataset(Path.joinpath(TEST_DIR, "outputs_ssp245.nc")).sel(time=slice(2050, 2100))
     print(output)
 
-    
+
 if __name__ == '__main__':
     main()
