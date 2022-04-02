@@ -2,7 +2,7 @@ import unittest
 
 
 class Testing(unittest.TestCase):
-    def dummy_test(self):
+    def test_dummy(self):
         a = True
         b = True
         self.assertEqual(a, b)
