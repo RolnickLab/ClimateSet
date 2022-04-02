@@ -8,6 +8,7 @@ import torch.distributions as distr
 import numpy as np
 from collections import OrderedDict
 
+
 class DataGenerator:
     def __init__(self, hp):
         self.n = hp.n
@@ -116,7 +117,6 @@ class DataGenerator:
             params[:, 1] = 1/2 * torch.exp(params[:, 1])
             dist = distr.normal.Normal(params[:, 0], params[:, 1])
             self.Z[t] = dist.rsample().view(self.d, self.k)
-
 
         # sample observational model
         self.w = self.sample_w()

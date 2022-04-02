@@ -1,6 +1,4 @@
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -32,6 +30,7 @@ def plot_adjacency_w(w, path):
     plt.savefig(os.path.join(path, 'ws.png'))
     plt.close()
 
+
 def plot_x(x, path):
     d = x.shape[1]
     d_x = x.shape[2]
@@ -42,6 +41,7 @@ def plot_x(x, path):
             axes[i_x].plot(x[:, i, i_x])
         plt.savefig(os.path.join(path, f'x_{i}.png'))
         plt.close()
+
 
 def plot_z(z, path):
     d = z.shape[1]
