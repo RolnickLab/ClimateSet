@@ -1,7 +1,3 @@
-"""
-Code use to generate synthetic data to test the
-end-to-end clustering idea.
-"""
 import torch
 import torch.nn as nn
 import torch.distributions as distr
@@ -10,6 +6,10 @@ from collections import OrderedDict
 
 
 class DataGenerator:
+    """
+    Code use to generate synthetic data to test the
+    end-to-end clustering idea.
+    """
     def __init__(self, hp):
         self.n = hp.n
         self.t = hp.num_timesteps
@@ -31,7 +31,8 @@ class DataGenerator:
         """
         Sample a lower triangular matrix that will be used
         as an adjacency matrix
-        :returns: graph
+        Returns:
+            A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
         """
         prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
         # set all elements on and above the diagonal as 0
@@ -42,6 +43,8 @@ class DataGenerator:
         return G
 
     def sample_mlp(self):
+        """Sample a MLP that outputs the parameters for the distributions of Z
+        """
         dict_layers = OrderedDict()
         num_first_layer = self.tau * (self.d * self.k) * (self.d * self.k)
         num_last_layer = 2 * self.d * self.k
@@ -72,6 +75,11 @@ class DataGenerator:
         pass
 
     def sample_w(self) -> torch.Tensor:
+        """Sample matrices that are positive and orthogonal.
+        They are the links between Z and X.
+        Returns:
+            A tensor w (shape: d_x x d x k)
+        """
         # assign d_xs uniformly to a cluster k
         cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
         cluster_assign = np.append(cluster_assign, np.arange(self.k))
@@ -94,10 +102,11 @@ class DataGenerator:
         # TODO: add test torch.matmul(w.T, w) == torch.eye(w.size(1))
         return w
 
-    def sample_x(self):
-        pass
-
     def generate(self):
+        """Main method to generate data
+        Returns:
+            X, Z, respectively the observable data and the latent
+        """
         # initialize Z for the first timesteps
         self.Z = torch.zeros((self.t, self.d, self.k))
         self.X = torch.zeros((self.t, self.d, self.d_x))
