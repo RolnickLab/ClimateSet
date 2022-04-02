@@ -9,7 +9,11 @@ from plot import plot_adjacency_graphs, plot_adjacency_w, plot_x, plot_z
 
 def main(hp):
     """
-    :param hp: object containing hyperparameter values
+    Args:
+        hp: object containing hyperparameter values
+
+    Returns:
+        The observable data that has been generated
     """
     # Control as much randomness as possible
     torch.manual_seed(hp.random_seed)
