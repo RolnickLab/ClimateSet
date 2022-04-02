@@ -1,9 +1,10 @@
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def plot_adjacency_graphs(g, path):
+def plot_adjacency_graphs(g: np.ndarray, path: str):
     n_graph = g.shape[0]
     _, axes = plt.subplots(ncols=n_graph, nrows=1)
 
@@ -17,7 +18,7 @@ def plot_adjacency_graphs(g, path):
     plt.close()
 
 
-def plot_adjacency_w(w, path):
+def plot_adjacency_w(w: np.ndarray, path: str):
     n_w = w.shape[1]
     _, axes = plt.subplots(ncols=n_w, nrows=1)
 
@@ -31,7 +32,7 @@ def plot_adjacency_w(w, path):
     plt.close()
 
 
-def plot_x(x, path):
+def plot_x(x: np.ndarray, path: str):
     d = x.shape[1]
     d_x = x.shape[2]
 
@@ -43,7 +44,7 @@ def plot_x(x, path):
         plt.close()
 
 
-def plot_z(z, path):
+def plot_z(z: np.ndarray, path: str):
     d = z.shape[1]
     k = z.shape[2]
 
