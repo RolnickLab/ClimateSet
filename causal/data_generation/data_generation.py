@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.distributions as distr
@@ -138,3 +139,7 @@ class DataGenerator:
             self.X[t] = dist.rsample().view(self.d, self.d_x)
 
         return self.X, self.Z
+
+    def save_data(self, path):
+        np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
+        np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())

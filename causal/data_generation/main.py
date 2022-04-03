@@ -21,6 +21,7 @@ def main(hp):
 
     generator = DataGenerator(args)
     data = generator.generate()
+    generator.save_data(hp.exp_path)
 
     plot_adjacency_graphs(generator.G, hp.exp_path)
     plot_adjacency_w(generator.w, hp.exp_path)
