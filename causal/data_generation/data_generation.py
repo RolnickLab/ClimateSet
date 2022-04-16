@@ -1,7 +1,4 @@
-"""
-Code use to generate synthetic data to test the
-end-to-end clustering idea.
-"""
+import os
 import torch
 import torch.nn as nn
 import torch.distributions as distr
@@ -9,7 +6,11 @@ import numpy as np
 from collections import OrderedDict
 
 
-class DataGenerator:
+class DataGeneratorWithLatent:
+    """
+    Code use to generate synthetic data with latent variables
+    """
+    # TODO: add instantenous relations
     def __init__(self, hp):
         self.n = hp.n
         self.t = hp.num_timesteps
@@ -22,26 +23,31 @@ class DataGenerator:
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
         self.non_linearity = hp.non_linearity
-
         self.same_cluster_assign = True
 
         assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
 
+    def save_data(self, path):
+        np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
+        np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
+
     def sample_graph(self) -> torch.Tensor:
         """
-        Sample a lower triangular matrix that will be used
-        as an adjacency matrix
-        :returns: graph
+        Sample a random matrix that will be used as an adjacency matrix
+        The diagonal is set to 1.
+        Returns:
+            A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
         """
         prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
-        # set all elements on and above the diagonal as 0
-        prob_tensor = torch.tril(prob_tensor, diagonal=-1)
+        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
         return G
 
     def sample_mlp(self):
+        """Sample a MLP that outputs the parameters for the distributions of Z
+        """
         dict_layers = OrderedDict()
         num_first_layer = self.tau * (self.d * self.k) * (self.d * self.k)
         num_last_layer = 2 * self.d * self.k
@@ -72,6 +78,11 @@ class DataGenerator:
         pass
 
     def sample_w(self) -> torch.Tensor:
+        """Sample matrices that are positive and orthogonal.
+        They are the links between Z and X.
+        Returns:
+            A tensor w (shape: d_x x d x k)
+        """
         # assign d_xs uniformly to a cluster k
         cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
         cluster_assign = np.append(cluster_assign, np.arange(self.k))
@@ -82,6 +93,9 @@ class DataGenerator:
         mask[cluster_assign] = 1
         w = torch.empty((self.d_x, self.k)).uniform_(0.5, 2)
         w = w * mask
+
+        # shuffle rows
+        w = w[torch.randperm(w.size(0))]
 
         # normalize to make w orthonormal
         w = w / torch.norm(w, dim=0)
@@ -94,17 +108,18 @@ class DataGenerator:
         # TODO: add test torch.matmul(w.T, w) == torch.eye(w.size(1))
         return w
 
-    def sample_x(self):
-        pass
-
     def generate(self):
+        """Main method to generate data
+        Returns:
+            X, Z, respectively the observable data and the latent
+        """
         # initialize Z for the first timesteps
         self.Z = torch.zeros((self.t, self.d, self.k))
         self.X = torch.zeros((self.t, self.d, self.d_x))
         for i in range(self.tau):
             self.Z[i].normal_(0, 1)
 
-        # sample graphs and neural networks
+        # sample graphs and NNs
         self.G = self.sample_graph()
         self.f = self.sample_mlp()
 
@@ -129,3 +144,74 @@ class DataGenerator:
             self.X[t] = dist.rsample().view(self.d, self.d_x)
 
         return self.X, self.Z
+
+
+class DataGeneratorWithoutLatent:
+    """
+    Code use to generate synthetic data without latent variables
+    """
+    # TODO: add instantenous relations
+    def __init__(self, hp):
+        self.n = hp.n
+        self.t = hp.num_timesteps
+        self.d = hp.num_features
+        self.d_x = hp.num_gridcells
+        self.tau = hp.timewindow
+        self.tau_neigh = hp.neighborhood
+        self.prob = hp.prob
+
+        self.num_layers = hp.num_layers
+        self.num_hidden = hp.num_hidden
+        self.non_linearity = hp.non_linearity
+
+    def save_data(self, path):
+        np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
+
+    def sample_graph(self) -> torch.Tensor:
+        """
+        Sample a random matrix that will be used as an adjacency matrix
+        The diagonal is set to 1.
+        Returns:
+            A Tensor of tau graphs (shape: tau x (tau_neigh x d x d) x (tau_neigh x d x d))
+        """
+        # TODO: allow data with any number of dimension (1D, 2D, ...)
+        prob_tensor = torch.ones((self.tau, self.d, (self.tau_neigh * 2 + 1) * self.d)) * self.prob
+        # TODO: set diagonal to 1
+
+        G = torch.bernoulli(prob_tensor)
+
+        return G
+
+    def sample_linear_weights(self, lower=0.3, upper=0.5):
+        sign = torch.ones_like(self.G) * 0.5
+        sign = torch.bernoulli(sign) * 2 - 1
+        weights = torch.empty_like(self.G).uniform_(lower, upper)
+        weights = sign * weights * self.G
+
+        return weights
+
+    def generate(self):
+        """Main method to generate data
+        Returns:
+            X, the data
+        """
+        self.X = torch.zeros((self.t, self.d, self.d_x))
+        noise = torch.normal(0, 1, size=self.X.size())
+        self.X[:self.tau] = noise[:self.tau]
+
+        # sample graphs and weights
+        self.G = self.sample_graph()
+        self.weights = self.sample_linear_weights()
+
+        for t in range(self.tau, self.t):
+            for i in range(self.d_x):
+                # TODO: could wrap around
+                lower_x = max(0, i - self.tau_neigh)
+                upper_x = min(self.X.size(2), i + self.tau_neigh)
+                lower_w = max(0, i - self.tau_neigh) - i + self.tau_neigh
+                upper_w = min(self.X.size(2), i + self.tau_neigh) - i + self.tau_neigh
+
+                w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
+                x = self.X[t - self.tau:t, :, lower_x:upper_x]
+                self.X[t, :, i] = torch.einsum("tij,tik->i", w, x) + noise[t, :, i]
+        return self.X
