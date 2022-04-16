@@ -95,6 +95,9 @@ class DataGeneratorWithLatent:
         w = torch.empty((self.d_x, self.k)).uniform_(0.5, 2)
         w = w * mask
 
+        # shuffle rows
+        w = w[torch.randperm(w.size(0))]
+
         # normalize to make w orthonormal
         w = w / torch.norm(w, dim=0)
 

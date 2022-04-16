@@ -25,7 +25,7 @@ def main(hp):
     if hp.latent:
         generator = DataGeneratorWithLatent(args)
     else:
-        generator = DataGenerator(args)
+        generator = DataGeneratorWithoutLatent(args)
 
     data = generator.generate()
     generator.save_data(hp.exp_path)
