@@ -3,7 +3,7 @@ import os
 import torch
 
 import numpy as np
-from data_generation import DataGenerator
+from data_generation import DataGeneratorWithLatent, DataGeneratorWithoutLatent
 from plot import plot_adjacency_graphs, plot_adjacency_w, plot_x, plot_z
 
 

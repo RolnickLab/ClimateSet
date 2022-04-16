@@ -173,7 +173,7 @@ class DataGeneratorWithoutLatent:
             A Tensor of tau x neighbors graphs between the X (shape: tau x
             neighbors x (d x d) x (d x d))
         """
-        n_neighbors = (1 + 2 * self.tau_neigh)**2 - 1
+        # n_neighbors = (1 + 2 * self.tau_neigh)**2 - 1
         prob_tensor = torch.ones((self.tau, self.tau_neigh * self.d * self.d, self.d * self.d)) * self.prob
         # set all elements on and above the diagonal as 0
         prob_tensor = torch.tril(prob_tensor, diagonal=-1)
