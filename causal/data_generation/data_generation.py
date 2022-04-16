@@ -172,36 +172,46 @@ class DataGeneratorWithoutLatent:
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
         Returns:
-            A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
+            A Tensor of tau graphs (shape: tau x (tau_neigh x d x d) x (tau_neigh x d x d))
         """
-        prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
-        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        # TODO: allow data with any number of dimension (1D, 2D, ...)
+        prob_tensor = torch.ones((self.tau, self.d, (self.tau_neigh * 2 + 1) * self.d)) * self.prob
+        # TODO: set diagonal to 1
 
         G = torch.bernoulli(prob_tensor)
 
         return G
 
-    def sample_linear_weights(self, lower=0.5, upper=2):
+    def sample_linear_weights(self, lower=0.3, upper=0.5):
         sign = torch.ones_like(self.G) * 0.5
         sign = torch.bernoulli(sign) * 2 - 1
         weights = torch.empty_like(self.G).uniform_(lower, upper)
-        weights = weights * sign
+        weights = sign * weights * self.G
 
         return weights
 
     def generate(self):
         """Main method to generate data
         Returns:
-            X, Z, respectively the observable data and the latent
+            X, the data
         """
         self.X = torch.zeros((self.t, self.d, self.d_x))
+        noise = torch.normal(0, 1, size=self.X.size())
+        self.X[:self.tau] = noise[:self.tau]
 
         # sample graphs and weights
         self.G = self.sample_graph()
         self.weights = self.sample_linear_weights()
 
         for t in range(self.tau, self.t):
-            # TODO: add noise
-            self.X[t] = self.weights[t - self.tau:t] * self.X[t - self.tau:t]
-        #     pass
+            for i in range(self.d_x):
+                # TODO: could wrap around
+                lower_x = max(0, i - self.tau_neigh)
+                upper_x = min(self.X.size(2), i + self.tau_neigh)
+                lower_w = max(0, i - self.tau_neigh) - i + self.tau_neigh
+                upper_w = min(self.X.size(2), i + self.tau_neigh) - i + self.tau_neigh
+
+                w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
+                x = self.X[t - self.tau:t, :, lower_x:upper_x]
+                self.X[t, :, i] = torch.einsum("tij,tik->i", w, x) + noise[t, :, i]
         return self.X
