@@ -19,9 +19,6 @@ def main(hp):
     torch.manual_seed(hp.random_seed)
     np.random.seed(hp.random_seed)
 
-    # TODO
-    hp.latent = True
-
     if hp.latent:
         generator = DataGeneratorWithLatent(args)
     else:
@@ -49,6 +46,8 @@ if __name__ == "__main__":
                         help="Random seed used for torch and numpy")
 
     # Dataset properties
+    parser.add_argument("--latent", action="store_true",
+                        help="Use generative model with latents")
     parser.add_argument("--n", type=int, default=1,
                         help="Number of time-series")
     parser.add_argument("-t", "--num-timesteps", type=int, default=10,
