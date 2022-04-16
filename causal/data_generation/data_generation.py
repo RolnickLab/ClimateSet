@@ -6,11 +6,11 @@ import numpy as np
 from collections import OrderedDict
 
 
-class DataGenerator:
+class DataGeneratorWithLatent:
     """
-    Code use to generate synthetic data to test the
-    end-to-end clustering idea.
+    Code use to generate synthetic data with latent variables
     """
+    # TODO: add instantenous relations
     def __init__(self, hp):
         self.n = hp.n
         self.t = hp.num_timesteps
@@ -23,10 +23,13 @@ class DataGenerator:
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
         self.non_linearity = hp.non_linearity
-
         self.same_cluster_assign = True
 
         assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
+
+    def save_data(self, path):
+        np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
+        np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
 
     def sample_graph(self) -> torch.Tensor:
         """
@@ -114,7 +117,7 @@ class DataGenerator:
         for i in range(self.tau):
             self.Z[i].normal_(0, 1)
 
-        # sample graphs and neural networks
+        # sample graphs and NNs
         self.G = self.sample_graph()
         self.f = self.sample_mlp()
 
@@ -140,6 +143,66 @@ class DataGenerator:
 
         return self.X, self.Z
 
+
+class DataGeneratorWithoutLatent:
+    """
+    Code use to generate synthetic data without latent variables
+    """
+    # TODO: add instantenous relations
+    def __init__(self, hp):
+        self.n = hp.n
+        self.t = hp.num_timesteps
+        self.d = hp.num_features
+        self.d_x = hp.num_gridcells
+        self.tau = hp.timewindow
+        self.tau_neigh = hp.neighborhood
+        self.prob = hp.prob
+
+        self.num_layers = hp.num_layers
+        self.num_hidden = hp.num_hidden
+        self.non_linearity = hp.non_linearity
+
     def save_data(self, path):
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
-        np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
+
+    def sample_graph(self) -> torch.Tensor:
+        """
+        Sample a lower triangular matrix that will be used
+        as an adjacency matrix
+        Returns:
+            A Tensor of tau x neighbors graphs between the X (shape: tau x
+            neighbors x (d x d) x (d x d))
+        """
+        n_neighbors = (1 + 2 * self.tau_neigh)**2 - 1
+        prob_tensor = torch.ones((self.tau, self.tau_neigh * self.d * self.d, self.d * self.d)) * self.prob
+        # set all elements on and above the diagonal as 0
+        prob_tensor = torch.tril(prob_tensor, diagonal=-1)
+
+        G = torch.bernoulli(prob_tensor)
+
+        return G
+
+    def sample_linear_weights(self, lower=0.5, upper=2):
+        sign = torch.ones_like(self.G) * 0.5
+        sign = torch.bernoulli(sign) * 2 - 1
+        weights = torch.empty_like(self.G).uniform_(lower, upper)
+        weights = weights * sign
+
+        return weights
+
+    def generate(self):
+        """Main method to generate data
+        Returns:
+            X, Z, respectively the observable data and the latent
+        """
+        self.X = torch.zeros((self.t, self.d, self.d_x))
+
+        # sample graphs and weights
+        self.G = self.sample_graph()
+        self.weights = self.sample_linear_weights()
+
+        for t in range(self.tau, self.t):
+            # TODO: add noise
+            self.X[t] = self.weights[t - self.tau:t] * self.X[t - self.tau:t]
+        #     pass
+        return self.X

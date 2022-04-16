@@ -19,14 +19,22 @@ def main(hp):
     torch.manual_seed(hp.random_seed)
     np.random.seed(hp.random_seed)
 
-    generator = DataGenerator(args)
+    # TODO
+    hp.latent = True
+
+    if hp.latent:
+        generator = DataGeneratorWithLatent(args)
+    else:
+        generator = DataGenerator(args)
+
     data = generator.generate()
     generator.save_data(hp.exp_path)
-
     plot_adjacency_graphs(generator.G, hp.exp_path)
-    plot_adjacency_w(generator.w, hp.exp_path)
     plot_x(generator.X.detach().numpy(), hp.exp_path)
-    plot_z(generator.Z.detach().numpy(), hp.exp_path)
+
+    if hp.latent:
+        plot_z(generator.Z.detach().numpy(), hp.exp_path)
+        plot_adjacency_w(generator.w, hp.exp_path)
 
     return data
 
@@ -54,6 +62,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--prob", type=float, default=0.3,
                         help="Probability of an edge in the causal graphs")
 
+    parser.add_argument("--neighborhood", type=int, default=1,
+                        help="'Radius' of neighboring gridcells that have an influence")
     parser.add_argument("--timewindow", type=int, default=3,
                         help="Number of previous timestep that interacts with a timestep t")
 
