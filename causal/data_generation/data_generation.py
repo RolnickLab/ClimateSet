@@ -33,14 +33,13 @@ class DataGeneratorWithLatent:
 
     def sample_graph(self) -> torch.Tensor:
         """
-        Sample a lower triangular matrix that will be used
-        as an adjacency matrix
+        Sample a random matrix that will be used as an adjacency matrix
+        The diagonal is set to 1.
         Returns:
             A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
         """
         prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
-        # set all elements on and above the diagonal as 0
-        prob_tensor = torch.tril(prob_tensor, diagonal=-1)
+        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
@@ -170,16 +169,13 @@ class DataGeneratorWithoutLatent:
 
     def sample_graph(self) -> torch.Tensor:
         """
-        Sample a lower triangular matrix that will be used
-        as an adjacency matrix
+        Sample a random matrix that will be used as an adjacency matrix
+        The diagonal is set to 1.
         Returns:
-            A Tensor of tau x neighbors graphs between the X (shape: tau x
-            neighbors x (d x d) x (d x d))
+            A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
         """
-        # n_neighbors = (1 + 2 * self.tau_neigh)**2 - 1
-        prob_tensor = torch.ones((self.tau, self.tau_neigh * self.d * self.d, self.d * self.d)) * self.prob
-        # set all elements on and above the diagonal as 0
-        prob_tensor = torch.tril(prob_tensor, diagonal=-1)
+        prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
+        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
