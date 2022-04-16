@@ -31,6 +31,10 @@ class DataLoader:
         self.x = np.load(os.path.join(self.data_path, 'data_x.npy'))
         if self.latent:
             self.z = np.load(os.path.join(self.data_path, 'data_z.npy'))
+            self.gt_w = np.load(os.path.join(self.data_path, 'graph_w.npy'))
+            self.gt_graph = np.load(os.path.join(self.data_path, 'graph_z.npy'))
+        else:
+            self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
 
     def _split_data(self):
         n = self.x.shape[0]
