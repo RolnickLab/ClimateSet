@@ -24,6 +24,7 @@ def main(hp):
     else:
         generator = DataGeneratorWithoutLatent(args)
 
+    # Generate, save and plot data
     data = generator.generate()
     generator.save_data(hp.exp_path)
     plot_adjacency_graphs(generator.G, hp.exp_path)
@@ -40,8 +41,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=" Code use to generate synthetic data to \
                                      test the end-to-end clustering idea.")
 
-    parser.add_argument("--exp-path", type=str, default="../causal_climate_exp/exp",
+    parser.add_argument("--exp-path", type=str, default="../dataset/",
                         help="Path to experiments")
+    parser.add_argument("--exp-id", type=int, default=0,
+                        help="ID unique to the dataset")
     parser.add_argument("--random-seed", type=int, default=2,
                         help="Random seed used for torch and numpy")
 
@@ -76,6 +79,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Create folder
+    args.exp_path = os.path.join(args.exp_path, f"data{args.exp_id}")
     if not os.path.exists(args.exp_path):
         os.makedirs(args.exp_path)
 

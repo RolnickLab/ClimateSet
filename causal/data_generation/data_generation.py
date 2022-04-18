@@ -30,6 +30,8 @@ class DataGeneratorWithLatent:
     def save_data(self, path):
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
+        np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
+        np.save(os.path.join(path, 'graph_w'), self.w.detach().numpy())
 
     def sample_graph(self) -> torch.Tensor:
         """
@@ -166,6 +168,7 @@ class DataGeneratorWithoutLatent:
 
     def save_data(self, path):
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
+        np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
 
     def sample_graph(self) -> torch.Tensor:
         """
