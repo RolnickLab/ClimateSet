@@ -25,6 +25,8 @@ class DataLoader:
 
         # Load and split the data
         self._load_data()
+        self.d = self.x.shape[1]
+        self.d_x = self.x.shape[2]
         self._split_data()
 
     def _load_data(self):
@@ -42,18 +44,18 @@ class DataLoader:
         n_valid = int(n * self.ratio_valid)
         self.idx_train = np.arange(n_train)
         self.idx_valid = np.arange(n_train, n_valid)
-        self.x_train = self.idx_train
-        self.x_valid = self.idx_valid
+        self.x_train = self.x[self.idx_train]
+        self.x_valid = self.x[self.idx_valid]
 
     def _sample(self, dataset: torch.Tensor, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        idx = np.random.choice(np.arange(self.tau, dataset.shape[0]), replace=False, size=batch_size)
-        x = np.zeros((batch_size, self.tau))
-        y = np.zeros((batch_size, ))
+        random_idx = np.random.choice(np.arange(self.tau, dataset.shape[0]), replace=False, size=batch_size)
+        x = np.zeros((batch_size, self.tau, self.d, self.d_x))
+        y = np.zeros((batch_size, self.d, self.d_x))
 
-        for i in range(idx):
-            x[i] = dataset[i - self.tau:i]
-            y[i] = dataset[i]
-        return x, y
+        for i, idx in enumerate(random_idx):
+            x[i] = dataset[idx - self.tau:idx]
+            y[i] = dataset[idx]
+        return torch.tensor(x), torch.tensor(y)
 
     def sample_train(self, batch_size: int) -> torch.Tensor:
         return self._sample(self.x_train, batch_size)
