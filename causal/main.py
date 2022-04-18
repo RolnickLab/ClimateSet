@@ -28,6 +28,9 @@ def main(hp):
         else:
             torch.set_default_tensor_type("torch.DoubleTensor")
 
+    if hp.latent is None:
+        hp.latent = False
+
     # generate data and split train/test
     # TODO: add args
     data_loader = DataLoader(hp.ratio_train,
@@ -39,15 +42,14 @@ def main(hp):
     # initialize model
     d = data_loader.x.shape[1]
 
-    # TODO: change ards
-    model = CausalModel(hp.decoder_type,
-                        d,
-                        hp.num_layers_decoder,
-                        hp.num_hidden_decoder,
+    # TODO: change args
+    model = CausalModel("fixed",
+                        hp.num_layers,
+                        hp.num_hidden,
                         d,
                         2,
-                        hp.num_param_prior,
-                        hp.num_param_prior
+                        hp.tau,
+                        hp.tau_neigh
                         )
 
     # create path to exp and save hyperparameters
@@ -69,7 +71,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--exp-path", type=str, default="causal_climate_exp",
                         help="Path to experiments")
-    parser.add_argument("--data-path", type=str, default="dataset",
+    parser.add_argument("--exp-id", type=int, default=0,
+                        help="ID specific to the experiment")
+    parser.add_argument("--data-path", type=str, default="dataset/data0",
                         help="Path to the dataset")
 
     # Dataset properties
@@ -85,6 +89,13 @@ if __name__ == "__main__":
                         help="Proportion of the data used for the validation set")
     parser.add_argument("--batch-size", type=int, default=32,
                         help="Number of samples per minibatch")
+
+    parser.add_argument("--latent", action="store_true",
+                        help="Use the model that assumes latent variables")
+    parser.add_argument("--tau", type=int, default=2,
+                        help="Number of past timesteps to consider")
+    parser.add_argument("--tau-neigh", type=int, default=1,
+                        help="Radius of neighbor cells to consider")
 
     # Model hyperparameters: architecture
     parser.add_argument("--num-hidden", type=int, default=16,
@@ -138,6 +149,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Create folder
+    args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")
     if not os.path.exists(args.exp_path):
         os.makedirs(args.exp_path)
 
