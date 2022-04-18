@@ -6,18 +6,28 @@ from collections import OrderedDict
 
 class CausalModel(nn.Module):
     def __init__(self,
+                 model_type: str,
                  num_layers: int,
                  num_hidden: int,
                  num_input: int,
-                 num_output: int):
+                 num_output: int,
+                 tau: int,
+                 tau_neigh: int):
         super().__init__()
+        self.model_type = model_type
         self.num_layers = num_layers
         self.num_hidden = num_hidden
         self.num_input = num_input
         self.num_output = num_output
+        self.d = num_input
+        self.tau = tau
+        self.tau_neigh = tau_neigh
 
-        self.cond_model = MLP(num_layers, num_hidden, num_input, num_output)
-        self.mask = Mask(self.d, drawhard=True)
+        if model_type == "fixed":
+            self.cond_model = MLP(num_layers, num_hidden, num_input, num_output)
+            self.mask = Mask(num_input, tau_neigh, tau, drawhard=True)
+        elif model_type == "free":
+            raise NotImplementedError
 
     def get_adj(self):
         return self.mask.get_proba()
@@ -30,19 +40,32 @@ class CausalModel(nn.Module):
         else:
             raise NotImplementedError()
 
+    def forward(self, x):
+        # sample mask and apply on x
+        b = x.shape[0]
+        d = x.shape[1]
+        __import__('ipdb').set_trace()
+        mask = self.mask(b)  # size: b x d x (d x tau_neigh) x tau
+        # mask = mask.view(b, d, -1) # size: b x d x (d x tau_neigh x tau)
+
+
+        # torch.einsum(",bijt->", x, mask)
+
 
 class Mask(nn.Module):
-    def __init__(self, d: int, drawhard: bool):
+    def __init__(self, d: int, tau_neigh: int, tau: int, drawhard: bool):
         super().__init__()
 
         self.d = d
+        self.tau = tau
+        self.tau_neigh = tau_neigh
         self.drawhard = drawhard
         self.fixed = False
         self.fixed_output = None
         self.uniform = distr.uniform.Uniform(0, 1)
 
-        # initialize mask as log(mask_ij) = 1, except for diag which is = 0
-        self.param = nn.Parameter((torch.ones((d, d)) - torch.eye(d) * 6) * 5)
+        # initialize mask as log(mask_ij) = 1
+        self.param = nn.Parameter(torch.ones((d, d * tau_neigh, tau)) * 5)
 
     def forward(self, bs: int, tau: float = 1) -> torch.Tensor:
         """

@@ -14,10 +14,11 @@ class Training:
         self.converged = False
         self.thresholded = False
         self.ended = False
-        self.mu = self.hp.mu_init
+        self.mu = hp.mu_init
         self.d = data.x.shape[1]
-        self.patience = self.hp.patience
+        self.patience = hp.patience
         self.best_valid_loss = np.inf
+        self.batch_size = hp.batch_size
 
         # TODO: put as arguments
         self.qpm_freq = 1000
@@ -153,7 +154,7 @@ class Training:
         self.model.train()
 
         # sample data
-        x = self.data.sample_train()
+        x, y = self.data.sample_train(self.batch_size)
         mu, std = self.model(x)
 
         # get acyclicity constraint, regularisation
@@ -179,7 +180,7 @@ class Training:
         # data = self.test_data
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
-        x = self.data.sample_valid()
+        x, y = self.data.sample_valid(self.batch_size)
         mu, std = self.model(x)
 
         # get acyclicity constraint, regularisation, elbo
