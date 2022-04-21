@@ -11,45 +11,64 @@ class CausalModel(nn.Module):
                  num_hidden: int,
                  num_input: int,
                  num_output: int,
+                 d: int,
                  tau: int,
                  tau_neigh: int):
         super().__init__()
+        self.distribution_type = "normal"
         self.model_type = model_type
         self.num_layers = num_layers
         self.num_hidden = num_hidden
         self.num_input = num_input
         self.num_output = num_output
-        self.d = num_input
+        self.d = d
         self.tau = tau
         self.tau_neigh = tau_neigh
 
         if model_type == "fixed":
-            self.cond_model = MLP(num_layers, num_hidden, num_input, num_output)
-            self.mask = Mask(num_input, tau_neigh, tau, drawhard=True)
+            self.cond_models = nn.ModuleList(MLP(num_layers, num_hidden,
+                                                 num_input, num_output) for i
+                                             in range(self.d))
+            self.mask = Mask(d, tau_neigh, tau, drawhard=True)
         elif model_type == "free":
             raise NotImplementedError
 
     def get_adj(self):
         return self.mask.get_proba()
 
-    def get_likelihood(self, x, mu, std, iteration):
+    def get_likelihood(self, y, mu, logvar, iteration):
         if self.distribution_type == "normal":
+            std = 0.5 * torch.exp(logvar)
             conditionals = torch.distributions.Normal(mu, std)
-            log_probs = conditionals.log_prob(x)
+            log_probs = conditionals.log_prob(y.view(-1, 1))
             return torch.sum(log_probs)
         else:
             raise NotImplementedError()
 
     def forward(self, x):
+        # x shape: batch, time, feature, gridcell
+
         # sample mask and apply on x
         b = x.shape[0]
-        d = x.shape[1]
-        __import__('ipdb').set_trace()
-        mask = self.mask(b)  # size: b x d x (d x tau_neigh) x tau
-        # mask = mask.view(b, d, -1) # size: b x d x (d x tau_neigh x tau)
 
-
-        # torch.einsum(",bijt->", x, mask)
+        y_hat = torch.zeros((b, self.d, x.shape[-1], 2))
+        # TODO: remove loop
+        for i_cell in range(x.shape[-1]):
+            mask = self.mask(b)  # size: b x d x (d x tau_neigh) x tau
+            for i in range(self.d):
+                lower_padding = max(0, -i_cell + self.tau_neigh)
+                upper_padding = max(0, i_cell + self.tau_neigh - x.shape[-1] + 1)
+                lower_cell = max(0, i_cell - self.tau_neigh)
+                upper_cell = min(x.shape[-1], i_cell + self.tau_neigh) + 1
+                x_ = x[:, :, :, lower_cell:upper_cell]
+                if lower_padding > 0:
+                    zeros = torch.zeros((b, x.shape[1], x.shape[2], lower_padding))
+                    x_ = torch.cat((zeros, x_), dim=-1)
+                elif upper_padding > 0:
+                    zeros = torch.zeros((b, x.shape[1], x.shape[2], upper_padding))
+                    x_ = torch.cat((x_, zeros), dim=-1)
+                y_hat[:, i, i_cell] = self.cond_models[i]((x_ * mask[:, :, i]).view(b, -1))
+        return y_hat
 
 
 class Mask(nn.Module):
@@ -65,7 +84,7 @@ class Mask(nn.Module):
         self.uniform = distr.uniform.Uniform(0, 1)
 
         # initialize mask as log(mask_ij) = 1
-        self.param = nn.Parameter(torch.ones((d, d * tau_neigh, tau)) * 5)
+        self.param = nn.Parameter(torch.ones((tau, d, d, (2 * tau_neigh + 1))) * 5)
 
     def forward(self, bs: int, tau: float = 1) -> torch.Tensor:
         """
@@ -77,7 +96,7 @@ class Mask(nn.Module):
             return adj
         else:
             assert self.fixed_output is not None
-            return self.fixed_output.repeat(bs, 1, 1)
+            return self.fixed_output.repeat(bs, 1, 1, 1)
 
     def get_proba(self) -> torch.Tensor:
         if not self.fixed:
@@ -120,9 +139,8 @@ class MLP(nn.Module):
 
         self.model = nn.Sequential(module_dict)
 
-    def forward(self, x, eta) -> torch.Tensor:
-        x_ = torch.cat((x, eta), dim=1)
-        return self.model(x_)
+    def forward(self, x) -> torch.Tensor:
+        return self.model(x)
 
 
 def sample_logistic(shape, uniform):
