@@ -15,11 +15,12 @@ def plot(learner):
     plot_learning_curves(learner.train_loss_list,
                          learner.valid_loss_list,
                          learner.hp.exp_path)
-    plot_adjacency_matrix(learner.model.get_adj().detach().numpy(),
-                          learner.gt_dag.numpy(),
+    adj = learner.model.get_adj().detach().numpy().reshape(learner.gt_dag.shape[0], learner.gt_dag.shape[1], -1)
+    plot_adjacency_matrix(adj,
+                          learner.gt_dag,
                           learner.hp.exp_path)
     plot_adjacency_through_time(learner.adj_tt,
-                                learner.gt_dag.numpy(),
+                                learner.gt_dag,
                                 learner.iteration,
                                 learner.hp.exp_path)
 
@@ -29,7 +30,7 @@ def plot_learning_curves(train_loss, valid_loss, path):
     v_loss = moving_average(valid_loss[10:])
 
     ax = plt.gca()
-    ax.set_ylim([0, 30])
+    ax.set_ylim([0, 100])
     plt.plot(t_loss, label="train")
     plt.plot(v_loss, label="valid")
     plt.legend()
@@ -38,39 +39,44 @@ def plot_learning_curves(train_loss, valid_loss, path):
 
 
 def plot_adjacency_matrix(mat1, mat2, path):
-    _, (ax1, ax2, ax3) = plt.subplots(ncols=3, nrows=1)
-    sns.heatmap(mat1, ax=ax1, cbar=False, vmin=-1, vmax=1,
-                cmap="hot", xticklabels=False, yticklabels=False)
-    sns.heatmap(mat2, ax=ax2, cbar=False, vmin=-1, vmax=1,
-                cmap="hot", xticklabels=False, yticklabels=False)
-    sns.heatmap(mat1 - mat2, ax=ax3, cbar=False, vmin=-1, vmax=1,
-                cmap="hot", xticklabels=False, yticklabels=False)
+    tau = mat1.shape[0]
+    _, axes = plt.subplots(ncols=3, nrows=tau)
 
-    ax1.set_title("Learned")
-    ax2.set_title("Ground truth")
-    ax3.set_title("Learned - GT")
+    for i in range(tau):
+        sns.heatmap(mat1[i], ax=axes[0, i], cbar=False, vmin=-1, vmax=1,
+                    cmap="hot", xticklabels=False, yticklabels=False)
+        sns.heatmap(mat2[i], ax=axes[1, i], cbar=False, vmin=-1, vmax=1,
+                    cmap="hot", xticklabels=False, yticklabels=False)
+        sns.heatmap(mat1[i] - mat2[i], ax=axes[2, i], cbar=False, vmin=-1, vmax=1,
+                    cmap="hot", xticklabels=False, yticklabels=False)
 
-    ax1.set_aspect('equal', adjustable='box')
-    ax2.set_aspect('equal', adjustable='box')
-    ax3.set_aspect('equal', adjustable='box')
+        axes[0, i].set_title("Learned")
+        axes[1, i].set_title("Ground truth")
+        axes[2, i].set_title("Learned - GT")
+
+        axes[0, i].set_aspect('equal', adjustable='box')
+        axes[1, i].set_aspect('equal', adjustable='box')
+        axes[2, i].set_aspect('equal', adjustable='box')
 
     plt.savefig(os.path.join(path, 'adjacency.png'))
     plt.close()
 
 
 def plot_adjacency_through_time(w_adj, gt_dag, t, path):
-    d = w_adj.shape[1]
+    taus = w_adj.shape[1]
+    d = w_adj.shape[2]
+    w_adj = w_adj.reshape(w_adj.shape[0], taus, d, -1)
     fig, ax1 = plt.subplots()
 
-    for i in range(d):
-        for j in range(d):
-            if i != j:
-                if gt_dag[i, j]:
+    for tau in range(taus):
+        for i in range(d):
+            for j in range(w_adj.shape[-1]):
+                if gt_dag[tau, i, j]:
                     color = 'g'
                     zorder = 2
                 else:
                     color = 'r'
                     zorder = 1
-                ax1.plot(range(1, t), w_adj[1:t, i, j], color, linewidth=1, zorder=zorder)
+                ax1.plot(range(1, t), w_adj[1:t, tau, i, j], color, linewidth=1, zorder=zorder)
     fig.savefig(os.path.join(path, 'adjacency_time.png'))
     fig.clf()
