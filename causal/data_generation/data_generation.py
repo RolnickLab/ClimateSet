@@ -175,7 +175,7 @@ class DataGeneratorWithoutLatent:
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
         Returns:
-            A Tensor of tau graphs (shape: tau x (tau_neigh x d x d) x (tau_neigh x d x d))
+            A Tensor of tau graphs (shape: tau x d x (tau_neigh x 2 + 1))
         """
         # TODO: allow data with any number of dimension (1D, 2D, ...)
         prob_tensor = torch.ones((self.tau, self.d, (self.tau_neigh * 2 + 1) * self.d)) * self.prob
@@ -185,11 +185,19 @@ class DataGeneratorWithoutLatent:
 
         return G
 
-    def sample_linear_weights(self, lower=0.3, upper=0.5):
+    def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta: float= 1):
+        """Sample the coefficient of the linear relations
+        :param lower: lower bound of uniform distr to sample from
+        :param upper: upper bound of uniform distr
+        :param eta: weight decay parameter, reduce the influences of variables
+        that are farther back in time, should be >= 1
+        """
         sign = torch.ones_like(self.G) * 0.5
         sign = torch.bernoulli(sign) * 2 - 1
         weights = torch.empty_like(self.G).uniform_(lower, upper)
         weights = sign * weights * self.G
+        weight_decay = 1 / torch.pow(eta, torch.arange(self.tau))
+        weights = weights * weight_decay.view(-1, 1, 1)
 
         return weights
 
