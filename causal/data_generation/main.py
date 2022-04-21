@@ -68,6 +68,8 @@ if __name__ == "__main__":
                         help="'Radius' of neighboring gridcells that have an influence")
     parser.add_argument("--timewindow", type=int, default=3,
                         help="Number of previous timestep that interacts with a timestep t")
+    parser.add_argument("--eta", type=int, default=10,
+                        help="Weight decay applied to linear coefficients")
 
     # Neural network (NN) architecture
     parser.add_argument("--num-layers", type=int, default=1,

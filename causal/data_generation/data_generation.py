@@ -161,6 +161,7 @@ class DataGeneratorWithoutLatent:
         self.tau = hp.timewindow
         self.tau_neigh = hp.neighborhood
         self.prob = hp.prob
+        self.eta = hp.eta
 
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
@@ -212,7 +213,7 @@ class DataGeneratorWithoutLatent:
 
         # sample graphs and weights
         self.G = self.sample_graph()
-        self.weights = self.sample_linear_weights()
+        self.weights = self.sample_linear_weights(eta=self.eta)
 
         for t in range(self.tau, self.t):
             for i in range(self.d_x):
