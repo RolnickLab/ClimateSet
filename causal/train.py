@@ -201,7 +201,7 @@ class Training:
     def get_nll(self, y, density_param) -> torch.Tensor:
         mu = density_param[:, :, :, 0].view(-1, 1)
         std = density_param[:, :, :, 1].view(-1, 1)
-        nll = -1/y.shape[0] * self.model.get_likelihood(y, mu, std, self.iteration)
+        nll = -1/(y.shape[0] * y.shape[1] * y.shape[2]) * self.model.get_likelihood(y, mu, std, self.iteration)
 
         return nll
 
