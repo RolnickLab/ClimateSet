@@ -21,10 +21,9 @@ class Training:
         self.batch_size = hp.batch_size
         self.tau = hp.tau
         self.tau_neigh = hp.tau_neigh
-
-        # TODO: put as arguments
         self.qpm_freq = 1000
 
+        # TODO: put as arguments
         self.train_h_list = []
         self.train_loss_list = []
         self.train_elbo_list = []
@@ -189,7 +188,7 @@ class Training:
         nll = self.get_nll(y, density_param)
 
         # compute loss
-        loss = nll + reg #  + 0.5 * self.mu * h ** 2
+        loss = nll + reg  # + 0.5 * self.mu * h ** 2
 
         return loss.item(), nll.item(), 0
 
@@ -200,7 +199,9 @@ class Training:
         return h
 
     def get_nll(self, y, density_param) -> torch.Tensor:
-        nll = -1/y.shape[0] * self.model.get_likelihood(y, density_param[:,:,:,0].view(-1, 1), density_param[:,:,:,1].view(-1, 1), self.iteration)
+        mu = density_param[:, :, :, 0].view(-1, 1)
+        std = density_param[:, :, :, 1].view(-1, 1)
+        nll = -1/y.shape[0] * self.model.get_likelihood(y, mu, std, self.iteration)
 
         return nll
 

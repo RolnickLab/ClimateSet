@@ -186,7 +186,7 @@ class DataGeneratorWithoutLatent:
 
         return G
 
-    def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta: float= 1):
+    def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta: float = 1):
         """Sample the coefficient of the linear relations
         :param lower: lower bound of uniform distr to sample from
         :param upper: upper bound of uniform distr
