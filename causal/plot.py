@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def moving_average(a, n=10):
+def moving_average(a: np.ndarray, n: int = 10):
     # from https://stackoverflow.com/questions/14313510/how-to-calculate-rolling-moving-average-using-python-numpy-scipy
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
@@ -25,7 +25,13 @@ def plot(learner):
                                 learner.hp.exp_path)
 
 
-def plot_learning_curves(train_loss, valid_loss, path):
+def plot_learning_curves(train_loss: list, valid_loss: list, path: str):
+    """ Plot the training and validation loss through time
+    :param train_loss: training loss
+    :param valid_loss: ground-truth adjacency matrices
+    :param path: path where to save the plot
+    """
+    # remove first steps to avoid really high values
     t_loss = moving_average(train_loss[10:])
     v_loss = moving_average(valid_loss[10:])
 
@@ -38,7 +44,12 @@ def plot_learning_curves(train_loss, valid_loss, path):
     plt.close()
 
 
-def plot_adjacency_matrix(mat1, mat2, path):
+def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str):
+    """ Plot the adjacency matrices learned and compare it to the ground truth
+    :param mat1: learned adjacency matrices
+    :param mat2: ground-truth adjacency matrices
+    :param path: path where to save the plot
+    """
     tau = mat1.shape[0]
     subfig_names = ["Learned", "Ground Truth", "Difference: Learned - GT"]
 
@@ -67,7 +78,13 @@ def plot_adjacency_matrix(mat1, mat2, path):
     plt.close()
 
 
-def plot_adjacency_through_time(w_adj, gt_dag, t, path):
+def plot_adjacency_through_time(w_adj: np.ndarray, gt_dag: np.ndarray, t: int, path: str):
+    """ Plot the probability of each edges through time up to timestep t
+    :param w_adj: weight of edges
+    :param gt_dag: ground-truth DAG
+    :param t: timestep where to stop plotting
+    :param path: path where to save the plot
+    """
     taus = w_adj.shape[1]
     d = w_adj.shape[2]
     w_adj = w_adj.reshape(w_adj.shape[0], taus, d, -1)
@@ -76,6 +93,8 @@ def plot_adjacency_through_time(w_adj, gt_dag, t, path):
     for tau in range(taus):
         for i in range(d):
             for j in range(w_adj.shape[-1]):
+                # plot in green edges that are in the gt_dag
+                # otherwise in red
                 if gt_dag[tau, i, j]:
                     color = 'g'
                     zorder = 2
