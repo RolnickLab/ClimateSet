@@ -40,23 +40,28 @@ def plot_learning_curves(train_loss, valid_loss, path):
 
 def plot_adjacency_matrix(mat1, mat2, path):
     tau = mat1.shape[0]
-    _, axes = plt.subplots(ncols=3, nrows=tau)
+    subfig_names = ["Learned", "Ground Truth", "Difference: Learned - GT"]
 
-    for i in range(tau):
-        sns.heatmap(mat1[i], ax=axes[0, i], cbar=False, vmin=-1, vmax=1,
-                    cmap="hot", xticklabels=False, yticklabels=False)
-        sns.heatmap(mat2[i], ax=axes[1, i], cbar=False, vmin=-1, vmax=1,
-                    cmap="hot", xticklabels=False, yticklabels=False)
-        sns.heatmap(mat1[i] - mat2[i], ax=axes[2, i], cbar=False, vmin=-1, vmax=1,
-                    cmap="hot", xticklabels=False, yticklabels=False)
+    fig = plt.figure(constrained_layout=True)
+    fig.suptitle("Adjacency matrices: learned vs ground-truth")
 
-        axes[0, i].set_title("Learned")
-        axes[1, i].set_title("Ground truth")
-        axes[2, i].set_title("Learned - GT")
 
-        axes[0, i].set_aspect('equal', adjustable='box')
-        axes[1, i].set_aspect('equal', adjustable='box')
-        axes[2, i].set_aspect('equal', adjustable='box')
+    subfigs = fig.subfigures(nrows=3, ncols=1)
+    for row, subfig in enumerate(subfigs):
+        subfig.suptitle(f'{subfig_names[row]}')
+
+        axes = subfig.subplots(nrows=1, ncols=tau)
+        for i in range(tau):
+            axes[i].set_title(f"t - {i+1}")
+            if row == 0:
+                sns.heatmap(mat1[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                            cmap="Blues", xticklabels=False, yticklabels=False)
+            elif row == 1:
+                sns.heatmap(mat2[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                            cmap="Blues", xticklabels=False, yticklabels=False)
+            elif row == 2:
+                sns.heatmap(mat1[i] - mat2[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                            cmap="Blues", xticklabels=False, yticklabels=False)
 
     plt.savefig(os.path.join(path, 'adjacency.png'))
     plt.close()
