@@ -11,7 +11,7 @@ class Training:
         self.data = data
         self.gt_dag = data.gt_graph
         self.hp = hp
-        self.converged = False
+        self.converged = True  # TODO: change
         self.thresholded = False
         self.ended = False
         self.mu = hp.mu_init
@@ -19,6 +19,8 @@ class Training:
         self.patience = hp.patience
         self.best_valid_loss = np.inf
         self.batch_size = hp.batch_size
+        self.tau = hp.tau
+        self.tau_neigh = hp.tau_neigh
 
         # TODO: put as arguments
         self.qpm_freq = 1000
@@ -30,7 +32,7 @@ class Training:
         self.valid_loss_list = []
         self.valid_elbo_list = []
         self.mu_list = []
-        self.adj_tt = np.zeros((1000000, self.d, self.d))
+        self.adj_tt = np.zeros((1000000, self.tau, self.d, self.d, self.model.tau_neigh * 2 + 1))
         # TODO: just for tests, remove
         # self.model.mask.fix(gt_dag)
 
@@ -48,12 +50,10 @@ class Training:
             self.constraint_normalization = compute_dag_constraint(full_adjacency).item()
 
     def log_losses(self):
-        self.train_h_list.append(self.train_h)
+        # self.train_h_list.append(self.train_h)
         self.train_loss_list.append(self.train_loss)
-        self.train_elbo_list.append(self.train_elbo)
-        self.valid_h_list.append(self.valid_h)
+        # self.valid_h_list.append(self.valid_h)
         self.valid_loss_list.append(self.valid_loss)
-        self.valid_elbo_list.append(self.valid_elbo)
         self.mu_list.append(self.mu)
 
         adj = self.model.get_adj().detach().numpy()
@@ -64,15 +64,15 @@ class Training:
         print(f"Iteration #{self.iteration}")
         # print(f"train_h: {self.train_h:.4f}")
         # print(f"train_loss: {self.train_loss:.4f}")
-        print(f"train_elbo: {self.train_elbo:.4f}")
-        # print(f"train_nll: {self.train_nll:.4f}")
+        # print(f"train_elbo: {self.train_elbo:.4f}")
+        print(f"train_nll: {self.train_nll:.4f}")
         # print(f"train_kl: {self.train_kl:.4f}")
         print("-------------------------------")
 
         print(f"valid_h: {self.valid_h:.4f}")
         # print(f"valid_loss: {self.valid_loss:.4f}")
-        print(f"valid_elbo: {self.valid_elbo:.4f}")
-        # print(f"valid_nll: {self.valid_nll:.4f}")
+        # print(f"valid_elbo: {self.valid_elbo:.4f}")
+        print(f"valid_nll: {self.valid_nll:.4f}")
         # print(f"valid_kl: {self.valid_kl:.4f}")
         print(f"mu: {self.mu}")
         print(f"patience: {self.patience}")
@@ -83,8 +83,8 @@ class Training:
         while self.iteration < self.hp.max_iteration and not self.ended:
 
             # train and valid step
-            self.train_loss, self.train_elbo, self.train_nll, self.train_kl, self.train_h = self.train_step()
-            self.valid_loss, self.valid_elbo, self.valid_nll, self.valid_kl, self.valid_h = self.valid_step()
+            self.train_loss, self.train_nll, self.train_h = self.train_step()
+            self.valid_loss, self.valid_nll, self.valid_h = self.valid_step()
             self.log_losses()
             if self.iteration % self.hp.print_freq == 0:
                 self.print_results()
@@ -155,23 +155,23 @@ class Training:
 
         # sample data
         x, y = self.data.sample_train(self.batch_size)
-        mu, std = self.model(x)
+        density_param = self.model(x)
 
         # get acyclicity constraint, regularisation
-        h = self.get_acyclicity_violation()
+        # h = self.get_acyclicity_violation()
         reg = self.get_regularisation()
         # TODO: change density_param
-        nll = self.get_nll(x, density_param)
+        nll = self.get_nll(y, density_param)
 
         # compute loss
-        loss = nll + reg + 0.5 * self.mu * h ** 2
+        loss = nll + reg  # + 0.5 * self.mu * h ** 2
 
         # backprop
         self.optimizer.zero_grad()
         loss.backward()
         _, _ = self.optimizer.step() if self.hp.optimizer == "rmsprop" else self.optimizer.step(), self.hp.lr
 
-        return loss.item(), nll.item(), h.item()
+        return loss.item(), nll.item(), 0  # h.item()
 
     def valid_step(self):
         self.model.eval()
@@ -180,22 +180,18 @@ class Training:
         # data = self.test_data
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
-        x, y = self.data.sample_valid(self.batch_size)
-        mu, std = self.model(x)
+        x, y = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
+        density_param = self.model(x)
 
         # get acyclicity constraint, regularisation, elbo
-        h = self.get_acyclicity_violation()
+        # h = self.get_acyclicity_violation()
         reg = self.get_regularisation()
-        nll = self.get_nll(x, density_param)
+        nll = self.get_nll(y, density_param)
 
         # compute loss
-        loss = nll + reg + 0.5 * self.mu * h ** 2
+        loss = nll + reg #  + 0.5 * self.mu * h ** 2
 
-        return loss.item(), nll.item(), h.item()
-
-    def has_converged(self, iteration) -> bool:
-        h = self.get_acyclicity_violation()
-        return False
+        return loss.item(), nll.item(), 0
 
     def get_acyclicity_violation(self) -> torch.Tensor:
         adj = self.model.get_adj()
@@ -203,8 +199,8 @@ class Training:
 
         return h
 
-    def get_nll(self, x, density_param) -> torch.Tensor:
-        nll = -1/x.shape[0] * self.model.get_likelihood(x, density_param, self.iteration)
+    def get_nll(self, y, density_param) -> torch.Tensor:
+        nll = -1/y.shape[0] * self.model.get_likelihood(y, density_param[:,:,:,0].view(-1, 1), density_param[:,:,:,1].view(-1, 1), self.iteration)
 
         return nll
 

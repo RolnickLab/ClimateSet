@@ -43,11 +43,13 @@ class DataLoader:
         n_train = int(n * self.ratio_train)
         n_valid = int(n * self.ratio_valid)
         self.idx_train = np.arange(n_train)
-        self.idx_valid = np.arange(n_train, n_valid)
+        self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
         self.x_train = self.x[self.idx_train]
         self.x_valid = self.x[self.idx_valid]
 
     def _sample(self, dataset: torch.Tensor, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        if dataset.shape[0] <= 0:
+            __import__('ipdb').set_trace()
         random_idx = np.random.choice(np.arange(self.tau, dataset.shape[0]), replace=False, size=batch_size)
         x = np.zeros((batch_size, self.tau, self.d, self.d_x))
         y = np.zeros((batch_size, self.d, self.d_x))

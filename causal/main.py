@@ -46,7 +46,8 @@ def main(hp):
     model = CausalModel("fixed",
                         hp.num_layers,
                         hp.num_hidden,
-                        d,
+                        d * hp.tau * (hp.tau_neigh * 2 + 1),
+                        2,
                         2,
                         hp.tau,
                         hp.tau_neigh
@@ -92,7 +93,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--latent", action="store_true",
                         help="Use the model that assumes latent variables")
-    parser.add_argument("--tau", type=int, default=2,
+    parser.add_argument("--tau", type=int, default=3,
                         help="Number of past timesteps to consider")
     parser.add_argument("--tau-neigh", type=int, default=1,
                         help="Radius of neighbor cells to consider")
@@ -112,7 +113,7 @@ if __name__ == "__main__":
                         help="Coefficient for the regularisation term")
     parser.add_argument("--lr", type=float, default=1e-3,
                         help="learning rate for optim")
-    parser.add_argument("--random-seed", type=int, default=1,
+    parser.add_argument("--random-seed", type=int, default=2,
                         help="Random seed for torch and numpy")
 
     # QPM options
@@ -130,13 +131,13 @@ if __name__ == "__main__":
                         help="Minimal number of iteration before checking if has converged")
     parser.add_argument("--max-iteration", type=int, default=100000,
                         help="Maximal number of iteration before stopping")
-    parser.add_argument("--patience", type=int, default=100,
+    parser.add_argument("--patience", type=int, default=5000,
                         help="Patience used after the acyclicity constraint is respected")
     parser.add_argument("--patience-post-thresh", type=int, default=100,
                         help="Patience used after the thresholding of the adjacency matrix")
 
     # logging
-    parser.add_argument("--plot-freq", type=int, default=2000,
+    parser.add_argument("--plot-freq", type=int, default=1000,
                         help="Plotting frequency")
     parser.add_argument("--valid-freq", type=int, default=100,
                         help="Plotting frequency")
