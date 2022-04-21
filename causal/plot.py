@@ -39,6 +39,7 @@ def plot_learning_curves(train_loss: list, valid_loss: list, path: str):
     ax.set_ylim([0, 5])
     plt.plot(t_loss, label="train")
     plt.plot(v_loss, label="valid")
+    plt.title("Learning curves")
     plt.legend()
     plt.savefig(os.path.join(path, "loss.png"))
     plt.close()
@@ -102,5 +103,6 @@ def plot_adjacency_through_time(w_adj: np.ndarray, gt_dag: np.ndarray, t: int, p
                     color = 'r'
                     zorder = 1
                 ax1.plot(range(1, t), w_adj[1:t, tau, i, j], color, linewidth=1, zorder=zorder)
+    fig.suptitle("Learned adjacencies through time")
     fig.savefig(os.path.join(path, 'adjacency_time.png'))
     fig.clf()
