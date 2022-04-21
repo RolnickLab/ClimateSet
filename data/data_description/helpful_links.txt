@@ -1,0 +1,2 @@
+Summary about all CMIP data labels (frequency, grid label, variables, etc.)
+https://docs.google.com/document/d/1h0r8RZr_f3-8egBMMh7aqLwy3snpD6_MrDz1q8n5XUk/edit
