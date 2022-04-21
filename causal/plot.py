@@ -30,7 +30,7 @@ def plot_learning_curves(train_loss, valid_loss, path):
     v_loss = moving_average(valid_loss[10:])
 
     ax = plt.gca()
-    ax.set_ylim([0, 100])
+    ax.set_ylim([0, 5])
     plt.plot(t_loss, label="train")
     plt.plot(v_loss, label="valid")
     plt.legend()

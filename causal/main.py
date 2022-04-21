@@ -101,7 +101,8 @@ if __name__ == "__main__":
     # Model hyperparameters: architecture
     parser.add_argument("--num-hidden", type=int, default=16,
                         help="Number of hidden units")
-    parser.add_argument("--num-layers", type=int, default=2,
+    # TODO: make it work for 0, linear case
+    parser.add_argument("--num-layers", type=int, default=1,
                         help="number of hidden layers")
     parser.add_argument("--num-output", type=int, default=2,
                         help="number of output units")
@@ -109,7 +110,7 @@ if __name__ == "__main__":
     # Model hyperparameters: optimization
     parser.add_argument("--optimizer", type=str, default="rmsprop",
                         help="sgd|rmsprop")
-    parser.add_argument("--reg-coeff", type=float, default=0,
+    parser.add_argument("--reg-coeff", type=float, default=1e-3,
                         help="Coefficient for the regularisation term")
     parser.add_argument("--lr", type=float, default=1e-3,
                         help="learning rate for optim")
