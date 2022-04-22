@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # Model hyperparameters: optimization
     parser.add_argument("--optimizer", type=str, default="rmsprop",
                         help="sgd|rmsprop")
-    parser.add_argument("--reg-coeff", type=float, default=5e-2,
+    parser.add_argument("--reg-coeff", type=float, default=0,
                         help="Coefficient for the regularisation term")
     parser.add_argument("--lr", type=float, default=1e-3,
                         help="learning rate for optim")
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                         help="Minimal number of iteration before checking if has converged")
     parser.add_argument("--max-iteration", type=int, default=100000,
                         help="Maximal number of iteration before stopping")
-    parser.add_argument("--patience", type=int, default=5000,
+    parser.add_argument("--patience", type=int, default=1,
                         help="Patience used after the acyclicity constraint is respected")
     parser.add_argument("--patience-post-thresh", type=int, default=100,
                         help="Patience used after the thresholding of the adjacency matrix")

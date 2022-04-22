@@ -88,17 +88,17 @@ class Mask(nn.Module):
         # initialize mask as log(mask_ij) = 1
         self.param = nn.Parameter(torch.ones((tau, d, d, (2 * tau_neigh + 1))) * 5)
 
-    def forward(self, bs: int, tau: float = 1) -> torch.Tensor:
+    def forward(self, b: int, tau: float = 1) -> torch.Tensor:
         """
-        :param bs: batch size
+        :param b: batch size
         :param tau: temperature constant for sampling
         """
         if not self.fixed:
-            adj = gumbel_sigmoid(self.param, self.uniform, bs, tau=tau, hard=self.drawhard)
+            adj = gumbel_sigmoid(self.param, self.uniform, b, tau=tau, hard=self.drawhard)
             return adj
         else:
             assert self.fixed_output is not None
-            return self.fixed_output.repeat(bs, 1, 1, 1)
+            return self.fixed_output.repeat(b, 1, 1, 1, 1)
 
     def get_proba(self) -> torch.Tensor:
         if not self.fixed:
