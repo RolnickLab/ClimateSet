@@ -46,8 +46,10 @@ def main(hp):
         else:
             torch.set_default_tensor_type("torch.DoubleTensor")
 
-    if hp.latent is None:
-        hp.latent = False
+    # Create folder
+    args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")
+    if not os.path.exists(args.exp_path):
+        os.makedirs(args.exp_path)
 
     # generate data and split train/test
     data_loader = DataLoader(ratio_train=hp.ratio_train,
@@ -175,16 +177,12 @@ if __name__ == "__main__":
         default_params.update(params)
         args = Bunch(**default_params)
 
+    # use some parameters from the data generating process
     if args.use_data_config != "":
-        with open(args.config_path, 'r') as f:
+        with open(os.path.join(args.data_path, "data_params.json"), 'r') as f:
             params = json.load(f)
-        args.tau = params.timewindow
-        args.tau_neigh = params.neighborhood
-        args.latent = params.latent
-
-    # Create folder and save hyperparameters
-    args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")
-    if not os.path.exists(args.exp_path):
-        os.makedirs(args.exp_path)
+        args.tau = params['timewindow']
+        args.tau_neigh = params['neighborhood']
+        args.latent = params['latent']
 
     main(args)
