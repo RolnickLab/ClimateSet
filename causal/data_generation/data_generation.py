@@ -84,7 +84,7 @@ class DataGeneratorWithLatent:
         """Sample matrices that are positive and orthogonal.
         They are the links between Z and X.
         Returns:
-            A tensor w (shape: d_x x d x k)
+            A tensor w (shape: d_x, d, k)
         """
         # assign d_xs uniformly to a cluster k
         cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
@@ -159,6 +159,7 @@ class DataGeneratorWithoutLatent:
         self.t = hp.num_timesteps
         self.d = hp.num_features
         self.d_x = hp.num_gridcells
+        self.world_dim = hp.world_dim
         self.tau = hp.timewindow
         self.tau_neigh = hp.neighborhood
         self.prob = hp.prob
@@ -169,20 +170,26 @@ class DataGeneratorWithoutLatent:
         self.num_hidden = hp.num_hidden
         self.non_linearity = hp.non_linearity
 
+        assert hp.world_dim <= 2 and hp.world_dim >= 1, "world_dim not supported"
+        self.num_neigh = (self.tau_neigh * 2 + 1) ** self.world_dim
+
     def save_data(self, path):
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
 
-    def sample_graph(self) -> torch.Tensor:
+    def sample_graph(self, diagonal=False) -> torch.Tensor:
         """
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
         Returns:
-            A Tensor of tau graphs (shape: tau x d x (tau_neigh x 2 + 1))
+            A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
         """
         # TODO: allow data with any number of dimension (1D, 2D, ...)
-        prob_tensor = torch.ones((self.tau, self.d, (self.tau_neigh * 2 + 1) * self.d)) * self.prob
-        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        prob_tensor = torch.ones((self.tau, self.d, self.num_neigh * self.d)) * self.prob
+
+        if diagonal:
+            # set diagonal to 1
+            prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
@@ -210,6 +217,7 @@ class DataGeneratorWithoutLatent:
         Returns:
             X, the data
         """
+        # initialize X and sample noise
         self.X = torch.zeros((self.t, self.d, self.d_x))
         noise = torch.normal(0, 1, size=self.X.size())
         self.X[:self.tau] = noise[:self.tau]
@@ -227,10 +235,13 @@ class DataGeneratorWithoutLatent:
                 upper_w = min(self.X.size(2), i + self.tau_neigh) - i + self.tau_neigh
 
                 if self.d_x == 1:
-                    w = self.weights[:, :, 0:self.d]
-                    x = self.X[t - self.tau:t, :, 0:self.d]
+                    w = self.weights[:, :, :self.d]
+                    x = self.X[t - self.tau:t, :, :self.d]
                 else:
                     w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
                     x = self.X[t - self.tau:t, :, lower_x:upper_x]
+
+                # w.size: (tau, d, d * (tau_neigh * 2 + 1))
+                # x.size: (tau, d, 1)
                 self.X[t, :, i] = torch.einsum("tij,tik->i", w, x) + self.noise_coeff * noise[t, :, i]
         return self.X

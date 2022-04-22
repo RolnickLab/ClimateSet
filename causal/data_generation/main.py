@@ -45,7 +45,7 @@ if __name__ == "__main__":
                         help="Path to experiments")
     parser.add_argument("--exp-id", type=int, default=0,
                         help="ID unique to the dataset")
-    parser.add_argument("--random-seed", type=int, default=2,
+    parser.add_argument("--random-seed", type=int, default=3,
                         help="Random seed used for torch and numpy")
 
     # Dataset properties
@@ -65,6 +65,10 @@ if __name__ == "__main__":
                         help="Probability of an edge in the causal graphs")
     parser.add_argument("--noise-coeff", type=float, default=1,
                         help="Coefficient for the additive noise")
+    parser.add_argument("--world-dim", type=float, default=1,
+                        help="Number of dimension for the gridcell (1D or 2D)")
+    parser.add_argument("--circular-padding", action="store_true",
+                        help="If true, pad gridcells in a circular fashion")
 
     parser.add_argument("--neighborhood", type=int, default=0,
                         help="'Radius' of neighboring gridcells that have an influence")
