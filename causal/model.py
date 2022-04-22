@@ -13,7 +13,8 @@ class CausalModel(nn.Module):
                  num_output: int,
                  d: int,
                  tau: int,
-                 tau_neigh: int):
+                 tau_neigh: int,
+                 hard_gumbel: bool):
         super().__init__()
         self.distribution_type = "normal"
         self.model_type = model_type
@@ -24,12 +25,13 @@ class CausalModel(nn.Module):
         self.d = d
         self.tau = tau
         self.tau_neigh = tau_neigh
+        self.hard_gumbel = hard_gumbel
 
         if model_type == "fixed":
             self.cond_models = nn.ModuleList(MLP(num_layers, num_hidden,
                                                  num_input, num_output) for i
                                              in range(self.d))
-            self.mask = Mask(d, tau_neigh, tau, drawhard=True)
+            self.mask = Mask(d, tau_neigh, tau, drawhard=hard_gumbel)
         elif model_type == "free":
             raise NotImplementedError
 
@@ -124,18 +126,22 @@ class MLP(nn.Module):
         module_dict = OrderedDict()
 
         # create model layer by layer
+        in_features = num_input
+        out_features = num_hidden
+        if num_layers == 0:
+            out_features = num_output
+
+        module_dict['lin0'] = nn.Linear(in_features, out_features)
+
         for layer in range(num_layers):
             in_features = num_hidden
             out_features = num_hidden
 
-            if layer == 0:
-                in_features = num_input
             if layer == num_layers - 1:
                 out_features = num_output
 
-            module_dict[f'lin{layer}'] = nn.Linear(in_features, out_features)
-            if layer != num_layers - 1:
-                module_dict[f'nonlin{layer}'] = nn.ReLU()
+            module_dict[f'nonlin{layer}'] = nn.ReLU()
+            module_dict[f'lin{layer+1}'] = nn.Linear(in_features, out_features)
 
         self.model = nn.Sequential(module_dict)
 

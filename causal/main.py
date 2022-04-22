@@ -42,15 +42,15 @@ def main(hp):
     # initialize model
     d = data_loader.x.shape[1]
 
-    # TODO: change args
-    model = CausalModel("fixed",
-                        hp.num_layers,
-                        hp.num_hidden,
-                        d * hp.tau * (hp.tau_neigh * 2 + 1),
-                        2,
-                        2,
-                        hp.tau,
-                        hp.tau_neigh
+    model = CausalModel(model_type="fixed",
+                        num_layers=hp.num_layers,
+                        num_hidden=hp.num_hidden,
+                        num_input=d * hp.tau * (hp.tau_neigh * 2 + 1),
+                        num_output=2,
+                        d=d,
+                        tau=hp.tau,
+                        tau_neigh=hp.tau_neigh,
+                        hard_gumbel=hp.hard_gumbel
                         )
 
     # create path to exp and save hyperparameters
@@ -95,14 +95,14 @@ if __name__ == "__main__":
                         help="Use the model that assumes latent variables")
     parser.add_argument("--tau", type=int, default=3,
                         help="Number of past timesteps to consider")
-    parser.add_argument("--tau-neigh", type=int, default=1,
+    parser.add_argument("--tau-neigh", type=int, default=0,
                         help="Radius of neighbor cells to consider")
 
     # Model hyperparameters: architecture
     parser.add_argument("--num-hidden", type=int, default=16,
                         help="Number of hidden units")
     # TODO: make it work for 0, linear case
-    parser.add_argument("--num-layers", type=int, default=1,
+    parser.add_argument("--num-layers", type=int, default=2,
                         help="number of hidden layers")
     parser.add_argument("--num-output", type=int, default=2,
                         help="number of output units")
@@ -110,12 +110,14 @@ if __name__ == "__main__":
     # Model hyperparameters: optimization
     parser.add_argument("--optimizer", type=str, default="rmsprop",
                         help="sgd|rmsprop")
-    parser.add_argument("--reg-coeff", type=float, default=1e-3,
+    parser.add_argument("--reg-coeff", type=float, default=5e-2,
                         help="Coefficient for the regularisation term")
     parser.add_argument("--lr", type=float, default=1e-3,
                         help="learning rate for optim")
     parser.add_argument("--random-seed", type=int, default=2,
                         help="Random seed for torch and numpy")
+    parser.add_argument("--hard-gumbel", action="store_true",
+                        help="If true, use the hard version when sampling the masks")
 
     # QPM options
     parser.add_argument("--omega-gamma", type=float, default=1e-4,
@@ -138,7 +140,7 @@ if __name__ == "__main__":
                         help="Patience used after the thresholding of the adjacency matrix")
 
     # logging
-    parser.add_argument("--plot-freq", type=int, default=1000,
+    parser.add_argument("--plot-freq", type=int, default=500,
                         help="Plotting frequency")
     parser.add_argument("--valid-freq", type=int, default=100,
                         help="Plotting frequency")
