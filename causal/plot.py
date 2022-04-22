@@ -57,7 +57,6 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str):
     fig = plt.figure(constrained_layout=True)
     fig.suptitle("Adjacency matrices: learned vs ground-truth")
 
-
     subfigs = fig.subfigures(nrows=3, ncols=1)
     for row, subfig in enumerate(subfigs):
         subfig.suptitle(f'{subfig_names[row]}')
