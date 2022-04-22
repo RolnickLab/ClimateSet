@@ -19,6 +19,7 @@ class DataGeneratorWithLatent:
         self.k = hp.num_clusters
         self.tau = hp.timewindow
         self.prob = hp.prob
+        self.noise_coeff = hp.noise_coeff
 
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
@@ -162,6 +163,7 @@ class DataGeneratorWithoutLatent:
         self.tau_neigh = hp.neighborhood
         self.prob = hp.prob
         self.eta = hp.eta
+        self.noise_coeff = hp.noise_coeff
 
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
@@ -180,13 +182,14 @@ class DataGeneratorWithoutLatent:
         """
         # TODO: allow data with any number of dimension (1D, 2D, ...)
         prob_tensor = torch.ones((self.tau, self.d, (self.tau_neigh * 2 + 1) * self.d)) * self.prob
-        # TODO: set diagonal to 1
+        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
         return G
 
-    def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta: float = 1):
+    def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta:
+                              float = 1) -> torch.Tensor:
         """Sample the coefficient of the linear relations
         :param lower: lower bound of uniform distr to sample from
         :param upper: upper bound of uniform distr
@@ -202,7 +205,7 @@ class DataGeneratorWithoutLatent:
 
         return weights
 
-    def generate(self):
+    def generate(self) -> torch.Tensor:
         """Main method to generate data
         Returns:
             X, the data
@@ -223,7 +226,11 @@ class DataGeneratorWithoutLatent:
                 lower_w = max(0, i - self.tau_neigh) - i + self.tau_neigh
                 upper_w = min(self.X.size(2), i + self.tau_neigh) - i + self.tau_neigh
 
-                w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
-                x = self.X[t - self.tau:t, :, lower_x:upper_x]
-                self.X[t, :, i] = torch.einsum("tij,tik->i", w, x) + noise[t, :, i]
+                if self.d_x == 1:
+                    w = self.weights[:, :, 0:self.d]
+                    x = self.X[t - self.tau:t, :, 0:self.d]
+                else:
+                    w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
+                    x = self.X[t - self.tau:t, :, lower_x:upper_x]
+                self.X[t, :, i] = torch.einsum("tij,tik->i", w, x) + self.noise_coeff * noise[t, :, i]
         return self.X
