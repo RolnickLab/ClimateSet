@@ -90,6 +90,9 @@ if __name__ == "__main__":
                         help="Path to experiments")
     parser.add_argument("--config-path", type=str, default="default_params.json",
                         help="Path to a json file with values for all hyperparamters")
+    parser.add_argument("--use-data-config", action="store_true",
+                        help="If true, overwrite some parameters to fit \
+                        parameters that have been used to generate data")
     parser.add_argument("--exp-id", type=int, default=0,
                         help="ID specific to the experiment")
     parser.add_argument("--data-path", type=str, default="dataset/data0",
@@ -179,6 +182,12 @@ if __name__ == "__main__":
             params = json.load(f)
         default_params.update(params)
         args = Bunch(**default_params)
+
+    if args.use_data_config != "":
+        with open(args.config_path, 'r') as f:
+            params = json.load(f)
+        args.tau = params.timewindow
+        args.tau_neigh = params.neighborhood
 
     # Create folder
     args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")

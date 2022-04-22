@@ -1,5 +1,6 @@
 import os
 import torch
+import json
 import torch.nn as nn
 import torch.distributions as distr
 import numpy as np
@@ -12,6 +13,7 @@ class DataGeneratorWithLatent:
     """
     # TODO: add instantenous relations
     def __init__(self, hp):
+        self.hp = hp
         self.n = hp.n
         self.t = hp.num_timesteps
         self.d = hp.num_features
@@ -29,6 +31,8 @@ class DataGeneratorWithLatent:
         assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
 
     def save_data(self, path):
+        with open(os.path.join(path, "data_params.json"), "w") as file:
+            json.dump(vars(self.hp), file, indent=4)
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
@@ -155,6 +159,7 @@ class DataGeneratorWithoutLatent:
     """
     # TODO: add instantenous relations
     def __init__(self, hp):
+        self.hp = hp
         self.n = hp.n
         self.t = hp.num_timesteps
         self.d = hp.num_features
@@ -174,6 +179,8 @@ class DataGeneratorWithoutLatent:
         self.num_neigh = (self.tau_neigh * 2 + 1) ** self.world_dim
 
     def save_data(self, path):
+        with open(os.path.join(path, "data_params.json"), "w") as file:
+            json.dump(vars(self.hp), file, indent=4)
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
 
