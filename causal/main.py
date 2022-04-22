@@ -8,6 +8,24 @@ from data_loader import DataLoader
 from train import Training
 
 
+class Bunch:
+    """
+    A class that has one variable for each entry of a dictionnary.
+    """
+
+    def __init__(self, **kwargs):
+        self.__dict__ = kwargs
+
+    def to_dict(self):
+        return self.__dict__
+
+    def fancy_print(self, prefix=''):
+        str_list = []
+        for key, val in self.__dict__.items():
+            str_list.append(prefix + f"{key} = {val}")
+        return '\n'.join(str_list)
+
+
 def main(hp):
     """
     :param hp: object containing hyperparameter values
@@ -32,12 +50,11 @@ def main(hp):
         hp.latent = False
 
     # generate data and split train/test
-    # TODO: add args
-    data_loader = DataLoader(hp.ratio_train,
-                             hp.ratio_valid,
-                             hp.data_path,
-                             hp.latent,
-                             hp.tau)
+    data_loader = DataLoader(ratio_train=hp.ratio_train,
+                             ratio_valid=hp.ratio_valid,
+                             data_path=hp.data_path,
+                             latent=hp.latent,
+                             tau=hp.tau)
 
     # initialize model
     d = data_loader.x.shape[1]
@@ -50,8 +67,7 @@ def main(hp):
                         d=d,
                         tau=hp.tau,
                         tau_neigh=hp.tau_neigh,
-                        hard_gumbel=hp.hard_gumbel
-                        )
+                        hard_gumbel=hp.hard_gumbel)
 
     # create path to exp and save hyperparameters
     save_path = os.path.join(hp.exp_path, "train")
@@ -72,6 +88,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--exp-path", type=str, default="causal_climate_exp",
                         help="Path to experiments")
+    parser.add_argument("--config-path", type=str, default="default_params.json",
+                        help="Path to a json file with values for all hyperparamters")
     parser.add_argument("--exp-id", type=int, default=0,
                         help="ID specific to the experiment")
     parser.add_argument("--data-path", type=str, default="dataset/data0",
@@ -91,6 +109,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=32,
                         help="Number of samples per minibatch")
 
+    # TODO: fit with data
     parser.add_argument("--latent", action="store_true",
                         help="Use the model that assumes latent variables")
     parser.add_argument("--tau", type=int, default=3,
@@ -101,8 +120,7 @@ if __name__ == "__main__":
     # Model hyperparameters: architecture
     parser.add_argument("--num-hidden", type=int, default=16,
                         help="Number of hidden units")
-    # TODO: make it work for 0, linear case
-    parser.add_argument("--num-layers", type=int, default=2,
+    parser.add_argument("--num-layers", type=int, default=1,
                         help="number of hidden layers")
     parser.add_argument("--num-output", type=int, default=2,
                         help="number of output units")
@@ -110,7 +128,7 @@ if __name__ == "__main__":
     # Model hyperparameters: optimization
     parser.add_argument("--optimizer", type=str, default="rmsprop",
                         help="sgd|rmsprop")
-    parser.add_argument("--reg-coeff", type=float, default=0,
+    parser.add_argument("--reg-coeff", type=float, default=1e-2,
                         help="Coefficient for the regularisation term")
     parser.add_argument("--lr", type=float, default=1e-3,
                         help="learning rate for optim")
@@ -126,7 +144,7 @@ if __name__ == "__main__":
                         help="After subproblem solved, h should have reduced by this ratio")
     parser.add_argument("--mu-init", type=float, default=1e-1,
                         help="initial value of mu")
-    parser.add_argument("--mu-mult-factor", type=float, default=1.5,
+    parser.add_argument("--mu-mult-factor", type=float, default=2,
                         help="Multiply mu by this amount when constraint not sufficiently decreasing")
     parser.add_argument("--h-threshold", type=float, default=1e-8,
                         help="Can stop if h smaller than h-threshold")
@@ -134,13 +152,13 @@ if __name__ == "__main__":
                         help="Minimal number of iteration before checking if has converged")
     parser.add_argument("--max-iteration", type=int, default=100000,
                         help="Maximal number of iteration before stopping")
-    parser.add_argument("--patience", type=int, default=1,
+    parser.add_argument("--patience", type=int, default=1000,
                         help="Patience used after the acyclicity constraint is respected")
     parser.add_argument("--patience-post-thresh", type=int, default=100,
                         help="Patience used after the thresholding of the adjacency matrix")
 
     # logging
-    parser.add_argument("--plot-freq", type=int, default=500,
+    parser.add_argument("--plot-freq", type=int, default=1000,
                         help="Plotting frequency")
     parser.add_argument("--valid-freq", type=int, default=100,
                         help="Plotting frequency")
@@ -152,6 +170,15 @@ if __name__ == "__main__":
     parser.add_argument("--float", action="store_true", help="Use Float precision")
 
     args = parser.parse_args()
+
+    # if a json file with params is given,
+    # update params accordingly
+    if args.config_path != "":
+        default_params = vars(args)
+        with open(args.config_path, 'r') as f:
+            params = json.load(f)
+        default_params.update(params)
+        args = Bunch(**default_params)
 
     # Create folder
     args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")
