@@ -80,7 +80,7 @@ def main(hp):
     trainer = Training(model, data_loader, hp)
     trainer.train_with_QPM()
 
-    # save final results?
+    # TODO: save final results?
 
 
 if __name__ == "__main__":
@@ -99,26 +99,18 @@ if __name__ == "__main__":
                         help="Path to the dataset")
 
     # Dataset properties
-    # parser.add_argument("--n", type=int, default=1000,
-    #                    help="Number of samples")
-    # parser.add_argument("--d", type=int, default=20,
-    #                    help="Number of features")
-    # parser.add_argument("--prob-connection", type=float, default=0.2,
-    #                    help="Probability of connection in the DAG")
-    parser.add_argument("--ratio-train", type=int, default=0.8,
-                        help="Proportion of the data used for the training set")
-    parser.add_argument("--ratio-valid", type=int, default=0.2,
-                        help="Proportion of the data used for the validation set")
-    parser.add_argument("--batch-size", type=int, default=32,
-                        help="Number of samples per minibatch")
-
-    # TODO: fit with data
     parser.add_argument("--latent", action="store_true",
                         help="Use the model that assumes latent variables")
     parser.add_argument("--tau", type=int, default=3,
                         help="Number of past timesteps to consider")
     parser.add_argument("--tau-neigh", type=int, default=0,
                         help="Radius of neighbor cells to consider")
+    parser.add_argument("--ratio-train", type=int, default=0.8,
+                        help="Proportion of the data used for the training set")
+    parser.add_argument("--ratio-valid", type=int, default=0.2,
+                        help="Proportion of the data used for the validation set")
+    parser.add_argument("--batch-size", type=int, default=32,
+                        help="Number of samples per minibatch")
 
     # Model hyperparameters: architecture
     parser.add_argument("--num-hidden", type=int, default=16,
@@ -188,8 +180,9 @@ if __name__ == "__main__":
             params = json.load(f)
         args.tau = params.timewindow
         args.tau_neigh = params.neighborhood
+        args.latent = params.latent
 
-    # Create folder
+    # Create folder and save hyperparameters
     args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")
     if not os.path.exists(args.exp_path):
         os.makedirs(args.exp_path)
