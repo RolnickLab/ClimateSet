@@ -210,12 +210,23 @@ class DataGeneratorWithoutLatent:
         :param eta: weight decay parameter, reduce the influences of variables
         that are farther back in time, should be >= 1
         """
-        sign = torch.ones_like(self.G) * 0.5
-        sign = torch.bernoulli(sign) * 2 - 1
-        weights = torch.empty_like(self.G).uniform_(lower, upper)
-        weights = sign * weights * self.G
-        weight_decay = 1 / torch.pow(eta, torch.arange(self.tau))
-        weights = weights * weight_decay.view(-1, 1, 1)
+        # TODO: remove, only for tests
+        if self.G.shape[1] == 2:
+            weights = torch.empty_like(self.G).uniform_(lower, upper)
+            # known periodic linear dynamical system
+            weights[0] = torch.tensor([[-3.06, 1.68],
+                                       [-4.20, 1.97]])
+            # weights[0] = torch.tensor([[-1.72, -3.91],
+            #                            [1.56, 2.97]])
+            self.G[0] = torch.tensor([[1, 1],
+                                     [1, 1]])
+        else:
+            sign = torch.ones_like(self.G) * 0.5
+            sign = torch.bernoulli(sign) * 2 - 1
+            weights = torch.empty_like(self.G).uniform_(lower, upper)
+            weights = sign * weights * self.G
+            weight_decay = 1 / torch.pow(eta, torch.arange(self.tau))
+            weights = weights * weight_decay.view(-1, 1, 1)
 
         return weights
 
@@ -234,6 +245,12 @@ class DataGeneratorWithoutLatent:
         self.weights = self.sample_linear_weights(eta=self.eta)
 
         for t in range(self.tau, self.t):
+            # if self.d_x == 1:
+            #     # TODO: only test
+            #     x = self.X[t-1, :, 0]
+            #     w = self.weights
+            #     self.X[t, :, 0] = w[0].T @ x  # torch.einsum("tij,tij->i", w, x)
+            # else:
             for i in range(self.d_x):
                 # TODO: could wrap around
                 lower_x = max(0, i - self.tau_neigh)

@@ -16,8 +16,9 @@ def main(hp):
         The observable data that has been generated
     """
     # Control as much randomness as possible
-    torch.manual_seed(hp.random_seed)
-    np.random.seed(hp.random_seed)
+    if hp.random_seed != 999:
+        torch.manual_seed(hp.random_seed)
+        np.random.seed(hp.random_seed)
 
     if hp.latent:
         generator = DataGeneratorWithLatent(args)
@@ -45,7 +46,7 @@ if __name__ == "__main__":
                         help="Path to experiments")
     parser.add_argument("--exp-id", type=int, default=0,
                         help="ID unique to the dataset")
-    parser.add_argument("--random-seed", type=int, default=3,
+    parser.add_argument("--random-seed", type=int, default=999,
                         help="Random seed used for torch and numpy")
 
     # Dataset properties
@@ -61,9 +62,9 @@ if __name__ == "__main__":
                         help="Number of gridcells")
     parser.add_argument("-k", "--num-clusters", type=int, default=3,
                         help="Number of clusters")
-    parser.add_argument("-p", "--prob", type=float, default=0.3,
+    parser.add_argument("-p", "--prob", type=float, default=0.4,
                         help="Probability of an edge in the causal graphs")
-    parser.add_argument("--noise-coeff", type=float, default=1,
+    parser.add_argument("--noise-coeff", type=float, default=0.2,
                         help="Coefficient for the additive noise")
     parser.add_argument("--world-dim", type=float, default=1,
                         help="Number of dimension for the gridcell (1D or 2D)")
@@ -72,7 +73,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--neighborhood", type=int, default=0,
                         help="'Radius' of neighboring gridcells that have an influence")
-    parser.add_argument("--timewindow", type=int, default=3,
+    parser.add_argument("--timewindow", type=int, default=1,
                         help="Number of previous timestep that interacts with a timestep t")
     parser.add_argument("--eta", type=int, default=1.5,
                         help="Weight decay applied to linear coefficients")
