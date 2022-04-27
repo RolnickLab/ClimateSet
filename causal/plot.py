@@ -57,22 +57,37 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str):
     fig = plt.figure(constrained_layout=True)
     fig.suptitle("Adjacency matrices: learned vs ground-truth")
 
-    subfigs = fig.subfigures(nrows=3, ncols=1)
-    for row, subfig in enumerate(subfigs):
-        subfig.suptitle(f'{subfig_names[row]}')
-
-        axes = subfig.subplots(nrows=1, ncols=tau)
-        for i in range(tau):
-            axes[i].set_title(f"t - {i+1}")
+    if tau == 1:
+        axes = fig.subplots(nrows=3, ncols=1)
+        for row in range(3):
+            # axes.set_title(f"t - {i+1}")
             if row == 0:
-                sns.heatmap(mat1[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat1[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
             elif row == 1:
-                sns.heatmap(mat2[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat2[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
             elif row == 2:
-                sns.heatmap(mat1[i] - mat2[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat1[0] - mat2[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
+
+    else:
+        subfigs = fig.subfigures(nrows=3, ncols=1)
+        for row, subfig in enumerate(subfigs):
+            subfig.suptitle(f'{subfig_names[row]}')
+
+            axes = subfig.subplots(nrows=1, ncols=tau)
+            for i in range(tau):
+                axes[i].set_title(f"t - {i+1}")
+                if row == 0:
+                    sns.heatmap(mat1[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                                cmap="Blues", xticklabels=False, yticklabels=False)
+                elif row == 1:
+                    sns.heatmap(mat2[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                                cmap="Blues", xticklabels=False, yticklabels=False)
+                elif row == 2:
+                    sns.heatmap(mat1[i] - mat2[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                                cmap="Blues", xticklabels=False, yticklabels=False)
 
     plt.savefig(os.path.join(path, 'adjacency.png'))
     plt.close()

@@ -12,13 +12,18 @@ def plot_adjacency_graphs(g: np.ndarray, path: str):
         path: path where to save the generated figure
     """
     tau = g.shape[0]
-    _, axes = plt.subplots(ncols=tau, nrows=1)
-
-    for i in range(tau):
-        sns.heatmap(g[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+    if tau == 1:
+        _, axes = plt.subplots(ncols=1, nrows=1)
+        sns.heatmap(g[0], ax=axes, cbar=False, vmin=-1, vmax=1,
                     cmap="Blues", xticklabels=False, yticklabels=False)
-        axes[i].set_title(f"G_T - {i}")
-        axes[i].set_aspect('equal', adjustable='box')
+    else:
+        _, axes = plt.subplots(ncols=tau, nrows=1)
+
+        for i in range(tau):
+            sns.heatmap(g[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                        cmap="Blues", xticklabels=False, yticklabels=False)
+            axes[i].set_title(f"G_T - {i}")
+            axes[i].set_aspect('equal', adjustable='box')
 
     plt.savefig(os.path.join(path, 'adjacencies.png'))
     plt.close()
@@ -44,7 +49,7 @@ def plot_adjacency_w(w: np.ndarray, path: str):
     plt.close()
 
 
-def plot_x(x: np.ndarray, path: str, t: int = 1000):
+def plot_x(x: np.ndarray, path: str, t: int = 500):
     """Plot the timeseries data X from 0 to t.
     Generate a figure for each feature.
 
@@ -72,7 +77,7 @@ def plot_x(x: np.ndarray, path: str, t: int = 1000):
         plt.close()
 
 
-def plot_z(z: np.ndarray, path: str, t: int = 1000):
+def plot_z(z: np.ndarray, path: str, t: int = 500):
     """Plot the timeseries data Z (which are latent) from 0 to t.
     Generate a figure for each feature.
 
