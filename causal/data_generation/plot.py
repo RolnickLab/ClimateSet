@@ -54,12 +54,13 @@ def plot_x(x: np.ndarray, path: str, t: int = 500):
     Generate a figure for each feature.
 
     Args:
-        x: an array containing the data X (shape: t x d x d_x)
+        x: an array containing the data X (shape: n x t x d x d_x)
         path: path where to save the generated figure
         t: last timestep to include
     """
-    d = x.shape[1]
-    d_x = x.shape[2]
+    d = x.shape[2]
+    d_x = x.shape[3]
+    i_n = 0
 
     # if the timeserie is too short, plot it entirely
     if t > x.shape[0]:
@@ -69,10 +70,10 @@ def plot_x(x: np.ndarray, path: str, t: int = 500):
         _, axes = plt.subplots(nrows=d_x, ncols=1)
         if d_x == 1:
             # specific case when there is only one gridcell
-            axes.plot(x[:t, i, 0])
+            axes.plot(x[i_n, :t, i, 0])
         else:
             for i_x in range(d_x):
-                axes[i_x].plot(x[:t, i, i_x])
+                axes[i_x].plot(x[i_n, :t, i, i_x])
         plt.savefig(os.path.join(path, f'x_{i}.png'))
         plt.close()
 

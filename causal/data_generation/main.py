@@ -54,7 +54,7 @@ if __name__ == "__main__":
                         help="Use generative model with latents")
     parser.add_argument("--n", type=int, default=1,
                         help="Number of time-series")
-    parser.add_argument("-t", "--num-timesteps", type=int, default=10000,
+    parser.add_argument("-t", "--num-timesteps", type=int, default=1000,
                         help="Number of timesteps in total")
     parser.add_argument("-d", "--num-features", type=int, default=4,
                         help="Number of features")

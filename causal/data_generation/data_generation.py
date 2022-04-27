@@ -235,37 +235,39 @@ class DataGeneratorWithoutLatent:
         Returns:
             X, the data
         """
-        # initialize X and sample noise
-        self.X = torch.zeros((self.t, self.d, self.d_x))
-        noise = torch.normal(0, 1, size=self.X.size())
-        self.X[:self.tau] = noise[:self.tau]
-
         # sample graphs and weights
         self.G = self.sample_graph()
         self.weights = self.sample_linear_weights(eta=self.eta)
+        self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
-        for t in range(self.tau, self.t):
-            # if self.d_x == 1:
-            #     # TODO: only test
-            #     x = self.X[t-1, :, 0]
-            #     w = self.weights
-            #     self.X[t, :, 0] = w[0].T @ x  # torch.einsum("tij,tij->i", w, x)
-            # else:
-            for i in range(self.d_x):
-                # TODO: could wrap around
-                lower_x = max(0, i - self.tau_neigh)
-                upper_x = min(self.X.size(2), i + self.tau_neigh)
-                lower_w = max(0, i - self.tau_neigh) - i + self.tau_neigh
-                upper_w = min(self.X.size(2), i + self.tau_neigh) - i + self.tau_neigh
+        for i_n in range(self.n):
+            # initialize X and sample noise
+            noise = torch.normal(0, 1, size=self.X.size())
+            self.X[i_n, :self.tau] = noise[i_n, :self.tau]
 
-                if self.d_x == 1:
-                    w = self.weights[:, :, :self.d]
-                    x = self.X[t - self.tau:t, :, :self.d]
-                else:
-                    w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
-                    x = self.X[t - self.tau:t, :, lower_x:upper_x]
+            for t in range(self.tau, self.t):
+                # if self.d_x == 1:
+                #     # TODO: only test
+                #     x = self.X[t-1, :, 0]
+                #     w = self.weights
+                #     self.X[t, :, 0] = w[0].T @ x  # torch.einsum("tij,tij->i", w, x)
+                # else:
+                for i in range(self.d_x):
+                    # TODO: could wrap around
+                    lower_x = max(0, i - self.tau_neigh)
+                    upper_x = min(self.X.size(2), i + self.tau_neigh)
+                    lower_w = max(0, i - self.tau_neigh) - i + self.tau_neigh
+                    upper_w = min(self.X.size(2), i + self.tau_neigh) - i + self.tau_neigh
 
-                # w.size: (tau, d, d * (tau_neigh * 2 + 1))
-                # x.size: (tau, d, 1)
-                self.X[t, :, i] = torch.einsum("tij,tik->i", w, x) + self.noise_coeff * noise[t, :, i]
+                    if self.d_x == 1:
+                        w = self.weights[:, :, :self.d]
+                        x = self.X[i_n, t - self.tau:t, :, :self.d]
+                    else:
+                        w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
+                        x = self.X[i_n, t - self.tau:t, :, lower_x:upper_x]
+
+                    # w.size: (tau, d, d * (tau_neigh * 2 + 1))
+                    # x.size: (tau, d, 1)
+                    self.X[i_n, t, :, i] = torch.einsum("tij,tik->i", w, x) + self.noise_coeff * noise[0, t, :, i]
+
         return self.X
