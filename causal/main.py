@@ -59,7 +59,7 @@ def main(hp):
                              tau=hp.tau)
 
     # initialize model
-    d = data_loader.x.shape[1]
+    d = data_loader.x.shape[2]
 
     model = CausalModel(model_type="fixed",
                         num_layers=hp.num_layers,

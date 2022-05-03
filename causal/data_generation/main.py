@@ -52,11 +52,11 @@ if __name__ == "__main__":
     # Dataset properties
     parser.add_argument("--latent", action="store_true",
                         help="Use generative model with latents")
-    parser.add_argument("--n", type=int, default=1,
+    parser.add_argument("--n", type=int, default=500,
                         help="Number of time-series")
-    parser.add_argument("-t", "--num-timesteps", type=int, default=1000,
+    parser.add_argument("-t", "--num-timesteps", type=int, default=3,
                         help="Number of timesteps in total")
-    parser.add_argument("-d", "--num-features", type=int, default=4,
+    parser.add_argument("-d", "--num-features", type=int, default=2,
                         help="Number of features")
     parser.add_argument("-g", "--num-gridcells", type=int, default=1,
                         help="Number of gridcells")

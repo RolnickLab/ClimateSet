@@ -15,7 +15,7 @@ class Training:
         self.thresholded = False
         self.ended = False
         self.mu = hp.mu_init
-        self.d = data.x.shape[1]
+        self.d = data.x.shape[2]
         self.patience = hp.patience
         self.best_valid_loss = np.inf
         self.batch_size = hp.batch_size

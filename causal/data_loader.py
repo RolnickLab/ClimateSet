@@ -5,7 +5,6 @@ from typing import Tuple
 
 
 class DataLoader:
-    # TODO: adapt if have multiple timeseries
     # TODO: adapt for interventions
     def __init__(self,
                  ratio_train: float,
@@ -25,8 +24,9 @@ class DataLoader:
 
         # Load and split the data
         self._load_data()
-        self.d = self.x.shape[1]
-        self.d_x = self.x.shape[2]
+        self.n = self.x.shape[0]
+        self.d = self.x.shape[2]
+        self.d_x = self.x.shape[3]
         self._split_data()
 
     def _load_data(self):
@@ -39,24 +39,42 @@ class DataLoader:
             self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
 
     def _split_data(self):
-        n = self.x.shape[0]
-        n_train = int(n * self.ratio_train)
-        n_valid = int(n * self.ratio_valid)
-        self.idx_train = np.arange(n_train)
-        self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
-        self.x_train = self.x[self.idx_train]
-        self.x_valid = self.x[self.idx_valid]
+        t_max = self.x.shape[1]
+
+        # TODO: be more general
+        if self.n == 1:
+            n_train = int(t_max * self.ratio_train)
+            n_valid = int(t_max * self.ratio_valid)
+            self.idx_train = np.arange(n_train)
+            self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
+            self.x_train = self.x[:, self.idx_train]
+            self.x_valid = self.x[:, self.idx_valid]
+        else:
+            n_train = int(self.n * self.ratio_train)
+            n_valid = int(self.n * self.ratio_valid)
+            self.idx_train = np.arange(n_train)
+            self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
+            np.random.shuffle(self.idx_train)
+            np.random.shuffle(self.idx_valid)
+            self.x_train = self.x[self.idx_train]
+            self.x_valid = self.x[self.idx_valid]
 
     def _sample(self, dataset: torch.Tensor, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
         if dataset.shape[0] <= 0:
             __import__('ipdb').set_trace()
-        random_idx = np.random.choice(np.arange(self.tau, dataset.shape[0]), replace=False, size=batch_size)
         x = np.zeros((batch_size, self.tau, self.d, self.d_x))
         y = np.zeros((batch_size, self.d, self.d_x))
 
-        for i, idx in enumerate(random_idx):
-            x[i] = dataset[idx - self.tau:idx]
-            y[i] = dataset[idx]
+        if self.n == 1:
+            random_idx = np.random.choice(np.arange(self.tau, dataset.shape[1]), replace=False, size=batch_size)
+            for i, idx in enumerate(random_idx):
+                x[i] = dataset[0, idx - self.tau:idx]
+                y[i] = dataset[0, idx]
+        else:
+            random_idx = np.random.choice(np.arange(dataset.shape[0]), replace=False, size=batch_size)
+            for i, idx in enumerate(random_idx):
+                x[i] = dataset[idx, 0:self.tau]
+                y[i] = dataset[idx, self.tau]
         return torch.tensor(x), torch.tensor(y)
 
     def sample_train(self, batch_size: int) -> torch.Tensor:

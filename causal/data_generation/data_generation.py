@@ -15,11 +15,16 @@ class DataGeneratorWithLatent:
     def __init__(self, hp):
         self.hp = hp
         self.n = hp.n
-        self.t = hp.num_timesteps
         self.d = hp.num_features
         self.d_x = hp.num_gridcells
-        self.k = hp.num_clusters
         self.tau = hp.timewindow
+
+        if self.n > 1:
+            self.t = self.tau + 1
+        else:
+            self.t = hp.num_timesteps
+
+        self.k = hp.num_clusters
         self.prob = hp.prob
         self.noise_coeff = hp.noise_coeff
 
