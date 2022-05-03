@@ -264,9 +264,9 @@ class DataGeneratorWithoutLatent:
                 for i in range(self.d_x):
                     # TODO: should add wrap around
                     lower_x = max(0, i - self.tau_neigh)
-                    upper_x = min(self.X.size(-1), i + self.tau_neigh)
-                    lower_w = max(0, i - self.tau_neigh) - i + self.tau_neigh
-                    upper_w = min(self.X.size(-1), i + self.tau_neigh) - i + self.tau_neigh
+                    upper_x = min(self.X.size(-1) - 1, i + self.tau_neigh) + 1
+                    lower_w = max(0, i - self.tau_neigh) - (i - self.tau_neigh)
+                    upper_w = min(self.X.size(-1) - 1, i + self.tau_neigh) - i + self.tau_neigh + 1
 
                     if self.d_x == 1:
                         w = self.weights[:, :, :self.d]

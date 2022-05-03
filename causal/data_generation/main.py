@@ -58,7 +58,7 @@ if __name__ == "__main__":
                         help="Number of timesteps in total")
     parser.add_argument("-d", "--num-features", type=int, default=2,
                         help="Number of features")
-    parser.add_argument("-g", "--num-gridcells", type=int, default=30,
+    parser.add_argument("-g", "--num-gridcells", type=int, default=10,
                         help="Number of gridcells")
     parser.add_argument("-k", "--num-clusters", type=int, default=3,
                         help="Number of clusters")
