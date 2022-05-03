@@ -52,9 +52,9 @@ if __name__ == "__main__":
     # Dataset properties
     parser.add_argument("--latent", action="store_true",
                         help="Use generative model with latents")
-    parser.add_argument("--n", type=int, default=500,
-                        help="Number of time-series")
-    parser.add_argument("-t", "--num-timesteps", type=int, default=3,
+    parser.add_argument("--n", type=int, default=1,
+                        help="Number of time-series")  # J: What to do you mean by that?
+    parser.add_argument("-t", "--num-timesteps", type=int, default=10000,
                         help="Number of timesteps in total")
     parser.add_argument("-d", "--num-features", type=int, default=2,
                         help="Number of features")
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("--noise-coeff", type=float, default=0.2,
                         help="Coefficient for the additive noise")
     parser.add_argument("--world-dim", type=float, default=1,
-                        help="Number of dimension for the gridcell (1D or 2D)")
+                        help="Number of dimension for the gridcell (1D or 2D)")  # J: Can we also do 3d?
     parser.add_argument("--circular-padding", action="store_true",
                         help="If true, pad gridcells in a circular fashion")
 
