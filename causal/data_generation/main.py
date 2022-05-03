@@ -58,20 +58,20 @@ if __name__ == "__main__":
                         help="Number of timesteps in total")
     parser.add_argument("-d", "--num-features", type=int, default=2,
                         help="Number of features")
-    parser.add_argument("-g", "--num-gridcells", type=int, default=1,
+    parser.add_argument("-g", "--num-gridcells", type=int, default=30,
                         help="Number of gridcells")
     parser.add_argument("-k", "--num-clusters", type=int, default=3,
                         help="Number of clusters")
-    parser.add_argument("-p", "--prob", type=float, default=0.4,
+    parser.add_argument("-p", "--prob", type=float, default=0.9,
                         help="Probability of an edge in the causal graphs")
-    parser.add_argument("--noise-coeff", type=float, default=0.2,
+    parser.add_argument("--noise-coeff", type=float, default=1,
                         help="Coefficient for the additive noise")
     parser.add_argument("--world-dim", type=float, default=1,
                         help="Number of dimension for the gridcell (1D or 2D)")  # J: Can we also do 3d?
     parser.add_argument("--circular-padding", action="store_true",
                         help="If true, pad gridcells in a circular fashion")
 
-    parser.add_argument("--neighborhood", type=int, default=0,
+    parser.add_argument("--neighborhood", type=int, default=1,
                         help="'Radius' of neighboring gridcells that have an influence")
     parser.add_argument("--timewindow", type=int, default=1,
                         help="Number of previous timestep that interacts with a timestep t")

@@ -63,8 +63,8 @@ def plot_x(x: np.ndarray, path: str, t: int = 500):
     i_n = 0
 
     # if the timeserie is too short, plot it entirely
-    if t > x.shape[0]:
-        t = x.shape[0]
+    if t > x.shape[1]:
+        t = x.shape[1]
 
     for i in range(d):
         _, axes = plt.subplots(nrows=d_x, ncols=1)

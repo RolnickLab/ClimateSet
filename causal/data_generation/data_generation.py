@@ -166,7 +166,6 @@ class DataGeneratorWithoutLatent:
     def __init__(self, hp):
         self.hp = hp
         self.n = hp.n
-        self.t = hp.num_timesteps
         self.d = hp.num_features
         self.d_x = hp.num_gridcells
         self.world_dim = hp.world_dim
@@ -175,6 +174,11 @@ class DataGeneratorWithoutLatent:
         self.prob = hp.prob
         self.eta = hp.eta
         self.noise_coeff = hp.noise_coeff
+
+        if self.n > 1:
+            self.t = self.tau + 1
+        else:
+            self.t = hp.num_timesteps
 
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
@@ -216,29 +220,29 @@ class DataGeneratorWithoutLatent:
         that are farther back in time, should be >= 1
         """
         # TODO: remove, only for tests
-        if self.G.shape[1] == 2:
-            weights = torch.empty_like(self.G).uniform_(lower, upper)
-            # known periodic linear dynamical system
-            weights[0] = torch.tensor([[-3.06, 1.68],
-                                       [-4.20, 1.97]])
-            # weights[0] = torch.tensor([[-1.72, -3.91],
-            #                            [1.56, 2.97]])
-            self.G[0] = torch.tensor([[1, 1],
-                                     [1, 1]])
-        else:
-            sign = torch.ones_like(self.G) * 0.5
-            sign = torch.bernoulli(sign) * 2 - 1
-            weights = torch.empty_like(self.G).uniform_(lower, upper)
-            weights = sign * weights * self.G
-            weight_decay = 1 / torch.pow(eta, torch.arange(self.tau))
-            weights = weights * weight_decay.view(-1, 1, 1)
+        # if self.G.shape[1] == 2:
+        #     weights = torch.empty_like(self.G).uniform_(lower, upper)
+        #     # known periodic linear dynamical system
+        #     weights[0] = torch.tensor([[-3.06, 1.68],
+        #                                [-4.20, 1.97]])
+        #     # weights[0] = torch.tensor([[-1.72, -3.91],
+        #     #                            [1.56, 2.97]])
+        #     self.G[0] = torch.tensor([[1, 1],
+        #                              [1, 1]])
+        # else:
+        sign = torch.ones_like(self.G) * 0.5
+        sign = torch.bernoulli(sign) * 2 - 1
+        weights = torch.empty_like(self.G).uniform_(lower, upper)
+        weights = sign * weights * self.G
+        weight_decay = 1 / torch.pow(eta, torch.arange(self.tau))
+        weights = weights * weight_decay.view(-1, 1, 1)
 
         return weights
 
     def generate(self) -> torch.Tensor:
         """Main method to generate data
         Returns:
-            X, the data
+            X, the data, size: (n, t, d, d_x)
         """
         # sample graphs and weights
         self.G = self.sample_graph()
@@ -258,21 +262,24 @@ class DataGeneratorWithoutLatent:
                 #     self.X[t, :, 0] = w[0].T @ x  # torch.einsum("tij,tij->i", w, x)
                 # else:
                 for i in range(self.d_x):
-                    # TODO: could wrap around
+                    # TODO: should add wrap around
                     lower_x = max(0, i - self.tau_neigh)
-                    upper_x = min(self.X.size(2), i + self.tau_neigh)
+                    upper_x = min(self.X.size(-1), i + self.tau_neigh)
                     lower_w = max(0, i - self.tau_neigh) - i + self.tau_neigh
-                    upper_w = min(self.X.size(2), i + self.tau_neigh) - i + self.tau_neigh
+                    upper_w = min(self.X.size(-1), i + self.tau_neigh) - i + self.tau_neigh
 
                     if self.d_x == 1:
                         w = self.weights[:, :, :self.d]
-                        x = self.X[i_n, t - self.tau:t, :, :self.d]
+                        x = self.X[i_n, t - self.tau:t, :, :self.d].reshape(self.tau, -1)
                     else:
                         w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
-                        x = self.X[i_n, t - self.tau:t, :, lower_x:upper_x]
+                        x = self.X[i_n, t - self.tau:t, :, lower_x:upper_x].reshape(self.tau, -1)
 
                     # w.size: (tau, d, d * (tau_neigh * 2 + 1))
-                    # x.size: (tau, d, 1)
-                    self.X[i_n, t, :, i] = torch.einsum("tij,tik->i", w, x) + self.noise_coeff * noise[0, t, :, i]
+                    # x.size: (tau, d * (tau_neigh * 2 + 1))
+                    # print(w.size())
+                    # print(x.size())
+                    # __import__('ipdb').set_trace()
+                    self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[0, t, :, i]
 
         return self.X
