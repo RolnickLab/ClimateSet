@@ -69,6 +69,7 @@ class CausalModel(nn.Module):
                 elif upper_padding > 0:
                     zeros = torch.zeros((b, x.shape[1], x.shape[2], upper_padding))
                     x_ = torch.cat((x_, zeros), dim=-1)
+                # __import__('ipdb').set_trace()
                 y_hat[:, i, i_cell] = self.cond_models[i]((x_ * mask[:, :, i]).view(b, -1))
         return y_hat
 

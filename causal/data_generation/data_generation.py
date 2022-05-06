@@ -280,6 +280,6 @@ class DataGeneratorWithoutLatent:
                     # print(w.size())
                     # print(x.size())
                     # __import__('ipdb').set_trace()
-                    self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[0, t, :, i]
+                    self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[i_n, t, :, i]
 
         return self.X
