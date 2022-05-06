@@ -13,6 +13,8 @@ class DataGeneratorWithLatent:
     """
     # TODO: add instantenous relations
     def __init__(self, hp):
+        if hp.instantaneous:
+            raise NotImplementedError("Instantaneous connections not implemented yet")
         self.hp = hp
         self.n = hp.n
         self.d = hp.num_features
@@ -162,7 +164,6 @@ class DataGeneratorWithoutLatent:
     """
     Code use to generate synthetic data without latent variables
     """
-    # TODO: add instantenous relations
     def __init__(self, hp):
         self.hp = hp
         self.n = hp.n
@@ -174,6 +175,7 @@ class DataGeneratorWithoutLatent:
         self.prob = hp.prob
         self.eta = hp.eta
         self.noise_coeff = hp.noise_coeff
+        self.instantaneous = hp.instantaneous
 
         if self.n > 1:
             self.t = self.tau + 1
@@ -209,6 +211,27 @@ class DataGeneratorWithoutLatent:
 
         G = torch.bernoulli(prob_tensor)
 
+        if self.instantaneous:
+            dag = self.sample_dag()
+            G = torch.cat((dag, G), dim=0)
+
+        return G
+
+    def sample_dag(self) -> torch.Tensor:
+        """
+        Sample a random DAG that will be used as an adjacency matrix
+        for instantaneous connections
+        Returns:
+            A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
+        """
+        prob_tensor = torch.ones((1, self.d, self.num_neigh * self.d)) * self.prob
+        # set all elements on and above the diagonal as 0
+        prob_tensor = torch.tril(prob_tensor, diagonal=-1)
+
+        G = torch.bernoulli(prob_tensor)
+
+        # TODO: add permutation
+
         return G
 
     def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta:
@@ -219,7 +242,6 @@ class DataGeneratorWithoutLatent:
         :param eta: weight decay parameter, reduce the influences of variables
         that are farther back in time, should be >= 1
         """
-        # TODO: remove, only for tests
         # if self.G.shape[1] == 2:
         #     weights = torch.empty_like(self.G).uniform_(lower, upper)
         #     # known periodic linear dynamical system
@@ -234,7 +256,9 @@ class DataGeneratorWithoutLatent:
         sign = torch.bernoulli(sign) * 2 - 1
         weights = torch.empty_like(self.G).uniform_(lower, upper)
         weights = sign * weights * self.G
-        weight_decay = 1 / torch.pow(eta, torch.arange(self.tau))
+
+        # apply weight decay (graphs further in time have smaller weights)
+        weight_decay = 1 / torch.pow(eta, torch.arange(self.G.size(0)))
         weights = weights * weight_decay.view(-1, 1, 1)
 
         return weights
@@ -245,9 +269,9 @@ class DataGeneratorWithoutLatent:
             X, the data, size: (n, t, d, d_x)
         """
         # sample graphs and weights
+        self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
         self.G = self.sample_graph()
         self.weights = self.sample_linear_weights(eta=self.eta)
-        self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
         for i_n in range(self.n):
             # initialize X and sample noise
@@ -261,6 +285,11 @@ class DataGeneratorWithoutLatent:
                 #     w = self.weights
                 #     self.X[t, :, 0] = w[0].T @ x  # torch.einsum("tij,tij->i", w, x)
                 # else:
+                if self.instantaneous:
+                    t1 = 1
+                else:
+                    t1 = 0
+
                 for i in range(self.d_x):
                     # TODO: should add wrap around
                     lower_x = max(0, i - self.tau_neigh)
@@ -270,16 +299,15 @@ class DataGeneratorWithoutLatent:
 
                     if self.d_x == 1:
                         w = self.weights[:, :, :self.d]
-                        x = self.X[i_n, t - self.tau:t, :, :self.d].reshape(self.tau, -1)
+                        x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
                     else:
                         w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
-                        x = self.X[i_n, t - self.tau:t, :, lower_x:upper_x].reshape(self.tau, -1)
+                        x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
 
                     # w.size: (tau, d, d * (tau_neigh * 2 + 1))
                     # x.size: (tau, d * (tau_neigh * 2 + 1))
                     # print(w.size())
                     # print(x.size())
-                    # __import__('ipdb').set_trace()
                     self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[i_n, t, :, i]
 
         return self.X

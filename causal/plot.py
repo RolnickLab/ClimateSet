@@ -36,7 +36,8 @@ def plot_learning_curves(train_loss: list, valid_loss: list, path: str):
     v_loss = moving_average(valid_loss[10:])
 
     ax = plt.gca()
-    ax.set_ylim([0, 5])
+    # ax.set_ylim([0, 5])
+    ax.set_yscale("log")
     plt.plot(t_loss, label="train")
     plt.plot(v_loss, label="valid")
     plt.title("Learning curves")

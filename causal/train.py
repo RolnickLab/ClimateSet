@@ -22,6 +22,7 @@ class Training:
         self.tau = hp.tau
         self.tau_neigh = hp.tau_neigh
         self.qpm_freq = 1000
+        self.patience_freq = 1000
 
         # TODO: put as arguments
         self.train_h_list = []
@@ -97,15 +98,16 @@ class Training:
                     self.QPM(self.iteration, self.valid_loss, self.valid_h)
             else:
                 # continue training without penalty method
-                if not self.thresholded:
+                if not self.thresholded and self.iteration % self.patience_freq == 0:
                     if not self.has_patience(self.hp.patience, self.valid_loss):
                         self.threshold()
                         self.patience = self.hp.patience_post_thresh
                         self.best_valid_loss = np.inf
                 # continue training after thresholding
                 else:
-                    if not self.has_patience(self.hp.patience_post_thresh, self.valid_loss):
-                        self.ended = True
+                    if self.iteration % self.patience_freq == 0:
+                        if not self.has_patience(self.hp.patience_post_thresh, self.valid_loss):
+                            self.ended = True
 
             # Utilities: log, plot and save results
             if self.iteration % self.hp.plot_freq == 0:
@@ -143,6 +145,7 @@ class Training:
             if valid_loss < self.best_valid_loss:
                 self.best_valid_loss = valid_loss
                 self.patience = patience_init
+                print(f"Best valid loss: {self.best_valid_loss}")
             else:
                 self.patience -= 1
             return True

@@ -52,6 +52,8 @@ if __name__ == "__main__":
     # Dataset properties
     parser.add_argument("--latent", action="store_true",
                         help="Use generative model with latents")
+    parser.add_argument("--instantaneous", action="store_true",
+                        help="Use instantaneous connection when generating data")
     parser.add_argument("--n", type=int, default=1000,
                         help="Number of time series")
     parser.add_argument("-t", "--num-timesteps", type=int, default=10000,
