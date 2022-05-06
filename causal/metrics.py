@@ -12,7 +12,6 @@ def edge_errors(pred: np.ndarray, target: np.ndarray) -> dict:
     Returns:
         tp, tn, fp, fn, fp_rev, fn_rev, rev
     """
-    total_edges = (target).sum()
     tp = ((pred == 1) & (pred == target)).sum()
     tn = ((pred == 0) & (pred == target)).sum()
 

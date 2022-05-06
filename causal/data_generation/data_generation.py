@@ -237,10 +237,13 @@ class DataGeneratorWithoutLatent:
     def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta:
                               float = 1) -> torch.Tensor:
         """Sample the coefficient of the linear relations
-        :param lower: lower bound of uniform distr to sample from
-        :param upper: upper bound of uniform distr
-        :param eta: weight decay parameter, reduce the influences of variables
-        that are farther back in time, should be >= 1
+        Args:
+            lower: lower bound of uniform distr to sample from
+            upper: upper bound of uniform distr
+            eta: weight decay parameter, reduce the influences of variables
+            that are farther back in time, should be >= 1
+        Returns:
+            tensor of coefficients for linear functions
         """
         # if self.G.shape[1] == 2:
         #     weights = torch.empty_like(self.G).uniform_(lower, upper)
