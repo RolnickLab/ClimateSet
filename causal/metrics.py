@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def edge_errors(pred: np.ndarray, target: np.ndarray):
+def edge_errors(pred: np.ndarray, target: np.ndarray) -> dict:
     """
     Counts all types of sensitivity/specificity metrics (true positive (tp),
     true negative (tn), false negatives (fn), false positives (fp), reversed edges (rev))
@@ -18,17 +18,19 @@ def edge_errors(pred: np.ndarray, target: np.ndarray):
 
     # errors
     diff = target - pred
-    rev = (((diff + diff.transpose()) == 0) & (diff != 0)).sum() / 2
+    diff_t = np.swapaxes(diff, 1, 2)
+    rev = (((diff + diff_t) == 0) & (diff != 0)).sum() / 2
     # Each reversed edge necessarily leads to one fp and one fn so we need to subtract those
     fn = (diff == 1).sum()
     fp = (diff == -1).sum()
     fn_rev = fn - rev
     fp_rev = fp - rev
 
-    return tp, tn, fp, fn, fp_rev, fn_rev, rev
+    return {"tp": float(tp), "tn": float(tn), "fp": float(fp), "fn": float(fn),
+            "fp_rev": float(fp_rev), "fn_rev": float(fn_rev), "rev": float(rev)}
 
 
-def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False):
+def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False) -> float:
     """
     Calculates the Structural Hamming Distance (SHD)
 
@@ -39,14 +41,15 @@ def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False):
     Returns: shd
     """
     if rev_as_double:
-        _, _, fp, fn, _, _, _ = edge_errors(pred, target)
-        rev = 0
+        m = edge_errors(pred, target)
+        m["rev"] = 0
     else:
-        _, _, _, _, fp, fn, rev = edge_errors(pred, target)
-    return sum([fp, fn, rev])
+        m = edge_errors(pred, target)
+    shd = sum([m["fp"], m["fn"], m["rev"]])
+    return float(shd)
 
 
-def f1_score(pred: np.ndarray, target: np.ndarray):
+def f1_score(pred: np.ndarray, target: np.ndarray) -> float:
     """
     Calculates the F1 score, ie the harmonic mean of
     the precision and recall.
@@ -56,9 +59,9 @@ def f1_score(pred: np.ndarray, target: np.ndarray):
         target: The true adjacency matrix
     Returns: f1_score
     """
-    tp, _, fp, fn, _, _, _ = edge_errors(pred, target)
-    f1_score = tp / (tp + 0.5 * (fp + fn))
-    return f1_score
+    m = edge_errors(pred, target)
+    f1_score = m["tp"] / (m["tp"] + 0.5 * (m["fp"] + m["fn"]))
+    return float(f1_score)
 
 
 if __name__ == "__main__":
