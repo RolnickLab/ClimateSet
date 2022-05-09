@@ -57,19 +57,26 @@ def main(hp):
                              ratio_valid=hp.ratio_valid,
                              data_path=hp.data_path,
                              latent=hp.latent,
+                             instantaneous=hp.instantaneous,
                              tau=hp.tau)
 
     # initialize model
     d = data_loader.x.shape[2]
 
+    if hp.instantaneous:
+        num_input = d * (hp.tau + 1) * (hp.tau_neigh * 2 + 1)
+    else:
+        num_input = d * hp.tau * (hp.tau_neigh * 2 + 1)
+
     model = CausalModel(model_type="fixed",
                         num_layers=hp.num_layers,
                         num_hidden=hp.num_hidden,
-                        num_input=d * hp.tau * (hp.tau_neigh * 2 + 1),
+                        num_input=num_input,
                         num_output=2,
                         d=d,
                         tau=hp.tau,
                         tau_neigh=hp.tau_neigh,
+                        instantaneous=hp.instantaneous,
                         hard_gumbel=hp.hard_gumbel)
 
     # create path to exp and save hyperparameters
@@ -88,6 +95,7 @@ def main(hp):
     learned_dag = trainer.model.get_adj().detach().numpy().reshape(gt_dag.shape[0], gt_dag.shape[1], -1)
     errors = metrics.edge_errors(learned_dag, gt_dag)
     shd = metrics.shd(learned_dag, gt_dag)
+    __import__('ipdb').set_trace()
     f1 = metrics.f1_score(learned_dag, gt_dag)
     errors["shd"] = shd
     errors["f1"] = f1
@@ -114,6 +122,8 @@ if __name__ == "__main__":
     # Dataset properties
     parser.add_argument("--latent", action="store_true",
                         help="Use the model that assumes latent variables")
+    parser.add_argument("--instantaneous", action="store_true",
+                        help="Use instantaneous connections")
     parser.add_argument("--tau", type=int, default=3,
                         help="Number of past timesteps to consider")
     parser.add_argument("--tau-neigh", type=int, default=0,

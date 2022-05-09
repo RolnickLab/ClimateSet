@@ -54,17 +54,17 @@ if __name__ == "__main__":
                         help="Use generative model with latents")
     parser.add_argument("--instantaneous", action="store_true",
                         help="Use instantaneous connection when generating data")
-    parser.add_argument("--n", type=int, default=1000,
+    parser.add_argument("--n", type=int, default=500,
                         help="Number of time series")
     parser.add_argument("-t", "--num-timesteps", type=int, default=10000,
                         help="Number of timesteps in total")
-    parser.add_argument("-d", "--num-features", type=int, default=8,
+    parser.add_argument("-d", "--num-features", type=int, default=10,
                         help="Number of features")
     parser.add_argument("-g", "--num-gridcells", type=int, default=1,
                         help="Number of gridcells")
     parser.add_argument("-k", "--num-clusters", type=int, default=3,
                         help="Number of clusters")
-    parser.add_argument("-p", "--prob", type=float, default=0.6,
+    parser.add_argument("-p", "--prob", type=float, default=0.2,
                         help="Probability of an edge in the causal graphs")
     parser.add_argument("--noise-coeff", type=float, default=1,
                         help="Coefficient for the additive noise")
@@ -77,7 +77,7 @@ if __name__ == "__main__":
                         help="'Radius' of neighboring gridcells that have an influence")
     parser.add_argument("--timewindow", type=int, default=3,
                         help="Number of previous timestep that interacts with a timestep t")
-    parser.add_argument("--eta", type=int, default=1.5,
+    parser.add_argument("--eta", type=int, default=1.0,
                         help="Weight decay applied to linear coefficients")
 
     # Neural network (NN) architecture

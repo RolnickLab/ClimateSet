@@ -11,7 +11,7 @@ class Training:
         self.data = data
         self.gt_dag = data.gt_graph
         self.hp = hp
-        self.converged = True  # TODO: change
+        self.converged = False
         self.thresholded = False
         self.ended = False
         self.mu = hp.mu_init
@@ -21,6 +21,7 @@ class Training:
         self.batch_size = hp.batch_size
         self.tau = hp.tau
         self.tau_neigh = hp.tau_neigh
+        self.instantaneous = hp.instantaneous
         self.qpm_freq = 1000
         self.patience_freq = 1000
 
@@ -32,7 +33,12 @@ class Training:
         self.valid_loss_list = []
         self.valid_elbo_list = []
         self.mu_list = []
-        self.adj_tt = np.zeros((1000000, self.tau, self.d, self.d, self.model.tau_neigh * 2 + 1))
+
+        # TODO just equal size of G
+        if self.instantaneous:
+            self.adj_tt = np.zeros((1000000, self.tau + 1, self.d, self.d, self.model.tau_neigh * 2 + 1))
+        else:
+            self.adj_tt = np.zeros((1000000, self.tau, self.d, self.d, self.model.tau_neigh * 2 + 1))
         # TODO: just for tests, remove
         # self.model.mask.fix(gt_dag)
 
@@ -50,9 +56,9 @@ class Training:
             self.constraint_normalization = compute_dag_constraint(full_adjacency).item()
 
     def log_losses(self):
-        # self.train_h_list.append(self.train_h)
+        self.train_h_list.append(self.train_h)
         self.train_loss_list.append(self.train_loss)
-        # self.valid_h_list.append(self.valid_h)
+        self.valid_h_list.append(self.valid_h)
         self.valid_loss_list.append(self.valid_loss)
         self.mu_list.append(self.mu)
 
@@ -160,20 +166,24 @@ class Training:
         density_param = self.model(x)
 
         # get acyclicity constraint, regularisation
-        # h = self.get_acyclicity_violation()
         reg = self.get_regularisation()
         # TODO: change density_param
         nll = self.get_nll(y, density_param)
 
         # compute loss
-        loss = nll + reg  # + 0.5 * self.mu * h ** 2
+        if self.instantaneous and not self.converged:
+            h = self.get_acyclicity_violation()
+            loss = nll + reg + 0.5 * self.mu * h ** 2
+        else:
+            h = None
+            loss = nll + reg
 
         # backprop
         self.optimizer.zero_grad()
         loss.backward()
         _, _ = self.optimizer.step() if self.hp.optimizer == "rmsprop" else self.optimizer.step(), self.hp.lr
 
-        return loss.item(), nll.item(), 0  # h.item()
+        return loss.item(), nll.item(), h.item()
 
     def valid_step(self):
         self.model.eval()
@@ -191,12 +201,18 @@ class Training:
         nll = self.get_nll(y, density_param)
 
         # compute loss
-        loss = nll + reg  # + 0.5 * self.mu * h ** 2
+        if self.instantaneous and not self.converged:
+            h = self.get_acyclicity_violation()
+            loss = nll + reg + 0.5 * self.mu * h ** 2
+        else:
+            h = None
+            loss = nll + reg
 
-        return loss.item(), nll.item(), 0
+        return loss.item(), nll.item(), h.item()
 
     def get_acyclicity_violation(self) -> torch.Tensor:
-        adj = self.model.get_adj()
+        adj = self.model.get_adj()[-1].view(self.d, self.d)
+        # __import__('ipdb').set_trace()
         h = compute_dag_constraint(adj) / self.constraint_normalization
 
         return h

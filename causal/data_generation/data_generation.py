@@ -213,7 +213,7 @@ class DataGeneratorWithoutLatent:
 
         if self.instantaneous:
             dag = self.sample_dag()
-            G = torch.cat((dag, G), dim=0)
+            G = torch.cat((G, dag), dim=0)
 
         return G
 
@@ -300,17 +300,29 @@ class DataGeneratorWithoutLatent:
                     lower_w = max(0, i - self.tau_neigh) - (i - self.tau_neigh)
                     upper_w = min(self.X.size(-1) - 1, i + self.tau_neigh) - i + self.tau_neigh + 1
 
-                    if self.d_x == 1:
-                        w = self.weights[:, :, :self.d]
-                        x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
-                    else:
-                        w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
-                        x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
-
                     # w.size: (tau, d, d * (tau_neigh * 2 + 1))
                     # x.size: (tau, d * (tau_neigh * 2 + 1))
                     # print(w.size())
                     # print(x.size())
-                    self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[i_n, t, :, i]
+
+                    if self.instantaneous:
+                        # TODO: sample in causal order (also when applying # permutation)
+                        for i_d in range(self.d):
+                            if self.d_x == 1:
+                                w = self.weights[:, i_d, :self.d]
+                                x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
+                            else:
+                                w = self.weights[:, i_d, lower_w * self.d: upper_w * self.d]
+                                x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
+                            self.X[i_n, t, i_d, i] = torch.einsum("tj,tj->", w, x) + \
+                                self.noise_coeff * noise[i_n, t, i_d, i]
+                    else:
+                        if self.d_x == 1:
+                            w = self.weights[:, :, :self.d]
+                            x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
+                        else:
+                            w = self.weights[:, :, lower_w * self.d: upper_w * self.d]
+                            x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
+                        self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[i_n, t, :, i]
 
         return self.X

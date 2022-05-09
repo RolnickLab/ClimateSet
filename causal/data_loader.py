@@ -11,6 +11,7 @@ class DataLoader:
                  ratio_valid: float,
                  data_path: str,
                  latent: bool,
+                 instantaneous: bool,
                  tau: int):
         self.ratio_train = ratio_train
         self.ratio_valid = ratio_valid
@@ -20,6 +21,7 @@ class DataLoader:
 
         self.data_path = data_path
         self.latent = latent
+        self.instantaneous = instantaneous
         self.tau = tau
 
         # Load and split the data
@@ -62,18 +64,24 @@ class DataLoader:
     def _sample(self, dataset: torch.Tensor, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
         if dataset.shape[0] <= 0:
             __import__('ipdb').set_trace()
-        x = np.zeros((batch_size, self.tau, self.d, self.d_x))
+
+        if self.instantaneous:
+            x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
+            t1 = 1
+        else:
+            x = np.zeros((batch_size, self.tau, self.d, self.d_x))
+            t1 = 0
         y = np.zeros((batch_size, self.d, self.d_x))
 
         if self.n == 1:
             random_idx = np.random.choice(np.arange(self.tau, dataset.shape[1]), replace=False, size=batch_size)
             for i, idx in enumerate(random_idx):
-                x[i] = dataset[0, idx - self.tau:idx]
+                x[i] = dataset[0, idx - self.tau:idx + t1]
                 y[i] = dataset[0, idx]
         else:
             random_idx = np.random.choice(np.arange(dataset.shape[0]), replace=False, size=batch_size)
             for i, idx in enumerate(random_idx):
-                x[i] = dataset[idx, 0:self.tau]
+                x[i] = dataset[idx, 0:self.tau + t1]
                 y[i] = dataset[idx, self.tau]
         return torch.tensor(x), torch.tensor(y)
 
