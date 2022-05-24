@@ -176,6 +176,7 @@ class DataGeneratorWithoutLatent:
         self.eta = hp.eta
         self.noise_coeff = hp.noise_coeff
         self.instantaneous = hp.instantaneous
+        self.func_type = hp.func_type
 
         if self.n > 1:
             self.t = self.tau + 1
@@ -189,13 +190,13 @@ class DataGeneratorWithoutLatent:
         assert hp.world_dim <= 2 and hp.world_dim >= 1, "world_dim not supported"
         self.num_neigh = (self.tau_neigh * 2 + 1) ** self.world_dim
 
-    def save_data(self, path):
+    def save_data(self, path: str):
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
 
-    def sample_graph(self, diagonal=False) -> torch.Tensor:
+    def sample_graph(self, diagonal: bool = False) -> torch.Tensor:
         """
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
@@ -271,6 +272,28 @@ class DataGeneratorWithoutLatent:
         Returns:
             X, the data, size: (n, t, d, d_x)
         """
+        if self.func_type == "linear":
+            X = self.generate_linear()
+        elif self.func_type == "nn":
+            X = self.generate_nn()
+
+        return X
+
+    def generate_linear(self) -> torch.Tensor:
+        """Method to generate data with random initialized
+        NN function and Gaussian noise (either additive or not)
+        Returns:
+            X, the data, size: (n, t, d, d_x)
+        """
+        return None
+
+    def generate_linear(self) -> torch.Tensor:
+        """Method to generate data with linear function
+        and Gaussian noise
+        Returns:
+            X, the data, size: (n, t, d, d_x)
+        """
+
         # sample graphs and weights
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
         self.G = self.sample_graph()
