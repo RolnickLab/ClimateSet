@@ -36,9 +36,9 @@ class Training:
 
         # TODO just equal size of G
         if self.instantaneous:
-            self.adj_tt = np.zeros((1000000, self.tau + 1, self.d, self.d, self.model.tau_neigh * 2 + 1))
+            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau + 1, self.d, self.d, self.model.tau_neigh * 2 + 1))
         else:
-            self.adj_tt = np.zeros((1000000, self.tau, self.d, self.d, self.model.tau_neigh * 2 + 1))
+            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau, self.d, self.d, self.model.tau_neigh * 2 + 1))
         # TODO: just for tests, remove
         # self.model.mask.fix(gt_dag)
 
