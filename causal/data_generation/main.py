@@ -25,6 +25,10 @@ def main(hp):
     else:
         generator = DataGeneratorWithoutLatent(args)
 
+    func_types = ["linear", "nn"]
+    if hp.func_type not in func_types:
+        raise NotImplementedError(f"Types of function that are presently implemented: {func_types}")
+
     # Generate, save and plot data
     data = generator.generate()
     generator.save_data(hp.exp_path)
@@ -52,6 +56,8 @@ if __name__ == "__main__":
     # Dataset properties
     parser.add_argument("--latent", action="store_true",
                         help="Use generative model with latents")
+    parser.add_argument("--func-type", type=str, default="linear",
+                        help="Type of function for the generating process {linear, nn}")
     parser.add_argument("--instantaneous", action="store_true",
                         help="Use instantaneous connection when generating data")
     parser.add_argument("--n", type=int, default=500,
