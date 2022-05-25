@@ -68,6 +68,8 @@ class DataGeneratorWithLatent:
 
         if self.non_linearity == "relu":
             nonlin = nn.ReLU()
+        elif self.non_linearity == "leaky_relu":
+            nonlin = nn.LeakyReLU()
         else:
             raise NotImplementedError("Nonlinearity is not implemented yet")
 
@@ -274,18 +276,83 @@ class DataGeneratorWithoutLatent:
         """
         if self.func_type == "linear":
             X = self.generate_linear()
-        elif self.func_type == "nn":
-            X = self.generate_nn()
+        else:
+            X = self.generate_mlp(self.func_type)
 
         return X
 
-    def generate_linear(self) -> torch.Tensor:
-        """Method to generate data with random initialized
-        NN function and Gaussian noise (either additive or not)
+    def sample_mlp(self):
+        """Sample a MLP that outputs the parameters for the distributions of Z
+        """
+        dict_layers = OrderedDict()
+        num_first_layer = self.tau * (self.d * self.k) * (self.d * self.k)
+        num_last_layer = 2 * self.d * self.k
+
+        if self.non_linearity == "relu":
+            nonlin = nn.ReLU()
+        elif self.non_linearity == "leaky_relu":
+            nonlin = nn.LeakyReLU()
+        else:
+            raise NotImplementedError("Nonlinearity is not implemented yet")
+
+        for i in range(self.num_layers + 1):
+        f = nn.Sequential(dict_layers)
+
+        return f
+
+    def generate_data(self, fct_type: str, noise_type: str, additive: bool = True) -> torch.Tensor:
+        """Method to generate data with any function and
+        arbitrary noise (either additive or not)
+        Args:
+            fct_type: type of function: {'nn'}
+            noise_type: type of noise: {'gaussian', 'laplacian', 'uniform'}
+            additive: if True, the noise is additive
         Returns:
             X, the data, size: (n, t, d, d_x)
         """
-        return None
+        # sample graphs and NN weights
+        self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
+        self.G = self.sample_graph()
+
+        if fct_type == "nn":
+            self.fct = self.sample_nn()
+
+        for i_n in range(self.n):  # example
+            # sample noise and initialize X
+            if noise_type == "normal":
+                noise_distr = distr.normal.Normal(0, 1)
+            elif noise_type == "laplacian":
+                noise_distr = distr.laplace.Laplace(0, 1)
+            elif noise_type == "uniform":
+                noise_distr = distr.uniform.Uniform(0, 1)
+            noise = noise_distr.sample(size=self.X.size())
+            self.X[i_n, :self.tau] = noise[i_n, :self.tau]
+
+            for t in range(self.tau, self.t):  # timstep
+                if self.instantaneous:
+                    t1 = 1
+                else:
+                    t1 = 0
+
+                for i in range(self.d_x):  # grid cell
+                    lower_x = max(0, i - self.tau_neigh)
+                    upper_x = min(self.X.size(-1) - 1, i + self.tau_neigh) + 1
+
+                    if self.instantaneous:
+                        # TODO: sample in causal order (also when applying # permutation)
+                        for i_d in range(self.d):  # feature
+                            if self.d_x == 1:
+                                x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
+                            else:
+                                x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
+
+                            if additive:
+                                self.X[i_n, t, i_d, i] = self.fct[i_d](x) + self.noise_coeff * noise[i_n, t, i_d, i]
+                            else:
+                                x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
+                                self.X[i_n, t, i_d, i] = self.fct[i_d](x_)
+
+        return X
 
     def generate_linear(self) -> torch.Tensor:
         """Method to generate data with linear function
