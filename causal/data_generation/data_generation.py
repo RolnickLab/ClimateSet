@@ -296,6 +296,18 @@ class DataGeneratorWithoutLatent:
             raise NotImplementedError("Nonlinearity is not implemented yet")
 
         for i in range(self.num_layers + 1):
+            num_input = self.num_hidden
+            num_output = self.num_hidden
+
+            if i == 0:
+                num_input = num_first_layer
+            if i == self.num_layers:
+                num_output = num_last_layer
+            dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
+
+            if i != self.num_layers:
+                dict_layers[f"nonlin{i}"] = nonlin
+
         f = nn.Sequential(dict_layers)
 
         return f
@@ -352,7 +364,7 @@ class DataGeneratorWithoutLatent:
                                 x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
                                 self.X[i_n, t, i_d, i] = self.fct[i_d](x_)
 
-        return X
+        return self.X
 
     def generate_linear(self) -> torch.Tensor:
         """Method to generate data with linear function
