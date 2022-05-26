@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.distributions as distr
 import numpy as np
 from collections import OrderedDict
+from typing import Tuple
 
 
 class DataGeneratorWithLatent:
@@ -198,7 +199,7 @@ class DataGeneratorWithoutLatent:
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
 
-    def sample_graph(self, diagonal: bool = False) -> torch.Tensor:
+    def sample_graph(self, diagonal: bool = False) -> Tuple[torch.Tensor, list]:
         """
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
@@ -215,17 +216,20 @@ class DataGeneratorWithoutLatent:
         G = torch.bernoulli(prob_tensor)
 
         if self.instantaneous:
-            dag = self.sample_dag()
+            dag, causal_order = self.sample_dag()
             G = torch.cat((G, dag), dim=0)
+        else:
+            causal_order = torch.arange(self.d)
 
-        return G
+        return G, causal_order
 
-    def sample_dag(self) -> torch.Tensor:
+    def sample_dag(self) -> Tuple[torch.Tensor, list]:
         """
         Sample a random DAG that will be used as an adjacency matrix
         for instantaneous connections
         Returns:
             A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
+            and a list containing the causal order of the variables
         """
         prob_tensor = torch.ones((1, self.d, self.num_neigh * self.d)) * self.prob
         # set all elements on and above the diagonal as 0
@@ -233,9 +237,14 @@ class DataGeneratorWithoutLatent:
 
         G = torch.bernoulli(prob_tensor)
 
-        # TODO: add permutation
+        # permutation
+        causal_order = torch.shuffle(torch.arange(self.d))
+        G = G[:, causal_order]
+        causal_order_dag = torch.arange(self.num_neigh * self.d)
+        causal_order_dag[self.num_neigh/2 * self.d: (self.num_neigh/2 + 1) * self.d] = causal_order
+        G = G[:, :, causal_order_dag]
 
-        return G
+        return G, causal_order
 
     def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta:
                               float = 1) -> torch.Tensor:
@@ -312,10 +321,12 @@ class DataGeneratorWithoutLatent:
 
         return f
 
-    def generate_data(self, fct_type: str, noise_type: str, additive: bool = True) -> torch.Tensor:
+    def generate_data(self, causal_order: list, fct_type: str, noise_type: distr,
+                      additive: bool = True) -> torch.Tensor:
         """Method to generate data with any function and
         arbitrary noise (either additive or not)
         Args:
+            causal_order: causal order of the variable (from roots to leaves)
             fct_type: type of function: {'nn'}
             noise_type: type of noise: {'gaussian', 'laplacian', 'uniform'}
             additive: if True, the noise is additive
@@ -324,7 +335,7 @@ class DataGeneratorWithoutLatent:
         """
         # sample graphs and NN weights
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
-        self.G = self.sample_graph()
+        self.G, self.causal_order = self.sample_graph()
 
         if fct_type == "nn":
             self.fct = self.sample_nn()
@@ -352,7 +363,7 @@ class DataGeneratorWithoutLatent:
 
                     if self.instantaneous:
                         # TODO: sample in causal order (also when applying # permutation)
-                        for i_d in range(self.d):  # feature
+                        for i_d in self.causal_order:  # feature
                             if self.d_x == 1:
                                 x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
                             else:
