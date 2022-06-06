@@ -406,10 +406,11 @@ class DataGeneratorWithoutLatent:
                             x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
 
                         if additive:
-                            self.X[i_n, t, i_d, i] = self.fct[i_d](x.view(-1)) + self.noise_coeff * noise[i_n, t, i_d, i]
+                            self.X[i_n, t, i_d, i] = self.fct[i_d](x.view(-1)) + \
+                                    self.noise_coeff * noise[i_n, t, i_d, i]
                         else:
                             x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
-                            self.X[i_n, t, i_d, i] = self.fct[i_d](x.view(-1))
+                            self.X[i_n, t, i_d, i] = self.fct[i_d](x_.view(-1))
 
         return self.X
 
