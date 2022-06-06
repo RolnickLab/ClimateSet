@@ -125,7 +125,6 @@ class Training:
             # TODO: remove
             if self.iteration % 30000 == 0:
                 pass
-                # __import__('ipdb').set_trace()
 
         # final plotting and printing
         plot(self)
@@ -175,7 +174,7 @@ class Training:
             h = self.get_acyclicity_violation()
             loss = nll + reg + 0.5 * self.mu * h ** 2
         else:
-            h = None
+            h = torch.tensor([0])
             loss = nll + reg
 
         # backprop
@@ -205,7 +204,7 @@ class Training:
             h = self.get_acyclicity_violation()
             loss = nll + reg + 0.5 * self.mu * h ** 2
         else:
-            h = None
+            h = torch.tensor([0])
             loss = nll + reg
 
         return loss.item(), nll.item(), h.item()

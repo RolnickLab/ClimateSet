@@ -69,7 +69,7 @@ if __name__ == "__main__":
                         help=f"Type of noise for the generating process {noise_types}")
     parser.add_argument("--instantaneous", action="store_true",
                         help="Use instantaneous connection when generating data")
-    parser.add_argument("--n", type=int, default=500,
+    parser.add_argument("-n", type=int, default=500,
                         help="Number of time series")
     parser.add_argument("-t", "--num-timesteps", type=int, default=10000,
                         help="Number of timesteps in total")

@@ -180,6 +180,7 @@ class DataGeneratorWithoutLatent:
         self.noise_coeff = hp.noise_coeff
         self.instantaneous = hp.instantaneous
         self.func_type = hp.func_type
+        self.noise_type = hp.noise_type
 
         if self.n > 1:
             self.t = self.tau + 1
@@ -238,11 +239,12 @@ class DataGeneratorWithoutLatent:
         G = torch.bernoulli(prob_tensor)
 
         # permutation
-        causal_order = torch.shuffle(torch.arange(self.d))
+        causal_order = torch.randperm(self.d)
         G = G[:, causal_order]
         causal_order_dag = torch.arange(self.num_neigh * self.d)
-        causal_order_dag[self.num_neigh/2 * self.d: (self.num_neigh/2 + 1) * self.d] = causal_order
+        causal_order_dag[self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d] = causal_order
         G = G[:, :, causal_order_dag]
+        assert is_acyclic(G[0, :, self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d])
 
         return G, causal_order
 
@@ -284,18 +286,44 @@ class DataGeneratorWithoutLatent:
             X, the data, size: (n, t, d, d_x)
         """
         if self.func_type == "linear":
-            X = self.generate_linear()
+            # X = self.generate_linear()
+            X = self.generate_data(self.func_type, self.noise_type)
         else:
-            X = self.generate_mlp(self.func_type)
+            X = self.generate_data(self.func_type, self.noise_type)
 
         return X
 
-    def sample_mlp(self):
+    class LinearFunction:
+        def __init__(self, w):
+            self.w = w
+
+        def __call__(self, x):
+            return torch.matmul(self.w.reshape(-1), x)
+
+    def sample_linears(self) -> list:
+        weights = self.sample_linear_weights()
+        ws = []
+
+        for i_d in range(self.d):
+            func = self.LinearFunction(weights[:, i_d])
+            ws.append(func)
+
+        return ws
+
+    def init_mlp_weight(self, model):
+        if isinstance(model, torch.nn.modules.Linear):
+            torch.nn.init.normal_(model.weight.data, mean=0., std=1)
+
+    def sample_mlps(self) -> list:
         """Sample a MLP that outputs the parameters for the distributions of Z
         """
+        mlps = nn.ModuleList()
         dict_layers = OrderedDict()
-        num_first_layer = self.tau * (self.d * self.k) * (self.d * self.k)
-        num_last_layer = 2 * self.d * self.k
+        if self.instantaneous:
+            num_first_layer = (self.tau + 1) * (self.d * self.num_neigh)
+        else:
+            num_first_layer = self.tau * (self.d * self.num_neigh)
+        num_last_layer = 1
 
         if self.non_linearity == "relu":
             nonlin = nn.ReLU()
@@ -304,29 +332,30 @@ class DataGeneratorWithoutLatent:
         else:
             raise NotImplementedError("Nonlinearity is not implemented yet")
 
-        for i in range(self.num_layers + 1):
-            num_input = self.num_hidden
-            num_output = self.num_hidden
+        for i_d in range(self.d):
+            for i in range(self.num_layers + 1):
+                num_input = self.num_hidden
+                num_output = self.num_hidden
 
-            if i == 0:
-                num_input = num_first_layer
-            if i == self.num_layers:
-                num_output = num_last_layer
-            dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
+                if i == 0:
+                    num_input = num_first_layer
+                if i == self.num_layers:
+                    num_output = num_last_layer
+                dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
 
-            if i != self.num_layers:
-                dict_layers[f"nonlin{i}"] = nonlin
+                if i != self.num_layers:
+                    dict_layers[f"nonlin{i}"] = nonlin
 
-        f = nn.Sequential(dict_layers)
+            mlp = nn.Sequential(dict_layers)
+            mlp.apply(self.init_mlp_weight)
+            mlps.append(mlp)
 
-        return f
+        return mlps
 
-    def generate_data(self, causal_order: list, fct_type: str, noise_type: distr,
-                      additive: bool = True) -> torch.Tensor:
+    def generate_data(self, fct_type: str, noise_type: str, additive: bool = True) -> torch.Tensor:
         """Method to generate data with any function and
         arbitrary noise (either additive or not)
         Args:
-            causal_order: causal order of the variable (from roots to leaves)
             fct_type: type of function: {'nn'}
             noise_type: type of noise: {'gaussian', 'laplacian', 'uniform'}
             additive: if True, the noise is additive
@@ -337,18 +366,24 @@ class DataGeneratorWithoutLatent:
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
         self.G, self.causal_order = self.sample_graph()
 
-        if fct_type == "nn":
-            self.fct = self.sample_nn()
+        if fct_type == "mlp":
+            self.fct = self.sample_mlps()
+        elif fct_type == "linear":
+            self.fct = self.sample_linears()
+        else:
+            raise NotImplementedError("This type of function is not implemented yet.")
 
         for i_n in range(self.n):  # example
             # sample noise and initialize X
-            if noise_type == "normal":
+            if noise_type == "gaussian":
                 noise_distr = distr.normal.Normal(0, 1)
             elif noise_type == "laplacian":
                 noise_distr = distr.laplace.Laplace(0, 1)
             elif noise_type == "uniform":
                 noise_distr = distr.uniform.Uniform(0, 1)
-            noise = noise_distr.sample(size=self.X.size())
+            else:
+                raise NotImplementedError("This type of noise is not implemented yet.")
+            noise = noise_distr.sample(self.X.size())
             self.X[i_n, :self.tau] = noise[i_n, :self.tau]
 
             for t in range(self.tau, self.t):  # timstep
@@ -361,19 +396,20 @@ class DataGeneratorWithoutLatent:
                     lower_x = max(0, i - self.tau_neigh)
                     upper_x = min(self.X.size(-1) - 1, i + self.tau_neigh) + 1
 
-                    if self.instantaneous:
-                        # TODO: sample in causal order (also when applying # permutation)
-                        for i_d in self.causal_order:  # feature
-                            if self.d_x == 1:
-                                x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
-                            else:
-                                x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
+                    # if self.instantaneous:
+                    # TODO: sample in causal order (also when applying # permutation)
+                    for i_d in self.causal_order:  # feature
+                        # __import__('ipdb').set_trace()
+                        if self.d_x == 1:
+                            x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
+                        else:
+                            x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
 
-                            if additive:
-                                self.X[i_n, t, i_d, i] = self.fct[i_d](x) + self.noise_coeff * noise[i_n, t, i_d, i]
-                            else:
-                                x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
-                                self.X[i_n, t, i_d, i] = self.fct[i_d](x_)
+                        if additive:
+                            self.X[i_n, t, i_d, i] = self.fct[i_d](x.view(-1)) + self.noise_coeff * noise[i_n, t, i_d, i]
+                        else:
+                            x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
+                            self.X[i_n, t, i_d, i] = self.fct[i_d](x.view(-1))
 
         return self.X
 
@@ -386,7 +422,7 @@ class DataGeneratorWithoutLatent:
 
         # sample graphs and weights
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
-        self.G = self.sample_graph()
+        self.G, self.causal_order = self.sample_graph()
         self.weights = self.sample_linear_weights(eta=self.eta)
 
         for i_n in range(self.n):
@@ -439,3 +475,16 @@ class DataGeneratorWithoutLatent:
                         self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[i_n, t, :, i]
 
         return self.X
+
+
+def is_acyclic(adjacency):
+    """
+    Return true if adjacency is a acyclic
+    :param np.ndarray adjacency: adjacency matrix
+    """
+    prod = np.eye(adjacency.shape[0])
+    for _ in range(1, adjacency.shape[0] + 1):
+        prod = np.matmul(adjacency, prod)
+        if np.trace(prod) != 0:
+            return False
+    return True
