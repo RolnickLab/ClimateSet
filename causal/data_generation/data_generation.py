@@ -442,7 +442,6 @@ class DataGeneratorWithoutLatent:
                             x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x]
                             # x = x.reshape(self.G.size(0), -1)
 
-
                         if additive:
                             # if i_d == 0 and i_n == 0:
                             #     __import__('ipdb').set_trace()
