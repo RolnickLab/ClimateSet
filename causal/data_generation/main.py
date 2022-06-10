@@ -98,9 +98,9 @@ if __name__ == "__main__":
     # Neural network (NN) architecture
     parser.add_argument("--num-layers", type=int, default=1,
                         help="Number of layers in NN")
-    parser.add_argument("--num-hidden", type=int, default=4,
+    parser.add_argument("--num-hidden", type=int, default=6,
                         help="Number of hidden units in NN")
-    parser.add_argument("--non-linearity", type=str, default="relu",
+    parser.add_argument("--non-linearity", type=str, default="leaky_relu",
                         help="Type of non-linearity used in the NN")
 
     args = parser.parse_args()
