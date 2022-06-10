@@ -40,7 +40,7 @@ class Training:
         else:
             self.adj_tt = np.zeros((self.hp.max_iteration, self.tau, self.d, self.d, self.model.tau_neigh * 2 + 1))
         # TODO: just for tests, remove
-        # self.model.mask.fix(gt_dag)
+        # self.model.mask.fix(self.gt_dag)
 
         # optimizer
         if hp.optimizer == "sgd":
