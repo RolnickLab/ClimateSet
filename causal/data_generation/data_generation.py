@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.distributions as distr
 import numpy as np
 from collections import OrderedDict
+from typing import Tuple
 
 
 class DataGeneratorWithLatent:
@@ -68,6 +69,8 @@ class DataGeneratorWithLatent:
 
         if self.non_linearity == "relu":
             nonlin = nn.ReLU()
+        elif self.non_linearity == "leaky_relu":
+            nonlin = nn.LeakyReLU()
         else:
             raise NotImplementedError("Nonlinearity is not implemented yet")
 
@@ -176,6 +179,8 @@ class DataGeneratorWithoutLatent:
         self.eta = hp.eta
         self.noise_coeff = hp.noise_coeff
         self.instantaneous = hp.instantaneous
+        self.func_type = hp.func_type
+        self.noise_type = hp.noise_type
 
         if self.n > 1:
             self.t = self.tau + 1
@@ -189,13 +194,17 @@ class DataGeneratorWithoutLatent:
         assert hp.world_dim <= 2 and hp.world_dim >= 1, "world_dim not supported"
         self.num_neigh = (self.tau_neigh * 2 + 1) ** self.world_dim
 
-    def save_data(self, path):
+    def save_data(self, path: str):
+        """ Save the data, the parameters, and the graph as .npy files
+        Args:
+            path: path where to save the files
+        """
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
 
-    def sample_graph(self, diagonal=False) -> torch.Tensor:
+    def sample_graph(self, diagonal: bool = False) -> Tuple[torch.Tensor, list]:
         """
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
@@ -212,17 +221,20 @@ class DataGeneratorWithoutLatent:
         G = torch.bernoulli(prob_tensor)
 
         if self.instantaneous:
-            dag = self.sample_dag()
+            dag, causal_order = self.sample_dag()
             G = torch.cat((G, dag), dim=0)
+        else:
+            causal_order = torch.arange(self.d)
 
-        return G
+        return G, causal_order
 
-    def sample_dag(self) -> torch.Tensor:
+    def sample_dag(self) -> Tuple[torch.Tensor, list]:
         """
         Sample a random DAG that will be used as an adjacency matrix
         for instantaneous connections
         Returns:
             A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
+            and a list containing the causal order of the variables
         """
         prob_tensor = torch.ones((1, self.d, self.num_neigh * self.d)) * self.prob
         # set all elements on and above the diagonal as 0
@@ -230,9 +242,30 @@ class DataGeneratorWithoutLatent:
 
         G = torch.bernoulli(prob_tensor)
 
-        # TODO: add permutation
+        # G = torch.tensor([[[0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 1., 1., 0., 0.],
+        #                    [0., 1., 0., 1., 0., 0.]]])
+        # causal_order = torch.tensor([0, 5, 2, 1, 4, 3])
+        # print(G)
 
-        return G
+        # permutation
+        causal_order = torch.randperm(self.d)
+
+        # p_G = G[0, :, :]
+        # P = torch.zeros(self.d, self.d)
+        # P[torch.arange(self.d), causal_order] = 1
+        # p_G = torch.matmul(P, torch.matmul(p_G, P.T))
+
+        G = G[:, causal_order]
+        causal_order_dag = torch.arange(self.num_neigh * self.d)
+        causal_order_dag[self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d] = causal_order
+        G = G[:, :, causal_order_dag]
+        assert is_acyclic(G[0, :, self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d])
+
+        return G, causal_order
 
     def sample_linear_weights(self, lower: int = 0.3, upper: float = 0.5, eta:
                               float = 1) -> torch.Tensor:
@@ -271,9 +304,178 @@ class DataGeneratorWithoutLatent:
         Returns:
             X, the data, size: (n, t, d, d_x)
         """
+        if self.func_type == "linear":
+            # X = self.generate_linear()
+            X = self.generate_data(self.func_type, self.noise_type)
+        else:
+            X = self.generate_data(self.func_type, self.noise_type)
+
+        return X
+
+    class LinearFunction:
+        def __init__(self, w):
+            self.w = w
+
+        def __call__(self, x):
+            return torch.matmul(self.w.reshape(-1), x)
+
+    def sample_linears(self) -> list:
+        """Sample linear weights in a format usable with generate_data()
+        Returns:
+            A list of tensors that are linear coefficients
+        """
+        weights = self.sample_linear_weights()
+        ws = []
+
+        for i_d in range(self.d):
+            func = self.LinearFunction(weights[:, i_d])
+            ws.append(func)
+
+        return ws
+
+    def init_mlp_weight(self, model):
+        """Function to initialize MLP's weight from a normal.
+        In practice, gives more interesting functions than defaul
+        initialization
+        Args:
+            model: a pytorch model (MLP for now)
+        """
+        if isinstance(model, torch.nn.modules.Linear):
+            torch.nn.init.normal_(model.weight.data, mean=0., std=1)
+
+    def sample_mlps(self) -> list:
+        """Sample a MLP that outputs the parameters for the distributions of Z
+        Returns:
+            A list of MLPs
+        """
+        mlps = nn.ModuleList()
+        dict_layers = OrderedDict()
+        if self.instantaneous:
+            num_first_layer = (self.tau + 1) * (self.d * self.num_neigh)
+        else:
+            num_first_layer = self.tau * (self.d * self.num_neigh)
+        num_last_layer = 1
+
+        if self.non_linearity == "relu":
+            nonlin = nn.ReLU()
+        elif self.non_linearity == "leaky_relu":
+            nonlin = nn.LeakyReLU()
+        else:
+            raise NotImplementedError("Nonlinearity is not implemented yet")
+
+        for i_d in range(self.d):
+            for i in range(self.num_layers + 1):
+                num_input = self.num_hidden
+                num_output = self.num_hidden
+
+                if i == 0:
+                    num_input = num_first_layer
+                if i == self.num_layers:
+                    num_output = num_last_layer
+                dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
+
+                if i != self.num_layers:
+                    dict_layers[f"nonlin{i}"] = nonlin
+
+            mlp = nn.Sequential(dict_layers)
+            mlp.apply(self.init_mlp_weight)
+            mlps.append(mlp)
+
+        return mlps
+
+    def generate_data(self, fct_type: str, noise_type: str, additive: bool = True) -> torch.Tensor:
+        """Method to generate data with any function and
+        arbitrary noise (either additive or not)
+        Args:
+            fct_type: type of function: {'nn'}
+            noise_type: type of noise: {'gaussian', 'laplacian', 'uniform'}
+            additive: if True, the noise is additive
+        Returns:
+            X, the data, size: (n, t, d, d_x)
+        """
+        # sample graphs and NN weights
+        self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
+        self.G, self.causal_order = self.sample_graph()
+
+        if fct_type == "mlp":
+            self.fct = self.sample_mlps()
+        elif fct_type == "linear":
+            self.fct = self.sample_linears()
+        else:
+            raise NotImplementedError("This type of function is not implemented yet.")
+
+        for i_n in range(self.n):  # example
+            # sample noise and initialize X
+            if noise_type == "gaussian":
+                noise_distr = distr.normal.Normal(0, 1)
+            elif noise_type == "laplacian":
+                noise_distr = distr.laplace.Laplace(0, 1)
+            elif noise_type == "uniform":
+                noise_distr = distr.uniform.Uniform(0, 1)
+            else:
+                raise NotImplementedError("This type of noise is not implemented yet.")
+            noise = noise_distr.sample(self.X.size())
+            self.X[i_n, :self.tau] = noise[i_n, :self.tau]
+
+            for t in range(self.tau, self.t):  # timstep
+                if self.instantaneous:
+                    t1 = 1
+                else:
+                    t1 = 0
+
+                for i in range(self.d_x):  # grid cell
+                    lower_x = max(0, i - self.tau_neigh)
+                    upper_x = min(self.X.size(-1) - 1, i + self.tau_neigh) + 1
+
+                    # if self.instantaneous:
+                    # TODO: sample in causal order (also when applying # permutation)
+                    for i_d in self.causal_order:  # feature
+                        # __import__('ipdb').set_trace()
+                        if self.d_x == 1:
+                            # print(self.G.size())
+                            # print(self.X.size())
+                            # print(self.X[i_n, t - self.tau:t + t1, :, :self.d].size())
+                            # __import__('ipdb').set_trace()
+                            x = self.X[i_n, t - self.tau:t + t1, :, :self.d]
+                            # x = x.reshape(self.G.size(0), -1)
+                        else:
+                            x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x]
+                            # x = x.reshape(self.G.size(0), -1)
+
+                        if additive:
+                            # if i_d == 0 and i_n == 0:
+                            #     __import__('ipdb').set_trace()
+                            #     print(x[:, :, i_d].view(-1))
+                            #     print(self.fct[i_d](x[:, :, i_d].view(-1)))
+
+                            # print(self.G[:, i_d].size())
+                            # print(x.size())
+                            # print(x[:, i_d].size())
+                            # print(x[:, i_d])
+                            # print(self.fct[i_d].w)
+                            # print(self.G[:, i_d])
+
+                            masked_x = x * self.G[:, i_d].unsqueeze(-1)
+                            self.X[i_n, t, i_d, i] = self.fct[i_d](masked_x.view(-1))
+                            self.X[i_n, t, i_d, i] += self.noise_coeff * noise[i_n, t, i_d, i]
+                        else:
+                            # TODO: check for x[:, :, i_d]
+                            __import__('ipdb').set_trace()
+                            x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
+                            self.X[i_n, t, i_d, i] = self.fct[i_d](x_.view(-1))
+
+        return self.X
+
+    def generate_linear(self) -> torch.Tensor:
+        """Method to generate data with linear function
+        and Gaussian noise
+        Returns:
+            X, the data, size: (n, t, d, d_x)
+        """
+
         # sample graphs and weights
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
-        self.G = self.sample_graph()
+        self.G, self.causal_order = self.sample_graph()
         self.weights = self.sample_linear_weights(eta=self.eta)
 
         for i_n in range(self.n):
@@ -326,3 +528,17 @@ class DataGeneratorWithoutLatent:
                         self.X[i_n, t, :, i] = torch.einsum("tij,tj->i", w, x) + self.noise_coeff * noise[i_n, t, :, i]
 
         return self.X
+
+
+def is_acyclic(adjacency: np.ndarray) -> bool:
+    """
+    Return true if adjacency is acyclic
+    Args:
+        adjacency: adjacency matrix
+    """
+    prod = np.eye(adjacency.shape[0])
+    for _ in range(1, adjacency.shape[0] + 1):
+        prod = np.matmul(adjacency, prod)
+        if np.trace(prod) != 0:
+            return False
+    return True

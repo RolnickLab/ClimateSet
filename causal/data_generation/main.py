@@ -7,10 +7,12 @@ from data_generation import DataGeneratorWithLatent, DataGeneratorWithoutLatent
 from plot import plot_adjacency_graphs, plot_adjacency_w, plot_x, plot_z
 
 
-def main(hp):
+def main(hp, func_types: list, noise_types: list):
     """
     Args:
         hp: object containing hyperparameter values
+        func_types: type of functions that are possible
+        noise_types: type of noise that are possible
 
     Returns:
         The observable data that has been generated
@@ -24,6 +26,12 @@ def main(hp):
         generator = DataGeneratorWithLatent(args)
     else:
         generator = DataGeneratorWithoutLatent(args)
+
+    if hp.func_type not in func_types:
+        raise NotImplementedError(f"Types of function that are presently implemented: {func_types}")
+
+    if hp.noise_type not in noise_types:
+        raise NotImplementedError(f"Types of noise that are presently implemented: {noise_types}")
 
     # Generate, save and plot data
     data = generator.generate()
@@ -39,6 +47,9 @@ def main(hp):
 
 
 if __name__ == "__main__":
+    func_types = ["linear", "mlp"]
+    noise_types = ["gaussian", "laplacian", "uniform"]
+
     parser = argparse.ArgumentParser(description=" Code use to generate synthetic data to \
                                      test the end-to-end clustering idea.")
 
@@ -52,9 +63,13 @@ if __name__ == "__main__":
     # Dataset properties
     parser.add_argument("--latent", action="store_true",
                         help="Use generative model with latents")
+    parser.add_argument("--func-type", type=str, default="linear",
+                        help=f"Type of function for the generating process {func_types}")
+    parser.add_argument("--noise-type", type=str, default="gaussian",
+                        help=f"Type of noise for the generating process {noise_types}")
     parser.add_argument("--instantaneous", action="store_true",
                         help="Use instantaneous connection when generating data")
-    parser.add_argument("--n", type=int, default=500,
+    parser.add_argument("-n", type=int, default=500,
                         help="Number of time series")
     parser.add_argument("-t", "--num-timesteps", type=int, default=10000,
                         help="Number of timesteps in total")
@@ -83,9 +98,9 @@ if __name__ == "__main__":
     # Neural network (NN) architecture
     parser.add_argument("--num-layers", type=int, default=1,
                         help="Number of layers in NN")
-    parser.add_argument("--num-hidden", type=int, default=4,
+    parser.add_argument("--num-hidden", type=int, default=6,
                         help="Number of hidden units in NN")
-    parser.add_argument("--non-linearity", type=str, default="relu",
+    parser.add_argument("--non-linearity", type=str, default="leaky_relu",
                         help="Type of non-linearity used in the NN")
 
     args = parser.parse_args()
@@ -95,4 +110,4 @@ if __name__ == "__main__":
     if not os.path.exists(args.exp_path):
         os.makedirs(args.exp_path)
 
-    main(args)
+    main(args, func_types, noise_types)
