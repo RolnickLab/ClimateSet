@@ -195,6 +195,10 @@ class DataGeneratorWithoutLatent:
         self.num_neigh = (self.tau_neigh * 2 + 1) ** self.world_dim
 
     def save_data(self, path: str):
+        """ Save the data, the parameters, and the graph as .npy files
+        Args:
+            path: path where to save the files
+        """
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
@@ -238,8 +242,23 @@ class DataGeneratorWithoutLatent:
 
         G = torch.bernoulli(prob_tensor)
 
+        # G = torch.tensor([[[0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 1., 1., 0., 0.],
+        #                    [0., 1., 0., 1., 0., 0.]]])
+        # causal_order = torch.tensor([0, 5, 2, 1, 4, 3])
+        # print(G)
+
         # permutation
         causal_order = torch.randperm(self.d)
+
+        # p_G = G[0, :, :]
+        # P = torch.zeros(self.d, self.d)
+        # P[torch.arange(self.d), causal_order] = 1
+        # p_G = torch.matmul(P, torch.matmul(p_G, P.T))
+
         G = G[:, causal_order]
         causal_order_dag = torch.arange(self.num_neigh * self.d)
         causal_order_dag[self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d] = causal_order
@@ -301,6 +320,10 @@ class DataGeneratorWithoutLatent:
             return torch.matmul(self.w.reshape(-1), x)
 
     def sample_linears(self) -> list:
+        """Sample linear weights in a format usable with generate_data()
+        Returns:
+            A list of tensors that are linear coefficients
+        """
         weights = self.sample_linear_weights()
         ws = []
 
@@ -311,11 +334,19 @@ class DataGeneratorWithoutLatent:
         return ws
 
     def init_mlp_weight(self, model):
+        """Function to initialize MLP's weight from a normal.
+        In practice, gives more interesting functions than defaul
+        initialization
+        Args:
+            model: a pytorch model (MLP for now)
+        """
         if isinstance(model, torch.nn.modules.Linear):
             torch.nn.init.normal_(model.weight.data, mean=0., std=1)
 
     def sample_mlps(self) -> list:
         """Sample a MLP that outputs the parameters for the distributions of Z
+        Returns:
+            A list of MLPs
         """
         mlps = nn.ModuleList()
         dict_layers = OrderedDict()
@@ -401,14 +432,36 @@ class DataGeneratorWithoutLatent:
                     for i_d in self.causal_order:  # feature
                         # __import__('ipdb').set_trace()
                         if self.d_x == 1:
-                            x = self.X[i_n, t - self.tau:t + t1, :, :self.d].reshape(self.G.size(0), -1)
+                            # print(self.G.size())
+                            # print(self.X.size())
+                            # print(self.X[i_n, t - self.tau:t + t1, :, :self.d].size())
+                            # __import__('ipdb').set_trace()
+                            x = self.X[i_n, t - self.tau:t + t1, :, :self.d]
+                            # x = x.reshape(self.G.size(0), -1)
                         else:
-                            x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x].reshape(self.G.size(0), -1)
+                            x = self.X[i_n, t - self.tau:t + t1, :, lower_x:upper_x]
+                            # x = x.reshape(self.G.size(0), -1)
+
 
                         if additive:
-                            self.X[i_n, t, i_d, i] = self.fct[i_d](x.view(-1)) + \
-                                    self.noise_coeff * noise[i_n, t, i_d, i]
+                            # if i_d == 0 and i_n == 0:
+                            #     __import__('ipdb').set_trace()
+                            #     print(x[:, :, i_d].view(-1))
+                            #     print(self.fct[i_d](x[:, :, i_d].view(-1)))
+
+                            # print(self.G[:, i_d].size())
+                            # print(x.size())
+                            # print(x[:, i_d].size())
+                            # print(x[:, i_d])
+                            # print(self.fct[i_d].w)
+                            # print(self.G[:, i_d])
+
+                            masked_x = x * self.G[:, i_d].unsqueeze(-1)
+                            self.X[i_n, t, i_d, i] = self.fct[i_d](masked_x.view(-1))
+                            self.X[i_n, t, i_d, i] += self.noise_coeff * noise[i_n, t, i_d, i]
                         else:
+                            # TODO: check for x[:, :, i_d]
+                            __import__('ipdb').set_trace()
                             x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
                             self.X[i_n, t, i_d, i] = self.fct[i_d](x_.view(-1))
 
@@ -478,10 +531,11 @@ class DataGeneratorWithoutLatent:
         return self.X
 
 
-def is_acyclic(adjacency):
+def is_acyclic(adjacency: np.ndarray) -> bool:
     """
-    Return true if adjacency is a acyclic
-    :param np.ndarray adjacency: adjacency matrix
+    Return true if adjacency is acyclic
+    Args:
+        adjacency: adjacency matrix
     """
     prod = np.eye(adjacency.shape[0])
     for _ in range(1, adjacency.shape[0] + 1):
