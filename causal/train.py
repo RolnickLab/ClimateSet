@@ -9,8 +9,9 @@ class Training:
     def __init__(self, model, data, hp):
         self.model = model
         self.data = data
-        self.gt_dag = data.gt_graph
         self.hp = hp
+        self.latent = hp.latent
+        self.gt_dag = data.gt_graph
         self.converged = False
         self.thresholded = False
         self.ended = False
@@ -223,7 +224,7 @@ class Training:
 
         return nll
 
-    def get_regularisation(self):
+    def get_regularisation(self) -> float:
         adj = self.model.get_adj()
         reg = self.hp.reg_coeff * torch.norm(adj, p=1)
         reg /= adj.shape[0] ** 2
@@ -240,3 +241,13 @@ class Training:
     def save_results(self):
         # TODO
         pass
+
+
+# if not self.latent:
+#     raise ValueError("The orthogonality constraint only makes sense \
+#                      when there is latent variables (spatial agg.)")
+def get_ortho_constraint(w: torch.Tensor) -> float:
+    k = w.size(1)
+    constraint = torch.norm(w.T @ w - torch.eye(k), p=2)
+
+    return constraint
