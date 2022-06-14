@@ -19,8 +19,8 @@ class DataGeneratorWithLatent:
         self.hp = hp
         self.n = hp.n
         self.d = hp.num_features
-        self.d_x = hp.num_gridcells
-        self.tau = hp.timewindow
+        self.d_x = hp.d_x
+        self.tau = hp.tau
 
         if self.n > 1:
             self.t = self.tau + 1
@@ -171,9 +171,9 @@ class DataGeneratorWithoutLatent:
         self.hp = hp
         self.n = hp.n
         self.d = hp.num_features
-        self.d_x = hp.num_gridcells
+        self.d_x = hp.d_x
         self.world_dim = hp.world_dim
-        self.tau = hp.timewindow
+        self.tau = hp.tau
         self.tau_neigh = hp.neighborhood
         self.prob = hp.prob
         self.eta = hp.eta
