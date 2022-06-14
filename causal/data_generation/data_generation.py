@@ -131,34 +131,37 @@ class DataGeneratorWithLatent:
             X, Z, respectively the observable data and the latent
         """
         # initialize Z for the first timesteps
-        self.Z = torch.zeros((self.t, self.d, self.k))
-        self.X = torch.zeros((self.t, self.d, self.d_x))
-        for i in range(self.tau):
-            self.Z[i].normal_(0, 1)
+        self.Z = torch.zeros((self.n, self.t, self.d, self.k))
+        self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
+        for i_n in range(self.n):
 
-        # sample graphs and NNs
-        self.G = self.sample_graph()
-        self.f = self.sample_mlp()
+            # TODO: change the following for NN
+            for i in range(self.tau):
+                self.Z[i_n, i].normal_(0, 1)
 
-        # sample the latent Z
-        for t in range(self.tau, self.t):
-            g = self.G.view(self.G.shape[0], -1)
-            z = self.Z[t - self.tau:t].view(self.tau, -1).repeat(1, self.d * self.k)
-            nn_input = (g * z).view(-1)
-            params = self.f(nn_input).view(-1, 2)
-            params[:, 1] = 1/2 * torch.exp(params[:, 1])
-            dist = distr.normal.Normal(params[:, 0], params[:, 1])
-            self.Z[t] = dist.rsample().view(self.d, self.k)
+            # sample graphs and NNs
+            self.G = self.sample_graph()
+            self.f = self.sample_mlp()
 
-        # sample observational model
-        self.w = self.sample_w()
+            # sample the latent Z
+            for t in range(self.tau, self.t):
+                g = self.G.view(self.G.shape[0], -1)
+                z = self.Z[i_n, t - self.tau:t].view(self.tau, -1).repeat(1, self.d * self.k)
+                nn_input = (g * z).view(-1)
+                params = self.f(nn_input).view(-1, 2)
+                params[:, 1] = 0.5 * torch.exp(params[:, 1])
+                dist = distr.normal.Normal(params[:, 0], params[:, 1])
+                self.Z[i_n, t] = dist.rsample().view(self.d, self.k)
 
-        # sample the data X
-        for t in range(self.tau, self.t):
-            mean = torch.einsum("xdk,dk->dx", self.w, self.Z[t])
-            # could sample sigma
-            dist = distr.normal.Normal(mean.view(-1), 1)
-            self.X[t] = dist.rsample().view(self.d, self.d_x)
+            # sample observational model
+            self.w = self.sample_w()
+
+            # sample the data X
+            for t in range(self.tau, self.t):
+                mean = torch.einsum("xdk,dk->dx", self.w, self.Z[i_n, t])
+                # could sample sigma
+                dist = distr.normal.Normal(mean.view(-1), 1)
+                self.X[i_n, t] = dist.rsample().view(self.d, self.d_x)
 
         return self.X, self.Z
 
