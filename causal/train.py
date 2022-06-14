@@ -163,12 +163,10 @@ class Training:
 
         # sample data
         x, y = self.data.sample_train(self.batch_size)
-        density_param = self.model(x)
+        nll = self.get_nll(x, y)
 
         # get acyclicity constraint, regularisation
         reg = self.get_regularisation()
-        # TODO: change density_param
-        nll = self.get_nll(y, density_param)
 
         # compute loss
         if self.instantaneous and not self.converged:
@@ -193,12 +191,11 @@ class Training:
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
         x, y = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
-        density_param = self.model(x)
 
         # get acyclicity constraint, regularisation, elbo
         # h = self.get_acyclicity_violation()
+        nll = self.get_nll(x, y)
         reg = self.get_regularisation()
-        nll = self.get_nll(y, density_param)
 
         # compute loss
         if self.instantaneous and not self.converged:
@@ -217,11 +214,12 @@ class Training:
 
         return h
 
-    def get_nll(self, y, density_param) -> torch.Tensor:
+    def get_nll(self, x, y) -> torch.Tensor:
+        density_param = self.model(x)
         mu = density_param[:, :, :, 0].view(-1, 1)
         std = density_param[:, :, :, 1].view(-1, 1)
-        nll = -1/(y.shape[0] * y.shape[1] * y.shape[2]) * self.model.get_likelihood(y, mu, std, self.iteration)
 
+        nll = -1/(y.shape[0] * y.shape[1] * y.shape[2]) * self.model.get_likelihood(y, mu, std, self.iteration)
         return nll
 
     def get_regularisation(self) -> float:
@@ -241,13 +239,3 @@ class Training:
     def save_results(self):
         # TODO
         pass
-
-
-# if not self.latent:
-#     raise ValueError("The orthogonality constraint only makes sense \
-#                      when there is latent variables (spatial agg.)")
-def get_ortho_constraint(w: torch.Tensor) -> float:
-    k = w.size(1)
-    constraint = torch.norm(w.T @ w - torch.eye(k), p=2)
-
-    return constraint
