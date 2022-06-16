@@ -27,7 +27,7 @@ class DataGeneratorWithLatent:
         else:
             self.t = hp.num_timesteps
 
-        self.k = hp.num_clusters
+        self.k = hp.k
         self.prob = hp.prob
         self.noise_coeff = hp.noise_coeff
 

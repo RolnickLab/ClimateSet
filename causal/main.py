@@ -81,8 +81,7 @@ def main(hp):
                       instantaneous=hp.instantaneous,
                       hard_gumbel=hp.hard_gumbel)
     else:
-        model = LatentTSDCD(model_type="fixed",
-                            num_layers=hp.num_layers,
+        model = LatentTSDCD(num_layers=hp.num_layers,
                             num_hidden=hp.num_hidden,
                             num_input=num_input,
                             num_output=2,

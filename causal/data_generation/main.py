@@ -77,7 +77,7 @@ if __name__ == "__main__":
                         help="Number of features")
     parser.add_argument("--d-x", type=int, default=1,
                         help="Number of gridcells d_x")
-    parser.add_argument("-k", "--num-clusters", type=int, default=3,
+    parser.add_argument("--k", type=int, default=3,
                         help="Number of clusters")
     parser.add_argument("-p", "--prob", type=float, default=0.2,
                         help="Probability of an edge in the causal graphs")

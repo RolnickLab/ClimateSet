@@ -36,9 +36,7 @@ class DataLoader:
         if self.latent:
             self.z = np.load(os.path.join(self.data_path, 'data_z.npy'))
             self.gt_w = np.load(os.path.join(self.data_path, 'graph_w.npy'))
-            self.gt_graph = np.load(os.path.join(self.data_path, 'graph_z.npy'))
-        else:
-            self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
+        self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
 
     def _split_data(self):
         t_max = self.x.shape[1]
