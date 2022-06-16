@@ -60,11 +60,13 @@ class DataGeneratorWithLatent:
 
         return G
 
-    def sample_mlp(self):
+    def sample_mlp(self, n_timesteps):
         """Sample a MLP that outputs the parameters for the distributions of Z
+        Args:
+            n_timesteps: Number of previous timesteps considered
         """
         dict_layers = OrderedDict()
-        num_first_layer = self.tau * (self.d * self.k) * (self.d * self.k)
+        num_first_layer = n_timesteps * (self.d * self.k) * (self.d * self.k)
         num_last_layer = 2 * self.d * self.k
 
         if self.non_linearity == "relu":
@@ -133,25 +135,34 @@ class DataGeneratorWithLatent:
         # initialize Z for the first timesteps
         self.Z = torch.zeros((self.n, self.t, self.d, self.k))
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
+
+        # sample graphs and NNs
+        self.G = self.sample_graph()
+        self.f = [None]
+
+        for n_timesteps in range(1, self.tau + 1):
+            self.f.append(self.sample_mlp(n_timesteps))
+
         for i_n in range(self.n):
-
-            # TODO: change the following for NN
-            for i in range(self.tau):
-                self.Z[i_n, i].normal_(0, 1)
-
-            # sample graphs and NNs
-            self.G = self.sample_graph()
-            self.f = self.sample_mlp()
-
             # sample the latent Z
-            for t in range(self.tau, self.t):
-                g = self.G.view(self.G.shape[0], -1)
-                z = self.Z[i_n, t - self.tau:t].view(self.tau, -1).repeat(1, self.d * self.k)
-                nn_input = (g * z).view(-1)
-                params = self.f(nn_input).view(-1, 2)
-                params[:, 1] = 0.5 * torch.exp(params[:, 1])
-                dist = distr.normal.Normal(params[:, 0], params[:, 1])
-                self.Z[i_n, t] = dist.rsample().view(self.d, self.k)
+            for t in range(self.t):
+                if t == 0:
+                    self.Z[i_n, t].normal_(0, 1)
+                else:
+                    if t < self.tau:
+                        nn_idx = t
+                        g = self.G[:t].view(self.G[:t].shape[0], -1)
+                        z = self.Z[i_n, :t].view(t, -1).repeat(1, self.d * self.k)
+                    else:
+                        nn_idx = -1
+                        g = self.G.view(self.G.shape[0], -1)
+                        z = self.Z[i_n, t - self.tau:t].view(self.tau, -1).repeat(1, self.d * self.k)
+
+                    nn_input = (g * z).view(-1)
+                    params = self.f[nn_idx](nn_input).view(-1, 2)
+                    params[:, 1] = 0.5 * torch.exp(params[:, 1])
+                    dist = distr.normal.Normal(params[:, 0], params[:, 1])
+                    self.Z[i_n, t] = dist.rsample().view(self.d, self.k)
 
             # sample observational model
             self.w = self.sample_w()
