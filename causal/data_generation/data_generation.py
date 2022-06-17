@@ -34,7 +34,7 @@ class DataGeneratorWithLatent:
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
         self.non_linearity = hp.non_linearity
-        self.same_cluster_assign = True
+        self.same_cluster_assign = False
 
         assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
 
@@ -102,33 +102,23 @@ class DataGeneratorWithLatent:
         Returns:
             A tensor w (shape: d_x, d, k)
         """
-        # assign d_xs uniformly to a cluster k
-        cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
-        cluster_assign = np.append(cluster_assign, np.arange(self.k))
-        cluster_assign = np.stack((np.arange(self.d_x), cluster_assign))
+        mask = torch.zeros((self.d_x, self.d, self.k))
+        for i in range(self.d):
+            # assign d_xs uniformly to a cluster k
+            cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
+            cluster_assign = np.append(cluster_assign, np.arange(self.k))
+            np.random.shuffle(cluster_assign)
+            mask[np.arange(self.d_x), i, cluster_assign] = 1
 
-        # sample w uniformly and mask it according to the cluster assignment
-        # TODO: use the general case where w change with d
-        mask = torch.zeros((self.d_x, self.k))
-        mask[cluster_assign] = 1
-
-        sign = torch.ones((self.d_x, self.k)) * 0.5
+        sign = torch.ones((self.d_x, self.d, self.k)) * 0.5
         sign = torch.bernoulli(sign) * 2 - 1
-        w = torch.empty((self.d_x, self.k)).uniform_(0.5, 2)
+        w = torch.empty((self.d_x, self.d, self.k)).uniform_(0.5, 2)
         w = w * mask * sign
-
-        # shuffle rows
-        w = w[torch.randperm(w.size(0))]
 
         # normalize to make w orthonormal
         w = w / torch.norm(w, dim=0)
 
-        if self.same_cluster_assign:
-            w = w.unsqueeze(1).repeat(1, self.d, 1)
-        else:
-            raise NotImplementedError("This type of w sampling is not implemented yet")
-
-        # TODO: add test torch.matmul(w.T, w) == torch.eye(w.size(1))
+        assert torch.all(torch.isclose(torch.matmul(w[:, i].T, w[:, i]), torch.eye(w.size(-1)), rtol=0.01))
         return w
 
     def generate(self):
