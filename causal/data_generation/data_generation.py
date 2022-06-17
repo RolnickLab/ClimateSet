@@ -108,10 +108,14 @@ class DataGeneratorWithLatent:
         cluster_assign = np.stack((np.arange(self.d_x), cluster_assign))
 
         # sample w uniformly and mask it according to the cluster assignment
+        # TODO: use the general case where w change with d
         mask = torch.zeros((self.d_x, self.k))
         mask[cluster_assign] = 1
+
+        sign = torch.ones((self.d_x, self.k)) * 0.5
+        sign = torch.bernoulli(sign) * 2 - 1
         w = torch.empty((self.d_x, self.k)).uniform_(0.5, 2)
-        w = w * mask
+        w = w * mask * sign
 
         # shuffle rows
         w = w[torch.randperm(w.size(0))]
@@ -168,9 +172,9 @@ class DataGeneratorWithLatent:
             self.w = self.sample_w()
 
             # sample the data X
-            for t in range(self.tau, self.t):
+            for t in range(self.t):
                 mean = torch.einsum("xdk,dk->dx", self.w, self.Z[i_n, t])
-                # could sample sigma
+                # TODO: could sample sigma
                 dist = distr.normal.Normal(mean.view(-1), 1)
                 self.X[i_n, t] = dist.rsample().view(self.d, self.d_x)
 
