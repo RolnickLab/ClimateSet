@@ -36,6 +36,8 @@ class DataLoader:
         if self.latent:
             self.z = np.load(os.path.join(self.data_path, 'data_z.npy'))
             self.gt_w = np.load(os.path.join(self.data_path, 'graph_w.npy'))
+            self.gt_w = self.gt_w.transpose(1, 0, 2)
+
         self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
 
     def _split_data(self):
