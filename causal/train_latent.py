@@ -13,6 +13,7 @@ class TrainingLatent:
         self.latent = hp.latent
         self.k = hp.k
         self.gt_dag = data.gt_graph
+        self.gt_w = data.gt_w
         self.converged = False
         self.thresholded = False
         self.ended = False
@@ -39,9 +40,13 @@ class TrainingLatent:
         # TODO just equal size of G
         if self.instantaneous:
             raise NotImplementedError("Soon")
-            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau + 1, self.d, self.d, self.k))
+            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau + 1,
+                                    self.d, self.k, self.d, self.k))
         else:
-            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau, self.d, self.d, self.k))
+            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau, self.d,
+                                    self.k, self.d, self.k))
+        self.adj_w_tt = np.zeros((self.hp.max_iteration, self.d, self.d_x, self.k))
+
         # TODO: just for tests, remove
         # self.model.mask.fix(self.gt_dag)
 
@@ -67,6 +72,8 @@ class TrainingLatent:
 
         adj = self.model.get_adj().detach().numpy()
         self.adj_tt[self.iteration] = adj
+        w = self.model.encoder_decoder.w.detach().numpy()
+        self.adj_w_tt[self.iteration] = w
 
     def print_results(self):
         print("============================================================")
@@ -218,7 +225,7 @@ class TrainingLatent:
 
     def get_nll(self, x, y) -> torch.Tensor:
         elbo = self.model(x, y)
-        return elbo
+        return -elbo
 
     # def get_nll(self, x, y) -> torch.Tensor:
     #     density_param = self.model(x)

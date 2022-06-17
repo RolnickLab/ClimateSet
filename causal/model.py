@@ -34,7 +34,8 @@ class TSDCD(nn.Module):
             self.cond_models = nn.ModuleList(MLP(num_layers, num_hidden,
                                                  num_input, num_output) for i
                                              in range(self.d))
-            self.mask = Mask(d, 2 * tau_neigh + 1, tau, instantaneous=instantaneous, drawhard=hard_gumbel)
+            self.mask = Mask(d, 2 * tau_neigh + 1, tau,
+                             instantaneous=instantaneous, latent=False, drawhard=hard_gumbel)
         elif model_type == "free":
             raise NotImplementedError
 
@@ -133,14 +134,14 @@ class LatentTSDCD(nn.Module):
         else:
             raise NotImplementedError("This distribution is not implemented yet.")
 
-        self.decoder = Decoder(self.d, self.d_x, self.k)
-        self.encoder = Encoder(self.decoder.w)
+        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.k)
+        # self.encoder = Encoder(self.d, self.d_x, self.k)  # self.decoder.w
         self.transition_model = TransitionModel(self.d, self.k, self.tau,
                                                 self.num_layers,
                                                 self.num_hidden,
                                                 self.num_output)
 
-        self.mask = Mask(d, k, tau, instantaneous=instantaneous, drawhard=hard_gumbel)
+        self.mask = Mask(d, k, tau, instantaneous=instantaneous, latent=True, drawhard=hard_gumbel)
 
     def get_adj(self):
         return self.mask.get_proba()
@@ -158,20 +159,22 @@ class LatentTSDCD(nn.Module):
         for i in range(self.d):
             # get params from the encoder q(z^t | x^t)
             for t in range(self.tau):
-                q_mu, q_logvar = self.encoder(x[:, t, i], i)  # torch.matmul(self.W, x)
+                q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
 
                 # reparam trick
                 q_std = 0.5 * torch.exp(q_logvar)
                 z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
 
-            q_mu, q_logvar = self.encoder(y[:, i], i)  # torch.matmul(self.W, x)
+            q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
             q_std = 0.5 * torch.exp(q_logvar)
             z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
 
             # get params of the transition model p(z^t | z^{<t})
-            pz_params = self.transition_model(z[:, :-1].clone(), mask[:, :, i], i)
-            pz_mu = pz_params
-            pz_params = pz_params.reshape(b, self.k, 2)
+            pz_params = torch.zeros(b, self.k, 2)
+            for k in range(self.k):
+                pz_params[:, k] = self.transition_model(z[:, :-1].clone(), mask[:, :, i, k], i, k)
+            # pz_mu = pz_params
+            # pz_params = pz_params.reshape(b, self.k, 2)
             pz_mu = pz_params[:, :, 0].clone()
             pz_logvar = pz_params[:, :, 1].clone()
             pz_std = 0.5 * torch.exp(pz_logvar)
@@ -179,15 +182,17 @@ class LatentTSDCD(nn.Module):
             kl = self.get_kl(q_mu, q_std, pz_mu, pz_std)
 
             # get params from decoder p(x^t | z^t)
-            px_mu, px_logvar = self.decoder(z[:, -1, i], i)
+
+            px_mu, px_logvar = self.encoder_decoder(z[:, -1, i].clone(), i, encoder=False)
             px_std = 0.5 * torch.exp(px_logvar)
             px_distr = self.distr_decoder(px_mu, px_std)
 
             recons = torch.sum(px_distr.log_prob(y[:, i]))
 
-            elbo = elbo + recons - kl
+            elbo = elbo - kl + recons
+            # assert kl >= 0, f"Kl={kl} has to be >= 0"
 
-        return elbo
+        return elbo / (b * self.d)
 
     def get_kl(self, mu_q, s_q, mu_p, s_p) -> float:
         """KL between two multivariate Gaussian Q and P.
@@ -198,6 +203,26 @@ class LatentTSDCD(nn.Module):
 
         return torch.sum(kl)
 
+class EncoderDecoder(nn.Module):
+    def __init__(self, d: int, d_x: int, k: int):
+        super().__init__()
+        self.d = d
+        self.d_x = d_x
+        self.k = k
+        # make it more general for NN ?
+
+        self.w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)  # TODO: might have a better initialization
+        self.var_encoder = nn.Parameter(torch.rand(d) + 0.1)
+        self.var_decoder = nn.Parameter(torch.rand(d) + 0.1)
+
+    def forward(self, x, i, encoder:bool):
+        if encoder:
+            mu = torch.matmul(x, self.w[i])
+            var = self.var_encoder[i]
+        else:
+            mu = torch.matmul(x, self.w[i].T)
+            var = self.var_decoder[i]
+        return mu, var
 
 class Decoder(nn.Module):
     def __init__(self, d: int, d_x: int, k: int):
@@ -206,27 +231,34 @@ class Decoder(nn.Module):
         self.d_x = d_x
         self.k = k
         # make it more general for NN ?
-        self.w = torch.rand(d, d_x, k)  # TODO: might have a better initialization
+
+        self.w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)  # TODO: might have a better initialization
         self.var = torch.rand(d)
 
-    def forward(self, x, i):
-        mu = nn.functional.linear(x, self.w[i])
+    def forward(self, z, i):
+        # mu = nn.functional.linear(x, self.w[i])
+        mu = torch.matmul(z, self.w[i].T)
         return mu, self.var[i]
 
 
 class Encoder(nn.Module):
-    def __init__(self, w: torch.Tensor):
+    def __init__(self, d: int, d_x: int, k: int):
+        # def __init__(self, w: torch.Tensor):
         super().__init__()
         # TODO
-        self.w = w  # transpose -1 and -2
-        self.d = self.w.size(0)
-        self.d_x = self.w.size(1)
-        self.k = self.w.size(2)
+        # self.w = w  # transpose -1 and -2
+        # self.d = self.w.size(0)
+        # self.d_x = self.w.size(1)
+        # self.k = self.w.size(2)
+
+        self.d = d
+        self.d_x = d_x
+        self.k = k
+        self.w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)  # TODO: might have a better initialization
         self.var = torch.rand(self.d)  # TODO: change to centered in 0
 
     def forward(self, x, i):
-        # TODO: for all i
-        mu = nn.functional.linear(x, self.w[i].T)
+        mu = torch.matmul(x, self.w[i])
         return mu, self.var[i]
 
 
@@ -241,11 +273,11 @@ class TransitionModel(nn.Module):
         # initialize NNs
         self.num_layers = num_layers
         self.num_hidden = num_hidden
-        self.num_output = num_output * k
-        self.nn = nn.ModuleList(MLP(num_layers, num_hidden, d * k * k, self.num_output) for i in range(d))
+        self.num_output = num_output
+        self.nn = nn.ModuleList(MLP(num_layers, num_hidden, d * k * tau, self.num_output) for i in range(d * k))
         # self.nn = MLP(num_layers, num_hidden, d * k * k, self.num_output)
 
-    def forward(self, z, mask, i):
+    def forward(self, z, mask, i, k):
         """Returns the params of N(z_t | z_{<t})
         NN(G_{t-k} * z_{t-1}, ..., G_{t-k} * z_{t-k})
         """
@@ -256,14 +288,14 @@ class TransitionModel(nn.Module):
         # TODO: more efficient with einsum ?
         # masked_z = z_past.view(z_past.size(0), -1)
 
-        param_z = self.nn[i](masked_z)
+        param_z = self.nn[i * self.k + k](masked_z)
         # param_z = self.nn(masked_z)
 
         return param_z
 
 
 class Mask(nn.Module):
-    def __init__(self, d: int, d_x: int, tau: int, instantaneous: bool, drawhard: bool):
+    def __init__(self, d: int, d_x: int, tau: int, latent: bool, instantaneous: bool, drawhard: bool):
         super().__init__()
 
         self.d = d
@@ -273,23 +305,28 @@ class Mask(nn.Module):
         else:
             self.tau = tau
         self.d_x = d_x
+        self.latent = latent
         self.drawhard = drawhard
         self.fixed = False
         self.fixed_output = None
         self.uniform = distr.uniform.Uniform(0, 1)
 
-        if self.instantaneous:
-            # initialize mask as log(mask_ij) = 1
-            self.param = nn.Parameter(torch.ones((tau + 1, d, d, d_x)) * 5)
+        if self.latent:
+            self.param = nn.Parameter(torch.ones((tau, d, d_x, d, d_x)) * 5)
             self.fixed_mask = torch.ones_like(self.param)
-            # set diagonal 0 for G_t0
-            self.fixed_mask[-1, torch.arange(self.fixed_mask.size(1)), torch.arange(self.fixed_mask.size(2))] = 0
-            # TODO: set neighbors to 0
-            # self.fixed_mask[:, :, :, d_x] = 0
         else:
-            # initialize mask as log(mask_ij) = 1
-            self.param = nn.Parameter(torch.ones((tau, d, d, d_x)) * 5)
-            self.fixed_mask = torch.ones_like(self.param)
+            if self.instantaneous:
+                # initialize mask as log(mask_ij) = 1
+                self.param = nn.Parameter(torch.ones((tau + 1, d, d, d_x)) * 5)
+                self.fixed_mask = torch.ones_like(self.param)
+                # set diagonal 0 for G_t0
+                self.fixed_mask[-1, torch.arange(self.fixed_mask.size(1)), torch.arange(self.fixed_mask.size(2))] = 0
+                # TODO: set neighbors to 0
+                # self.fixed_mask[:, :, :, d_x] = 0
+            else:
+                # initialize mask as log(mask_ij) = 1
+                self.param = nn.Parameter(torch.ones((tau, d, d, d_x)) * 5)
+                self.fixed_mask = torch.ones_like(self.param)
 
     def forward(self, b: int, tau: float = 1) -> torch.Tensor:
         """
