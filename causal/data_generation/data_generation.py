@@ -54,7 +54,8 @@ class DataGeneratorWithLatent:
             A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
         """
         prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
-        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        # set diagonal to 1
+        # prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
@@ -97,28 +98,26 @@ class DataGeneratorWithLatent:
         pass
 
     def sample_w(self) -> torch.Tensor:
-        """Sample matrices that are positive and orthogonal.
+        """Sample matrices that are non-negative and orthogonal.
         They are the links between Z and X.
         Returns:
-            A tensor w (shape: d_x, d, k)
+            A tensor w (shape: d, d_x, k)
         """
-        mask = torch.zeros((self.d_x, self.d, self.k))
+        mask = torch.zeros((self.d, self.d_x, self.k))
         for i in range(self.d):
             # assign d_xs uniformly to a cluster k
             cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
             cluster_assign = np.append(cluster_assign, np.arange(self.k))
             np.random.shuffle(cluster_assign)
-            mask[np.arange(self.d_x), i, cluster_assign] = 1
+            mask[i, np.arange(self.d_x), cluster_assign] = 1
 
-        sign = torch.ones((self.d_x, self.d, self.k)) * 0.5
-        sign = torch.bernoulli(sign) * 2 - 1
-        w = torch.empty((self.d_x, self.d, self.k)).uniform_(0.5, 2)
-        w = w * mask * sign
+        w = torch.empty((self.d, self.d_x, self.k)).uniform_(0.5, 2)
+        w = w * mask
 
         # normalize to make w orthonormal
-        w = w / torch.norm(w, dim=0)
-
-        assert torch.all(torch.isclose(torch.matmul(w[:, i].T, w[:, i]), torch.eye(w.size(-1)), rtol=0.01))
+        for i in range(self.d):
+            w[i] = w[i] / torch.norm(w[i], dim=0)
+            assert torch.all(torch.isclose(torch.matmul(w[i].T, w[i]), torch.eye(w.size(-1)), rtol=0.01))
         return w
 
     def generate(self):
@@ -134,6 +133,9 @@ class DataGeneratorWithLatent:
         self.G = self.sample_graph()
         self.f = [None]
 
+        # sample observational model
+        self.w = self.sample_w()
+
         for n_timesteps in range(1, self.tau + 1):
             self.f.append(self.sample_mlp(n_timesteps))
 
@@ -141,7 +143,7 @@ class DataGeneratorWithLatent:
             # sample the latent Z
             for t in range(self.t):
                 if t == 0:
-                    self.Z[i_n, t].normal_(0, 1)
+                    self.Z[i_n, t].normal_(2, 1)  # test with mu=2
                 else:
                     if t < self.tau:
                         nn_idx = t
@@ -154,19 +156,19 @@ class DataGeneratorWithLatent:
 
                     nn_input = (g * z).view(-1)
                     params = self.f[nn_idx](nn_input).view(-1, 2)
-                    params[:, 1] = 0.5 * torch.exp(params[:, 1])
+                    params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.1  # TODO: change back, only a test, smaller variance
                     dist = distr.normal.Normal(params[:, 0], params[:, 1])
                     self.Z[i_n, t] = dist.rsample().view(self.d, self.k)
 
-            # sample observational model
-            self.w = self.sample_w()
-
             # sample the data X
             for t in range(self.t):
-                mean = torch.einsum("xdk,dk->dx", self.w, self.Z[i_n, t])
+                # TODO: probably error here:
+                for i_d in range(self.d):
+                    mu = torch.matmul(self.Z[i_n, t, i_d], self.w[i_d].T)
+                # mean = torch.einsum("xdk,dk->dx", self.w, self.Z[i_n, t])
                 # TODO: could sample sigma
-                dist = distr.normal.Normal(mean.view(-1), 1)
-                self.X[i_n, t] = dist.rsample().view(self.d, self.d_x)
+                    dist = distr.normal.Normal(mu, 0.1)
+                    self.X[i_n, t, i_d] = dist.rsample()
 
         return self.X, self.Z
 
