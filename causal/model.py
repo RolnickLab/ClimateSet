@@ -99,7 +99,12 @@ class LatentTSDCD(nn.Module):
                  k: int,
                  tau: int,
                  instantaneous: bool,
-                 hard_gumbel: bool):
+                 hard_gumbel: bool,
+                 debug_gt_graph: bool,
+                 debug_gt_z: bool,
+                 debug_gt_w: bool,
+                 gt_graph: torch.tensor = None,
+                 gt_w: torch.tensor = None):
         super().__init__()
         # nn encoder hyperparameters
         self.num_layers = num_layers
@@ -113,6 +118,11 @@ class LatentTSDCD(nn.Module):
         self.tau = tau
         self.instantaneous = instantaneous
         self.hard_gumbel = hard_gumbel
+        self.debug_gt_graph = debug_gt_graph
+        self.debug_gt_z = debug_gt_z
+        self.debug_gt_w = debug_gt_w
+        self.gt_w = torch.tensor(gt_w).double()
+        self.gt_graph = torch.tensor(gt_graph).double()
 
         if distr_z0 == "gaussian":
             self.distr_z0 = torch.normal
@@ -134,7 +144,7 @@ class LatentTSDCD(nn.Module):
         else:
             raise NotImplementedError("This distribution is not implemented yet.")
 
-        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.k)
+        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.k, self.debug_gt_w, self.gt_w)
         # self.encoder = Encoder(self.d, self.d_x, self.k)  # self.decoder.w
         self.transition_model = TransitionModel(self.d, self.k, self.tau,
                                                 self.num_layers,
@@ -142,87 +152,168 @@ class LatentTSDCD(nn.Module):
                                                 self.num_output)
 
         self.mask = Mask(d, k, tau, instantaneous=instantaneous, latent=True, drawhard=hard_gumbel)
+        if self.debug_gt_graph:
+            self.mask.fix(self.gt_graph)
 
     def get_adj(self):
         return self.mask.get_proba()
 
-    def forward(self, x, y):
+    def forward(self, x, y, gt_z, iteration):
         b = x.size(0)
-
         # sample masks
         mask = self.mask(b)
-
-        z = torch.zeros(b, self.tau + 1, self.d, self.k)
         elbo = torch.tensor([0.])
+        recons = torch.tensor([0.])
+        kl = torch.tensor([0.])
+        q_mu_y = torch.zeros(b, self.k, self.d)
+        q_std_y = torch.zeros(b, self.k, self.d)
 
-        # TODO: be more efficient without the loop
-        for i in range(self.d):
-            # get params from the encoder q(z^t | x^t)
-            for t in range(self.tau):
-                q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
+        if not self.debug_gt_z:
+            z = torch.zeros(b, self.tau + 1, self.d, self.k)
 
-                # reparam trick
+            # TODO: be more efficient without the loop
+
+            # sample Zs
+            for i in range(self.d):
+                # get params from the encoder q(z^t | x^t)
+                for t in range(self.tau):
+                    q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
+
+                    # reparam trick
+                    q_std = 0.5 * torch.exp(q_logvar)
+                    z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
+
+                q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
                 q_std = 0.5 * torch.exp(q_logvar)
-                z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
+                z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
+                q_mu_y[:, :, i] = q_mu
+                q_std_y[:, :, i] = q_std
 
-            q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
-            q_std = 0.5 * torch.exp(q_logvar)
-            z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
+            for i in range(self.d):
+                # get params of the transition model p(z^t | z^{<t})
+                pz_params = torch.zeros(b, self.k, 2)
+                # z_ = torch.cat
+                for k in range(self.k):
+                    pz_params[:, k] = self.transition_model(z[:, :-1].clone(),
+                                                            mask[:, :, i * self.k +  k], i, k)
+                # pz_mu = pz_params
+                # pz_params = pz_params.reshape(b, self.k, 2)
+                pz_mu = pz_params[:, :, 0]  # .clone()
+                pz_logvar = pz_params[:, :, 1]   # .clone()
+                pz_std = 0.5 * torch.exp(pz_logvar)
 
-            # get params of the transition model p(z^t | z^{<t})
-            pz_params = torch.zeros(b, self.k, 2)
-            for k in range(self.k):
-                pz_params[:, k] = self.transition_model(z[:, :-1].clone(), mask[:, :, i, k], i, k)
-            # pz_mu = pz_params
-            # pz_params = pz_params.reshape(b, self.k, 2)
-            pz_mu = pz_params[:, :, 0].clone()
-            pz_logvar = pz_params[:, :, 1].clone()
-            pz_std = 0.5 * torch.exp(pz_logvar)
+                kl_ = self.get_kl(q_mu_y[:, :, i], q_std_y[:, :, i], pz_mu, pz_std)
+                # kl = self.get_kl(q_mu, q_std, pz_mu, pz_std)
 
-            kl = self.get_kl(q_mu, q_std, pz_mu, pz_std)
+                # get params from decoder p(x^t | z^t)
 
-            # get params from decoder p(x^t | z^t)
+                px_mu, px_logvar = self.encoder_decoder(z[:, -1, i], i, encoder=False)  # .clone()
+                px_std = 0.5 * torch.exp(px_logvar)
+                px_distr = self.distr_decoder(px_mu, px_std)
 
-            px_mu, px_logvar = self.encoder_decoder(z[:, -1, i].clone(), i, encoder=False)
-            px_std = 0.5 * torch.exp(px_logvar)
-            px_distr = self.distr_decoder(px_mu, px_std)
+                recons_ = torch.sum(px_distr.log_prob(y[:, i]))
+                recons = recons + recons_
+                kl = kl + kl_
 
-            recons = torch.sum(px_distr.log_prob(y[:, i]))
+                assert kl >= 0, f"KL={kl} has to be >= 0"
 
-            elbo = elbo - kl + recons
-            # assert kl >= 0, f"Kl={kl} has to be >= 0"
+            elbo = recons - kl
+            return elbo / (b * self.d), recons / (b * self.d), kl / (b * self.d)
+        else:
+            z = gt_z
 
-        return elbo / (b * self.d)
+            for i in range(self.d):
+                q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
+                q_std = 0.5 * torch.exp(q_logvar)
+                q_mu_y[:, :, i] = q_mu
+                q_std_y[:, :, i] = q_std
 
-    def get_kl(self, mu_q, s_q, mu_p, s_p) -> float:
+            for i in range(self.d):
+                # get params of the transition model p(z^t | z^{<t})
+                pz_params = torch.zeros(b, self.k, 2)
+                # z_ = torch.cat
+                for k in range(self.k):
+                    pz_params[:, k] = self.transition_model(z[:, :-1].clone(),
+                                                            mask[:, :, i * self.k +  k], i, k)
+                # pz_mu = pz_params
+                # pz_params = pz_params.reshape(b, self.k, 2)
+                pz_mu = pz_params[:, :, 0]  # .clone()
+                pz_logvar = pz_params[:, :, 1]   # .clone()
+                pz_std = 0.5 * torch.exp(pz_logvar)
+
+                kl_ = self.get_kl(q_mu_y[:, :, i], q_std_y[:, :, i], pz_mu, pz_std)
+                # kl = self.get_kl(q_mu, q_std, pz_mu, pz_std)
+
+                # get params from decoder p(x^t | z^t)
+
+                px_mu, px_logvar = self.encoder_decoder(z[:, -1, i], i, encoder=False)  # .clone()
+                px_std = 0.5 * torch.exp(px_logvar)
+                px_distr = self.distr_decoder(px_mu, px_std)
+
+                recons_ = torch.sum(px_distr.log_prob(y[:, i]))
+                recons = recons + recons_
+                kl = kl + kl_
+
+                # assert kl >= 0, f"KL={kl} has to be >= 0"
+            elbo = elbo + recons - kl
+
+            return elbo / (b * self.d), recons / (b * self.d), kl / (b * self.d)
+
+    def get_kl(self, mu1, sigma1, mu2, sigma2) -> float:
         """KL between two multivariate Gaussian Q and P.
         Here, Q is spherical and P is diagonal"""
-        kl = 0.5 * (torch.log(s_q ** self.k / torch.prod(s_p, dim=1)) +
-                    torch.sum(s_q / s_p, dim=1) - self.k +
-                    torch.einsum('bd, bd -> b', (mu_p - mu_q) * (1 / s_p), mu_p - mu_q))
+        kl = 0.5 * (torch.log(torch.prod(sigma2, dim=1) / torch.prod(sigma1, dim=1)) +
+                    torch.sum(sigma1 / sigma2, dim=1) - self.k +
+                    torch.einsum('bd, bd -> b', (mu2 - mu1) * (1 / sigma2), mu2 - mu1))
+        # kl = 0.5 * (torch.log(torch.prod(sigma2, dim=1) / sigma1 ** self.k) +
+        #             torch.sum(sigma1 / sigma2, dim=1) - self.k +
+        #             torch.einsum('bd, bd -> b', (mu2 - mu1) * (1 / sigma2), mu2 - mu1))
+        if torch.sum(kl) < 0:
+            __import__('ipdb').set_trace()
+            print(sigma2 ** self.k)
+            print(torch.prod(sigma1, dim=1))
+            print(torch.sum(torch.log(sigma2 ** self.k / torch.prod(sigma1, dim=1))))
+            print(torch.sum(torch.sum(sigma1 / sigma2, dim=1)))
+            print(torch.sum(torch.einsum('bd, bd -> b', (mu2 - mu1) * (1 / s_p), mu2 - mu1)))
 
         return torch.sum(kl)
 
 class EncoderDecoder(nn.Module):
-    def __init__(self, d: int, d_x: int, k: int):
+    def __init__(self, d: int, d_x: int, k: int, debug_gt_w: bool, gt_w:
+                 torch.tensor = None):
         super().__init__()
         self.d = d
         self.d_x = d_x
         self.k = k
+        self.debug_gt_w = debug_gt_w
+        self.gt_w = gt_w
         # make it more general for NN ?
 
-        self.w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)  # TODO: might have a better initialization
-        self.var_encoder = nn.Parameter(torch.rand(d) + 0.1)
-        self.var_decoder = nn.Parameter(torch.rand(d) + 0.1)
+        self.log_w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)  # TODO: might have a better initialization
+        self.var_encoder = nn.Parameter(torch.rand(d) * 0.01 + 0.001)
+        self.var_decoder = nn.Parameter(torch.rand(d) * 0.01 + 0.001)
 
     def forward(self, x, i, encoder:bool):
+        if self.debug_gt_w:
+            w = self.gt_w[i]
+        else:
+            w = torch.exp(self.log_w[i])
+
         if encoder:
-            mu = torch.matmul(x, self.w[i])
+            mu = torch.matmul(x, w)
             var = self.var_encoder[i]
         else:
-            mu = torch.matmul(x, self.w[i].T)
+            # here x is in fact z
+            mu = torch.matmul(x, w.T)
             var = self.var_decoder[i]
         return mu, var
+
+    def get_w(self) -> torch.tensor:
+        if self.debug_gt_w:
+            w = self.gt_w
+        else:
+            w = torch.exp(self.log_w)
+        return w
 
 class Decoder(nn.Module):
     def __init__(self, d: int, d_x: int, k: int):
@@ -284,6 +375,7 @@ class TransitionModel(nn.Module):
         # t_total = torch.max(self.tau, z_past.size(1))  # TODO: find right dim
         # param_z = torch.zeros(z_past.size(0), 2)
 
+        z = z.view(mask.size())
         masked_z = (mask * z).view(z.size(0), -1)
         # TODO: more efficient with einsum ?
         # masked_z = z_past.view(z_past.size(0), -1)
@@ -312,7 +404,7 @@ class Mask(nn.Module):
         self.uniform = distr.uniform.Uniform(0, 1)
 
         if self.latent:
-            self.param = nn.Parameter(torch.ones((tau, d, d_x, d, d_x)) * 5)
+            self.param = nn.Parameter(torch.ones((tau, d * d_x, d * d_x)) * 5)
             self.fixed_mask = torch.ones_like(self.param)
         else:
             if self.instantaneous:
@@ -339,7 +431,7 @@ class Mask(nn.Module):
             return adj
         else:
             assert self.fixed_output is not None
-            return self.fixed_output.repeat(b, 1, 1, 1, 1)
+            return self.fixed_output.repeat(b, 1, 1, 1)
 
     def get_proba(self) -> torch.Tensor:
         if not self.fixed:

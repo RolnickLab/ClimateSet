@@ -58,6 +58,8 @@ def main(hp):
                              ratio_valid=hp.ratio_valid,
                              data_path=hp.data_path,
                              latent=hp.latent,
+                             debug_gt_z=hp.debug_gt_z,
+                             debug_gt_w=hp.debug_gt_w,
                              instantaneous=hp.instantaneous,
                              tau=hp.tau)
 
@@ -94,7 +96,12 @@ def main(hp):
                             k=hp.k,
                             tau=hp.tau,
                             instantaneous=hp.instantaneous,
-                            hard_gumbel=hp.hard_gumbel)
+                            hard_gumbel=hp.hard_gumbel,
+                            debug_gt_graph=hp.debug_gt_graph,
+                            debug_gt_z=hp.debug_gt_z,
+                            debug_gt_w=hp.debug_gt_w,
+                            gt_w=data_loader.gt_w,
+                            gt_graph=data_loader.gt_graph)
 
     # create path to exp and save hyperparameters
     save_path = os.path.join(hp.exp_path, "train")
@@ -138,6 +145,13 @@ if __name__ == "__main__":
                         help="ID specific to the experiment")
     parser.add_argument("--data-path", type=str, default="dataset/data0",
                         help="Path to the dataset")
+
+    parser.add_argument("--debug-gt-z", action="store_true",
+                        help="If true, use the ground truth value of Z (use only to debug)")
+    parser.add_argument("--debug-gt-w", action="store_true",
+                        help="If true, use the ground truth value of W (use only to debug)")
+    parser.add_argument("--debug-gt-graph", action="store_true",
+                        help="If true, use the ground truth graph (use only to debug)")
 
     # Dataset properties
 
