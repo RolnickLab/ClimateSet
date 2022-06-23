@@ -13,10 +13,8 @@ def moving_average(a: np.ndarray, n: int = 10):
 
 
 def plot(learner):
-    plot_learning_curves(learner.train_loss_list,
-                         learner.valid_loss_list,
-                         learner.hp.exp_path)
-    adj = learner.model.get_adj().detach().numpy().reshape(learner.gt_dag.shape[0], learner.gt_dag.shape[1], -1)
+    adj = learner.model.get_adj().detach().numpy()
+    # .reshape(learner.gt_dag.shape[0], learner.gt_dag.shape[1], -1)
     plot_adjacency_matrix(adj,
                           learner.gt_dag,
                           learner.hp.exp_path,
@@ -28,7 +26,14 @@ def plot(learner):
                                 'transition')
     # plot the weights W (from z to x)
     if learner.latent:
-        adj = learner.model.encoder_decoder.w.detach().numpy()
+        plot_learning_curves(train_loss=learner.train_loss_list,
+                             train_recons=learner.train_recons_list,
+                             train_kl=learner.train_kl_list,
+                             valid_loss=learner.valid_loss_list,
+                             valid_recons=learner.valid_recons_list,
+                             valid_kl=learner.valid_kl_list,
+                             path=learner.hp.exp_path)
+        adj = learner.model.encoder_decoder.get_w().detach().numpy()
 
         # .view(learner.gt_w.shape)
         plot_adjacency_matrix_w(adj,
@@ -40,23 +45,40 @@ def plot(learner):
                                      learner.iteration,
                                      learner.hp.exp_path,
                                      'w')
+    else:
+        plot_learning_curves(train_loss=learner.train_loss_list,
+                             valid_loss=learner.valid_loss_list,
+                             path=learner.hp.exp_path)
 
 
-def plot_learning_curves(train_loss: list, valid_loss: list, path: str):
+def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: list = None,
+                         valid_loss: list = None, valid_recons: list = None, valid_kl: list = None, path: str = ""):
     """ Plot the training and validation loss through time
-    :param train_loss: training loss
-    :param valid_loss: ground-truth adjacency matrices
-    :param path: path where to save the plot
+    Args:
+      train_loss: training loss
+      valid_loss: validation loss (on held-out dataset)
+      path: path where to save the plot
     """
     # remove first steps to avoid really high values
     t_loss = moving_average(train_loss[10:])
     v_loss = moving_average(valid_loss[10:])
+    if train_recons is not None:
+        t_recons = moving_average(train_recons[10:])
+        t_kl = moving_average(train_kl[10:])
+        # v_recons = moving_average(valid_recons[10:])
+        # v_kl = moving_average(valid_kl[10:])
 
     ax = plt.gca()
     # ax.set_ylim([0, 5])
     ax.set_yscale("log")
-    plt.plot(t_loss, label="train")
     plt.plot(v_loss, label="valid")
+    if train_recons is not None:
+        plt.plot(t_recons, label="tr recons")
+        plt.plot(t_kl, label="tr kl")
+        # plt.plot(v_recons, label="val recons")
+        # plt.plot(v_kl, label="val kl")
+    else:
+        plt.plot(t_loss, label="train")
     plt.title("Learning curves")
     plt.legend()
     plt.savefig(os.path.join(path, "loss.png"))
@@ -175,7 +197,7 @@ def plot_adjacency_through_time(w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
       name_suffix: suffix for the name of the plot
     """
     taus = w_adj.shape[1]
-    d = w_adj.shape[2] * w_adj.shape[3]
+    d = w_adj.shape[2]  # * w_adj.shape[3]
     w_adj = w_adj.reshape(w_adj.shape[0], taus, d, d)
     fig, ax1 = plt.subplots()
 
@@ -215,7 +237,6 @@ def plot_adjacency_through_time_w(w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
         for j in range(d_x):
             for k in range(k_):
                 ax1.plot(range(1, t), np.abs(w_adj[1:t, i, j, k] - gt_dag[i, j, k]), linewidth=1)
-                __import__('ipdb').set_trace()
     fig.suptitle("Learned adjacencies through time")
     fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
     fig.clf()
