@@ -3,6 +3,7 @@ import numpy as np
 
 from dag_optim import compute_dag_constraint
 from plot import plot
+from metrics import mean_corr_coef
 
 
 class TrainingLatent:
@@ -143,9 +144,9 @@ class TrainingLatent:
 
             self.iteration += 1
 
-            # TODO: remove
-            if self.iteration % 30000 == 0:
-                pass
+            # TODO: remove, only for tests
+            if self.iteration % 1000 == 0:
+                score, cc_program_perm, assignments, z, z_hat = mean_corr_coef(self.model, self.data)
 
         # final plotting and printing
         plot(self)
@@ -182,12 +183,8 @@ class TrainingLatent:
         self.model.train()
 
         # sample data
-        if self.debug_gt_z:
-            x, y, z = self.data.sample_train(self.batch_size)
-            nll, recons, kl = self.get_nll(x, y, z)
-        else:
-            x, y = self.data.sample_train(self.batch_size)
-            nll, recons, kl = self.get_nll(x, y)
+        x, y, z = self.data.sample_train(self.batch_size)
+        nll, recons, kl = self.get_nll(x, y, z)
 
         # get acyclicity constraint, regularisation
         reg = self.get_regularisation()
@@ -215,12 +212,8 @@ class TrainingLatent:
         # data = self.test_data
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
-        if self.debug_gt_z:
-            x, y, z = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
-            nll, recons, kl = self.get_nll(x, y, z)
-        else:
-            x, y = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
-            nll, recons, kl = self.get_nll(x, y)
+        x, y, z = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
+        nll, recons, kl = self.get_nll(x, y, z)
 
         # get acyclicity constraint, regularisation, elbo
         # h = self.get_acyclicity_violation()

@@ -58,7 +58,6 @@ def main(hp):
                              ratio_valid=hp.ratio_valid,
                              data_path=hp.data_path,
                              latent=hp.latent,
-                             debug_gt_z=hp.debug_gt_z,
                              debug_gt_w=hp.debug_gt_w,
                              instantaneous=hp.instantaneous,
                              tau=hp.tau)

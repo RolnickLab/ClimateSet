@@ -11,7 +11,6 @@ class DataLoader:
                  ratio_valid: float,
                  data_path: str,
                  latent: bool,
-                 debug_gt_z: bool,
                  debug_gt_w: bool,
                  instantaneous: bool,
                  tau: int):
@@ -23,7 +22,6 @@ class DataLoader:
 
         self.data_path = data_path
         self.latent = latent
-        self.debug_gt_z = debug_gt_z
         self.debug_gt_w = debug_gt_w
         self.instantaneous = instantaneous
         self.tau = tau
@@ -56,7 +54,7 @@ class DataLoader:
             self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
             self.x_train = self.x[:, self.idx_train]
             self.x_valid = self.x[:, self.idx_valid]
-            if self.latent and self.debug_gt_z:
+            if self.latent:
                 self.z_train = self.z[:, self.idx_train]
                 self.z_valid = self.z[:, self.idx_valid]
         else:
@@ -68,7 +66,7 @@ class DataLoader:
             np.random.shuffle(self.idx_valid)
             self.x_train = self.x[self.idx_train]
             self.x_valid = self.x[self.idx_valid]
-            if self.latent and self.debug_gt_z:
+            if self.latent:
                 self.z_train = self.z[self.idx_train]
                 self.z_valid = self.z[self.idx_valid]
 
@@ -78,12 +76,12 @@ class DataLoader:
 
         if self.instantaneous:
             x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
-            if self.latent and self.debug_gt_z:
+            if self.latent:
                 z = np.zeros((batch_size, self.tau + 2, self.d, self.k))
             t1 = 1
         else:
             x = np.zeros((batch_size, self.tau, self.d, self.d_x))
-            if self.latent and self.debug_gt_z:
+            if self.latent:
                 z = np.zeros((batch_size, self.tau + 1, self.d, self.k))
             t1 = 0
         y = np.zeros((batch_size, self.d, self.d_x))
@@ -93,28 +91,28 @@ class DataLoader:
             for i, idx in enumerate(random_idx):
                 x[i] = dataset[0, idx - self.tau:idx + t1]
                 y[i] = dataset[0, idx + t1]
-                if self.latent and self.debug_gt_z:
+                if self.latent:
                     z[i] = dataset_z[0, idx - self.tau:idx + t1 + 1]
         else:
             random_idx = np.random.choice(np.arange(dataset.shape[0]), replace=False, size=batch_size)
             for i, idx in enumerate(random_idx):
                 x[i] = dataset[idx, 0:self.tau + t1]
                 y[i] = dataset[idx, self.tau + t1]
-                if self.latent and self.debug_gt_z:
+                if self.latent:
                     z[i] = dataset_z[idx, 0:self.tau + t1 + 1]
-        if self.latent and self.debug_gt_z:
+        if self.latent:
             return torch.tensor(x), torch.tensor(y), torch.tensor(z)
         else:
             return torch.tensor(x), torch.tensor(y)
 
     def sample_train(self, batch_size: int) -> torch.Tensor:
-        if self.latent and self.debug_gt_z:
+        if self.latent:
             return self._sample(self.x_train, batch_size, self.z_train)
         else:
             return self._sample(self.x_train, batch_size)
 
     def sample_valid(self, batch_size: int) -> torch.Tensor:
-        if self.latent and self.debug_gt_z:
+        if self.latent:
             return self._sample(self.x_valid, batch_size, self.z_valid)
         else:
             return self._sample(self.x_valid, batch_size)

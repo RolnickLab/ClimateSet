@@ -158,36 +158,45 @@ class LatentTSDCD(nn.Module):
     def get_adj(self):
         return self.mask.get_proba()
 
-    def forward(self, x, y, gt_z, iteration):
+    def encode(self, x, y):
         b = x.size(0)
-        # sample masks
-        mask = self.mask(b)
-        elbo = torch.tensor([0.])
-        recons = torch.tensor([0.])
-        kl = torch.tensor([0.])
+
+        # TODO: be more efficient without the loop
+        z = torch.zeros(b, self.tau + 1, self.d, self.k)
         q_mu_y = torch.zeros(b, self.k, self.d)
         q_std_y = torch.zeros(b, self.k, self.d)
 
-        if not self.debug_gt_z:
-            z = torch.zeros(b, self.tau + 1, self.d, self.k)
+        # sample Zs
+        for i in range(self.d):
+            # get params from the encoder q(z^t | x^t)
+            for t in range(self.tau):
+                q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
 
-            # TODO: be more efficient without the loop
-
-            # sample Zs
-            for i in range(self.d):
-                # get params from the encoder q(z^t | x^t)
-                for t in range(self.tau):
-                    q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
-
-                    # reparam trick
-                    q_std = 0.5 * torch.exp(q_logvar)
-                    z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
-
-                q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
+                # reparam trick
                 q_std = 0.5 * torch.exp(q_logvar)
-                z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
-                q_mu_y[:, :, i] = q_mu
-                q_std_y[:, :, i] = q_std
+                z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
+
+            q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
+            q_std = 0.5 * torch.exp(q_logvar)
+            z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
+            q_mu_y[:, :, i] = q_mu
+            q_std_y[:, :, i] = q_std
+
+        return z, q_mu_y, q_std_y
+
+
+    def forward(self, x, y, gt_z, iteration):
+        b = x.size(0)
+        elbo = torch.tensor([0.])
+        recons = torch.tensor([0.])
+        kl = torch.tensor([0.])
+
+        # sample masks
+        mask = self.mask(b)
+
+        if not self.debug_gt_z:
+
+            z, q_mu_y, q_std_y = self.encode(x, y)
 
             for i in range(self.d):
                 # get params of the transition model p(z^t | z^{<t})
