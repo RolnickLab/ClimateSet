@@ -144,10 +144,6 @@ class TrainingLatent:
 
             self.iteration += 1
 
-            # TODO: remove, only for tests
-            if self.iteration % 1000 == 0:
-                score, cc_program_perm, assignments, z, z_hat = mean_corr_coef(self.model, self.data)
-
         # final plotting and printing
         plot(self)
         self.print_results()
