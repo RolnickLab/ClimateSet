@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
 
+from metrics import mean_corr_coef
+
 
 def moving_average(a: np.ndarray, n: int = 10):
     # from https://stackoverflow.com/questions/14313510/how-to-calculate-rolling-moving-average-using-python-numpy-scipy
@@ -13,19 +15,9 @@ def moving_average(a: np.ndarray, n: int = 10):
 
 
 def plot(learner):
-    adj = learner.model.get_adj().detach().numpy()
-    # .reshape(learner.gt_dag.shape[0], learner.gt_dag.shape[1], -1)
-    plot_adjacency_matrix(adj,
-                          learner.gt_dag,
-                          learner.hp.exp_path,
-                          'transition')
-    plot_adjacency_through_time(learner.adj_tt,
-                                learner.gt_dag,
-                                learner.iteration,
-                                learner.hp.exp_path,
-                                'transition')
     # plot the weights W (from z to x)
     if learner.latent:
+
         plot_learning_curves(train_loss=learner.train_loss_list,
                              train_recons=learner.train_recons_list,
                              train_kl=learner.train_kl_list,
@@ -49,6 +41,28 @@ def plot(learner):
         plot_learning_curves(train_loss=learner.train_loss_list,
                              valid_loss=learner.valid_loss_list,
                              path=learner.hp.exp_path)
+
+    adj = learner.model.get_adj().detach().numpy()
+    if learner.latent:
+        score, cc_program_perm, assignments, z, z_hat = mean_corr_coef(learner.model, learner.data)
+        print(score)
+        print(assignments)
+        permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
+        permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
+        gt_dag = permutation.T @ learner.gt_dag @ permutation
+        # __import__('ipdb').set_trace()
+    else:
+        gt_dag = learner.gt_dag
+    # .reshape(learner.gt_dag.shape[0], learner.gt_dag.shape[1], -1)
+    plot_adjacency_matrix(adj,
+                          gt_dag,
+                          learner.hp.exp_path,
+                          'transition')
+    plot_adjacency_through_time(learner.adj_tt,
+                                gt_dag,
+                                learner.iteration,
+                                learner.hp.exp_path,
+                                'transition')
 
 
 def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: list = None,
@@ -227,15 +241,15 @@ def plot_adjacency_through_time_w(w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
       path: path where to save the plot
       name_suffix: suffix for the name of the plot
     """
-    d = w_adj.shape[1]
-    d_x = w_adj.shape[2]
-    k_ = w_adj.shape[3]
+    tau = w_adj.shape[1]
+    dk = w_adj.shape[2]
+    dk = w_adj.shape[3]
     # w_adj = w_adj.reshape(w_adj.shape[0], taus, d, d)
     fig, ax1 = plt.subplots()
 
-    for i in range(d):
-        for j in range(d_x):
-            for k in range(k_):
+    for i in range(tau):
+        for j in range(dk):
+            for k in range(dk):
                 ax1.plot(range(1, t), np.abs(w_adj[1:t, i, j, k] - gt_dag[i, j, k]), linewidth=1)
     fig.suptitle("Learned adjacencies through time")
     fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
