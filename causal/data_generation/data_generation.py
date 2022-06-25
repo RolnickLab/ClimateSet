@@ -61,14 +61,24 @@ class DataGeneratorWithLatent:
 
         return G
 
+    def init_mlp_weight(self, model):
+        """Function to initialize MLP's weight from a normal.
+        In practice, gives more interesting functions than defaul
+        initialization
+        Args:
+            model: a pytorch model (MLP for now)
+        """
+        if isinstance(model, torch.nn.modules.Linear):
+            torch.nn.init.normal_(model.weight.data, mean=0., std=1)
+
     def sample_mlp(self, n_timesteps):
         """Sample a MLP that outputs the parameters for the distributions of Z
         Args:
             n_timesteps: Number of previous timesteps considered
         """
-        dict_layers = OrderedDict()
-        num_first_layer = n_timesteps * (self.d * self.k) * (self.d * self.k)
-        num_last_layer = 2 * self.d * self.k
+        mlps = nn.ModuleList()
+        num_first_layer = n_timesteps * self.d * self.k
+        num_last_layer = 2
 
         if self.non_linearity == "relu":
             nonlin = nn.ReLU()
@@ -77,22 +87,27 @@ class DataGeneratorWithLatent:
         else:
             raise NotImplementedError("Nonlinearity is not implemented yet")
 
-        for i in range(self.num_layers + 1):
-            num_input = self.num_hidden
-            num_output = self.num_hidden
+        for i_d in range(self.d):
+            for k in range(self.k):
+                dict_layers = OrderedDict()
+                for i in range(self.num_layers + 1):
+                    num_input = self.num_hidden
+                    num_output = self.num_hidden
 
-            if i == 0:
-                num_input = num_first_layer
-            if i == self.num_layers:
-                num_output = num_last_layer
-            dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
+                    if i == 0:
+                        num_input = num_first_layer
+                    if i == self.num_layers:
+                        num_output = num_last_layer
+                    dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
 
-            if i != self.num_layers:
-                dict_layers[f"nonlin{i}"] = nonlin
+                    if i != self.num_layers:
+                        dict_layers[f"nonlin{i}"] = nonlin
 
-        f = nn.Sequential(dict_layers)
+                mlp = nn.Sequential(dict_layers)
+                mlp.apply(self.init_mlp_weight)
+                mlps.append(mlp)
 
-        return f
+        return mlps
 
     def sample_lstm(self):
         pass
@@ -143,22 +158,27 @@ class DataGeneratorWithLatent:
             # sample the latent Z
             for t in range(self.t):
                 if t == 0:
-                    self.Z[i_n, t].normal_(2, 1)  # test with mu=2
+                    self.Z[i_n, t].normal_(0, 1)  # test with mu=2
                 else:
                     if t < self.tau:
                         nn_idx = t
-                        g = self.G[:t].view(self.G[:t].shape[0], -1)
-                        z = self.Z[i_n, :t].view(t, -1).repeat(1, self.d * self.k)
+                        g = self.G[:t]
+                        z = self.Z[i_n, :t]
                     else:
                         nn_idx = -1
-                        g = self.G.view(self.G.shape[0], -1)
-                        z = self.Z[i_n, t - self.tau:t].view(self.tau, -1).repeat(1, self.d * self.k)
+                        g = self.G
+                        z = self.Z[i_n, t - self.tau:t]
 
-                    nn_input = (g * z).view(-1)
-                    params = self.f[nn_idx](nn_input).view(-1, 2)
-                    params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.1  # TODO: change back, only a test, smaller variance
-                    dist = distr.normal.Normal(params[:, 0], params[:, 1])
-                    self.Z[i_n, t] = dist.rsample().view(self.d, self.k)
+                    # nn_input = (g * z).view(-1)
+                    for i_d in range(self.d):
+                        for k in range(self.k):
+                            nn_input = z.view(z.shape[0], -1) * g[:, k + i_d * self.k]
+                            params = self.f[nn_idx][k + i_d * self.k](nn_input)
+
+                            # params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.01  # TODO: change back, only a test, smaller variance
+                            std = torch.ones_like(params[:, 1]) * 0.0001
+                            dist = distr.normal.Normal(params[:, 0], std)
+                            self.Z[i_n, t, i_d, k] = dist.rsample()
 
             # sample the data X
             for t in range(self.t):
@@ -167,7 +187,7 @@ class DataGeneratorWithLatent:
                     mu = torch.matmul(self.Z[i_n, t, i_d], self.w[i_d].T)
                 # mean = torch.einsum("xdk,dk->dx", self.w, self.Z[i_n, t])
                 # TODO: could sample sigma
-                    dist = distr.normal.Normal(mu, 0.1)
+                    dist = distr.normal.Normal(mu, 0.0001)
                     self.X[i_n, t, i_d] = dist.rsample()
 
         return self.X, self.Z
@@ -470,7 +490,6 @@ class DataGeneratorWithoutLatent:
                             self.X[i_n, t, i_d, i] += self.noise_coeff * noise[i_n, t, i_d, i]
                         else:
                             # TODO: check for x[:, :, i_d]
-                            __import__('ipdb').set_trace()
                             x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
                             self.X[i_n, t, i_d, i] = self.fct[i_d](x_.view(-1))
 
