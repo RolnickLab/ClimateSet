@@ -18,3 +18,14 @@
 
 # Resolution:
 # highest possible resolution [??]
+
+# class Downloader
+# source: link whatever
+# storage: where to store (data_paths)
+# params: mother_params
+# ATTENTION: download always highest resolution, res params are only used later on during res_preprocesser
+
+# TODO: where to store sources links for data
+
+# no returns, but communicates to user where stuff was stored and if sucessful
+# hand over exceptions if there are any problems, or print commands

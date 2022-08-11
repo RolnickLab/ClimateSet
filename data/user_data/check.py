@@ -5,3 +5,5 @@
 # if not: request if data can be preprocessed [PREPROCESSED_DATA], res_preprocesser gets started
 
 # if not: download data [RAW_DATA], downloader & raw_preprocesser gets started
+
+# class
