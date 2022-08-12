@@ -24,17 +24,23 @@ LAT_RES = 0
 # list of years that are considered for the data
 YEARS = []
 
+""" distinction not necessary for the mother as we are first just providing data not designing the loader yet, and a lookup table to check where to downloda what from anyway
 # variables used as input for the climate model
 IN_VARS = []
 
 # predicted / target variables of the climate model
 OUT_VARS = []
+"""
+VARS = []
 
 # scenarios
 SCENARIOS = []
 
 # model
 MODELS = []
+
+# number of esemble members to be considered
+NUM_ESEMBLE = 1
 
 # which type of grid
 GRID = "grid"
