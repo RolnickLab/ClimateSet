@@ -1,6 +1,9 @@
 This readme is for internal use, explaining how to setup the code on the cluster.
 
 Mila Cluster:
+ATTENTION: If you want access to the data (without needing to download it),
+ask julia.kaltenborn@mila.quebec for access to her climate data directory. Climate data
+might be moved to more accessible location later on.
 
 1. Sharing data directories
 
@@ -24,3 +27,6 @@ See also: https://github.com/mila-iqia/mila-docs/pull/121
 Explanation of structure:
 
 TODO
+
+Internal Todos:
+# TODO: in data_description: which models / scenarios /variables exist
