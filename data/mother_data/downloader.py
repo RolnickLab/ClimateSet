@@ -167,8 +167,10 @@ class Downloader:
             hierachy=self.var2res['resolutions'][variable]
 
             print(f'choosing resolution according to hierachy: \n', hierachy)
-            #print('new c', new_c.name, new_c.value)
+
             res, new_c =self.get_resolution(catalog=new_c, resolutions=resolutions, hierachy=hierachy, variable=variable)
+
+            # skipping var if no resolution found
             if res is None:
                 break
 
@@ -190,6 +192,7 @@ class Downloader:
 
             datasets=[]
 
+            # TODO: check with Julia if that makes sence
             for cds in sub_cats[:]:
                 # Only pull out the (un-aggregated) NetCDF files
                 if (str(cds).endswith('.nc') and ('aggregated' not in str(cds))):
@@ -253,56 +256,4 @@ if __name__ == '__main__':
         catalog=catalog.TDSCatalog("https://dap.ceda.ac.uk/thredds/catalog/badc/cmip6/data/CMIP6/catalog.xml")
         print("read catalog")
         print("datasets", catalog.datasets)
-        print(catalog.services)
-        print(catalog.catalog_refs)
-
-        """
-        for k,v in catalog.catalog_refs.items():
-            print(k,v)
-
-            print(catalog.catalog_refs[k])
-            new_c=catalog.catalog_refs[k].follow()
-            print(new_c.catalog_refs)
-        """
-        variable='tas'
-        ensemble_member="r1i1p1f1"
-        res='day'
-        for e in ['ssp370', 'historical', 'piControl']:
-
-            # accessing experiment datasets
-            new_c=catalog.catalog_refs[get_MIP(e)].follow().catalog_refs['NCC'].follow().catalog_refs['NorESM2-LM'].follow().catalog_refs[e].follow().catalog_refs[ensemble_member].follow()
-            # 0 for version or files or latest? 
-            res_c=new_c.catalog_refs[res].follow().catalog_refs[variable].follow().catalog_refs['gn'].follow().catalog_refs[0].follow()
-            print('followed experiment + member + var + res')
-
-
-            sub_cats=res_c.datasets
-            datasets=[]
-
-            for cds in sub_cats[:]:
-              # Only pull out the (un-aggregated) NetCDF files
-              if (str(cds).endswith('.nc') and ('aggregated' not in str(cds))):
-                # For some reason these OpenDAP Urls are not referred to as Siphon expects...
-                #cds.access_urls['OPENDAP'] = cds.access_urls['OpenDAPServer']
-                datasets.append(cds)
-            dsets = [(cds.remote_access(use_xarray=True)
-                       .reset_coords(drop=True)
-                       .chunk({'time': 365}))
-                   for cds in datasets]
-            ds = xr.combine_by_coords(dsets, combine_attrs='drop')
-            print(ds[variable])
-
-
-            """
-            print(e)
-            string=f"{get_MIP(e)}/NCC/NorESM2"#.NorESM2-LM"#.{e}"#".{ensemble_member}.day.{variable}."
-            print(string)
-            cat_refs = list({k:v for k,v in catalog.catalog_refs.items() if k.startswith(string)}.values())
-            print(cat_refs)
-            cat_ref = sorted(cat_refs, key=lambda x: str(x))[-1]
-            print(cat_ref)
-            sub_cat = cat_ref.follow().datasets
-            print(sub_cat)
-            datasets = []
-
-            """
+        
