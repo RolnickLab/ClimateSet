@@ -124,14 +124,14 @@ class Downloader:
             # iterate over experiments
             for e in self.experiments:
                 print(f"Downloading data for experiment: {e}\n")
-                self.get_raw_data(v,e)
+                self.get_model_data(v,e)
 
 
 
 
 
 
-    def get_raw_data(self, variable: str, experiment: str):
+    def get_model_data(self, variable: str, experiment: str):
         """
         Inspired by: //TODO insert reference (liken in ClimateBench)
 
