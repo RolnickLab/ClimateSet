@@ -1,6 +1,6 @@
 This readme is for internal use, explaining how to setup the code on the cluster.
 
-Mila Cluster:
+##Mila Cluster:
 ATTENTION: If you want access to the data (without needing to download it),
 ask julia.kaltenborn@mila.quebec for access to her climate data directory. Climate data
 might be moved to more accessible location later on.
@@ -24,7 +24,10 @@ See also: https://github.com/mila-iqia/mila-docs/pull/121
 1. 2. use chmod to give user access to dirs and files within your user dir
 
 
-Explanation of structure:
+##How to use the code:
+python -m mother_data.birth
+
+##Explanation of structure:
 
 TODO
 
