@@ -14,3 +14,11 @@ VAR_SOURCE_LOOKUP = {
     'model' : ['tas', 'pr'],
      'raw' : []
      }
+
+
+# filepath to var to res Mapping
+VAR_RES_MAPPING_PATH="/home/charlie/Documents/MILA/causalpaca/data/data_description/mappings/variableid2tableid.csv"
+
+
+
+GRIDDING_HIERACHY = ['gn']

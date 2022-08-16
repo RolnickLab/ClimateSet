@@ -1,10 +1,11 @@
-from utils.constants import MODEL_SOURCES, VAR_SOURCE_LOOKUP
-from utils.helper_funcs import get_keys_from_value, runcmd, get_MIP
+from utils.constants import MODEL_SOURCES, VAR_SOURCE_LOOKUP, GRIDDING_HIERACHY, VAR_RES_MAPPING_PATH
+from utils.helper_funcs import get_keys_from_value, runcmd, get_MIP, get_lowest_entry
 
 
 from siphon import catalog #TDS catalog
 import pandas as pd
 import xarray as xr
+import pandas as pd
 
 import os.path
 overwrite = False
@@ -69,8 +70,23 @@ class Downloader:
                     else:
                         print(f"WARNING: unknown source type for var {v}.")
 
+                print(f"Raw variables to download: {self.raw_vars}")
+                print(f"Model prediced vars to download: {self.model_vars}")
+
+
+                # Mapping from var to lowest resolution available using the .csv
+                var2res=pd.read_csv(VAR_RES_MAPPING_PATH, delimiter=',',dtype=str)
+                # only extract relevant vars
+                indxs=var2res['variable_id'].isin(self.model_vars)
+                available_res=var2res[indxs]
+                # taking care of how resolutions are stored in csv -> list of strings
+                available_res['resolutions']=available_res['table_id(s)'].apply(lambda l: l.split(',')).apply(lambda l: [i.strip() for i in l])
+                # make indexable by var
+                self.var2res=available_res.set_index(available_res['variable_id'])
 
                 try:
+
+                    # TODO: switch to modelsoruce.csv (add url there)
                     self.model_source_url=MODEL_SOURCES[self.model]["url"]
                     self.model_source_center=MODEL_SOURCES[self.model]["center"]
                 except KeyError:
@@ -81,8 +97,10 @@ class Downloader:
                     print('Using:', self.model)
                 print('model source url:', self.model_source_url)
                 self.catalog=catalog.TDSCatalog(self.model_source_url)
-                self.num_ensemble = num_ensemble
                 print("Read full catalogue.\n")
+
+
+                self.num_ensemble = num_ensemble
 
                 # TODO: create folder hierachy / check if existent make new if not
 
@@ -106,16 +124,16 @@ class Downloader:
             # iterate over experiments
             for e in self.experiments:
                 print(f"Downloading data for experiment: {e}\n")
-                self.get_raw_data(v,e)
+                self.get_model_data(v,e)
 
 
 
 
 
 
-    def get_raw_data(self, variable: str, experiment: str):
+    def get_model_data(self, variable: str, experiment: str):
         """
-        Inspired by: //TODO insert reference
+        Inspired by: //TODO insert reference (liken in ClimateBench)
 
 
         """
@@ -138,23 +156,32 @@ class Downloader:
 
             new_c=cat.catalog_refs[member].follow()
 
-            # Step 4: search for lowest resolution and follow variable
+            # Step 4: search for lowest resolution and check if variable availabe
+
+            resolutions=list(new_c.catalog_refs)
 
             print("available resolutions:")
 
-            print(new_c.catalog_refs)
+            print(resolutions)
 
-            res='day' #TODO make adaptable
+            hierachy=self.var2res['resolutions'][variable]
 
-            print(f"proceeding with temporal resolution of: {res}")
+            print(f'choosing resolution according to hierachy: \n', hierachy)
 
-            new_c=new_c.catalog_refs[res].follow().catalog_refs[variable].follow()
+            res, new_c =self.get_resolution(catalog=new_c, resolutions=resolutions, hierachy=hierachy, variable=variable)
+
+            # skipping var if no resolution found
+            if res is None:
+                break
 
             # Step 5: choose gridding
-
             print('available griddings:')
-            print(new_c.catalog_refs)
-            grid='gn' #TODO: make adaptable
+            griddings=new_c.catalog_refs
+            print(griddings)
+            grid=get_lowest_entry(griddings, GRIDDING_HIERACHY)
+            if grid is None:
+                print("Something went wrong... No desired gridding found. Skipping.")
+                break
             print(f"proceeding with gridding: {grid}")
 
             new_c=new_c.catalog_refs[grid].follow().catalog_refs[0].follow() #TODO: chose 0 here for latet i guess but there are other options 'files, latest'
@@ -165,28 +192,55 @@ class Downloader:
 
             datasets=[]
 
+            # TODO: check with Julia if that makes sence
             for cds in sub_cats[:]:
                 # Only pull out the (un-aggregated) NetCDF files
                 if (str(cds).endswith('.nc') and ('aggregated' not in str(cds))):
+                        datasets.append(cds)
+                dsets = [(cds.remote_access(use_xarray=True)
+                                .reset_coords(drop=True)
+                                .chunk({'time': 365}))
+                                for cds in datasets]
 
-                    datasets.append(cds)
-            dsets = [(cds.remote_access(use_xarray=True)
-                        .reset_coords(drop=True)
-                        .chunk({'time': 365}))
-                        for cds in datasets]
-            ds = xr.combine_by_coords(dsets, combine_attrs='drop')
-            print(ds[variable])
+                ds = xr.combine_by_coords(dsets, combine_attrs='drop')
+                print(ds[variable])
 
-            outfile = f"{variable}/{experiment}/{member}/{res}.nc"
-            if (not overwrite) and os.path.isfile(outfile):
-                print(f"File {outfile} already exists, skipping.")
-                continue
+                outfile = f"{variable}/{experiment}/{member}/{res}.nc"
+                if (not overwrite) and os.path.isfile(outfile):
+                    print(f"File {outfile} already exists, skipping.")
+                    continue
+
 
             #TODO: handle ensembel members (efficiently / how to build dataset /direct combining?)
             # TODO: create folder hierachy / check if existent make new if not
-            #ds.to_netcdf(outfile)
+            #ds.to_netcdf(outfile
 
+    def get_resolution(self, catalog: catalog.TDSCatalog, resolutions: [str], hierachy: [str], variable: str):
 
+        checking_res=True
+        while checking_res:
+            res=get_lowest_entry(resolutions, hierachy)
+
+            if res is None:
+                print("Something is wrong... Now matching resolution found. Skipping.")
+                return None, _
+
+            print(f"Ateempting to proceeding with temporal resolution of: {res}")
+
+            try:
+                catalog=catalog.catalog_refs[res].follow().catalog_refs[variable].follow()
+                checking_res=False
+
+            except KeyError:
+                print(f"Resolution {res} not available for variable {variable}. \n Choosing a different resolution.")
+                catalog=catalog
+
+                if len(resolutions)>1:
+                    resolutions.remove(res)
+                else:
+                    print(f"No available resolution found. Skipping.")
+                    return None, _
+        return res, catalog
 
 if __name__ == '__main__':
     test_mother=True
@@ -202,56 +256,4 @@ if __name__ == '__main__':
         catalog=catalog.TDSCatalog("https://dap.ceda.ac.uk/thredds/catalog/badc/cmip6/data/CMIP6/catalog.xml")
         print("read catalog")
         print("datasets", catalog.datasets)
-        print(catalog.services)
-        print(catalog.catalog_refs)
-
-        """
-        for k,v in catalog.catalog_refs.items():
-            print(k,v)
-
-            print(catalog.catalog_refs[k])
-            new_c=catalog.catalog_refs[k].follow()
-            print(new_c.catalog_refs)
-        """
-        variable='tas'
-        ensemble_member="r1i1p1f1"
-        res='day'
-        for e in ['ssp370', 'historical', 'piControl']:
-
-            # accessing experiment datasets
-            new_c=catalog.catalog_refs[get_MIP(e)].follow().catalog_refs['NCC'].follow().catalog_refs['NorESM2-LM'].follow().catalog_refs[e].follow().catalog_refs[ensemble_member].follow()
-            # 0 for version or files or latest? 
-            res_c=new_c.catalog_refs[res].follow().catalog_refs[variable].follow().catalog_refs['gn'].follow().catalog_refs[0].follow()
-            print('followed experiment + member + var + res')
-
-
-            sub_cats=res_c.datasets
-            datasets=[]
-
-            for cds in sub_cats[:]:
-              # Only pull out the (un-aggregated) NetCDF files
-              if (str(cds).endswith('.nc') and ('aggregated' not in str(cds))):
-                # For some reason these OpenDAP Urls are not referred to as Siphon expects...
-                #cds.access_urls['OPENDAP'] = cds.access_urls['OpenDAPServer']
-                datasets.append(cds)
-            dsets = [(cds.remote_access(use_xarray=True)
-                       .reset_coords(drop=True)
-                       .chunk({'time': 365}))
-                   for cds in datasets]
-            ds = xr.combine_by_coords(dsets, combine_attrs='drop')
-            print(ds[variable])
-
-
-            """
-            print(e)
-            string=f"{get_MIP(e)}/NCC/NorESM2"#.NorESM2-LM"#.{e}"#".{ensemble_member}.day.{variable}."
-            print(string)
-            cat_refs = list({k:v for k,v in catalog.catalog_refs.items() if k.startswith(string)}.values())
-            print(cat_refs)
-            cat_ref = sorted(cat_refs, key=lambda x: str(x))[-1]
-            print(cat_ref)
-            sub_cat = cat_ref.follow().datasets
-            print(sub_cat)
-            datasets = []
-
-            """
+        
