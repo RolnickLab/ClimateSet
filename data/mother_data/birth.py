@@ -1,7 +1,10 @@
 # init script to establish first data basis
-
 from data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
-from mother_params import MOTHER_PARAMS
+from mother_data.mother_params import MOTHER_PARAMS
+#from mother_data.downloader import Downloader
+
+from typing import List, Tuple, Dict
+from pathlib import Path
 
 # interacts with:
 # mother_params,
@@ -14,9 +17,9 @@ from mother_params import MOTHER_PARAMS
 # ATTENTION
 # during aggregation: take care of units and how they change (should be handled within raw_preprocesser)
 
-def birth(models: list[str], scenarios: list[str], years: list[int],
-        in_vars: list[str], out_vars: list[str], resolutions: tuple[int, int, int, int],
-        grid: str, aggregations: dict[str, str], interpolations: dict[str, str],
+def birth(models: List[str], scenarios: List[str], years: List[int],
+        in_vars: List[str], out_vars: List[str], resolutions: Tuple[int, int, int, int],
+        grid: str, aggregations: Dict[str, str], interpolations: Dict[str, str],
         raw_path: Path, res_path: Path, load_path: Path):
     """ Creates the initial climate data that is needed. Starts downloader,
     makes initial preprocessing and default resolution processing. Data can
@@ -41,12 +44,9 @@ def birth(models: list[str], scenarios: list[str], years: list[int],
     # DOWNLOAD DATA
     print("Starting to download data ...")
     # init downloader
-    # TODO
-
+    #downloader = Downloader()
     # execute downloader
-    # TODO
-    # TODO: catch error messages, take care of restarting the process?
-
+    #downloader.download_from_model()
     print("... data was downloaded successfully.")
 
     # PREPROCESS DATA
@@ -66,7 +66,7 @@ def birth(models: list[str], scenarios: list[str], years: list[int],
     # do stuff
 
     print("... data is now available in the right resolutions.")
-    print("\nClimate data is now available in {}.".format("TODO"))
+    print("\nClimate data is now available in {}.".format("/TO/DO/"))
 
 # params (dict): Dictionary containing parameters (stored in mother_params.py)
 #     such as resolutions, variables, grid type, years and aggregation type.
