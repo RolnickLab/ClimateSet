@@ -31,5 +31,18 @@ python -m mother_data.birth
 
 TODO
 
+### How the downloaded data is structured
+Hierarchy:
+
+-- Model
+-- Assemble Member
+-- Experiment (SSP, Historical)
+-- Variable
+-- Resolution
+-- Final-Files (internally: x_array, severals years, but chunked up in years internally)
+
+Filename:
+model_assemble_experiment_var_res_'yearStart'_'yearEnd'.nc
+
 Internal Todos:
 # TODO: in data_description: which models / scenarios /variables exist
