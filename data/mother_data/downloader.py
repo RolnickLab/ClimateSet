@@ -1,4 +1,4 @@
-from utils.constants import MODEL_SOURCES, VAR_SOURCE_LOOKUP, GRIDDING_HIERACHY, VAR_RES_MAPPING_PATH
+from utils.constants import MODEL_SOURCES, VAR_SOURCE_LOOKUP, GRIDDING_HIERACHY, VAR_RES_MAPPING_PATH, REMOVE_RESOLUTONS
 from utils.helper_funcs import get_keys_from_value, runcmd, get_MIP, get_lowest_entry
 
 
@@ -6,7 +6,7 @@ from siphon import catalog #TDS catalog
 import pandas as pd
 import xarray as xr
 import pandas as pd
-
+import re
 import os.path
 overwrite = False
 
@@ -79,9 +79,13 @@ class Downloader:
                 # only extract relevant vars
                 indxs=var2res['variable_id'].isin(self.model_vars)
                 available_res=var2res[indxs]
+                self.res_exception=REMOVE_RESOLUTONS
+
+
                 # taking care of how resolutions are stored in csv -> list of strings
                 available_res['resolutions']=available_res['table_id(s)'].apply(lambda l: l.split(',')).apply(lambda l: [i.strip() for i in l])
-                # make indexable by var
+                # kick unwanted resolutions    
+                available_res['resolutions']=available_res['resolutions'].apply(lambda l: self.remove_res_excemption(l))
                 self.var2res=available_res.set_index(available_res['variable_id'])
 
                 try:
@@ -105,6 +109,17 @@ class Downloader:
                 # TODO: create folder hierachy / check if existent make new if not
 
                 #TODO: more checkups?
+
+    def remove_res_excemption(self, list: [str]):
+        "If available resolutions contain a resolution unwanted remove that from list. E.g. get rid of any resolutions containing 'subhr'"
+        for i in list:
+            for r in self.res_exception:
+                if r in i:
+                    print(i, r, list)
+                    list.remove(i)
+                else:
+                    pass
+        return list
 
     def download_raw(self):
         raise NotImplementedError
@@ -134,8 +149,6 @@ class Downloader:
     def get_model_data(self, variable: str, experiment: str):
         """
         Inspired by: //TODO insert reference (liken in ClimateBench)
-
-
         """
         # catalog_refs = list of references in a catalogue
         # .follow() follows a reference and returns the new catalog
@@ -216,7 +229,13 @@ class Downloader:
             #ds.to_netcdf(outfile
 
     def get_resolution(self, catalog: catalog.TDSCatalog, resolutions: [str], hierachy: [str], variable: str):
+        """
+        Finds lowest resolution dependent on a predefined hierachy. Returns name of resolution and the appropriate catalog.
 
+        @return:
+            res: str
+            catalog: catalog.TDSCatalog
+        """
         checking_res=True
         while checking_res:
             res=get_lowest_entry(resolutions, hierachy)
@@ -256,4 +275,3 @@ if __name__ == '__main__':
         catalog=catalog.TDSCatalog("https://dap.ceda.ac.uk/thredds/catalog/badc/cmip6/data/CMIP6/catalog.xml")
         print("read catalog")
         print("datasets", catalog.datasets)
-        
