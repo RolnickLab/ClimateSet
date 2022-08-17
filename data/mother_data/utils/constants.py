@@ -22,3 +22,6 @@ VAR_RES_MAPPING_PATH="/home/charlie/Documents/MILA/causalpaca/data/data_descript
 
 
 GRIDDING_HIERACHY = ['gn']
+
+# skip subhr because only diagnostics for specific places
+REMOVE_RESOLUTONS = ['suhbr'] # resolution endings to remove e.g. kick CFsubhr if this contains 'subhr'
