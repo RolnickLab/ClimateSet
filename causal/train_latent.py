@@ -3,7 +3,6 @@ import numpy as np
 
 from dag_optim import compute_dag_constraint
 from plot import plot
-from metrics import mean_corr_coef
 
 
 class TrainingLatent:

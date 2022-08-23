@@ -138,7 +138,7 @@ class LatentTSDCD(nn.Module):
         for i in range(self.d):
             pz_params = torch.zeros(b, self.k, 2)
             for k in range(self.k):
-                pz_params[:, k] = self.transition_model(z, mask[:, :, i * self.k +  k], i, k)
+                pz_params[:, k] = self.transition_model(z, mask[:, :, i * self.k + k], i, k)
             mu[:, i] = pz_params[:, :, 0]
             std[:, i] = 0.5 * torch.exp(pz_params[:, :, 1])
 
@@ -161,7 +161,7 @@ class LatentTSDCD(nn.Module):
         # sample Zs (based on X)
         z, q_mu_y, q_std_y = self.encode(x, y)
 
-        if  self.debug_gt_z:
+        if self.debug_gt_z:
             z = gt_z
 
         # get params of the transition model p(z^t | z^{<t})
@@ -199,9 +199,10 @@ class LatentTSDCD(nn.Module):
             print(torch.prod(sigma1, dim=1))
             print(torch.sum(torch.log(sigma2 ** self.k / torch.prod(sigma1, dim=1))))
             print(torch.sum(torch.sum(sigma1 / sigma2, dim=1)))
-            print(torch.sum(torch.einsum('bd, bd -> b', (mu2 - mu1) * (1 / s_p), mu2 - mu1)))
+            # print(torch.sum(torch.einsum('bd, bd -> b', (mu2 - mu1) * (1 / s_p), mu2 - mu1)))
 
         return torch.sum(kl)
+
 
 class EncoderDecoder(nn.Module):
     """Combine an encoder and a decoder, particularly useful when W is a shared
@@ -229,7 +230,7 @@ class EncoderDecoder(nn.Module):
         self.logvar_decoder = torch.log(torch.ones(d) * 0.001)  # TODO: test
         self.logvar_encoder = torch.log(torch.ones(d) * 0.001)  # TODO: test
 
-    def forward(self, x, i, encoder:bool):
+    def forward(self, x, i, encoder: bool):
         if self.debug_gt_w:
             w = self.gt_w[i]
         else:
@@ -251,6 +252,7 @@ class EncoderDecoder(nn.Module):
             w = torch.exp(self.log_w)
         return w
 
+
 class Decoder(nn.Module):
     """ Decode the latent variables Z into the estimation of observable data X
     using a linear model parametrized by W^T """
@@ -262,7 +264,7 @@ class Decoder(nn.Module):
             k: number of latent variables
         """
         # TODO: might want to remove this class and Encoder if we only use EncoderDecoder
-        # TODO: make it more general for NN ? 
+        # TODO: make it more general for NN ?
         # TODO: might want to consider alternative initialization for W and var
         super().__init__()
         self.d = d

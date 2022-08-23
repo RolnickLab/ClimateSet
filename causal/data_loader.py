@@ -70,7 +70,8 @@ class DataLoader:
                 self.z_train = self.z[self.idx_train]
                 self.z_valid = self.z[self.idx_valid]
 
-    def _sample(self, dataset: torch.Tensor, batch_size: int, dataset_z: torch.Tensor = None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _sample(self, dataset: torch.Tensor, batch_size: int,
+                dataset_z: torch.Tensor = None) -> Tuple[torch.Tensor, torch.Tensor]:
         if dataset.shape[0] <= 0:
             __import__('ipdb').set_trace()
 

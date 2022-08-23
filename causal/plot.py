@@ -2,8 +2,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import torch
-
 from metrics import mean_corr_coef
 
 
@@ -17,7 +15,6 @@ def moving_average(a: np.ndarray, n: int = 10):
 def plot(learner):
     # plot the weights W (from z to x)
     if learner.latent:
-
         plot_learning_curves(train_loss=learner.train_loss_list,
                              train_recons=learner.train_recons_list,
                              train_kl=learner.train_kl_list,
@@ -29,14 +26,14 @@ def plot(learner):
 
         # .view(learner.gt_w.shape)
         plot_adjacency_matrix_w(adj,
-                              learner.gt_w,
-                              learner.hp.exp_path,
-                              'w')
+                                learner.gt_w,
+                                learner.hp.exp_path,
+                                'w')
         plot_adjacency_through_time_w(learner.adj_w_tt,
-                                     learner.gt_w,
-                                     learner.iteration,
-                                     learner.hp.exp_path,
-                                     'w')
+                                      learner.gt_w,
+                                      learner.iteration,
+                                      learner.hp.exp_path,
+                                      'w')
     else:
         plot_learning_curves(train_loss=learner.train_loss_list,
                              valid_loss=learner.valid_loss_list,
@@ -200,6 +197,7 @@ def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str, name_
     plt.savefig(os.path.join(path, f'adjacency_{name_suffix}.png'))
     plt.close()
 
+
 def plot_adjacency_through_time(w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
                                 path: str, name_suffix: str):
     """ Plot the probability of each edges through time up to timestep t
@@ -231,8 +229,9 @@ def plot_adjacency_through_time(w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
     fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
     fig.clf()
 
+
 def plot_adjacency_through_time_w(w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
-                                path: str, name_suffix: str):
+                                  path: str, name_suffix: str):
     """ Plot the probability of each edges through time up to timestep t
     Args:
       w_adj: weight of edges

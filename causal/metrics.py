@@ -1,51 +1,8 @@
 import numpy as np
 import torch
 
-from sklearn.linear_model import LinearRegression
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import spearmanr
-
-# Code for MCC adapted from https://github.com/slachapelle/disentanglement_via_mechanism_sparsity/blob/main/metrics.py
-# def get_linear_score(x, y):
-#     reg = LinearRegression().fit(x, y)
-#     return reg.score(x, y)
-# 
-# 
-# def linear_regression_metric(model, data_loader, device, num_samples=int(1e5), indices=None, opt=None):
-#     with torch.no_grad():
-#         if model.latent_model.z_block_size != 1:
-#             raise NotImplementedError("This function is implemented only for z_block_size == 1")
-#         model.eval()
-#         z_list = []
-#         z_hat_list = []
-#         sample_counter = 0
-#         for batch in data_loader:
-#             x, y, z = batch
-#             z_hat = model.latent_model.mean(model.latent_model.transform_q_params(model.encode(obs)))
-#             z_hat = z_hat.view(z_hat.shape[0], -1)
-# 
-#             z_list.append(z)
-#             z_hat_list.append(z_hat)
-#             sample_counter += obs.shape[0]
-#             if sample_counter >= num_samples:
-#                 break
-# 
-#         z = torch.cat(z_list, 0)[:int(num_samples)]
-#         z_hat = torch.cat(z_hat_list, 0)[:int(num_samples)]
-# 
-#         z, z_hat = z.cpu().numpy(), z_hat.cpu().numpy()
-# 
-#         score = get_linear_score(z_hat, z)
-# 
-#         # masking z_hat
-#         # TODO: this does not take into account case where z_block_size > 1
-#         if indices is not None:
-#             z_hat_m = z_hat[:, indices[-z.shape[0]:]]
-#             score_m = get_linear_score(z_hat_m, z)
-#         else:
-#             score_m = 0
-# 
-#         return score, score_m
 
 
 def mean_corr_coef_np(x: np.ndarray, y: np.ndarray, method: str = 'pearson',

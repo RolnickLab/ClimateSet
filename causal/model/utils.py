@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.distributions as distr
 from collections import OrderedDict
 
+
 class Mask(nn.Module):
     def __init__(self, d: int, d_x: int, tau: int, latent: bool, instantaneous: bool, drawhard: bool):
         super().__init__()
@@ -60,9 +61,11 @@ class Mask(nn.Module):
         self.fixed_output = fixed_output
         self.fixed = True
 
+
 def sample_logistic(shape, uniform):
     u = uniform.sample(shape)
     return torch.log(u) - torch.log(1 - u)
+
 
 def gumbel_sigmoid(log_alpha, uniform, bs, tau=1, hard=False):
     shape = tuple([bs] + list(log_alpha.size()))
@@ -82,6 +85,7 @@ def gumbel_sigmoid(log_alpha, uniform, bs, tau=1, hard=False):
         y = y_soft
 
     return y
+
 
 class MLP(nn.Module):
     def __init__(self,
@@ -119,4 +123,3 @@ class MLP(nn.Module):
 
     def forward(self, x) -> torch.Tensor:
         return self.model(x)
-

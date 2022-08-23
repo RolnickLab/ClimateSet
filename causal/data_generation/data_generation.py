@@ -175,7 +175,8 @@ class DataGeneratorWithLatent:
                             nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.k]).view(1, -1)
                             params = self.f[nn_idx][k + i_d * self.k](nn_input)
 
-                            # params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.01  # TODO: change back, only a test, smaller variance
+                            # TODO: change back, only a test, smaller variance
+                            # params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.01
                             std = torch.ones_like(params[:, 1]) * 0.0001
                             dist = distr.normal.Normal(params[:, 0], std)
                             self.Z[i_n, t, i_d, k] = dist.rsample()
