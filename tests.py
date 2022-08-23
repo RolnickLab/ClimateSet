@@ -1,6 +1,6 @@
 import unittest
 import torch
-from causal.train import get_ortho_constraint
+# from causal.train import get_ortho_constraint
 
 
 class Testing(unittest.TestCase):
