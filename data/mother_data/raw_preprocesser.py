@@ -43,7 +43,7 @@ class RawProcesser:
         """ Checks if the data was already processed to prevent unnecessary processing.
         Operates on self.source and stored outcome in self.processed_flag
         """
-        # TODO do checks
+        # TODO do checks (e.g. data already exists in PROCESSED, so we don't need to process it again)
         # set processed_flag to right boolean
         raise NotImplementedError
 
