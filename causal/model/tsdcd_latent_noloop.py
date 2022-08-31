@@ -256,7 +256,7 @@ class EncoderDecoder(nn.Module):
         w = self.get_w()
 
         if encoder:
-            # size X: (b, t, d, d_x), size W: (d, d_x, k), 
+            # size X: (b, t, d, d_x), size W: (d, d_x, k),
             # size mu: (b, t, d, k), size logvar: (d, k)
             # sum along the d_x dimension
             # st = time.time()
