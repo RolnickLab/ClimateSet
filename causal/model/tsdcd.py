@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils import Mask, MLP
+from .utils import Mask, MLP
 
 
 class TSDCD(nn.Module):
@@ -53,8 +53,7 @@ class TSDCD(nn.Module):
 
     def get_adj(self) -> torch.Tensor:
         """
-        Returns:
-            Matrices of the probabilities from which the masks are sampled
+        Returns: Matrices of the probabilities from which the masks are sampled
         """
         return self.mask.get_proba()
 
@@ -64,7 +63,7 @@ class TSDCD(nn.Module):
         Returns the log-likelihood of data y given Gaussian distributions
         with parameters mu and logvar
         Args:
-            y: data ()
+            y: data
             mu: mean of Gaussian distr
             logvar: log of the variance of Gaussian distr
             iteration: number of iterations performed during the training

@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import spearmanr
 
@@ -138,6 +137,7 @@ def f1_score(pred: np.ndarray, target: np.ndarray) -> float:
 
 
 if __name__ == "__main__":
+    # simple tests
     from sklearn.metrics import f1_score as sk_f1_score
     from scipy.spatial.distance import hamming
 

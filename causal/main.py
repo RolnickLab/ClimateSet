@@ -4,8 +4,8 @@ import json
 import torch
 import numpy as np
 import metrics
-from tsdcd import TSDCD
-from tsdcd_latent import LatentTSDCD
+from model.tsdcd import TSDCD
+from model.tsdcd_latent import LatentTSDCD
 from data_loader import DataLoader
 from train import Training
 from train_latent import TrainingLatent

@@ -112,33 +112,26 @@ class LatentTSDCD(nn.Module):
     def encode(self, x, y):
         """
         encode X and Y into latent variables Z
+        size X = (b, t, d, d_x)
+        size Y = (b, d, d_x)
+        size Z = (b, t, d, k)
+        Returns:
+            z, mu, std: the Z sampled based on a Gaussian with parameters mu and std
         """
-        b = x.size(0)
+        # concatenate x and y along the time dimension
+        x = torch.cat((x, y.unsqueeze(1)), 1)
 
-        # TODO: be more efficient without the loop
-        z = torch.zeros(b, self.tau + 1, self.d, self.k)
-        mu = torch.zeros(b, self.d, self.k)
-        std = torch.zeros(b, self.d, self.k)
-
-        # sample Zs
-        for i in range(self.d):
-            # get params from the encoder q(z^t | x^t)
-            for t in range(self.tau):
-                q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
-
-                # reparam trick
-                q_std = 0.5 * torch.exp(q_logvar)
-                z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
-
-            q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
-            q_std = 0.5 * torch.exp(q_logvar)
-            z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
-            mu[:, i] = q_mu
-            std[:, i] = q_std
+        # get distr parameters and sample Zs
+        mu, logvar = self.encoder_decoder(x, encoder=True)  # torch.matmul(self.W, x)
+        std = 0.5 * torch.exp(logvar)
+        z = mu + std * self.distr_encoder(0, 1, size=mu.size())
 
         return z, mu, std
 
     def transition(self, z, mask):
+        """
+        size Z = (b, t, d, k)
+        """
         b = z.size(0)
         mu = torch.zeros(b, self.d, self.k)
         std = torch.zeros(b, self.d, self.k)
@@ -153,22 +146,32 @@ class LatentTSDCD(nn.Module):
         return mu, std
 
     def decode(self, z):
-        mu = torch.zeros(z.size(0), self.d, self.d_x)
-        std = torch.zeros(z.size(0), self.d, self.d_x)
-
-        for i in range(self.d):
-            px_mu, px_logvar = self.encoder_decoder(z[:, i], i, encoder=False)
-            mu[:, i] = px_mu
-            std[:, i] = 0.5 * torch.exp(px_logvar)
+        """
+        Decode Z to X: return parameters for p(x^t | z^t)
+        size Z = (b, 1, d, k)
+        size mu = (b, 1, d, d_x)
+        Returns:
+            mu, std: parameters for p(x^t | z^t)
+        """
+        # TODO: check dimension
+        mu, logvar = self.encoder_decoder(z, encoder=False)
+        std = 0.5 * torch.exp(logvar)
 
         return mu, std
 
     def forward(self, x, y, gt_z, iteration):
+        """
+        Args:
+            x: input
+            y: output
+            gt_z: ground-truth Z (latent variables). If debug_gt_z is True, set z = gt_z
+            iteration: number of training iterations
+        """
         b = x.size(0)
 
         # sample Zs (based on X)
         st = time.time()
-        z, q_mu_y, q_std_y = self.encode(x, y)
+        z, q_mu, q_std = self.encode(x, y)
         print(f"encode time: {time.time() - st}")
 
         if self.debug_gt_z:
@@ -182,13 +185,13 @@ class LatentTSDCD(nn.Module):
 
         # get params from decoder p(x^t | z^t)
         st = time.time()
-        px_mu, px_std = self.decode(z[:, -1])
+        px_mu, px_std = self.decode(z[:, -1:])
         print(f"decode time: {time.time() - st}")
 
         # set distribution with obtained parameters
         st = time.time()
         p = distr.Normal(pz_mu.view(b, -1), pz_std.view(b, -1))
-        q = distr.Normal(q_mu_y.view(b, -1), q_std_y.view(b, -1))
+        q = distr.Normal(q_mu[:, -1].reshape(b, -1), q_std[:, -1].reshape(b, -1))
         px_distr = self.distr_decoder(px_mu, px_std)
         print(f"sampling time: {time.time() - st}")
 
@@ -246,23 +249,36 @@ class EncoderDecoder(nn.Module):
         self.log_w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)
         # self.logvar_encoder = nn.Parameter(torch.rand(d) * 0.1)
         # self.logvar_decoder = nn.Parameter(torch.rand(d) * 0.1)
-        self.logvar_decoder = torch.log(torch.ones(d) * 0.001)  # TODO: test
-        self.logvar_encoder = torch.log(torch.ones(d) * 0.001)  # TODO: test
+        self.logvar_decoder = torch.log(torch.ones(d, d_x) * 0.001)  # TODO: test
+        self.logvar_encoder = torch.log(torch.ones(d, k) * 0.001)  # TODO: test
 
-    def forward(self, x, i, encoder: bool):
-        if self.debug_gt_w:
-            w = self.gt_w[i]
-        else:
-            w = torch.exp(self.log_w[i])
+    def forward(self, x, encoder: bool):
+        w = self.get_w()
 
         if encoder:
-            mu = torch.matmul(x, w)
-            logvar = self.logvar_encoder[i]
+            # size X: (b, t, d, d_x), size W: (d, d_x, k), 
+            # size mu: (b, t, d, k), size logvar: (d, k)
+            # sum along the d_x dimension
+            # st = time.time()
+            mu = torch.einsum("lmij, ijk -> lmik", x, w)
+            # print(f"time for einsum: {time.time() - st}")
+            # st = time.time()
+            # mu = torch.matmul(x[0, 0], w[0])
+            # print(f"time for matmul: {(time.time() -st) * x.size(0) * x.size(1)}")
+            logvar = self.logvar_encoder
+            logvar_repeated = logvar.repeat(x.size(0), x.size(1), 1, 1)
+            # print(logvar_repeated.size())
         else:
             # here x is in fact z
-            mu = torch.matmul(x, w.T)
-            logvar = self.logvar_decoder[i]
-        return mu, logvar
+            # size Z: (b, t, d, k), size W: (d, d_x, k)
+            # size mu: (b, t, d, d_x), size logvar: (d, k)
+            # sum on the k dimensions
+            mu = torch.einsum("lmij, ikj -> lmik", x, w)
+            # mu = torch.matmul(x[i], w[i].T)
+            logvar = self.logvar_decoder
+
+        logvar_repeated = logvar.repeat(x.size(0), x.size(1), 1, 1)
+        return mu, logvar_repeated
 
     def get_w(self) -> torch.tensor:
         if self.debug_gt_w:
@@ -362,14 +378,8 @@ class TransitionModel(nn.Module):
         """Returns the params of N(z_t | z_{<t}) for a specific feature i and latent variable k
         NN(G_{t-k} * z_{t-1}, ..., G_{t-k} * z_{t-k})
         """
-        # t_total = torch.max(self.tau, z_past.size(1))  # TODO: find right dim
-        # param_z = torch.zeros(z_past.size(0), 2)
         z = z.view(mask.size())
         masked_z = (mask * z).view(z.size(0), -1)
-        # TODO: more efficient with einsum ?
-        # masked_z = z_past.view(z_past.size(0), -1)
-
         param_z = self.nn[i * self.k + k](masked_z)
-        # param_z = self.nn(masked_z)
 
         return param_z
