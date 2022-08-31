@@ -11,6 +11,7 @@ class DataLoader:
                  ratio_valid: float,
                  data_path: str,
                  latent: bool,
+                 debug_gt_w: bool,
                  instantaneous: bool,
                  tau: int):
         self.ratio_train = ratio_train
@@ -21,6 +22,7 @@ class DataLoader:
 
         self.data_path = data_path
         self.latent = latent
+        self.debug_gt_w = debug_gt_w
         self.instantaneous = instantaneous
         self.tau = tau
 
@@ -29,6 +31,7 @@ class DataLoader:
         self.n = self.x.shape[0]
         self.d = self.x.shape[2]
         self.d_x = self.x.shape[3]
+        self.k = self.z.shape[3]
         self._split_data()
 
     def _load_data(self):
@@ -36,9 +39,9 @@ class DataLoader:
         if self.latent:
             self.z = np.load(os.path.join(self.data_path, 'data_z.npy'))
             self.gt_w = np.load(os.path.join(self.data_path, 'graph_w.npy'))
-            self.gt_graph = np.load(os.path.join(self.data_path, 'graph_z.npy'))
-        else:
-            self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
+            # self.gt_w = self.gt_w.transpose(1, 0, 2)
+
+        self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
 
     def _split_data(self):
         t_max = self.x.shape[1]
@@ -51,6 +54,9 @@ class DataLoader:
             self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
             self.x_train = self.x[:, self.idx_train]
             self.x_valid = self.x[:, self.idx_valid]
+            if self.latent:
+                self.z_train = self.z[:, self.idx_train]
+                self.z_valid = self.z[:, self.idx_valid]
         else:
             n_train = int(self.n * self.ratio_train)
             n_valid = int(self.n * self.ratio_valid)
@@ -60,16 +66,24 @@ class DataLoader:
             np.random.shuffle(self.idx_valid)
             self.x_train = self.x[self.idx_train]
             self.x_valid = self.x[self.idx_valid]
+            if self.latent:
+                self.z_train = self.z[self.idx_train]
+                self.z_valid = self.z[self.idx_valid]
 
-    def _sample(self, dataset: torch.Tensor, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _sample(self, dataset: torch.Tensor, batch_size: int,
+                dataset_z: torch.Tensor = None) -> Tuple[torch.Tensor, torch.Tensor]:
         if dataset.shape[0] <= 0:
             __import__('ipdb').set_trace()
 
         if self.instantaneous:
             x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
+            if self.latent:
+                z = np.zeros((batch_size, self.tau + 2, self.d, self.k))
             t1 = 1
         else:
             x = np.zeros((batch_size, self.tau, self.d, self.d_x))
+            if self.latent:
+                z = np.zeros((batch_size, self.tau + 1, self.d, self.k))
             t1 = 0
         y = np.zeros((batch_size, self.d, self.d_x))
 
@@ -77,16 +91,29 @@ class DataLoader:
             random_idx = np.random.choice(np.arange(self.tau, dataset.shape[1]), replace=False, size=batch_size)
             for i, idx in enumerate(random_idx):
                 x[i] = dataset[0, idx - self.tau:idx + t1]
-                y[i] = dataset[0, idx]
+                y[i] = dataset[0, idx + t1]
+                if self.latent:
+                    z[i] = dataset_z[0, idx - self.tau:idx + t1 + 1]
         else:
             random_idx = np.random.choice(np.arange(dataset.shape[0]), replace=False, size=batch_size)
             for i, idx in enumerate(random_idx):
                 x[i] = dataset[idx, 0:self.tau + t1]
-                y[i] = dataset[idx, self.tau]
-        return torch.tensor(x), torch.tensor(y)
+                y[i] = dataset[idx, self.tau + t1]
+                if self.latent:
+                    z[i] = dataset_z[idx, 0:self.tau + t1 + 1]
+        if self.latent:
+            return torch.tensor(x), torch.tensor(y), torch.tensor(z)
+        else:
+            return torch.tensor(x), torch.tensor(y)
 
     def sample_train(self, batch_size: int) -> torch.Tensor:
-        return self._sample(self.x_train, batch_size)
+        if self.latent:
+            return self._sample(self.x_train, batch_size, self.z_train)
+        else:
+            return self._sample(self.x_train, batch_size)
 
     def sample_valid(self, batch_size: int) -> torch.Tensor:
-        return self._sample(self.x_valid, batch_size)
+        if self.latent:
+            return self._sample(self.x_valid, batch_size, self.z_valid)
+        else:
+            return self._sample(self.x_valid, batch_size)

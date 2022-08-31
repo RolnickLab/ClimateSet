@@ -19,22 +19,22 @@ class DataGeneratorWithLatent:
         self.hp = hp
         self.n = hp.n
         self.d = hp.num_features
-        self.d_x = hp.num_gridcells
-        self.tau = hp.timewindow
+        self.d_x = hp.d_x
+        self.tau = hp.tau
 
         if self.n > 1:
             self.t = self.tau + 1
         else:
             self.t = hp.num_timesteps
 
-        self.k = hp.num_clusters
+        self.k = hp.k
         self.prob = hp.prob
         self.noise_coeff = hp.noise_coeff
 
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
         self.non_linearity = hp.non_linearity
-        self.same_cluster_assign = True
+        self.same_cluster_assign = False
 
         assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
 
@@ -54,18 +54,31 @@ class DataGeneratorWithLatent:
             A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
         """
         prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
-        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        # set diagonal to 1
+        # prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
         return G
 
-    def sample_mlp(self):
-        """Sample a MLP that outputs the parameters for the distributions of Z
+    def init_mlp_weight(self, model):
+        """Function to initialize MLP's weight from a normal.
+        In practice, gives more interesting functions than defaul
+        initialization
+        Args:
+            model: a pytorch model (MLP for now)
         """
-        dict_layers = OrderedDict()
-        num_first_layer = self.tau * (self.d * self.k) * (self.d * self.k)
-        num_last_layer = 2 * self.d * self.k
+        if isinstance(model, torch.nn.modules.Linear):
+            torch.nn.init.normal_(model.weight.data, mean=0., std=1)
+
+    def sample_mlp(self, n_timesteps):
+        """Sample a MLP that outputs the parameters for the distributions of Z
+        Args:
+            n_timesteps: Number of previous timesteps considered
+        """
+        mlps = nn.ModuleList()
+        num_first_layer = n_timesteps * self.d * self.k
+        num_last_layer = 2
 
         if self.non_linearity == "relu":
             nonlin = nn.ReLU()
@@ -74,55 +87,52 @@ class DataGeneratorWithLatent:
         else:
             raise NotImplementedError("Nonlinearity is not implemented yet")
 
-        for i in range(self.num_layers + 1):
-            num_input = self.num_hidden
-            num_output = self.num_hidden
+        for i_d in range(self.d):
+            for k in range(self.k):
+                dict_layers = OrderedDict()
+                for i in range(self.num_layers + 1):
+                    num_input = self.num_hidden
+                    num_output = self.num_hidden
 
-            if i == 0:
-                num_input = num_first_layer
-            if i == self.num_layers:
-                num_output = num_last_layer
-            dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
+                    if i == 0:
+                        num_input = num_first_layer
+                    if i == self.num_layers:
+                        num_output = num_last_layer
+                    dict_layers[f"lin{i}"] = nn.Linear(num_input, num_output)
 
-            if i != self.num_layers:
-                dict_layers[f"nonlin{i}"] = nonlin
+                    if i != self.num_layers:
+                        dict_layers[f"nonlin{i}"] = nonlin
 
-        f = nn.Sequential(dict_layers)
+                mlp = nn.Sequential(dict_layers)
+                mlp.apply(self.init_mlp_weight)
+                mlps.append(mlp)
 
-        return f
+        return mlps
 
     def sample_lstm(self):
         pass
 
     def sample_w(self) -> torch.Tensor:
-        """Sample matrices that are positive and orthogonal.
+        """Sample matrices that are non-negative and orthogonal.
         They are the links between Z and X.
         Returns:
-            A tensor w (shape: d_x, d, k)
+            A tensor w (shape: d, d_x, k)
         """
-        # assign d_xs uniformly to a cluster k
-        cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
-        cluster_assign = np.append(cluster_assign, np.arange(self.k))
-        cluster_assign = np.stack((np.arange(self.d_x), cluster_assign))
+        mask = torch.zeros((self.d, self.d_x, self.k))
+        for i in range(self.d):
+            # assign d_xs uniformly to a cluster k
+            cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
+            cluster_assign = np.append(cluster_assign, np.arange(self.k))
+            np.random.shuffle(cluster_assign)
+            mask[i, np.arange(self.d_x), cluster_assign] = 1
 
-        # sample w uniformly and mask it according to the cluster assignment
-        mask = torch.zeros((self.d_x, self.k))
-        mask[cluster_assign] = 1
-        w = torch.empty((self.d_x, self.k)).uniform_(0.5, 2)
+        w = torch.empty((self.d, self.d_x, self.k)).uniform_(0.5, 2)
         w = w * mask
 
-        # shuffle rows
-        w = w[torch.randperm(w.size(0))]
-
         # normalize to make w orthonormal
-        w = w / torch.norm(w, dim=0)
-
-        if self.same_cluster_assign:
-            w = w.unsqueeze(1).repeat(1, self.d, 1)
-        else:
-            raise NotImplementedError("This type of w sampling is not implemented yet")
-
-        # TODO: add test torch.matmul(w.T, w) == torch.eye(w.size(1))
+        for i in range(self.d):
+            w[i] = w[i] / torch.norm(w[i], dim=0)
+            assert torch.all(torch.isclose(torch.matmul(w[i].T, w[i]), torch.eye(w.size(-1)), rtol=0.01))
         return w
 
     def generate(self):
@@ -131,34 +141,55 @@ class DataGeneratorWithLatent:
             X, Z, respectively the observable data and the latent
         """
         # initialize Z for the first timesteps
-        self.Z = torch.zeros((self.t, self.d, self.k))
-        self.X = torch.zeros((self.t, self.d, self.d_x))
-        for i in range(self.tau):
-            self.Z[i].normal_(0, 1)
+        self.Z = torch.zeros((self.n, self.t, self.d, self.k))
+        self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
         # sample graphs and NNs
         self.G = self.sample_graph()
-        self.f = self.sample_mlp()
-
-        # sample the latent Z
-        for t in range(self.tau, self.t):
-            g = self.G.view(self.G.shape[0], -1)
-            z = self.Z[t - self.tau:t].view(self.tau, -1).repeat(1, self.d * self.k)
-            nn_input = (g * z).view(-1)
-            params = self.f(nn_input).view(-1, 2)
-            params[:, 1] = 1/2 * torch.exp(params[:, 1])
-            dist = distr.normal.Normal(params[:, 0], params[:, 1])
-            self.Z[t] = dist.rsample().view(self.d, self.k)
+        self.f = [None]
 
         # sample observational model
         self.w = self.sample_w()
 
-        # sample the data X
-        for t in range(self.tau, self.t):
-            mean = torch.einsum("xdk,dk->dx", self.w, self.Z[t])
-            # could sample sigma
-            dist = distr.normal.Normal(mean.view(-1), 1)
-            self.X[t] = dist.rsample().view(self.d, self.d_x)
+        for n_timesteps in range(1, self.tau + 1):
+            self.f.append(self.sample_mlp(n_timesteps))
+
+        for i_n in range(self.n):
+            # sample the latent Z
+            for t in range(self.t):
+                if t == 0:
+                    self.Z[i_n, t].normal_(0, 1)  # test with mu=2
+                else:
+                    if t < self.tau:
+                        nn_idx = t
+                        g = self.G[:t]
+                        z = self.Z[i_n, :t]
+                    else:
+                        nn_idx = -1
+                        g = self.G
+                        z = self.Z[i_n, t - self.tau:t]
+
+                    # nn_input = (g * z).view(-1)
+                    for i_d in range(self.d):
+                        for k in range(self.k):
+                            nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.k]).view(1, -1)
+                            params = self.f[nn_idx][k + i_d * self.k](nn_input)
+
+                            # TODO: change back, only a test, smaller variance
+                            # params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.01
+                            std = torch.ones_like(params[:, 1]) * 0.0001
+                            dist = distr.normal.Normal(params[:, 0], std)
+                            self.Z[i_n, t, i_d, k] = dist.rsample()
+
+            # sample the data X
+            for t in range(self.t):
+                # TODO: probably error here:
+                for i_d in range(self.d):
+                    mu = torch.matmul(self.Z[i_n, t, i_d], self.w[i_d].T)
+                # mean = torch.einsum("xdk,dk->dx", self.w, self.Z[i_n, t])
+                # TODO: could sample sigma
+                    dist = distr.normal.Normal(mu, 0.0001)
+                    self.X[i_n, t, i_d] = dist.rsample()
 
         return self.X, self.Z
 
@@ -171,9 +202,9 @@ class DataGeneratorWithoutLatent:
         self.hp = hp
         self.n = hp.n
         self.d = hp.num_features
-        self.d_x = hp.num_gridcells
+        self.d_x = hp.d_x
         self.world_dim = hp.world_dim
-        self.tau = hp.timewindow
+        self.tau = hp.tau
         self.tau_neigh = hp.neighborhood
         self.prob = hp.prob
         self.eta = hp.eta
@@ -460,7 +491,6 @@ class DataGeneratorWithoutLatent:
                             self.X[i_n, t, i_d, i] += self.noise_coeff * noise[i_n, t, i_d, i]
                         else:
                             # TODO: check for x[:, :, i_d]
-                            __import__('ipdb').set_trace()
                             x_ = torch.cat((x, noise[i_n, t, i_d, i]), dim=2)
                             self.X[i_n, t, i_d, i] = self.fct[i_d](x_.view(-1))
 

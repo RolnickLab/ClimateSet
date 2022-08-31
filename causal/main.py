@@ -4,9 +4,11 @@ import json
 import torch
 import numpy as np
 import metrics
-from model import CausalModel
+from model.tsdcd import TSDCD
+from model.tsdcd_latent import LatentTSDCD
 from data_loader import DataLoader
 from train import Training
+from train_latent import TrainingLatent
 
 
 class Bunch:
@@ -57,6 +59,7 @@ def main(hp):
                              ratio_valid=hp.ratio_valid,
                              data_path=hp.data_path,
                              latent=hp.latent,
+                             debug_gt_w=hp.debug_gt_w,
                              instantaneous=hp.instantaneous,
                              tau=hp.tau)
 
@@ -68,16 +71,37 @@ def main(hp):
     else:
         num_input = d * hp.tau * (hp.tau_neigh * 2 + 1)
 
-    model = CausalModel(model_type="fixed",
-                        num_layers=hp.num_layers,
-                        num_hidden=hp.num_hidden,
-                        num_input=num_input,
-                        num_output=2,
-                        d=d,
-                        tau=hp.tau,
-                        tau_neigh=hp.tau_neigh,
-                        instantaneous=hp.instantaneous,
-                        hard_gumbel=hp.hard_gumbel)
+    if not hp.latent:
+        model = TSDCD(model_type="fixed",
+                      num_layers=hp.num_layers,
+                      num_hidden=hp.num_hidden,
+                      num_input=num_input,
+                      num_output=2,
+                      d=d,
+                      tau=hp.tau,
+                      tau_neigh=hp.tau_neigh,
+                      instantaneous=hp.instantaneous,
+                      hard_gumbel=hp.hard_gumbel)
+    else:
+        model = LatentTSDCD(num_layers=hp.num_layers,
+                            num_hidden=hp.num_hidden,
+                            num_input=num_input,
+                            num_output=2,
+                            d=d,
+                            distr_z0="gaussian",
+                            distr_encoder="gaussian",
+                            distr_transition="gaussian",
+                            distr_decoder="gaussian",
+                            d_x=hp.d_x,
+                            k=hp.k,
+                            tau=hp.tau,
+                            instantaneous=hp.instantaneous,
+                            hard_gumbel=hp.hard_gumbel,
+                            debug_gt_graph=hp.debug_gt_graph,
+                            debug_gt_z=hp.debug_gt_z,
+                            debug_gt_w=hp.debug_gt_w,
+                            gt_w=data_loader.gt_w,
+                            gt_graph=data_loader.gt_graph)
 
     # create path to exp and save hyperparameters
     save_path = os.path.join(hp.exp_path, "train")
@@ -87,7 +111,10 @@ def main(hp):
         json.dump(vars(hp), file, indent=4)
 
     # train
-    trainer = Training(model, data_loader, hp)
+    if not hp.latent:
+        trainer = Training(model, data_loader, hp)
+    else:
+        trainer = TrainingLatent(model, data_loader, hp)
     trainer.train_with_QPM()
 
     # save final results (shd, f1 score, etc)
@@ -119,9 +146,23 @@ if __name__ == "__main__":
     parser.add_argument("--data-path", type=str, default="dataset/data0",
                         help="Path to the dataset")
 
+    parser.add_argument("--debug-gt-z", action="store_true",
+                        help="If true, use the ground truth value of Z (use only to debug)")
+    parser.add_argument("--debug-gt-w", action="store_true",
+                        help="If true, use the ground truth value of W (use only to debug)")
+    parser.add_argument("--debug-gt-graph", action="store_true",
+                        help="If true, use the ground truth graph (use only to debug)")
+
     # Dataset properties
+
+    # specific to model with latent variables
     parser.add_argument("--latent", action="store_true",
                         help="Use the model that assumes latent variables")
+    parser.add_argument("--k", type=int,
+                        help="if latent, k is the number of cluster z")
+    parser.add_argument("--d-x", type=int,
+                        help="if latent, d_x is the number of gridcells")
+
     parser.add_argument("--instantaneous", action="store_true",
                         help="Use instantaneous connections")
     parser.add_argument("--tau", type=int, default=3,
@@ -202,8 +243,11 @@ if __name__ == "__main__":
     if args.use_data_config != "":
         with open(os.path.join(args.data_path, "data_params.json"), 'r') as f:
             params = json.load(f)
-        args.tau = params['timewindow']
+        args.tau = params['tau']
         args.tau_neigh = params['neighborhood']
         args.latent = params['latent']
+        if args.latent:
+            args.k = params['k']
+            args.d_x = params['d_x']
 
     main(args)

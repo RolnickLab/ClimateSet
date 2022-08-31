@@ -1,4 +1,77 @@
 import numpy as np
+import torch
+from scipy.optimize import linear_sum_assignment
+from scipy.stats import spearmanr
+
+
+def mean_corr_coef_np(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
+                      indices: list = None) -> float:
+    """
+    Source: https://github.com/ilkhem/icebeem/blob/master/metrics/mcc.py
+    A numpy implementation of the mean correlation coefficient metric.
+    Args:
+        x: numpy.ndarray
+        y: numpy.ndarray
+        method: The method used to compute the correlation coefficients ['pearson', 'spearman']
+        indices: list of indices to consider, if None consider all variables
+    """
+    d = x.shape[1]
+    if method == 'pearson':
+        cc = np.corrcoef(x, y, rowvar=False)[:d, d:]
+    elif method == 'spearman':
+        cc = spearmanr(x, y)[0][:d, d:]
+    else:
+        raise ValueError('not a valid method: {}'.format(method))
+
+    cc = np.abs(cc)
+    if indices is not None:
+        cc_program = cc[:, indices[-d:]]
+    else:
+        cc_program = cc
+
+    assignments = linear_sum_assignment(-1 * cc_program)
+    score = cc_program[assignments].mean()
+
+    perm_mat = np.zeros((d, d))
+    perm_mat[assignments] = 1
+    # cc_program_perm = np.matmul(perm_mat.transpose(), cc_program)
+    cc_program_perm = np.matmul(cc_program, perm_mat.transpose())  # permute the learned latents
+
+    return score, cc_program_perm, assignments
+
+
+def mean_corr_coef(model, data_loader, num_samples=int(1e5), method='pearson', indices=None):
+    """Source: https://github.com/ilkhem/icebeem/blob/master/metrics/mcc.py"""
+    with torch.no_grad():
+        model.eval()
+        z_list = []
+        z_hat_list = []
+        sample_counter = 0
+
+        # if num_samples is greater than number of examples in dataset
+        n = data_loader.x.shape[0]
+        if sample_counter < n:
+            num_samples = n
+
+        # Load data
+        while sample_counter < num_samples:
+            x, y, z = data_loader.sample_train(64)
+            z_hat, _, _ = model.encode(x, y)
+
+            z_list.append(z)
+            z_hat_list.append(z_hat)
+
+            sample_counter += x.shape[0]
+
+        z = torch.cat(z_list, 0)[:int(num_samples)]
+        z_hat = torch.cat(z_hat_list, 0)[:int(num_samples)]
+        z, z_hat = z.cpu().numpy(), z_hat.cpu().numpy()
+
+        z = z.reshape(z.shape[0] * z.shape[1], z.shape[2] * z.shape[3])
+        z_hat = z_hat.reshape(z_hat.shape[0] * z_hat.shape[1], z_hat.shape[2] * z_hat.shape[3])
+
+        score, cc_program_perm, assignments = mean_corr_coef_np(z, z_hat, method, indices)
+        return score, cc_program_perm, assignments, z, z_hat
 
 
 def edge_errors(pred: np.ndarray, target: np.ndarray) -> dict:
@@ -64,6 +137,7 @@ def f1_score(pred: np.ndarray, target: np.ndarray) -> float:
 
 
 if __name__ == "__main__":
+    # simple tests
     from sklearn.metrics import f1_score as sk_f1_score
     from scipy.spatial.distance import hamming
 

@@ -83,20 +83,21 @@ def plot_z(z: np.ndarray, path: str, t: int = 500):
     Generate a figure for each feature.
 
     Args:
-        z: an array containing the data Z (shape: t x d x k)
+        z: an array containing the data Z, shape: (n, t, d, k)
         path: path where to save the generated figure
         t: last timestep to include
     """
-    d = z.shape[1]
-    k = z.shape[2]
+    d = z.shape[2]
+    k = z.shape[3]
+    i_n = 0
 
     # if the timeserie is too short, plot it entirely
-    if t > z.shape[0]:
-        t = z.shape[0]
+    if t > z.shape[1]:
+        t = z.shape[1]
 
     for i in range(d):
         _, axes = plt.subplots(nrows=k, ncols=1)
         for i_k in range(k):
-            axes[i_k].plot(z[:t, i, i_k])
+            axes[i_k].plot(z[i_n, :t, i, i_k])
         plt.savefig(os.path.join(path, f'z_{i}.png'))
         plt.close()
