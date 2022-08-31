@@ -1,42 +1,42 @@
 #!/bin/bash
 
-#SBATCH --cpus-per-task=4                                # specify cpu
+#SBATCH --cpus-per-task=1                               # specify cpu
 
-#SBATCH --mem=32G                                        # specify memory
+#SBATCH --mem=16G                                        # specify memory
 
-#SBATCH --time=10:00:00                                  # set runtime
+#SBATCH --time=04:00:00                                  # set runtime
 
 #SBATCH -o /home/mila/c/charlotte.lange/slurm-%j.out        # set log dir to home
 
 
 # 1. Load Python
 
-module load python/3.7
+module load python/3.9
 
 
 # 3. Create or Set Up Environment
 
-#if [ -a env/bin/activate ]; then
+if [ -a env/bin/activate ]; then
 
-#    source env/bin/activate
+    source env/bin/activate
 
-#else
+else
 
-#    python -m venv env
-#    source env/bin/activate
-#    pip install -U pip wheel setuptools
+    python -m venv env
+    source env/bin/activate
+    pip install -U pip wheel setuptools
 
 #fi
 
 
 # 4. Install requirements.txt if it exists
 
-#if [ -a requirements_prep_data.txt ]; then
+if [ -a requirements.txt ]; then
 
-#    pip install -r requirements_prep_data.txt
+    pip install -r requirements.txt
 
-#fi
-source /home/mila/c/charlotte.lange/climart/bin/activate
+fi
+#source /home/mila/c/charlotte.lange/causalpaca/bin/activate
 
 # 5. Copy data and code from scratch to $SLURM_TMPDIR/
 

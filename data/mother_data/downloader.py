@@ -10,7 +10,8 @@ from utils.constants import (
     SUPPORTED_EXPERIMENTS,
 )
 from utils.helper_funcs import get_keys_from_value, get_MIP
-
+import netCDF4
+import h5py
 import pandas as pd
 import xarray as xr
 import os.path
@@ -76,7 +77,7 @@ class Downloader:
         # log on Manager
         self.lm = LogonManager()
         self.lm.logoff()
-        self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
+        #self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
         print("Log In to Node:", self.lm.is_logged_on())
 
         self.data_dir_parent = data_dir
@@ -210,11 +211,11 @@ class Downloader:
                 for f in file_names:
 
                     # try to opend datset
-                    try:
-                        ds = xr.open_dataset(f, chunks={"time": chunksize})
-                    except OSError:
-                        print("Having problems downloading th edateset. Skipping")
-                        continue
+                    #try:
+                    ds = xr.open_dataset(f, chunks={"time": chunksize}, engine='netcdf4')
+                    #except OSError:
+                    #    print("Having problems downloading th edateset. Skipping")
+                    #    continue
 
                     years = np.unique(ds.time.dt.year.to_numpy())
                     print(f"Data covering years: {years[0]} to {years[-1]}")
@@ -456,7 +457,7 @@ if __name__ == "__main__":
 
     if test_mother:
         print("testing mother")
-        vars = ["schmarn", "pr", "CO2_em_anthro"]
+        vars = ["schmarn", "tas", "BC_em_anthro"]
         downloader = Downloader(experiments=["ssp126", "historical"], vars=vars)
         downloader.download_from_model()
         downloader.download_raw_input()
