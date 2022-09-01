@@ -48,8 +48,6 @@ class Training:
             self.optimizer = torch.optim.SGD(model.parameters(), lr=hp.lr)
         elif hp.optimizer == "rmsprop":
             self.optimizer = torch.optim.RMSprop(model.parameters(), lr=hp.lr)
-        else:
-            raise NotImplementedError("optimizer {} is not implemented".format(hp.optimizer))
 
         # compute constraint normalization
         with torch.no_grad():

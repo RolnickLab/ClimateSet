@@ -6,6 +6,9 @@ from metrics import mean_corr_coef
 
 
 def moving_average(a: np.ndarray, n: int = 10):
+    """
+    Returns: the moving average of the array 'a' with a timewindow of 'n'
+    """
     # from https://stackoverflow.com/questions/14313510/how-to-calculate-rolling-moving-average-using-python-numpy-scipy
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
@@ -13,7 +16,13 @@ def moving_average(a: np.ndarray, n: int = 10):
 
 
 def plot(learner):
-    # plot the weights W (from z to x)
+    """
+    Main plotting function.
+    Plot the learning curves and
+    if the ground-truth is known the adjacency and adjacency through time.
+    """
+    # plot learning curves
+    # (for latent models, there is a finer decomposition of the loss)
     if learner.latent:
         plot_learning_curves(train_loss=learner.train_loss_list,
                              train_recons=learner.train_recons_list,
@@ -22,10 +31,40 @@ def plot(learner):
                              valid_recons=learner.valid_recons_list,
                              valid_kl=learner.valid_kl_list,
                              path=learner.hp.exp_path)
-        adj = learner.model.encoder_decoder.get_w().detach().numpy()
+    else:
+        plot_learning_curves(train_loss=learner.train_loss_list,
+                             valid_loss=learner.valid_loss_list,
+                             path=learner.hp.exp_path)
 
-        # .view(learner.gt_w.shape)
-        plot_adjacency_matrix_w(adj,
+    # plot the adjacency matrix (learned vs ground-truth)
+    if not learner.no_gt:
+        adj = learner.model.get_adj().detach().numpy()
+        if learner.latent:
+            # for latent models, find the right permutation of the latent
+            # variables using MCC
+            score, cc_program_perm, assignments, z, z_hat = mean_corr_coef(learner.model, learner.data)
+            print(score)
+            print(assignments)
+            permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
+            permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
+            gt_dag = permutation.T @ learner.gt_dag @ permutation
+        else:
+            gt_dag = learner.gt_dag
+
+        plot_adjacency_matrix(adj,
+                              gt_dag,
+                              learner.hp.exp_path,
+                              'transition')
+        plot_adjacency_through_time(learner.adj_tt,
+                                    gt_dag,
+                                    learner.iteration,
+                                    learner.hp.exp_path,
+                                    'transition')
+
+    # plot the weights W for latent models (between the latent Z and the X)
+    if learner.latent and not learner.no_gt:
+        adj_w = learner.model.encoder_decoder.get_w().detach().numpy()
+        plot_adjacency_matrix_w(adj_w,
                                 learner.gt_w,
                                 learner.hp.exp_path,
                                 'w')
@@ -34,32 +73,6 @@ def plot(learner):
                                       learner.iteration,
                                       learner.hp.exp_path,
                                       'w')
-    else:
-        plot_learning_curves(train_loss=learner.train_loss_list,
-                             valid_loss=learner.valid_loss_list,
-                             path=learner.hp.exp_path)
-
-    adj = learner.model.get_adj().detach().numpy()
-    if learner.latent:
-        score, cc_program_perm, assignments, z, z_hat = mean_corr_coef(learner.model, learner.data)
-        print(score)
-        print(assignments)
-        permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
-        permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
-        gt_dag = permutation.T @ learner.gt_dag @ permutation
-        # __import__('ipdb').set_trace()
-    else:
-        gt_dag = learner.gt_dag
-    # .reshape(learner.gt_dag.shape[0], learner.gt_dag.shape[1], -1)
-    plot_adjacency_matrix(adj,
-                          gt_dag,
-                          learner.hp.exp_path,
-                          'transition')
-    plot_adjacency_through_time(learner.adj_tt,
-                                gt_dag,
-                                learner.iteration,
-                                learner.hp.exp_path,
-                                'transition')
 
 
 def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: list = None,
@@ -67,7 +80,11 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
     """ Plot the training and validation loss through time
     Args:
       train_loss: training loss
+      train_recons: for latent models, the reconstruction part of the loss
+      train_kl: for latent models, the Kullback-Leibler part of the loss
       valid_loss: validation loss (on held-out dataset)
+      valid_recons: see train_recons
+      valid_kl: see train_kl
       path: path where to save the plot
     """
     # remove first steps to avoid really high values
