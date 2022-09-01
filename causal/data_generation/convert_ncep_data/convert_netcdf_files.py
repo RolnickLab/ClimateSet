@@ -156,7 +156,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         print(data)
     f.close()
 
-    return first_df, features_name
+    return first_df, first_features_name
 
 
 if __name__ == "__main__":
@@ -178,9 +178,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.hdf5:
-        df, features_name = main_hdf5(args.data_path, args.output_path, args.features_name, args.frequency, args.verbose)
+        df, features_name = main_hdf5(args.data_path,
+                                      args.output_path,
+                                      args.features_name,
+                                      args.frequency,
+                                      args.verbose)
     else:
-        df, features_name = main_numpy(args.data_path, args.output_path, args.features_name, args.frequency, args.verbose)
+        df, features_name = main_numpy(args.data_path,
+                                       args.output_path,
+                                       args.features_name,
+                                       args.frequency,
+                                       args.verbose)
 
     # plot data and save files
     timeserie_path = os.path.join(args.output_path, "timeserie.png")
