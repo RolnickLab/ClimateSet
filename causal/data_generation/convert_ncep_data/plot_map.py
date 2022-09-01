@@ -32,8 +32,8 @@ def plot_contour(df: pd.DataFrame, features_name: list, path: str):
 
     map = Basemap(projection='mill')  # , lat_0=-90, lon_0=0)
     map.drawcoastlines()
-    map.drawparallels(np.arange(-90,90,30),labels=[1,0,0,0])
-    map.drawmeridians(np.arange(map.lonmin,map.lonmax+30,60),labels=[0,0,0,1])
+    map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+    map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
 
     # fill continents 'coral' (with zorder=0), color wet areas 'aqua'
     # map.drawmapboundary(fill_color='aqua')
@@ -62,8 +62,8 @@ def plot_gif(df: pd.DataFrame, features_name: list, output_path: str,
         plt.close()
         map = Basemap(projection='mill')  # , lat_0=-90, lon_0=0)
         map.drawcoastlines()
-        map.drawparallels(np.arange(-90,90,30),labels=[1,0,0,0])
-        map.drawmeridians(np.arange(map.lonmin,map.lonmax+30,60),labels=[0,0,0,1])
+        map.drawparallels(np.arange(-90, 90, 30),labels=[1, 0, 0, 0])
+        map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
         df_ = df[df["timestamp"] == timestamp]
 
         X, Y = np.meshgrid(df_["lon"].unique(), df_["lat"].unique())

@@ -148,7 +148,7 @@ def assert_args(args):
 
     if args.ratio_valid == 0:
         args.ratio_valid = 1 - args.ratio_train
-    if args.ratio_train + ratio_valid > 1:
+    if args.ratio_train + args.ratio_valid > 1:
         raise ValueError("The sum of the ratio for training and validation set is higher than 1")
 
     # string input with limited possible values

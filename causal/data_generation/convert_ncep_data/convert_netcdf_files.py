@@ -5,9 +5,9 @@ import tables
 import xarray as xr
 import pandas as pd
 import numpy as np
-from os import path
 from pathlib import Path
 from plot_map import plot_at_origin, plot_contour, plot_gif
+
 
 def convert_netcdf_to_pandas(filename: str, features_name: list,
                              columns_to_drop: list, frequency: str = "day"):
@@ -34,7 +34,7 @@ def convert_netcdf_to_pandas(filename: str, features_name: list,
         raise ValueError(f"This value for frequency ({frequency}) is not yet implemented")
 
     # convert time to timestamp (in seconds)
-    df["timestamp"] = pd.to_datetime(df['time']).astype(int)/ 10**9
+    df["timestamp"] = pd.to_datetime(df['time']).astype(int) / 10**9
 
     # keep only lat, lon, timestamp and the feature in 'features_name'
     columns_to_keep = ["timestamp"] + columns_to_keep
@@ -126,7 +126,7 @@ def main_inplace(netcdf_directory: str, output_path: str, features_name: str, ve
     for i, filename in enumerate(filenames):
         if verbose:
             print(f"opening file: {filename}")
-        df, metadata = convert_netcdf_to_pandas(filename, features_name, ["time"])
+        df, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, ["time"])
         print(df.shape)
 
         # convert the dataframe to numpy, create the path if necessary and save it
