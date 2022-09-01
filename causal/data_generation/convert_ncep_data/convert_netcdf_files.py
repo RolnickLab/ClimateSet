@@ -2,6 +2,7 @@ import glob
 import os
 import json
 import tables
+import argparse
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -53,18 +54,12 @@ def find_all_nc_files(directory: str):
     return filenames
 
 
-def main(netcdf_directory: str, output_path: str, features_name: list, frequency: str, verbose: bool):
+def main_numpy(netcdf_directory: str, output_path: str, features_name: list, frequency: str, verbose: bool):
     """
     Convert netCDF4 files from the NCEP-NCAR Reanalysis project to a numpy file.
     All the files are expected to be in the directory `netcdf_directory`
-    Args:
-        netcdf_directory: x
-        output_path: x
-        features_name: x
-        frequency: x (day, month, week)
-        verbose: if True, print messages at each step
     Returns:
-        df, nparray: the dataframe and numpy array of the concatenated data
+        df, features_name: the dataframe and features_name of the concatenated data
     """
     # TODO: could add year anomalizing, detrending?
     df = None
@@ -100,19 +95,16 @@ def main(netcdf_directory: str, output_path: str, features_name: list, frequency
     with open(metadata_path, 'w', encoding='utf-8') as f:
         json.dump(metadata, f, ensure_ascii=False, indent=4)
 
-    return df, np_array, features_name
+    return df, features_name
 
 
-def main_inplace(netcdf_directory: str, output_path: str, features_name: str, verbose: bool):
+def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, frequency: str, verbose: bool):
     """
     Convert netCDF4 files from the NCEP-NCAR Reanalysis project to a hdf5 file.
     Only open one files at a time and append the data to the hdf5 file
     All the files are expected to be in the directory `netcdf_directory`
-    Args:
-        netcdf_directory: x
-        output_path: x
-        features_name: x
-        verbose: if True, print messages at each step
+    Returns:
+        df, features_name: the dataframe and the features_name of the first file
     """
     df = None
 
@@ -136,6 +128,9 @@ def main_inplace(netcdf_directory: str, output_path: str, features_name: str, ve
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
         if i == 0:
+            first_df = df
+            first_features_name = features_name
+
             # create the file for the first step
             f = tables.open_file(data_path, mode='w')
             atom = tables.Float64Atom()
@@ -161,20 +156,36 @@ def main_inplace(netcdf_directory: str, output_path: str, features_name: str, ve
         print(data)
     f.close()
 
+    return first_df, features_name
+
 
 if __name__ == "__main__":
-    netcdf_directory = "data/specific_humidity"
-    output_path = "specific_humidity_results"
-    features_name = []
-    frequency = "week"
-    verbose = True
-    df, _, features_name = main(netcdf_directory, output_path, features_name, frequency, verbose)
-    # main_inplace(netcdf_directory, output_path, features_name, verbose=True)
+    parser = argparse.ArgumentParser(description="Convert NetCDF files to numpy or hdf5. Can also plot visualizations.")
+    parser.add_argument("--data-path", type=str, default="data/specific_humidity",
+                        help="Path to the directory containing the NetCDF files")
+    parser.add_argument("--output-path", type=str, default="specific_humidity_results",
+                        help="Path where to save the results.")
+    parser.add_argument("--features-name", nargs="+",
+                        help="Name of the feature to use, if not specified use all")
+    parser.add_argument("--frequency", type=str, default="day",
+                        help="Frequency to which we parse the data (day|week|month)")
+    parser.add_argument("--verbose", action="store_true",
+                        help="If True, print useful messages")
+    parser.add_argument("--hdf5", action="store_true",
+                        help="If True, save result as an hdf5 file")
+    parser.add_argument("--gif-max-step", type=int, default=50,
+                        help="Maximal number of step to consider to generate the gif")
+    args = parser.parse_args()
 
-    # plot data and save file
-    timeserie_path = os.path.join(output_path, "at_origin.png")
-    average_path = os.path.join(output_path, "average.png")
+    if args.hdf5:
+        df, features_name = main_hdf5(args.data_path, args.output_path, args.features_name, args.frequency, args.verbose)
+    else:
+        df, features_name = main_numpy(args.data_path, args.output_path, args.features_name, args.frequency, args.verbose)
 
-    plot_timeserie(df, features_name, frequency, timeserie_path)
+    # plot data and save files
+    timeserie_path = os.path.join(args.output_path, "timeserie.png")
+    average_path = os.path.join(args.output_path, "average.png")
+
+    plot_timeserie(df, features_name, args.frequency, timeserie_path)
     plot_average(df, features_name, average_path)
-    plot_gif(df, features_name, output_path, 100)
+    plot_gif(df, features_name, args.output_path, args.gif_max_step)
