@@ -6,7 +6,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from plot_map import plot_at_origin, plot_contour, plot_gif
+from plot_map import plot_timeserie, plot_average, plot_gif
 
 
 def convert_netcdf_to_pandas(filename: str, features_name: list,
@@ -166,13 +166,15 @@ if __name__ == "__main__":
     netcdf_directory = "data/specific_humidity"
     output_path = "specific_humidity_results"
     features_name = []
-    df, _, features_name = main(netcdf_directory, output_path, features_name, "week", verbose=True)
+    frequency = "week"
+    verbose = True
+    df, _, features_name = main(netcdf_directory, output_path, features_name, frequency, verbose)
     # main_inplace(netcdf_directory, output_path, features_name, verbose=True)
 
     # plot data and save file
-    plot_origin_path = os.path.join(output_path, "at_origin.png")
-    plot_average_path = os.path.join(output_path, "average.png")
+    timeserie_path = os.path.join(output_path, "at_origin.png")
+    average_path = os.path.join(output_path, "average.png")
 
-    plot_at_origin(df, features_name, plot_origin_path)
-    plot_contour(df, features_name, plot_average_path)
+    plot_timeserie(df, features_name, frequency, timeserie_path)
+    plot_average(df, features_name, average_path)
     plot_gif(df, features_name, output_path, 100)
