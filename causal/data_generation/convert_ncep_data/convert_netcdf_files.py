@@ -10,8 +10,17 @@ from pathlib import Path
 from plot_map import plot_timeserie, plot_average, plot_gif
 
 
-def convert_netcdf_to_pandas(filename: str, features_name: list,
-                             columns_to_drop: list, frequency: str = "day"):
+def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str = "day"):
+    """
+    Convert a NetCDF file to a pandas dataframe using xarray.
+    Args:
+        filename: name of a NetCDF file
+        features_name: name of feature to consider, if empty consider all
+        frequency: frequency to aggregate the data (day|week|month)
+    Returns:
+        df, ds.attrs, features_name: the dataframe, the NetCDF metadata and the
+        features_name used
+    """
     # open dataset with xarray and convert it to a pandas DataFrame
     ds = xr.open_dataset(filename)
     df = ds.to_dataframe()
@@ -32,7 +41,7 @@ def convert_netcdf_to_pandas(filename: str, features_name: list,
     elif frequency == "month":
         df = df.groupby([pd.Grouper(key='time', freq="M"), "lat", "lon"])[features_name].mean().reset_index()
     else:
-        raise ValueError(f"This value for frequency ({frequency}) is not yet implemented")
+        raise NotImplementedError(f"This value for frequency ({frequency}) is not yet implemented")
 
     # convert time to timestamp (in seconds)
     df["timestamp"] = pd.to_datetime(df['time']).astype(int) / 10**9
@@ -40,12 +49,15 @@ def convert_netcdf_to_pandas(filename: str, features_name: list,
     # keep only lat, lon, timestamp and the feature in 'features_name'
     columns_to_keep = ["timestamp"] + columns_to_keep
     df = df[columns_to_keep]
-    # df = df.drop(columns_to_drop, axis=1)
 
     return df, ds.attrs, features_name
 
 
-def find_all_nc_files(directory: str):
+def find_all_nc_files(directory: str) -> list:
+    """
+    Find all NetCDF files in 'directory'
+    Returns: a sorted list of the files name
+    """
     if directory[-1] == "/":
         pattern = f"{directory}*.nc"
     else:
@@ -73,7 +85,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     for filename in filenames:
         if verbose:
             print(f"opening file: {filename}")
-        df_temp, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, ["time"], frequency)
+        df_temp, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
         if df is None:
             df = df_temp
         else:
@@ -118,7 +130,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
     for i, filename in enumerate(filenames):
         if verbose:
             print(f"opening file: {filename}")
-        df, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, ["time"])
+        df, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
         print(df.shape)
 
         # convert the dataframe to numpy, create the path if necessary and save it
