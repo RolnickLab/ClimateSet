@@ -1,4 +1,5 @@
 import argparse
+import warnings
 import os
 import json
 import torch
@@ -58,7 +59,9 @@ def main(hp):
     data_loader = DataLoader(ratio_train=hp.ratio_train,
                              ratio_valid=hp.ratio_valid,
                              data_path=hp.data_path,
+                             data_format=hp.data_format,
                              latent=hp.latent,
+                             no_gt=hp.no_gt,
                              debug_gt_w=hp.debug_gt_w,
                              instantaneous=hp.instantaneous,
                              tau=hp.tau)
@@ -131,6 +134,40 @@ def main(hp):
         json.dump(errors, file, indent=4)
 
 
+def assert_args(args):
+    """
+    Raise errors or warnings if some args should not take some combination of
+    values.
+    """
+    # raise errors if some args should not take some combination of values
+    if args.no_gt and (args.debug_gt_graph or args.debug_gt_z or args.debug_gt_w):
+        raise ValueError("Since no_gt==True, all other args should not use ground-truth values")
+
+    if args.latent and (args.k <= 0 or args.d_x <= 0):
+        raise ValueError("When using latent model, you need to define k and d_x with integer values greater than 0")
+
+    if args.ratio_valid == 0:
+        args.ratio_valid = 1 - args.ratio_train
+    if args.ratio_train + ratio_valid > 1:
+        raise ValueError("The sum of the ratio for training and validation set is higher than 1")
+
+    # string input with limited possible values
+    supported_dataformat = ["numpy", "hdf5"]
+    if args.data_format not in supported_dataformat:
+        raise ValueError(f"This file format ({args.data_format}) is not \
+                         supported. Supported types are: {supported_dataformat}")
+    supported_optimizer = ["sgd", "rmsprop"]
+    if args.optimizer not in supported_optimizer:
+        raise ValueError(f"This optimizer type ({args.optimizer}) is not \
+                         supported. Supported types are: {supported_optimizer}")
+
+    # warnings, strange choice of args combination
+    if not args.latent and args.debug_gt_z:
+        warnings.warn("Are you sure you want to use gt_z even if you don't have latents")
+
+    return args
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Causal models for climate data")
 
@@ -146,6 +183,8 @@ if __name__ == "__main__":
     parser.add_argument("--data-path", type=str, default="dataset/data0",
                         help="Path to the dataset")
 
+    # For synthetic datasets, can use the ground-truth values to do ablation
+    # studies
     parser.add_argument("--debug-gt-z", action="store_true",
                         help="If true, use the ground truth value of Z (use only to debug)")
     parser.add_argument("--debug-gt-w", action="store_true",
@@ -154,6 +193,10 @@ if __name__ == "__main__":
                         help="If true, use the ground truth graph (use only to debug)")
 
     # Dataset properties
+    parser.add_argument("--no-gt", action="store_true",
+                        help="If True, does not use any ground-truth for plotting and metrics")
+    parser.add_argument("--data-format", type=str, default="numpy",
+                        help="numpy|hdf5")
 
     # specific to model with latent variables
     parser.add_argument("--latent", action="store_true",
@@ -229,6 +272,7 @@ if __name__ == "__main__":
     parser.add_argument("--float", action="store_true", help="Use Float precision")
 
     args = parser.parse_args()
+    args = assert_args(args)
 
     # if a json file with params is given,
     # update params accordingly

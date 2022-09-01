@@ -10,18 +10,18 @@ class DataLoader:
                  ratio_train: float,
                  ratio_valid: float,
                  data_path: str,
+                 data_format: str,
                  latent: bool,
+                 no_gt: bool,
                  debug_gt_w: bool,
                  instantaneous: bool,
                  tau: int):
         self.ratio_train = ratio_train
         self.ratio_valid = ratio_valid
-        if ratio_valid == 0:
-            self.ratio_valid = 1 - ratio_train
-        assert ratio_train + ratio_valid <= 1
-
         self.data_path = data_path
+        self.data_format = data_format
         self.latent = latent
+        self.no_gt = no_gt
         self.debug_gt_w = debug_gt_w
         self.instantaneous = instantaneous
         self.tau = tau
