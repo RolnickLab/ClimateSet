@@ -16,24 +16,24 @@ module load python/3.9
 
 # 3. Create or Set Up Environment
 
-if [ -a env/bin/activate ]; then
+if [ -a env4/bin/activate ]; then
 
-    source env/bin/activate
+    source env4/bin/activate
 
 else
 
-    python -m venv env
-    source env/bin/activate
-    pip install -U pip wheel setuptools
-
-#fi
+    python3.9 -m venv env4
+    source env4/bin/activate
+    python3.9 -m pip install --upgrade pip
+    pip3.9 install wheel setuptools
+fi
 
 
 # 4. Install requirements.txt if it exists
 
 if [ -a requirements.txt ]; then
 
-    pip install -r requirements.txt
+    pip3.9 install -r requirements2.txt
 
 fi
 #source /home/mila/c/charlotte.lange/causalpaca/bin/activate
@@ -56,7 +56,7 @@ cd $SLURM_TMPDIR/causalpaca/data/
 # 8. Run Python
 
 echo "Running mother_data/downloader.py ..."
-python mother_data/downloader.py
+python3.9 mother_data/downloader.py
 
 
 # 9. Copy output to scratch
