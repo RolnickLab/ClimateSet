@@ -1,130 +1,429 @@
-from utils.constants import MODEL_SOURCES, VAR_SOURCE_LOOKUP, GRIDDING_HIERACHY, VAR_RES_MAPPING_PATH, REMOVE_RESOLUTONS
-from utils.helper_funcs import get_keys_from_value, runcmd, get_MIP, get_lowest_entry
+from utils.constants import RES_TO_CHUNKSIZE
+from pyesgf.search import SearchConnection
+from pyesgf.logon import LogonManager
 
-
-from siphon import catalog #TDS catalog
+from utils.constants import (
+    MODEL_SOURCES,
+    VAR_SOURCE_LOOKUP,
+    OPENID,
+    PASSWORD,
+    SUPPORTED_EXPERIMENTS,
+)
+from utils.helper_funcs import get_keys_from_value, get_MIP
+import netCDF4
+#import h5py
 import pandas as pd
 import xarray as xr
-import pandas as pd
-import re
 import os.path
-overwrite = False
+import numpy as np
 
-# TODO argparse with parameter where data should be stored
-
-# Downloads data of two types:
-
-# maybe one class "downloader"
-# two subclasses for input / output
-
-# Input of climate models (different source)
-    # "really raw input": normal input variables
-    # "model raw input": CO2 mass and other specific variables: assumptions within the model, depending on the SSP path
-    # (different preprocessing, normalize (CO2 mass minus baseline), see ClimateBench)
-
-# Predictions / output of climate models (different source)
-
-# Storage:
-# Raw-raw data can be deleted after preprocessing (preprocessing always with highest resolution)
-
-# Resolution:
-# highest possible resolution [??]
-
-# class Downloader
-# source: link whatever
-# storage: where to store (data_paths)
-# params: mother_params
-# ATTENTION: download always highest resolution, res params are only used later on during res_preprocesser
-
-# TODO: where to store sources links for data
-
-# no returns, but communicates to user where stuff was stored and if sucessful
-# hand over exceptions if there are any problems, or print commands
+overwrite = False  # flag if files should be overwritten
 
 
 class Downloader:
+    def __init__(
+        self,
+        model: str = "NorESM2-LM",  # defaul as in ClimateBench
+        experiments: [str] = [
+            "ssp370",
+            "hist-GHG",
+            "piControl",
+            "ssp434",
+            "ssp126",
+        ],  # sub-selection of ClimateBench defaul
+        vars: [str] = ["tas", "pr", "SO2", "BC"],
+        data_dir: str = "data/data/",
+    ):
 
-    def __init__(self,
-                model: str = "NorESM2-L", #defaul as in ClimateBench
+        # TODO: check if model is supported
+        self.model = model
+        self.experiments = experiments
 
-                experiments: [str] = ['1pctCO2', 'ssp370', 'historical', 'piControl'], #sub-selection of ClimateBench defaul
-                vars: [str] = ['tas', 'pr'],
-                num_ensemble: int = 1, #number of ensemble members
+        # assign vars to either target or raw source
+        self.raw_vars = []
+        self.model_vars = []
 
-                ):
+        # take care of var mistype (node takes no spaces or '-' only '_')
+        vars = [v.replace(" ", "_").replace("-", "_") for v in vars]
+        print("Cleaned vars", vars)
+        for v in vars:
+            t = get_keys_from_value(VAR_SOURCE_LOOKUP, v)
+            if t == "model":
+                self.model_vars.append(v)
+            elif t == "raw":
+                self.raw_vars.append(v)
 
-                # TODO: check if model is supported
-                self.model=model
-                self.experiments=experiments
+            else:
+                print(
+                    f"WARNING: unknown source type for var {v}. Not supported. Skipping."
+                )
 
-                # assign vars to either target or raw source
-                self.raw_vars=[]
-                self.model_vars=[]
-                for v in vars:
-                    t=get_keys_from_value(VAR_SOURCE_LOOKUP, v)
-                    if t=='model':
-                        self.model_vars.append(v)
-                    elif t=='raw':
-                        self,raw_vars.append(v)
+        print(f"Raw variables to download: {self.raw_vars}")
+        print(f"Model prediced vars to download: {self.model_vars}")
 
-                    else:
-                        print(f"WARNING: unknown source type for var {v}.")
+        try:
 
-                print(f"Raw variables to download: {self.raw_vars}")
-                print(f"Model prediced vars to download: {self.model_vars}")
+            # TODO: switch to modelsoruce.csv (add url there)
+            self.model_node_link = MODEL_SOURCES[self.model]["node_link"]
+            self.model_source_center = MODEL_SOURCES[self.model]["center"]
+        except KeyError:
+            print(f"WARNING: Model {self.model} unknown. Using default instead.")
+            self.model = next(iter(MODEL_SOURCES))
+            self.model_node_link = MODEL_SOURCES[self.model]["node_link"]
+            self.model_source_center = MODEL_SOURCES[self.model]["center"]
+            print("Using:", self.model)
+        print("model node link:", self.model_node_link)
 
+        # log on Manager
+        self.lm = LogonManager()
+        self.lm.logoff()
+        self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
+        print("Log In to Node:", self.lm.is_logged_on())
 
-                # Mapping from var to lowest resolution available using the .csv
-                var2res=pd.read_csv(VAR_RES_MAPPING_PATH, delimiter=',',dtype=str)
-                # only extract relevant vars
-                indxs=var2res['variable_id'].isin(self.model_vars)
-                available_res=var2res[indxs]
-                self.res_exception=REMOVE_RESOLUTONS
+        self.data_dir_parent = data_dir
+        self.overwrite = False
 
+        # TODO: create folder hierachy / check if existent make new if not
 
-                # taking care of how resolutions are stored in csv -> list of strings
-                available_res['resolutions']=available_res['table_id(s)'].apply(lambda l: l.split(',')).apply(lambda l: [i.strip() for i in l])
-                # kick unwanted resolutions    
-                available_res['resolutions']=available_res['resolutions'].apply(lambda l: self.remove_res_excemption(l))
-                self.var2res=available_res.set_index(available_res['variable_id'])
+        # TODO: more checkups?
 
+    def download_from_model_single_var(
+        self,
+        variable,
+        experiment,
+        project="CMIP6",
+        default_frequency="mon",
+        default_version="latest",
+        default_grid_label="gn",
+    ):
+        conn = SearchConnection(self.model_node_link, distrib=False)
+
+        facets = "project,experiment_id,source_id,variable,frequency,variant_label,variable, nominal_resolution, version, grid_label, experiment_id"
+        ctx = conn.new_context(
+            project=project,
+            experiment=experiment,
+            variable=variable,
+            source_id=self.model,
+            facets=facets,
+        )
+
+        # extracting available facets
+        """
+        available_facets=ctx.facet_counts
+        for k in available_facets.keys():
+            print(f"\n facet {k}")
+            vs=[str(v) for v in available_facets[k].keys()]
+            print(vs)
+        raise RuntimeError
+        """
+
+        ctx = conn.new_context(
+            project=project,
+            experiment_id=experiment,
+            source_id=self.model,
+            variable=variable,
+            facets=facets,
+        )
+
+        # dealing with grid labels
+        grid_labels = list(ctx.facet_counts["grid_label"].keys())
+        print("Available grid labels:", grid_labels)
+        if default_grid_label in grid_labels:
+            print("Choosing grid:", default_grid_label)
+            grid_label = default_grid_label
+        else:
+            print("Default grid label not available.")
+            grid_label = grid_labels[0]
+            print(f"Choosing grid {grid_label} instead.")
+        ctx = ctx.constrain(grid_label=grid_label)
+
+        try:
+            nominal_resolutions = list(ctx.facet_counts["nominal_resolution"].keys())
+            print("Available nominal resolution:", nominal_resolutions)
+            # TODO: deal with multipl nom resolutions availabe
+            if len(nominal_resolutions) > 1:
+                print(
+                    "Multiple nominal resolutions exist, choosing smallest_nominal resolution (trying), please do a check up"
+                )
+
+            nominal_resolution = nominal_resolutions[-1]
+            print("Choosing nominal resolution", nominal_resolution)
+        except IndexError:
+            print("No nominal resolution")
+
+        print("Available frequencies: ", ctx.facet_counts["frequency"].keys())
+        frequency = "mon"  # list(ctx.facet_counts['frequency'].keys())[-1]
+        print("choosing frequency: ", frequency)
+
+        ctx_origin = ctx.constrain(
+            frequency=frequency, nominal_resolution=nominal_resolution
+        )
+
+        variants = list(ctx.facet_counts["variant_label"].keys())
+
+        download_files = {}
+
+        print("Available variants:", variants, "\n")
+
+        # we want to have data by all variants
+
+        for i, ensemble_member in enumerate(
+            variants
+        ):  # iterate over multiple members, select those with biggest number of available files
+
+            print(f"Ensembles member: {ensemble_member}")
+            ctx = ctx_origin.constrain(variant_label=ensemble_member)
+
+            versions = list(ctx.facet_counts["version"].keys())
+            print("Available versions:", versions)
+
+            if default_version == "latest":
+                version = versions[0]
+                print("Chooosing latetst version:", version)
+            else:
                 try:
-
-                    # TODO: switch to modelsoruce.csv (add url there)
-                    self.model_source_url=MODEL_SOURCES[self.model]["url"]
-                    self.model_source_center=MODEL_SOURCES[self.model]["center"]
+                    version = versions[default_version]
                 except KeyError:
-                    print(f"WARNING: Model {self.model} unknown. Using default instead.")
-                    self.model=next(iter(MODEL_SOURCES))
-                    self.model_source_url=MODEL_SOURCES[self.model]["url"]
-                    self.model_source_center=MODEL_SOURCES[self.model]["center"]
-                    print('Using:', self.model)
-                print('model source url:', self.model_source_url)
-                self.catalog=catalog.TDSCatalog(self.model_source_url)
-                print("Read full catalogue.\n")
+                    print(f"Preferred version {default_version} does not exist.")
+                    version = versions[0]
+                    print(f"Resuming with latest verison:", version)
 
+            ctx = ctx.constrain(version=version)
 
-                self.num_ensemble = num_ensemble
+            result = ctx.search()
 
-                # TODO: create folder hierachy / check if existent make new if not
+            print(f"Result len: {len(result)}")
 
-                #TODO: more checkups?
+            files_list = [r.file_context().search() for r in result]
 
-    def remove_res_excemption(self, list: [str]):
-        "If available resolutions contain a resolution unwanted remove that from list. E.g. get rid of any resolutions containing 'subhr'"
-        for i in list:
-            for r in self.res_exception:
-                if r in i:
-                    print(i, r, list)
-                    list.remove(i)
-                else:
-                    pass
-        return list
+            for i, files in enumerate(files_list):
 
-    def download_raw(self):
-        raise NotImplementedError
+                file_names = [files[i].opendap_url for i in range(len(files))]
+                print(f"File {i} names: ", file_names)
 
+                num_files = len(file_names)
 
+                chunksize = RES_TO_CHUNKSIZE[frequency]
+                print("Chunksize", chunksize)
+
+                nominal_resolution = nominal_resolution.replace(" ", "_")
+
+                for f in file_names:
+
+                    # try to opend datset
+                    #try:
+                    ds = xr.open_dataset(f, chunks={"time": chunksize}, engine='netcdf4')
+                    #except OSError:
+                    #    print("Having problems downloading th edateset. Skipping")
+                    #    continue
+
+                    years = np.unique(ds.time.dt.year.to_numpy())
+                    print(f"Data covering years: {years[0]} to {years[-1]}")
+
+                    for y in years:
+                        y = str(y)
+                        out_dir = f"{project}/{self.model}/{ensemble_member}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
+
+                        # check if path is existent
+                        path = self.data_dir_parent + out_dir
+                        isExist = os.path.exists(path)
+
+                        if not isExist:
+
+                            # Create a new directory because it does not exist
+                            os.makedirs(path)
+                            print("The new directory is created!")
+
+                        out_name = f"{project}_{self.model}_{ensemble_member}_{experiment}_{variable}_{nominal_resolution}_{frequency}_{grid_label}_{y}.nc"
+                        outfile = path + out_name
+
+                        if (not overwrite) and os.path.isfile(outfile):
+                            print(f"File {outfile} already exists, skipping.")
+                        else:
+
+                            print("Selecting specific year", y)
+                            ds_y = ds.sel(time=y)
+                            print(ds_y)
+                            print("writing file")
+                            print(outfile)
+                            ds_y.to_netcdf(outfile)
+
+    def download_raw_input_single_var(
+        self,
+        variable,
+        project="input4mips",
+        default_frequency="mon",
+        default_version="latest",
+        default_grid_label="gn",
+    ):
+        conn = SearchConnection(self.model_node_link, distrib=False)
+
+        facets = "project,frequency,variable,nominal_resolution,version,target_mip,grid_label"
+
+        # basic constraining (projec, var)
+        ctx = conn.new_context(project=project, variable=variable, facets=facets)
+        # print(f"new context: {ctx.get_facet_options()} \n")
+
+        # dealing with grid labels
+        grid_labels = list(ctx.facet_counts["grid_label"].keys())
+        print("Available grid labels:", grid_labels)
+        if default_grid_label in grid_labels:
+            print("Choosing grid:", default_grid_label)
+            grid_label = default_grid_label
+        else:
+            print("Default grid label not available.")
+            grid_label = grid_labels[0]
+            print(f"Choosing grid {grid_label} instead.")
+        ctx = ctx.constrain(grid_label=grid_label)
+
+        # choose nominal resolution if existent
+        try:
+            nominal_resolutions = list(ctx.facet_counts["nominal_resolution"].keys())
+            print("Available nominal resolution:", nominal_resolutions)
+
+            # TODO: deal with mulitple nominal resoulitions, taking smalles one as default
+            if len(nominal_resolutions) > 1:
+                print(
+                    "Multiple nominal resolutions exist, choosing smallest_nominal resolution (trying), please do a check up"
+                )
+            nominal_resolution = nominal_resolutions[0]
+            print("Choosing nominal resolution", nominal_resolution)
+            ctx = ctx.constrain(nominal_resolution=nominal_resolution)
+
+        except IndexError:
+            print("No nominal resolution")
+            nominal_resolution = "none"
+
+        # choose default frequency if wanted
+        frequencies = list(ctx.facet_counts["frequency"].keys())
+        print("Available frequencies: ", frequencies)
+
+        if default_frequency in frequencies:
+            frequency = default_frequency
+            print("Choosing default frequency", frequency)
+        else:
+            frequency = frequencies[0]
+            print(
+                "Default frequency not available, choosing first available one instead: ",
+                frequency,
+            )
+        ctx = ctx.constrain(frequency=frequency)
+
+        # target mip group
+        target_mips = list(ctx.facet_counts["target_mip"].keys())
+        print(f"Available target mips: {target_mips}")
+        ctx_origin = ctx
+
+        print("\n")
+        for t in target_mips:
+            print(f"Target mip: {t}")
+            ctx = ctx_origin.constrain(target_mip=t)
+
+            versions = list(ctx.facet_counts["version"].keys())
+            print("Available versions", versions)
+            ctx_origin_v = ctx
+
+            # deal with different versions
+            if default_version == "latest":
+                version = versions[0]
+                print("Chooosing latetst version:", version)
+            else:
+                try:
+                    version = versions[default_version]
+                except KeyError:
+                    print(f"Preferred version {default_version} does not exist.")
+                    version = versions[0]
+                    print(f"Resuming with latest verison:", version)
+
+            ctx = ctx_origin_v.constrain(version=version)
+
+            result = ctx.search()
+
+            print(f"Result len: {len(result)}")
+
+            files_list = [r.file_context().search() for r in result]
+
+            for i, files in enumerate(files_list):
+                file_names = [files[i].opendap_url for i in range(len(files))]
+                print(f"File {i} names: ", file_names)
+                num_files = len(file_names)
+
+                # find out chunking dependent on resolution
+                # QUESTION was ist mit schaltjahren? -> tage und stunden
+                chunksize = RES_TO_CHUNKSIZE[frequency]
+                print("Chunksize", chunksize)
+
+                # replacing spaces for file naming
+                nominal_resolution = nominal_resolution.replace(" ", "_")
+
+                for f in file_names:
+
+                    experiment = self.extract_target_mip_exp_name(f, t)
+                    print("Downloading data for experiment:", experiment)
+
+                    try:
+                        ds = xr.open_dataset(f, chunks={"time": chunksize})
+                    except OSError:
+                        print("Having problems downloading th edateset. Skipping")
+                        continue
+
+                    years = np.unique(ds.time.dt.year.to_numpy())
+                    print(f"Data covering years: {years[0]} to {years[-1]}")
+
+                    for y in years:
+                        y = str(y)
+                        out_dir = f"{project}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
+
+                        # Check whether the specified path exists or not
+                        path = self.data_dir_parent + out_dir
+                        isExist = os.path.exists(path)
+
+                        if not isExist:
+
+                            # Create a new directory because it does not exist
+                            os.makedirs(path)
+                            print("The new directory is created!")
+
+                        out_name = f"{project}_{experiment}_{variable}_{nominal_resolution}_{frequency}_{grid_label}_{y}.nc"
+                        outfile = path + out_name
+
+                        if (not overwrite) and os.path.isfile(outfile):
+                            print(f"File {outfile} already exists, skipping.")
+                        else:
+
+                            print("Selecting specific year ", y)
+                            ds_y = ds.sel(time=y)
+                            print(ds_y)
+
+                            print("Writing file")
+                            print(outfile)
+                            ds_y.to_netcdf(outfile)
+
+    def extract_target_mip_exp_name(self, filename: str, target_mip: str):
+
+        # year_from=f.split('_')[-1].split('-')[0][:4]
+        # print(year_from)
+        year_end = filename.split("_")[-1].split("-")[1].split(".")[0][:4]
+        # print(f'years from {year_from} to {year_end}')
+
+        if (target_mip == "ScenarioMIP") or (target_mip == "DAMIP"):
+            # extract ssp experiment from file name
+            experiment = "ssp" + filename.split("ssp")[-1][:3]
+            if "covid" in filename:
+                experiment = experiment + "_covid"
+        elif (target_mip == "CMIP") & (int(year_end) < 2015):
+            experiment = "historical"
+
+        elif target_mip == "AerChemMIP":
+            experiment = "ssp" + filename.split("ssp")[-1][:3]
+            if "lowNTCF" in filename:
+                experiment = experiment + "_lowNTTCF"
+
+        else:
+            print("WARNING: unknown target mip", target_mip)
+            experiment = "None"
+
+        return experiment
 
     def download_from_model(self):
         """
@@ -132,146 +431,42 @@ class Downloader:
         Attempts to download the highest resolution available.
         """
 
-
         # iterate over respective vars
         for v in self.model_vars:
             print(f"Downloading data for variable: {v} \n \n ")
             # iterate over experiments
             for e in self.experiments:
-                print(f"Downloading data for experiment: {e}\n")
-                self.get_model_data(v,e)
-
-
-
-
-
-
-    def get_model_data(self, variable: str, experiment: str):
-        """
-        Inspired by: //TODO insert reference (liken in ClimateBench)
-        """
-        # catalog_refs = list of references in a catalogue
-        # .follow() follows a reference and returns the new catalog
-
-        # Step 1: map experiment to MIP
-        cat=self.catalog.catalog_refs[get_MIP(experiment)].follow()
-
-        # Step 2: access model and experiment
-        cat=cat.catalog_refs[self.model_source_center].follow().catalog_refs[self.model].follow().catalog_refs[experiment].follow()
-
-        # Step 3: iterate over ensemble members
-        for i in range(self.num_ensemble):
-
-            physics = 2 if experiment == 'ssp245-covid' else 1  # The COVID simulation uses a different physics setup  #TODO: taken from ClimateBench, clarify what it means
-
-            member = f"r{i+1}i1p1f{physics}"
-            print(f"Var to download: {variable}\n Processing {member} of {experiment}...")
-
-            new_c=cat.catalog_refs[member].follow()
-
-            # Step 4: search for lowest resolution and check if variable availabe
-
-            resolutions=list(new_c.catalog_refs)
-
-            print("available resolutions:")
-
-            print(resolutions)
-
-            hierachy=self.var2res['resolutions'][variable]
-
-            print(f'choosing resolution according to hierachy: \n', hierachy)
-
-            res, new_c =self.get_resolution(catalog=new_c, resolutions=resolutions, hierachy=hierachy, variable=variable)
-
-            # skipping var if no resolution found
-            if res is None:
-                break
-
-            # Step 5: choose gridding
-            print('available griddings:')
-            griddings=new_c.catalog_refs
-            print(griddings)
-            grid=get_lowest_entry(griddings, GRIDDING_HIERACHY)
-            if grid is None:
-                print("Something went wrong... No desired gridding found. Skipping.")
-                break
-            print(f"proceeding with gridding: {grid}")
-
-            new_c=new_c.catalog_refs[grid].follow().catalog_refs[0].follow() #TODO: chose 0 here for latet i guess but there are other options 'files, latest'
-
-            sub_cats=new_c.datasets
-            print('available files')
-            print(sub_cats)
-
-            datasets=[]
-
-            # TODO: check with Julia if that makes sence
-            for cds in sub_cats[:]:
-                # Only pull out the (un-aggregated) NetCDF files
-                if (str(cds).endswith('.nc') and ('aggregated' not in str(cds))):
-                        datasets.append(cds)
-                dsets = [(cds.remote_access(use_xarray=True)
-                                .reset_coords(drop=True)
-                                .chunk({'time': 365}))
-                                for cds in datasets]
-
-                ds = xr.combine_by_coords(dsets, combine_attrs='drop')
-                print(ds[variable])
-
-                outfile = f"{variable}/{experiment}/{member}/{res}.nc"
-                if (not overwrite) and os.path.isfile(outfile):
-                    print(f"File {outfile} already exists, skipping.")
-                    continue
-
-
-            #TODO: handle ensembel members (efficiently / how to build dataset /direct combining?)
-            # TODO: create folder hierachy / check if existent make new if not
-            #ds.to_netcdf(outfile
-
-    def get_resolution(self, catalog: catalog.TDSCatalog, resolutions: [str], hierachy: [str], variable: str):
-        """
-        Finds lowest resolution dependent on a predefined hierachy. Returns name of resolution and the appropriate catalog.
-
-        @return:
-            res: str
-            catalog: catalog.TDSCatalog
-        """
-        checking_res=True
-        while checking_res:
-            res=get_lowest_entry(resolutions, hierachy)
-
-            if res is None:
-                print("Something is wrong... Now matching resolution found. Skipping.")
-                return None, _
-
-            print(f"Ateempting to proceeding with temporal resolution of: {res}")
-
-            try:
-                catalog=catalog.catalog_refs[res].follow().catalog_refs[variable].follow()
-                checking_res=False
-
-            except KeyError:
-                print(f"Resolution {res} not available for variable {variable}. \n Choosing a different resolution.")
-                catalog=catalog
-
-                if len(resolutions)>1:
-                    resolutions.remove(res)
+                # TODO: check if experiment is availabe
+                if e in SUPPORTED_EXPERIMENTS:
+                    print(f"Downloading data for experiment: {e}\n")
+                    self.download_from_model_single_var(v, e)
                 else:
-                    print(f"No available resolution found. Skipping.")
-                    return None, _
-        return res, catalog
+                    print(
+                        f"Chosen experiment {e} not supported. All supported experiments: {SUPPORTED_EXPERIMENTS}. \n Skipping. \n"
+                    )
 
-if __name__ == '__main__':
-    test_mother=True
+    def download_raw_input(self):
+
+        for v in self.raw_vars:
+            print(f"Downloading data for variable: {v} \n \n ")
+            self.download_raw_input_single_var(v)
+
+
+if __name__ == "__main__":
+    test_mother = True
 
     if test_mother:
-        print('testing mother')
-        downloader = Downloader()
+        print("testing mother")
+        vars = ["schmarn", "tas", "BC_em_anthro"]
+        downloader = Downloader(experiments=["ssp126", "historical"], vars=vars)
         downloader.download_from_model()
+        downloader.download_raw_input()
 
     else:
-        print('debugging')
-        #catalog=catalog.TDSCatalog("https://dap.ceda.ac.uk/thredds/catalog/badc/cmip6/data/CMIP6/catalog.xml")
-        catalog=catalog.TDSCatalog("https://dap.ceda.ac.uk/thredds/catalog/badc/cmip6/data/CMIP6/catalog.xml")
+        print("debugging")
+        # catalog=catalog.TDSCatalog("https://dap.ceda.ac.uk/thredds/catalog/badc/cmip6/data/CMIP6/catalog.xml")
+        catalog = catalog.TDSCatalog(
+            "https://dap.ceda.ac.uk/thredds/catalog/badc/cmip6/data/CMIP6/catalog.xml"
+        )
         print("read catalog")
         print("datasets", catalog.datasets)
