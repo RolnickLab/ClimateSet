@@ -18,8 +18,8 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str 
         features_name: name of feature to consider, if empty consider all
         frequency: frequency to aggregate the data (day|week|month)
     Returns:
-        df, ds.attrs, features_name: the dataframe, the NetCDF metadata and the
-        features_name used
+        df, coordinates, ds.attrs, features_name: the dataframe, the latitude x
+        longitude, the NetCDF metadata and the features_name used
     """
     # open dataset with xarray and convert it to a pandas DataFrame
     ds = xr.open_dataset(filename)
@@ -50,13 +50,20 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str 
     columns_to_keep = ["timestamp"] + columns_to_keep
     df = df[columns_to_keep]
 
-    return df, ds.attrs, features_name
+    # pivot the table so that there is only one row per time
+    df_pivoted = df.pivot_table(index="timestamp", columns=["lat", "lon"], values=features_name[0])
+    coordinates = np.zeros((df_pivoted.shape[1], 2))
+    for i, col in enumerate(df_pivoted.columns):
+        coordinates[i, 0] = col[0]
+        coordinates[i, 1] = col[1]
+
+    return df_pivoted, coordinates, ds.attrs, features_name
 
 
 def find_all_nc_files(directory: str) -> list:
     """
     Find all NetCDF files in 'directory'
-    Returns: a sorted list of the files name
+    Returns: a list of the files name
     """
     if directory[-1] == "/":
         pattern = f"{directory}*.nc"
@@ -85,13 +92,12 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     for filename in filenames:
         if verbose:
             print(f"opening file: {filename}")
-        df_temp, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
+        df_temp, coordinates, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
         if df is None:
             df = df_temp
         else:
             df = pd.concat([df, df_temp])
         if verbose:
-            print(df.columns)
             print(df.shape)
 
     # convert the dataframe to numpy, create the path if necessary and save it
@@ -107,7 +113,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     with open(metadata_path, 'w', encoding='utf-8') as f:
         json.dump(metadata, f, ensure_ascii=False, indent=4)
 
-    return df, features_name
+    return df, coordinates, features_name
 
 
 def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, frequency: str, verbose: bool):
@@ -130,7 +136,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
     for i, filename in enumerate(filenames):
         if verbose:
             print(f"opening file: {filename}")
-        df, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
+        df, coordinates, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
         print(df.shape)
 
         # convert the dataframe to numpy, create the path if necessary and save it
@@ -168,7 +174,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         print(data)
     f.close()
 
-    return first_df, first_features_name
+    return first_df, coordinates, first_features_name
 
 
 if __name__ == "__main__":
@@ -189,23 +195,25 @@ if __name__ == "__main__":
                         help="Maximal number of step to consider to generate the gif")
     args = parser.parse_args()
 
+    # TODO: if necessary, adapt to multiple feature. Now, probably only works
+    # for one feature
+
     if args.hdf5:
-        df, features_name = main_hdf5(args.data_path,
-                                      args.output_path,
-                                      args.features_name,
-                                      args.frequency,
-                                      args.verbose)
+        df, coordinates, features_name = main_hdf5(args.data_path,
+                                                   args.output_path,
+                                                   args.features_name,
+                                                   args.frequency,
+                                                   args.verbose)
     else:
-        df, features_name = main_numpy(args.data_path,
-                                       args.output_path,
-                                       args.features_name,
-                                       args.frequency,
-                                       args.verbose)
+        df, coordinates, features_name = main_numpy(args.data_path,
+                                                    args.output_path,
+                                                    args.features_name,
+                                                    args.frequency,
+                                                    args.verbose)
 
     # plot data and save files
     timeserie_path = os.path.join(args.output_path, "timeserie.png")
     average_path = os.path.join(args.output_path, "average.png")
-
-    plot_timeserie(df, features_name, args.frequency, timeserie_path)
-    plot_average(df, features_name, average_path)
-    plot_gif(df, features_name, args.output_path, args.gif_max_step)
+    plot_timeserie(df, coordinates, args.frequency, features_name[0], timeserie_path)
+    plot_average(df, coordinates, average_path)
+    plot_gif(df, coordinates, args.output_path, args.gif_max_step)
