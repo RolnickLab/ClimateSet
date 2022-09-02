@@ -106,6 +106,10 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
         print(f"All files opened, converting to numpy and saving to {data_path}.")
     Path(output_path).mkdir(parents=True, exist_ok=True)
     np_array = df.values
+    # expand to have axis for n and d, respectively the number of timeseries
+    # and of features
+    np_array = np.expand_dims(np_array, axis=0)
+    np_array = np.expand_dims(np_array, axis=2)
     np.save(data_path, np_array)
 
     # save a copy of one metadata file
@@ -145,6 +149,13 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
             print(f"Converting to numpy and saving to {data_path}.")
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
+
+        # expand to have axis for n and d, respectively the number of timeseries
+        # and of features
+        np_array = df.values
+        np_array = np.expand_dims(np_array, axis=0)
+        np_array = np.expand_dims(np_array, axis=2)
+
         if i == 0:
             first_df = df
             first_features_name = features_name
@@ -152,8 +163,8 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
             # create the file for the first step
             f = tables.open_file(data_path, mode='w')
             atom = tables.Float64Atom()
-            array = f.create_earray(f.root, 'data', atom, (0, df.shape[1]))
-            array.append(df.values)
+            array = f.create_earray(f.root, 'data', atom, (np_array.shape[0], 0, np_array.shape[2], np_array.shape[3]))
+            array.append(np_array)
             f.close()
 
             # save a copy of the first metadata file
@@ -163,12 +174,12 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         else:
             # append data to the existing hdf5 file
             f = tables.open_file(data_path, mode='a')
-            f.root.data.append(df.values)
+            f.root.data.append(np_array)
             f.close()
 
     # quick reading test
     f = tables.open_file(data_path, mode='r')
-    data = f.root.data[5:10]
+    data = f.root.data[0, 5:10]
     if verbose:
         print("Test the hdf5 file, here are the row 5 to 10:")
         print(data)
