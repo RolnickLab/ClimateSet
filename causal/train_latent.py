@@ -178,7 +178,7 @@ class TrainingLatent:
         self.model.train()
 
         # sample data
-        x, y, z = self.data.sample_train(self.batch_size)
+        x, y, z = self.data.sample(self.batch_size, valid=False)
         nll, recons, kl = self.get_nll(x, y, z)
 
         # get acyclicity constraint, regularisation
@@ -207,7 +207,7 @@ class TrainingLatent:
         # data = self.test_data
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
-        x, y, z = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
+        x, y, z = self.data.sample(self.data.x_valid.shape[0] - self.data.tau, valid=True)
         nll, recons, kl = self.get_nll(x, y, z)
 
         # get acyclicity constraint, regularisation, elbo

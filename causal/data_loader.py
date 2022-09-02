@@ -94,7 +94,7 @@ class DataLoader:
             #     self.z_train = self.z[self.idx_train]
             #     self.z_valid = self.z[self.idx_valid]
 
-    def _sample(self, batch_size: int, valid: bool) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, batch_size: int, valid: bool) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Args:
             batch_size: the number of examples in a minibatch
@@ -149,15 +149,3 @@ class DataLoader:
             z_ = torch.tensor(z)
 
         return x_, y_, z_
-
-    def sample_train(self, batch_size: int) -> torch.Tensor:
-        if self.latent:
-            return self._sample(self.x_train, batch_size, self.z_train)
-        else:
-            return self._sample(self.x_train, batch_size)
-
-    def sample_valid(self, batch_size: int) -> torch.Tensor:
-        if self.latent:
-            return self._sample(self.x_valid, batch_size, self.z_valid)
-        else:
-            return self._sample(self.x_valid, batch_size)

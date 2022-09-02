@@ -160,7 +160,7 @@ class Training:
         self.model.train()
 
         # sample data
-        x, y = self.data.sample_train(self.batch_size)
+        x, y = self.data.sample(self.batch_size, valid=False)
         nll = self.get_nll(x, y)
 
         # get acyclicity constraint, regularisation
@@ -188,7 +188,7 @@ class Training:
         # data = self.test_data
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
-        x, y = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
+        x, y = self.data.sample(self.data.x_valid.shape[0] - self.data.tau, valid=True)
 
         # get acyclicity constraint, regularisation, elbo
         # h = self.get_acyclicity_violation()

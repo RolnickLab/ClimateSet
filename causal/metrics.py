@@ -55,7 +55,7 @@ def mean_corr_coef(model, data_loader, num_samples=int(1e5), method='pearson', i
 
         # Load data
         while sample_counter < num_samples:
-            x, y, z = data_loader.sample_train(64)
+            x, y, z = data_loader.sample(64, valid=False)
             z_hat, _, _ = model.encode(x, y)
 
             z_list.append(z)
