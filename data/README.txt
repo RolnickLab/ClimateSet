@@ -44,5 +44,14 @@ Hierarchy:
 Filename:
 model_assemble_experiment_var_res_'yearStart'_'yearEnd'.nc
 
+##Open Question:
+- BC and BC_antro: BC covers only historical data. Do we need to add past antropogenic BC on top of that?
+- BC_antro: exists also for historical values!
+- regarding the future BC values: Do we need to add the baseline BC to BC_antro for future scenarios?
+- Do we need to add natural GHG sources?? (volcanic? open burning is avail, but also other sources?)
+
+Sources:
+https://core.ac.uk/download/pdf/293753522.pdf
+
 Internal Todos:
 # TODO: in data_description: which models / scenarios /variables exist
