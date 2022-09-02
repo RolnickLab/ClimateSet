@@ -11,7 +11,7 @@ from utils.constants import (
 )
 from utils.helper_funcs import get_keys_from_value, get_MIP
 import netCDF4
-import h5py
+#import h5py
 import pandas as pd
 import xarray as xr
 import os.path
@@ -77,7 +77,7 @@ class Downloader:
         # log on Manager
         self.lm = LogonManager()
         self.lm.logoff()
-        #self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
+        self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
         print("Log In to Node:", self.lm.is_logged_on())
 
         self.data_dir_parent = data_dir
