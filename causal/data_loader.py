@@ -1,10 +1,17 @@
 import os
 import torch
+import tables
 import numpy as np
 from typing import Tuple
 
 
 class DataLoader:
+    """
+    Load data, can deal with numpy and hdf5 files.
+    For numpy, keep the file in memory, whereas for hdf5 sample only the
+    desired examples.
+    Usual dimension of data: (n, t, d, d_x)
+    """
     # TODO: adapt for interventions
     def __init__(self,
                  ratio_train: float,
@@ -26,85 +33,122 @@ class DataLoader:
         self.instantaneous = instantaneous
         self.tau = tau
 
+        self.gt_graph = None
+        self.z = None
+        self.gt_w = None
+        self.k = 0
+
         # Load and split the data
         self._load_data()
         self.n = self.x.shape[0]
         self.d = self.x.shape[2]
         self.d_x = self.x.shape[3]
-        self.k = self.z.shape[3]
+        if not self.no_gt and  self.latent:
+            self.k = self.z.shape[3]
         self._split_data()
 
     def _load_data(self):
-        self.x = np.load(os.path.join(self.data_path, 'data_x.npy'))
-        if self.latent:
-            self.z = np.load(os.path.join(self.data_path, 'data_z.npy'))
-            self.gt_w = np.load(os.path.join(self.data_path, 'graph_w.npy'))
-            # self.gt_w = self.gt_w.transpose(1, 0, 2)
+        """
+        Open the data files and the ground-truth graph if it exists
+        """
+        if self.data_format == "numpy":
+            self.x = np.load(os.path.join(self.data_path, 'data_x.npy'))
 
-        self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
+            if not self.no_gt:
+                self.gt_graph = np.load(os.path.join(self.data_path, 'graph.npy'))
+                if self.latent:
+                    self.z = np.load(os.path.join(self.data_path, 'data_z.npy'))
+                    self.gt_w = np.load(os.path.join(self.data_path, 'graph_w.npy'))
+        elif self.data_format == "hdf5":
+            f = tables.open_file(self.data_path, mode='r')
+            self.x = f.root.data
+
 
     def _split_data(self):
+        """
+        Determine the indices for training and validation sets
+        """
         t_max = self.x.shape[1]
 
         # TODO: be more general
         if self.n == 1:
             n_train = int(t_max * self.ratio_train)
             n_valid = int(t_max * self.ratio_valid)
-            self.idx_train = np.arange(n_train)
+            self.idx_train = np.arange(self.tau, n_train)
             self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
-            self.x_train = self.x[:, self.idx_train]
-            self.x_valid = self.x[:, self.idx_valid]
-            if self.latent:
-                self.z_train = self.z[:, self.idx_train]
-                self.z_valid = self.z[:, self.idx_valid]
+            # self.x_train = self.x[:, self.idx_train]
+            # self.x_valid = self.x[:, self.idx_valid]
+            # if self.latent:
+            #     self.z_train = self.z[:, self.idx_train]
+            #     self.z_valid = self.z[:, self.idx_valid]
         else:
             n_train = int(self.n * self.ratio_train)
             n_valid = int(self.n * self.ratio_valid)
-            self.idx_train = np.arange(n_train)
+            self.idx_train = np.arange(self.tau, n_train)
             self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
             np.random.shuffle(self.idx_train)
             np.random.shuffle(self.idx_valid)
-            self.x_train = self.x[self.idx_train]
-            self.x_valid = self.x[self.idx_valid]
-            if self.latent:
-                self.z_train = self.z[self.idx_train]
-                self.z_valid = self.z[self.idx_valid]
+            # self.x_train = self.x[self.idx_train]
+            # self.x_valid = self.x[self.idx_valid]
+            # if self.latent:
+            #     self.z_train = self.z[self.idx_train]
+            #     self.z_valid = self.z[self.idx_valid]
 
-    def _sample(self, dataset: torch.Tensor, batch_size: int,
-                dataset_z: torch.Tensor = None) -> Tuple[torch.Tensor, torch.Tensor]:
-        if dataset.shape[0] <= 0:
-            __import__('ipdb').set_trace()
+    def _sample(self, batch_size: int, valid: bool) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            batch_size: the number of examples in a minibatch
+            valid: if True, sample from validation set
+        Returns:
+            x, y, z: tensors of the data x, the data to predict y, and the latent variables z
+        """
 
+        # initiliaze empty arrays
         if self.instantaneous:
             x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
-            if self.latent:
+            if not self.no_gt and self.latent:
                 z = np.zeros((batch_size, self.tau + 2, self.d, self.k))
+            else:
+                z = None
             t1 = 1
         else:
             x = np.zeros((batch_size, self.tau, self.d, self.d_x))
-            if self.latent:
+            if not self.no_gt and self.latent:
                 z = np.zeros((batch_size, self.tau + 1, self.d, self.k))
+            else:
+                z = None
             t1 = 0
         y = np.zeros((batch_size, self.d, self.d_x))
 
+        if valid:
+            dataset_idx = self.idx_valid
+        else:
+            dataset_idx = self.idx_train
+
         if self.n == 1:
-            random_idx = np.random.choice(np.arange(self.tau, dataset.shape[1]), replace=False, size=batch_size)
+            # if there is only one long timeserie
+            random_idx = np.random.choice(dataset_idx, replace=False, size=batch_size)
             for i, idx in enumerate(random_idx):
-                x[i] = dataset[0, idx - self.tau:idx + t1]
-                y[i] = dataset[0, idx + t1]
-                if self.latent:
-                    z[i] = dataset_z[0, idx - self.tau:idx + t1 + 1]
+                x[i] = self.x[0, idx - self.tau:idx + t1]
+                y[i] = self.x[0, idx + t1]
+                if not self.no_gt and self.latent:
+                    z[i] = self.z[0, idx - self.tau:idx + t1 + 1]
         else:
-            random_idx = np.random.choice(np.arange(dataset.shape[0]), replace=False, size=batch_size)
+            # if there are multiple timeseries
+            random_idx = np.random.choice(dataset_idx, replace=False, size=batch_size)
             for i, idx in enumerate(random_idx):
-                x[i] = dataset[idx, 0:self.tau + t1]
-                y[i] = dataset[idx, self.tau + t1]
-                if self.latent:
-                    z[i] = dataset_z[idx, 0:self.tau + t1 + 1]
-        if self.latent:
-            return torch.tensor(x), torch.tensor(y), torch.tensor(z)
-        else:
-            return torch.tensor(x), torch.tensor(y)
+                x[i] = self.x[idx, 0:self.tau + t1]
+                y[i] = self.x[idx, self.tau + t1]
+                if not self.no_gt and self.latent:
+                    z[i] = self.z[idx, 0:self.tau + t1 + 1]
+
+        # convert to torch tensors
+        x_ = torch.tensor(x)
+        y_ = torch.tensor(y)
+        if not self.no_gt and self.latent:
+            z_ = torch.tensor(z)
+
+        return x_, y_, z_
 
     def sample_train(self, batch_size: int) -> torch.Tensor:
         if self.latent:

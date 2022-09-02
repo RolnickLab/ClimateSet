@@ -180,8 +180,6 @@ if __name__ == "__main__":
                         parameters that have been used to generate data")
     parser.add_argument("--exp-id", type=int, default=0,
                         help="ID specific to the experiment")
-    parser.add_argument("--data-path", type=str, default="dataset/data0",
-                        help="Path to the dataset")
 
     # For synthetic datasets, can use the ground-truth values to do ablation
     # studies
@@ -193,6 +191,8 @@ if __name__ == "__main__":
                         help="If true, use the ground truth graph (use only to debug)")
 
     # Dataset properties
+    parser.add_argument("--data-path", type=str, default="dataset/data0",
+                        help="Path to the dataset")
     parser.add_argument("--no-gt", action="store_true",
                         help="If True, does not use any ground-truth for plotting and metrics")
     parser.add_argument("--data-format", type=str, default="numpy",
