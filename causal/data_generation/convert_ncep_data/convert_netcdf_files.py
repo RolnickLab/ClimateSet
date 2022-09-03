@@ -78,7 +78,8 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     Convert netCDF4 files from the NCEP-NCAR Reanalysis project to a numpy file.
     All the files are expected to be in the directory `netcdf_directory`
     Returns:
-        df, features_name: the dataframe and features_name of the concatenated data
+        df, n, coordinates, features_name: the complete dataframe, the number of
+        samples, an array of the coordinates and the features_name
     """
     # TODO: could add year anomalizing, detrending?
     df = None
@@ -117,7 +118,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     with open(metadata_path, 'w', encoding='utf-8') as f:
         json.dump(metadata, f, ensure_ascii=False, indent=4)
 
-    return df, coordinates, features_name
+    return df, df.shape[0], coordinates, features_name
 
 
 def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, frequency: str, verbose: bool):
@@ -126,9 +127,11 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
     Only open one files at a time and append the data to the hdf5 file
     All the files are expected to be in the directory `netcdf_directory`
     Returns:
-        df, features_name: the dataframe and the features_name of the first file
+        df, n, coordinates, features_name: the first dataframe, the number of
+        samples, an array of the coordinates and the features_name of the first file
     """
     df = None
+    n = 0
 
     # find all the netCDF4 in the directory `netcdf_directory`
     filenames = find_all_nc_files(netcdf_directory)
@@ -141,11 +144,11 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         if verbose:
             print(f"opening file: {filename}")
         df, coordinates, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
-        print(df.shape)
 
         # convert the dataframe to numpy, create the path if necessary and save it
         data_path = os.path.join(output_path, "data.h5")
         if verbose:
+            print(df.shape)
             print(f"Converting to numpy and saving to {data_path}.")
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
@@ -155,6 +158,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         np_array = df.values
         np_array = np.expand_dims(np_array, axis=0)
         np_array = np.expand_dims(np_array, axis=2)
+        n += np_array.shape[1]
 
         if i == 0:
             first_df = df
@@ -185,7 +189,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         print(data)
     f.close()
 
-    return first_df, coordinates, first_features_name
+    return first_df, n, coordinates, first_features_name
 
 
 if __name__ == "__main__":
@@ -210,19 +214,33 @@ if __name__ == "__main__":
     # for one feature
 
     if args.hdf5:
-        df, coordinates, features_name = main_hdf5(args.data_path,
-                                                   args.output_path,
-                                                   args.features_name,
-                                                   args.frequency,
-                                                   args.verbose)
+        df, n, coordinates, features_name = main_hdf5(args.data_path,
+                                                      args.output_path,
+                                                      args.features_name,
+                                                      args.frequency,
+                                                      args.verbose)
     else:
-        df, coordinates, features_name = main_numpy(args.data_path,
-                                                    args.output_path,
-                                                    args.features_name,
-                                                    args.frequency,
-                                                    args.verbose)
+        df, n, coordinates, features_name = main_numpy(args.data_path,
+                                                       args.output_path,
+                                                       args.features_name,
+                                                       args.frequency,
+                                                       args.verbose)
 
-    # plot data and save files
+    # save a json containing some parameters of the dataset
+    params = {"n": 1,
+              "num_timesteps": n,
+              "num_features": 1,
+              "d_x": df.shape[1]
+             }
+    json_path = os.path.join(args.output_path, "data_params.json")
+    with open(json_path, "w") as file:
+        json.dump(params, file, indent=4)
+
+    # save the coordinates
+    coord_path = os.path.join(args.output_path, "coordinates.npy")
+    np.save(coord_path, coordinates)
+
+    # plot data
     timeserie_path = os.path.join(args.output_path, "timeserie.png")
     average_path = os.path.join(args.output_path, "average.png")
     plot_timeserie(df, coordinates, args.frequency, features_name[0], timeserie_path)
