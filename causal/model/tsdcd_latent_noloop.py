@@ -22,6 +22,7 @@ class LatentTSDCD(nn.Module):
                  tau: int,
                  instantaneous: bool,
                  hard_gumbel: bool,
+                 no_gt: bool,
                  debug_gt_graph: bool,
                  debug_gt_z: bool,
                  debug_gt_w: bool,
@@ -46,6 +47,7 @@ class LatentTSDCD(nn.Module):
             instantaneous: if True, models instantaneous connections
             hard_gumbel: if True, use hard sampling for the masks
 
+            no_gt: if True, do not use any ground-truth data (useful with realworld dataset)
             debug_gt_graph: if True, set the masks to the ground-truth graphes (gt_graph)
             debug_gt_z: if True, use directly the ground-truth z (gt_z sampled with the data)
             debug_gt_w: if True, set the matrices W to the ground-truth W (gt_w)
@@ -65,11 +67,17 @@ class LatentTSDCD(nn.Module):
         self.tau = tau
         self.instantaneous = instantaneous
         self.hard_gumbel = hard_gumbel
+        self.no_gt = no_gt
         self.debug_gt_graph = debug_gt_graph
         self.debug_gt_z = debug_gt_z
         self.debug_gt_w = debug_gt_w
-        self.gt_w = torch.tensor(gt_w).double()
-        self.gt_graph = torch.tensor(gt_graph).double()
+
+        if self.no_gt:
+            self.gt_w = None
+            self.gt_graph = None
+        else:
+            self.gt_w = torch.tensor(gt_w).double()
+            self.gt_graph = torch.tensor(gt_graph).double()
 
         if distr_z0 == "gaussian":
             self.distr_z0 = torch.normal
@@ -229,8 +237,7 @@ class LatentTSDCD(nn.Module):
 class EncoderDecoder(nn.Module):
     """Combine an encoder and a decoder, particularly useful when W is a shared
     parameter."""
-    def __init__(self, d: int, d_x: int, k: int, debug_gt_w: bool, gt_w:
-                 torch.tensor = None):
+    def __init__(self, d: int, d_x: int, k: int, debug_gt_w: bool, gt_w: torch.tensor = None):
         """
         Args:
             d: number of features

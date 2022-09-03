@@ -38,7 +38,8 @@ class DataGeneratorWithLatent:
 
         assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
 
-    def save_data(self, path):
+    def save_data(self, path:str):
+        """ Save all files to 'path' """
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
@@ -71,7 +72,7 @@ class DataGeneratorWithLatent:
         if isinstance(model, torch.nn.modules.Linear):
             torch.nn.init.normal_(model.weight.data, mean=0., std=1)
 
-    def sample_mlp(self, n_timesteps):
+    def sample_mlp(self, n_timesteps: int):
         """Sample a MLP that outputs the parameters for the distributions of Z
         Args:
             n_timesteps: Number of previous timesteps considered

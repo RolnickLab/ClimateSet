@@ -100,6 +100,7 @@ def main(hp):
                             tau=hp.tau,
                             instantaneous=hp.instantaneous,
                             hard_gumbel=hp.hard_gumbel,
+                            no_gt=hp.no_gt,
                             debug_gt_graph=hp.debug_gt_graph,
                             debug_gt_z=hp.debug_gt_z,
                             debug_gt_w=hp.debug_gt_w,
@@ -143,7 +144,7 @@ def assert_args(args):
     if args.no_gt and (args.debug_gt_graph or args.debug_gt_z or args.debug_gt_w):
         raise ValueError("Since no_gt==True, all other args should not use ground-truth values")
 
-    if args.latent and (args.k <= 0 or args.d_x <= 0):
+    if args.latent and (args.k is None or args.d_x is None or args.k <= 0 or args.d_x <= 0):
         raise ValueError("When using latent model, you need to define k and d_x with integer values greater than 0")
 
     if args.ratio_valid == 0:
@@ -164,6 +165,8 @@ def assert_args(args):
     # warnings, strange choice of args combination
     if not args.latent and args.debug_gt_z:
         warnings.warn("Are you sure you want to use gt_z even if you don't have latents")
+    if args.latent and (args.k > args.d_x):
+        warnings.warn("Are you sure you want to have a higher dimension for k than d_x")
 
     return args
 
@@ -191,7 +194,7 @@ if __name__ == "__main__":
                         help="If true, use the ground truth graph (use only to debug)")
 
     # Dataset properties
-    parser.add_argument("--data-path", type=str, default="dataset/data0",
+    parser.add_argument("--data-path", type=str, default="dataset/data_realworld0",
                         help="Path to the dataset")
     parser.add_argument("--no-gt", action="store_true",
                         help="If True, does not use any ground-truth for plotting and metrics")
@@ -272,7 +275,6 @@ if __name__ == "__main__":
     parser.add_argument("--float", action="store_true", help="Use Float precision")
 
     args = parser.parse_args()
-    args = assert_args(args)
 
     # if a json file with params is given,
     # update params accordingly
@@ -293,5 +295,7 @@ if __name__ == "__main__":
         if args.latent:
             args.k = params['k']
             args.d_x = params['d_x']
+
+    args = assert_args(args)
 
     main(args)

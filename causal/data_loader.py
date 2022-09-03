@@ -72,20 +72,20 @@ class DataLoader:
 
         # TODO: be more general
         if self.n == 1:
-            n_train = int(t_max * self.ratio_train)
-            n_valid = int(t_max * self.ratio_valid)
-            self.idx_train = np.arange(self.tau, n_train)
-            self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
+            self.n_train = int(t_max * self.ratio_train)
+            self.n_valid = int(t_max * self.ratio_valid)
+            self.idx_train = np.arange(self.tau, self.n_train)
+            self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
             # self.x_train = self.x[:, self.idx_train]
             # self.x_valid = self.x[:, self.idx_valid]
             # if self.latent:
             #     self.z_train = self.z[:, self.idx_train]
             #     self.z_valid = self.z[:, self.idx_valid]
         else:
-            n_train = int(self.n * self.ratio_train)
-            n_valid = int(self.n * self.ratio_valid)
-            self.idx_train = np.arange(self.tau, n_train)
-            self.idx_valid = np.arange(n_train - self.tau, n_train + n_valid)
+            self.n_train = int(self.n * self.ratio_train)
+            self.n_valid = int(self.n * self.ratio_valid)
+            self.idx_train = np.arange(self.tau, self.n_train)
+            self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
             np.random.shuffle(self.idx_train)
             np.random.shuffle(self.idx_valid)
             # self.x_train = self.x[self.idx_train]
@@ -147,5 +147,7 @@ class DataLoader:
         y_ = torch.tensor(y)
         if not self.no_gt and self.latent:
             z_ = torch.tensor(z)
+        else:
+            z_ = z
 
         return x_, y_, z_

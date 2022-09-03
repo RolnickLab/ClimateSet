@@ -22,6 +22,7 @@ class LatentTSDCD(nn.Module):
                  tau: int,
                  instantaneous: bool,
                  hard_gumbel: bool,
+                 no_gt: bool,
                  debug_gt_graph: bool,
                  debug_gt_z: bool,
                  debug_gt_w: bool,
@@ -46,6 +47,7 @@ class LatentTSDCD(nn.Module):
             instantaneous: if True, models instantaneous connections
             hard_gumbel: if True, use hard sampling for the masks
 
+            no_gt: if True, do not use any ground-truth data (useful with realworld dataset)
             debug_gt_graph: if True, set the masks to the ground-truth graphes (gt_graph)
             debug_gt_z: if True, use directly the ground-truth z (gt_z sampled with the data)
             debug_gt_w: if True, set the matrices W to the ground-truth W (gt_w)
@@ -53,6 +55,7 @@ class LatentTSDCD(nn.Module):
             gt_w: Ground-truth W, only used if debug_gt_w is True
         """
         super().__init__()
+
         # nn encoder hyperparameters
         self.num_layers = num_layers
         self.num_hidden = num_hidden
@@ -65,11 +68,17 @@ class LatentTSDCD(nn.Module):
         self.tau = tau
         self.instantaneous = instantaneous
         self.hard_gumbel = hard_gumbel
+        self.no_gt = no_gt
         self.debug_gt_graph = debug_gt_graph
         self.debug_gt_z = debug_gt_z
         self.debug_gt_w = debug_gt_w
-        self.gt_w = torch.tensor(gt_w).double()
-        self.gt_graph = torch.tensor(gt_graph).double()
+
+        if self.no_gt:
+            self.gt_w = None
+            self.gt_graph = None
+        else:
+            self.gt_w = torch.tensor(gt_w).double()
+            self.gt_graph = torch.tensor(gt_graph).double()
 
         if distr_z0 == "gaussian":
             self.distr_z0 = torch.normal
@@ -167,39 +176,49 @@ class LatentTSDCD(nn.Module):
         b = x.size(0)
 
         # sample Zs (based on X)
-        st = time.time()
+        is_timing = False
+        if is_timing:
+            st = time.time()
         z, q_mu_y, q_std_y = self.encode(x, y)
-        print(f"encode time: {time.time() - st}")
+        if is_timing:
+            print(f"encode time: {time.time() - st}")
 
         if self.debug_gt_z:
             z = gt_z
 
         # get params of the transition model p(z^t | z^{<t})
-        st = time.time()
+        if is_timing:
+            st = time.time()
         mask = self.mask(b)
         pz_mu, pz_std = self.transition(z[:, :-1].clone(), mask)
-        print(f"transition time: {time.time() - st}")
+        if is_timing:
+            print(f"transition time: {time.time() - st}")
 
         # get params from decoder p(x^t | z^t)
-        st = time.time()
+        if is_timing:
+            st = time.time()
         px_mu, px_std = self.decode(z[:, -1])
-        print(f"decode time: {time.time() - st}")
+        if is_timing:
+            print(f"decode time: {time.time() - st}")
 
         # set distribution with obtained parameters
-        st = time.time()
+        if is_timing:
+            st = time.time()
         p = distr.Normal(pz_mu.view(b, -1), pz_std.view(b, -1))
         q = distr.Normal(q_mu_y.view(b, -1), q_std_y.view(b, -1))
         px_distr = self.distr_decoder(px_mu, px_std)
-        print(f"sampling time: {time.time() - st}")
+        if is_timing:
+            print(f"sampling time: {time.time() - st}")
 
         # compute the KL, the reconstruction and the ELBO
-        st = time.time()
+        if is_timing:
+            st = time.time()
         kl = distr.kl_divergence(p, q).mean()
         assert kl >= 0, f"KL={kl} has to be >= 0"
         recons = torch.mean(px_distr.log_prob(y))
         elbo = recons - 0.0001 * kl
-        print(f"kl time: {time.time() - st}")
-        __import__('ipdb').set_trace()
+        if is_timing:
+            print(f"kl time: {time.time() - st}")
 
         return elbo, recons, kl
 

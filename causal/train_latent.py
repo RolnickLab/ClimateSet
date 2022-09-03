@@ -13,6 +13,7 @@ class TrainingLatent:
         self.latent = hp.latent
         self.debug_gt_z = hp.debug_gt_z
         self.k = hp.k
+        self.no_gt = hp.no_gt
         self.gt_dag = data.gt_graph
         self.gt_w = data.gt_w
         self.converged = False
@@ -207,7 +208,7 @@ class TrainingLatent:
         # data = self.test_data
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
-        x, y, z = self.data.sample(self.data.x_valid.shape[0] - self.data.tau, valid=True)
+        x, y, z = self.data.sample(self.data.n_valid - self.data.tau, valid=True)
         nll, recons, kl = self.get_nll(x, y, z)
 
         # get acyclicity constraint, regularisation, elbo
