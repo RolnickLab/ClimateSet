@@ -152,7 +152,6 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
             print(f"Converting to numpy and saving to {data_path}.")
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
-
         # expand to have axis for n and d, respectively the number of timeseries
         # and of features
         np_array = df.values
@@ -230,8 +229,7 @@ if __name__ == "__main__":
     params = {"n": 1,
               "num_timesteps": n,
               "num_features": 1,
-              "d_x": df.shape[1]
-             }
+              "d_x": df.shape[1]}
     json_path = os.path.join(args.output_path, "data_params.json")
     with open(json_path, "w") as file:
         json.dump(params, file, indent=4)

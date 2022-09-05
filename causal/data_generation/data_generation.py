@@ -38,7 +38,7 @@ class DataGeneratorWithLatent:
 
         assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
 
-    def save_data(self, path:str):
+    def save_data(self, path: str):
         """ Save all files to 'path' """
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)

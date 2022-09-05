@@ -43,7 +43,7 @@ class DataLoader:
         self.n = self.x.shape[0]
         self.d = self.x.shape[2]
         self.d_x = self.x.shape[3]
-        if not self.no_gt and  self.latent:
+        if not self.no_gt and self.latent:
             self.k = self.z.shape[3]
         self._split_data()
 
@@ -62,7 +62,6 @@ class DataLoader:
         elif self.data_format == "hdf5":
             f = tables.open_file(self.data_path, mode='r')
             self.x = f.root.data
-
 
     def _split_data(self):
         """
