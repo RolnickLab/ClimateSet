@@ -54,17 +54,17 @@ export CUDA_VISIBLE_DEVICES=0
 cd $SLURM_TMPDIR/causalpaca/data/
 
 # 8. Run Python
-echo "Running test file with easy verison"
-python3.9 testing/test_downloader.py
+#echo "Running test file with easy verison"
+#python3.9 testing/test_downloader.py
 
-#echo "Running mother_data/downloader.py ..."
-#python3.9 mother_data/downloader.py
+echo "Running mother_data/downloader.py ..."
+python3.9 mother_data/downloader.py
 
 # 9. Copy output to scratch
 #cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/c/charlotte.lange/causalpaca/data/data/
 
 # try and copy to julia's scratch
-cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/j/julia.kaltenborn/data/raw/
+#cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/j/julia.kaltenborn/data/raw/
 
 
 # 10. Experiment is finished
