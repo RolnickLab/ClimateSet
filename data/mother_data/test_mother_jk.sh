@@ -8,6 +8,7 @@
 
 #SBATCH -o /home/mila/j/julia.kaltenborn/slurm-causalpaca/slurm-%j.out        # set log dir to home
 
+# Note running: sbatch --partition=unkillable data/mother_data/test_mother_jk.sh
 
 # 1. Load Python
 
