@@ -60,6 +60,11 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str 
     return df_pivoted, coordinates, ds.attrs, features_name
 
 
+def standardize(df: pd.DataFrame) -> pd.DataFrame:
+    """ Remove the mean and divide by the standard deviation """
+    return (df - df.mean()) / df.std()
+
+
 def find_all_nc_files(directory: str) -> list:
     """
     Find all NetCDF files in 'directory'
@@ -106,6 +111,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     if verbose:
         print(f"All files opened, converting to numpy and saving to {data_path}.")
     Path(output_path).mkdir(parents=True, exist_ok=True)
+    df = standardize(df)
     np_array = df.values
     # expand to have axis for n and d, respectively the number of timeseries
     # and of features
@@ -152,8 +158,8 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
             print(f"Converting to numpy and saving to {data_path}.")
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
-        # expand to have axis for n and d, respectively the number of timeseries
-        # and of features
+        # expand to have axis for n and d, respectively the number of timeseries and of features
+        df = standardize(df)
         np_array = df.values
         np_array = np.expand_dims(np_array, axis=0)
         np_array = np.expand_dims(np_array, axis=2)
@@ -193,19 +199,19 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert NetCDF files to numpy or hdf5. Can also plot visualizations.")
-    parser.add_argument("--data-path", type=str, default="data/specific_humidity",
+    parser.add_argument("--data-path", type=str, default="data/sea_level_pressure",
                         help="Path to the directory containing the NetCDF files")
-    parser.add_argument("--output-path", type=str, default="specific_humidity_results",
+    parser.add_argument("--output-path", type=str, default="sea_level_results",
                         help="Path where to save the results.")
     parser.add_argument("--features-name", nargs="+",
                         help="Name of the feature to use, if not specified use all")
-    parser.add_argument("--frequency", type=str, default="day",
+    parser.add_argument("--frequency", type=str, default="week",
                         help="Frequency to which we parse the data (day|week|month)")
     parser.add_argument("--verbose", action="store_true",
                         help="If True, print useful messages")
     parser.add_argument("--hdf5", action="store_true",
                         help="If True, save result as an hdf5 file")
-    parser.add_argument("--gif-max-step", type=int, default=50,
+    parser.add_argument("--gif-max-step", type=int, default=20,
                         help="Maximal number of step to consider to generate the gif")
     args = parser.parse_args()
 
