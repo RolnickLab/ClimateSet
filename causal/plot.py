@@ -54,7 +54,8 @@ def plot(learner):
         plot_adjacency_matrix(adj,
                               gt_dag,
                               learner.hp.exp_path,
-                              'transition')
+                              'transition',
+                              learner.no_gt)
         plot_adjacency_through_time(learner.adj_tt,
                                     gt_dag,
                                     learner.iteration,
@@ -62,17 +63,19 @@ def plot(learner):
                                     'transition')
 
     # plot the weights W for latent models (between the latent Z and the X)
-    if learner.latent and not learner.no_gt:
+    if learner.latent:
         adj_w = learner.model.encoder_decoder.get_w().detach().numpy()
         plot_adjacency_matrix_w(adj_w,
                                 learner.gt_w,
                                 learner.hp.exp_path,
-                                'w')
-        plot_adjacency_through_time_w(learner.adj_w_tt,
-                                      learner.gt_w,
-                                      learner.iteration,
-                                      learner.hp.exp_path,
-                                      'w')
+                                'w',
+                                learner.no_gt)
+        if not learner.no_gt:
+            plot_adjacency_through_time_w(learner.adj_w_tt,
+                                          learner.gt_w,
+                                          learner.iteration,
+                                          learner.hp.exp_path,
+                                          'w')
 
 
 def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: list = None,
@@ -113,7 +116,9 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
     plt.close()
 
 
-def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str, name_suffix: str):
+# TODO: add no_gt
+def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str,
+                          name_suffix: str, no_gt: bool = False):
     """ Plot the adjacency matrices learned and compare it to the ground truth,
     the first dimension of the matrix should be the time (tau)
     Args:
@@ -121,16 +126,23 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str, name_su
       mat2: ground-truth adjacency matrices
       path: path where to save the plot
       name_suffix: suffix for the name of the plot
+      no_gt: if True, does not use the ground-truth graph
     """
     tau = mat1.shape[0]
+
     subfig_names = ["Learned", "Ground Truth", "Difference: Learned - GT"]
 
     fig = plt.figure(constrained_layout=True)
     fig.suptitle("Adjacency matrices: learned vs ground-truth")
 
+    if no_gt:
+        nrows = 1
+    else:
+        n_rows = 3
+
     if tau == 1:
-        axes = fig.subplots(nrows=3, ncols=1)
-        for row in range(3):
+        axes = fig.subplots(nrows=no_gt, ncols=1)
+        for row in range(no_gt):
             # axes.set_title(f"t - {i+1}")
             if row == 0:
                 sns.heatmap(mat1[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
@@ -143,7 +155,7 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str, name_su
                             cmap="Blues", xticklabels=False, yticklabels=False)
 
     else:
-        subfigs = fig.subfigures(nrows=3, ncols=1)
+        subfigs = fig.subfigures(nrows=no_gt, ncols=1)
         for row, subfig in enumerate(subfigs):
             subfig.suptitle(f'{subfig_names[row]}')
 
@@ -164,7 +176,8 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str, name_su
     plt.close()
 
 
-def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str, name_suffix: str):
+def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str,
+                            name_suffix: str, no_gt: bool = False):
     """ Plot the adjacency matrices learned and compare it to the ground truth,
     the first dimension of the matrix should be the features (d)
     Args:
@@ -172,6 +185,7 @@ def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str, name_
       mat2: ground-truth adjacency matrices
       path: path where to save the plot
       name_suffix: suffix for the name of the plot
+      no_gt: if True, does not use ground-truth W
     """
     d = mat1.shape[0]
     subfig_names = ["Learned", "Ground Truth", "Difference: Learned - GT"]
@@ -179,9 +193,14 @@ def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str, name_
     fig = plt.figure(constrained_layout=True)
     fig.suptitle("Adjacency matrices: learned vs ground-truth")
 
+    if no_gt:
+        nrows = 1
+    else:
+        n_rows = 3
+
     if d == 1:
-        axes = fig.subplots(nrows=3, ncols=1)
-        for row in range(3):
+        axes = fig.subplots(nrows=nrows, ncols=1)
+        for row in range(nrows):
             # axes.set_title(f"t - {i+1}")
             if row == 0:
                 sns.heatmap(mat1[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
@@ -194,7 +213,7 @@ def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str, name_
                             cmap="Blues", xticklabels=False, yticklabels=False)
 
     else:
-        subfigs = fig.subfigures(nrows=3, ncols=1)
+        subfigs = fig.subfigures(nrows=nrows, ncols=1)
         for row, subfig in enumerate(subfigs):
             subfig.suptitle(f'{subfig_names[row]}')
 
