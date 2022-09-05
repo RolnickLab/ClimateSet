@@ -27,14 +27,12 @@ else
     source env39/bin/activate
     python3.9 -m pip install --upgrade pip
     pip3.9 install wheel setuptools
-fi
 
+    # 4. Install requirements.txt if it exists
 
-# 4. Install requirements.txt if it exists
-
-if [ -a requirements2.txt ]; then
-
-    pip3.9 install -r requirements2.txt
+    if [ -a requirements2.txt ]; then
+        pip3.9 install -r requirements2.txt
+    fi
 
 fi
 
