@@ -1,6 +1,6 @@
 from utils.constants import RES_TO_CHUNKSIZE
 from pyesgf.search import SearchConnection
-from pyesgf.logon import LogonManager
+#from pyesgf.logon import LogonManager
 
 from utils.constants import (
     MODEL_SOURCES,
@@ -75,10 +75,10 @@ class Downloader:
         print("model node link:", self.model_node_link)
 
         # log on Manager
-        self.lm = LogonManager()
-        self.lm.logoff()
-        self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
-        print("Log In to Node:", self.lm.is_logged_on())
+        #self.lm = LogonManager()
+        #self.lm.logoff()
+        #self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
+        #print("Log In to Node:", self.lm.is_logged_on())
 
         self.data_dir_parent = data_dir
         self.overwrite = False
