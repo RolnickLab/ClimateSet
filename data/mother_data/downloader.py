@@ -24,7 +24,7 @@ class Downloader:
     def __init__(
         self,
         model: str = "NorESM2-LM",  # defaul as in ClimateBench
-        experiments: [str] = [
+        experiments: [str] = ["historical",
             "ssp370",
             "hist-GHG",
             "piControl",
@@ -252,6 +252,7 @@ class Downloader:
         self,
         variable,
         project="input4mips",
+        institution_id='PNNL-JGCRI', # make sure that we have the correct data
         default_frequency="mon",
         default_version="latest",
         default_grid_label="gn",
@@ -261,7 +262,7 @@ class Downloader:
         facets = "project,frequency,variable,nominal_resolution,version,target_mip,grid_label"
 
         # basic constraining (projec, var)
-        ctx = conn.new_context(project=project, variable=variable, facets=facets)
+        ctx = conn.new_context(project=project, variable=variable, institution_id=institution_id, facets=facets)
         # print(f"new context: {ctx.get_facet_options()} \n")
 
         # dealing with grid labels
@@ -359,7 +360,16 @@ class Downloader:
                 for f in file_names:
 
                     experiment = self.extract_target_mip_exp_name(f, t)
-                    print("Downloading data for experiment:", experiment)
+
+
+                    # make sure to only download data for wanted scenarios
+                    if experiment in self.experiments:#+['historical']:
+
+                        print("Downloading data for experiment:", experiment)
+                    else:
+
+                        print(f"Experiment {experiment} not in wanted experiments ({self.experiments}). Skipping")
+                        continue
 
                     try:
                         ds = xr.open_dataset(f, chunks={"time": chunksize})
