@@ -37,8 +37,8 @@ def plot(learner):
                              path=learner.hp.exp_path)
 
     # plot the adjacency matrix (learned vs ground-truth)
+    adj = learner.model.get_adj().detach().numpy()
     if not learner.no_gt:
-        adj = learner.model.get_adj().detach().numpy()
         if learner.latent:
             # for latent models, find the right permutation of the latent
             # variables using MCC
@@ -51,16 +51,18 @@ def plot(learner):
         else:
             gt_dag = learner.gt_dag
 
-        plot_adjacency_matrix(adj,
-                              gt_dag,
-                              learner.hp.exp_path,
-                              'transition',
-                              learner.no_gt)
         plot_adjacency_through_time(learner.adj_tt,
                                     gt_dag,
                                     learner.iteration,
                                     learner.hp.exp_path,
                                     'transition')
+    else:
+        gt_dag = None
+    plot_adjacency_matrix(adj,
+                          gt_dag,
+                          learner.hp.exp_path,
+                          'transition',
+                          learner.no_gt)
 
     # plot the weights W for latent models (between the latent Z and the X)
     if learner.latent:
@@ -138,11 +140,11 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str,
     if no_gt:
         nrows = 1
     else:
-        n_rows = 3
+        nrows = 3
 
     if tau == 1:
-        axes = fig.subplots(nrows=no_gt, ncols=1)
-        for row in range(no_gt):
+        axes = fig.subplots(nrows=nrows, ncols=1)
+        for row in range(nrows):
             # axes.set_title(f"t - {i+1}")
             if row == 0:
                 sns.heatmap(mat1[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
@@ -155,8 +157,12 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str,
                             cmap="Blues", xticklabels=False, yticklabels=False)
 
     else:
-        subfigs = fig.subfigures(nrows=no_gt, ncols=1)
-        for row, subfig in enumerate(subfigs):
+        subfigs = fig.subfigures(nrows=nrows, ncols=1)
+        for row in range(nrows):
+            if nrows == 1:
+                subfig = subfigs
+            else:
+                subfig = subfigs[row]
             subfig.suptitle(f'{subfig_names[row]}')
 
             axes = subfig.subplots(nrows=1, ncols=tau)
@@ -196,7 +202,7 @@ def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str,
     if no_gt:
         nrows = 1
     else:
-        n_rows = 3
+        nrows = 3
 
     if d == 1:
         axes = fig.subplots(nrows=nrows, ncols=1)
@@ -214,7 +220,12 @@ def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str,
 
     else:
         subfigs = fig.subfigures(nrows=nrows, ncols=1)
-        for row, subfig in enumerate(subfigs):
+
+        for row in range(nrows):
+            if nrows == 1:
+                subfig = subfigs
+            else:
+                subfig = subfigs[row]
             subfig.suptitle(f'{subfig_names[row]}')
 
             axes = subfig.subplots(nrows=1, ncols=d)

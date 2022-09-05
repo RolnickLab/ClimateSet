@@ -51,7 +51,8 @@ class TrainingLatent:
         else:
             self.adj_tt = np.zeros((self.hp.max_iteration, self.tau, self.d *
                                     self.k, self.d * self.k))
-        self.adj_w_tt = np.zeros((self.hp.max_iteration, self.d, self.d_x, self.k))
+        if not self.no_gt:
+            self.adj_w_tt = np.zeros((self.hp.max_iteration, self.d, self.d_x, self.k))
 
         # TODO: just for tests, remove
         # self.model.mask.fix(self.gt_dag)
@@ -83,7 +84,8 @@ class TrainingLatent:
         adj = self.model.get_adj().detach().numpy()
         self.adj_tt[self.iteration] = adj
         w = self.model.encoder_decoder.get_w().detach().numpy()
-        self.adj_w_tt[self.iteration] = w
+        if not self.no_gt:
+            self.adj_w_tt[self.iteration] = w
 
     def print_results(self):
         print("============================================================")

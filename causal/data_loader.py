@@ -60,7 +60,7 @@ class DataLoader:
                     self.z = np.load(os.path.join(self.data_path, 'data_z.npy'))
                     self.gt_w = np.load(os.path.join(self.data_path, 'graph_w.npy'))
         elif self.data_format == "hdf5":
-            f = tables.open_file(self.data_path, mode='r')
+            f = tables.open_file(os.path.join(self.data_path, 'data.h5'), mode='r')
             self.x = f.root.data
 
     def _split_data(self):

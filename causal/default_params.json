@@ -3,6 +3,8 @@
     "use_data_config": true,
     "exp_id": 0,
     "data_path": "dataset/data_realworld0",
+    "no_gt": false,
+    "data_format": "numpy",
     "ratio_train": 0.8,
     "ratio_valid": 0.2,
     "batch_size": 64,
