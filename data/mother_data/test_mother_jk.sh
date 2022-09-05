@@ -4,7 +4,7 @@
 
 #SBATCH --mem=16G                                        # specify memory
 
-#SBATCH --time=00:15:00                                  # set runtime
+#SBATCH --time=00:40:00                                  # set runtime
 
 #SBATCH -o /home/mila/j/julia.kaltenborn/slurm-causalpaca/slurm-%j.out        # set log dir to home
 
@@ -62,7 +62,7 @@ python3.9 mother_data/downloader.py
 #cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/c/charlotte.lange/causalpaca/data/data/
 
 # try and copy to julia's scratch
-#cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/j/julia.kaltenborn/data/raw/
+cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/j/julia.kaltenborn/data/raw/
 
 
 # 10. Experiment is finished
