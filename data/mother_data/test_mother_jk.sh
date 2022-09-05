@@ -23,7 +23,7 @@ if [ -a env39/bin/activate ]; then
 
 else
 
-    python3.9 -m venv env4
+    python3.9 -m venv env39
     source env39/bin/activate
     python3.9 -m pip install --upgrade pip
     pip3.9 install wheel setuptools
@@ -32,12 +32,11 @@ fi
 
 # 4. Install requirements.txt if it exists
 
-if [ -a requirements.txt ]; then
+if [ -a requirements2.txt ]; then
 
     pip3.9 install -r requirements2.txt
 
 fi
-#source /home/mila/c/charlotte.lange/causalpaca/bin/activate
 
 # 5. Copy data and code from scratch to $SLURM_TMPDIR/
 
