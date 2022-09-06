@@ -18,7 +18,7 @@ module load python/3.9
 # 3. Create or Set Up Environment
 
 if [ -a env4/bin/activate ]; then
-
+    pwd
     source env4/bin/activate
 
 else

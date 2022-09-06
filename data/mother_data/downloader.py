@@ -213,12 +213,15 @@ class Downloader:
                     # try to opend datset
                     #try:
                     ds = xr.open_dataset(f, chunks={"time": chunksize}, engine='netcdf4')
+
                     #except OSError:
                     #    print("Having problems downloading th edateset. Skipping")
                     #    continue
 
                     years = np.unique(ds.time.dt.year.to_numpy())
                     print(f"Data covering years: {years[0]} to {years[-1]}")
+                    print("exit after first test")
+                    exit(0)
 
                     for y in years:
                         y = str(y)
