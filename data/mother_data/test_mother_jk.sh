@@ -67,7 +67,7 @@ echo "pwd after running downloader"
 pwd
 
 # 9. Copy output to scratch
-#cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/c/charlotte.lange/causalpaca/data/data/
+#cp -r $SLURM_TMPDIR/causalpaca/data/mother_data/data/* /network/scratch/c/charlotte.lange/causalpaca/data/data/
 
 # try and copy to julia's scratch
 cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/j/julia.kaltenborn/data/raw/
