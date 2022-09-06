@@ -2,6 +2,8 @@
 
 #SBATCH --cpus-per-task=1                               # specify cpu
 
+#SBATCH --gres=gpu:rtx8000:1                            # specify gpu
+
 #SBATCH --mem=16G                                        # specify memory
 
 #SBATCH --time=00:40:00                                  # set runtime

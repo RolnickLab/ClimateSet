@@ -1,6 +1,8 @@
 #!/bin/bash
 
-#SBATCH --cpus-per-task=1                               # specify cpu
+#SBATCH --cpus-per-task=1            # specify cpu
+
+#SBATCH --gres=gpu:rtx8000:1         # specify gpu
 
 #SBATCH --mem=16G                                        # specify memory
 
