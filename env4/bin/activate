@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/network/scratch/c/charlotte.lange/causalpaca/env4"
+VIRTUAL_ENV="/network/scratch/c/charlotte.lange/env4"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

@@ -1,4 +1,4 @@
-#!/network/scratch/c/charlotte.lange/causalpaca/env4/bin/python3.9
+#!/network/scratch/c/charlotte.lange/env4/bin/python3.9
 # -*- coding: utf-8 -*-
 import re
 import sys
