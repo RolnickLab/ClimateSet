@@ -14,6 +14,7 @@ import netCDF4
 #import h5py
 import pandas as pd
 import xarray as xr
+import os
 import os.path
 import numpy as np
 
@@ -209,7 +210,9 @@ class Downloader:
                 nominal_resolution = nominal_resolution.replace(" ", "_")
 
                 for f in file_names:
-
+                    # print current working directory
+                    print("Current working directory:", os.getcwd())
+                    
                     # try to opend datset
                     #try:
                     ds = xr.open_dataset(f, chunks={"time": chunksize}, engine='netcdf4')
