@@ -17,22 +17,22 @@ module load python/3.9
 
 # 3. Create or Set Up Environment
 
-if [ -a env39/bin/activate ]; then
+if [ -a env4/bin/activate ]; then
 
-    source env39/bin/activate
+    source env4/bin/activate
 
 else
-
-    python3.9 -m venv env39
-    source env39/bin/activate
-    python3.9 -m pip install --upgrade pip
-    pip3.9 install wheel setuptools
-
-    # 4. Install requirements.txt if it exists
-
-    if [ -a requirements2.txt ]; then
-        pip3.9 install -r requirements2.txt
-    fi
+    echo "env4 does not exist"
+    # python3.9 -m venv env39
+    # source env39/bin/activate
+    # python3.9 -m pip install --upgrade pip
+    # pip3.9 install wheel setuptools
+    #
+    # # 4. Install requirements.txt if it exists
+    #
+    # if [ -a requirements2.txt ]; then
+    #     pip3.9 install -r requirements2.txt
+    # fi
 
 fi
 
