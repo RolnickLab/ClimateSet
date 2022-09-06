@@ -212,7 +212,7 @@ class Downloader:
                 for f in file_names:
                     # print current working directory
                     print("Current working directory:", os.getcwd())
-                    
+
                     # try to opend datset
                     #try:
                     ds = xr.open_dataset(f, chunks={"time": chunksize}, engine='netcdf4')
