@@ -34,6 +34,8 @@ class Aggregation(ABC):
 ### SPECIFIC CLASSES ###########################################################
 # must implement the abstract methods!!!
 
+# Note: all those aggregation methods were mentioned as the usual
+# CMIP6 aggregation methods
 class MeanAggregation(Aggregation):
     """ Calculates mean over aggregation period
     """
