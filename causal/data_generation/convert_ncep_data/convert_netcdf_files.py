@@ -62,7 +62,7 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str 
 
 def standardize(df: pd.DataFrame) -> pd.DataFrame:
     """ Remove the mean and divide by the standard deviation """
-    return (df - df.mean()) / df.std()
+    return (df - df.mean())  # / df.std()
 
 
 def find_all_nc_files(directory: str) -> list:

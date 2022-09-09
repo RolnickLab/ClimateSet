@@ -34,8 +34,9 @@ class DataLoader:
         self.tau = tau
 
         self.gt_graph = None
-        self.z = None
+        self.z = None  # use with latent model
         self.gt_w = None
+        self.coordinates = None  # used when using real-world data
         self.k = 0
 
         # Load and split the data
@@ -62,6 +63,10 @@ class DataLoader:
         elif self.data_format == "hdf5":
             f = tables.open_file(os.path.join(self.data_path, 'data.h5'), mode='r')
             self.x = f.root.data
+
+        # use coordinates if using real-world datasets
+        if self.no_gt:
+            self.coordinates = np.load(os.path.join(self.data_path, 'coordinates.npy'))
 
     def _split_data(self):
         """

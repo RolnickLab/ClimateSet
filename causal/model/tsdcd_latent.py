@@ -157,7 +157,9 @@ class LatentTSDCD(nn.Module):
             for k in range(self.k):
                 pz_params[:, k] = self.transition_model(z, mask[:, :, i * self.k + k], i, k)
             mu[:, i] = pz_params[:, :, 0]
-            std[:, i] = 0.5 * torch.exp(pz_params[:, :, 1])
+            # factor to ensure that doesnt output inf when training is starting
+            factor = 1e-3
+            std[:, i] = 0.5 * torch.exp(factor * pz_params[:, :, 1])
 
         return mu, std
 
@@ -262,7 +264,8 @@ class EncoderDecoder(nn.Module):
         self.debug_gt_w = debug_gt_w
         self.gt_w = gt_w
 
-        self.log_w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)
+        unif = (1 - 0.1) * torch.rand(size=(d, d_x, k)) + 0.1
+        self.log_w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.k)))
         # self.logvar_encoder = nn.Parameter(torch.rand(d) * 0.1)
         # self.logvar_decoder = nn.Parameter(torch.rand(d) * 0.1)
         self.logvar_decoder = torch.log(torch.ones(d) * 0.001)  # TODO: test

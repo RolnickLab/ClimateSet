@@ -68,7 +68,21 @@ class TrainingLatent:
         # compute constraint normalization
         with torch.no_grad():
             full_adjacency = torch.ones((model.d, model.d)) - torch.eye(model.d)
-            self.constraint_normalization = compute_dag_constraint(full_adjacency).item()
+            self.acyclic_constraint_normalization = compute_dag_constraint(full_adjacency).item()
+
+            # orthogonal up to a small variation epsilon
+            if self.latent:
+                eps = 1e-8
+                almost_orthogonal = torch.zeros((model.d_x, model.k))
+                partition = np.array([model.d_x // model.k + (1 if x < model.d_x % model.k else 0) for x in range (model.k)])
+                idx = np.repeat(np.arange(model.k), partition)
+                almost_orthogonal[np.arange(model.d_x), idx] = 1
+                almost_orthogonal = almost_orthogonal / np.linalg.norm(almost_orthogonal, axis=0)
+                almost_orthogonal = almost_orthogonal + eps
+
+                self.ortho_constraint_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal - torch.eye(model.k), p=2)
+                print(self.ortho_constraint_normalization)
+                __import__('ipdb').set_trace()
 
     def log_losses(self):
         self.train_h_list.append(self.train_h)
@@ -231,7 +245,7 @@ class TrainingLatent:
     def get_acyclicity_violation(self) -> torch.Tensor:
         adj = self.model.get_adj()[-1].view(self.d, self.d)
         # __import__('ipdb').set_trace()
-        h = compute_dag_constraint(adj) / self.constraint_normalization
+        h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
 
         return h
 
@@ -275,4 +289,4 @@ def get_ortho_constraint(w: torch.Tensor) -> float:
     for i in range(w.size(0)):
         constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
 
-    return constraint
+    return constraint  # / self.ortho_constraint_normalization

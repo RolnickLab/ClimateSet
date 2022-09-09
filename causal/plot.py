@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from mpl_toolkits.basemap import Basemap
 from metrics import mean_corr_coef
 
 
@@ -30,10 +31,12 @@ def plot(learner):
                              valid_loss=learner.valid_loss_list,
                              valid_recons=learner.valid_recons_list,
                              valid_kl=learner.valid_kl_list,
+                             iteration=learner.iteration,
                              path=learner.hp.exp_path)
     else:
         plot_learning_curves(train_loss=learner.train_loss_list,
                              valid_loss=learner.valid_loss_list,
+                             iteration=learner.iteration,
                              path=learner.hp.exp_path)
 
     # plot the adjacency matrix (learned vs ground-truth)
@@ -78,10 +81,54 @@ def plot(learner):
                                           learner.iteration,
                                           learner.hp.exp_path,
                                           'w')
+        else:
+            plot_regions_map(adj_w,
+                             learner.data.coordinates,
+                             learner.iteration,
+                             path=learner.hp.exp_path)
+
+def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
+    """
+    Plot the regions
+    Args:
+        w_adj: xxx
+        coordinates: xxx
+        iteration: xxx
+        path: xxx
+    """
+
+    # plot the map
+    map = Basemap(projection='mill')  # , lat_0=-90, lon_0=0)
+    map.drawcoastlines()
+    map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+    map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+
+    d = w_adj.shape[0]
+    d_x = w_adj.shape[1]
+    d_z = w_adj.shape[2]
+
+    # find the argmax per row
+    idx = np.argmax(w_adj, axis=2)
+
+    # plot the regions
+    colors = plt.cm.rainbow(np.linspace(0, 1, d_z))
+
+    # TODO: add code for several features
+    # for i in range(d):
+    for k, color in zip(range(d_z), colors):
+        region = coordinates[idx[0] == k]
+        c = np.repeat(np.array([color]), region.shape[0], axis=0)
+        map.scatter(x=region[:, 1], y=region[:, 0], c=c, s=6, latlon=True)
+
+    plt.title("Spatial aggregation")
+    # plt.legend()
+    plt.savefig(os.path.join(path, f"spatial_aggregation_{iteration}.png"))
+    plt.close()
 
 
 def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: list = None,
-                         valid_loss: list = None, valid_recons: list = None, valid_kl: list = None, path: str = ""):
+                         valid_loss: list = None, valid_recons: list = None,
+                         valid_kl: list = None, iteration: int = 0, path: str = ""):
     """ Plot the training and validation loss through time
     Args:
       train_loss: training loss
@@ -90,6 +137,7 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
       valid_loss: validation loss (on held-out dataset)
       valid_recons: see train_recons
       valid_kl: see train_kl
+      iteration: number of iterations
       path: path where to save the plot
     """
     # remove first steps to avoid really high values
@@ -114,7 +162,7 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
         plt.plot(t_loss, label="train")
     plt.title("Learning curves")
     plt.legend()
-    plt.savefig(os.path.join(path, "loss.png"))
+    plt.savefig(os.path.join(path, f"loss_{iteration}.png"))
     plt.close()
 
 
@@ -145,15 +193,19 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str,
     if tau == 1:
         axes = fig.subplots(nrows=nrows, ncols=1)
         for row in range(nrows):
+            if no_gt:
+                ax = axes
+            else:
+                ax = axes[row]
             # axes.set_title(f"t - {i+1}")
             if row == 0:
-                sns.heatmap(mat1[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat1[0], ax=ax, cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
             elif row == 1:
-                sns.heatmap(mat2[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat2[0], ax=ax, cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
             elif row == 2:
-                sns.heatmap(mat1[0] - mat2[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat1[0] - mat2[0], ax=ax, cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
 
     else:
@@ -207,15 +259,19 @@ def plot_adjacency_matrix_w(mat1: np.ndarray, mat2: np.ndarray, path: str,
     if d == 1:
         axes = fig.subplots(nrows=nrows, ncols=1)
         for row in range(nrows):
+            if no_gt:
+                ax = axes
+            else:
+                ax = axes[row]
             # axes.set_title(f"t - {i+1}")
             if row == 0:
-                sns.heatmap(mat1[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat1[0], ax=ax, cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
             elif row == 1:
-                sns.heatmap(mat2[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat2[0], ax=ax, cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
             elif row == 2:
-                sns.heatmap(mat1[0] - mat2[0], ax=axes[row], cbar=False, vmin=-1, vmax=1,
+                sns.heatmap(mat1[0] - mat2[0], ax=ax, cbar=False, vmin=-1, vmax=1,
                             cmap="Blues", xticklabels=False, yticklabels=False)
 
     else:
