@@ -279,6 +279,17 @@ class TrainingLatent:
         # TODO
         pass
 
+    def connectivity_constraint(w: torch.Tensor, coordinates: np.ndarray):
+        """
+        Calculate the connectivity constraint, ie the sum of all the distances
+        inside each clusters.
+        """
+        c = torch.tensor([0.])
+        d = self.data.distances
+        for i in self.d:
+            for k in self.k:
+                c = c + torch.sum(torch.outer(w[i, :, k], w[i, :, k]) * d)
+        return c
 
 # if not self.latent:
 #     raise ValueError("The orthogonality constraint only makes sense \

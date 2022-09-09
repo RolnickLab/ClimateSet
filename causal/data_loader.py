@@ -3,6 +3,7 @@ import torch
 import tables
 import numpy as np
 from typing import Tuple
+from geopy import distance
 
 
 class DataLoader:
@@ -155,3 +156,19 @@ class DataLoader:
             z_ = z
 
         return x_, y_, z_
+
+    def get_geodisic_distances(coordinates: np.ndarray):
+        """
+        Calculate the distance matrix between every pair of coordinates.
+        Use the geodesic distance with the WGS-84 model
+        """
+        d = np.zeros((self.d_x, self.d_x))
+        for i, c1 in coordinates:
+            for j, c2 in coordinates:
+                if i == j:
+                    d(j, i) = d(i, j) = 0
+                else:
+                    # by default, use the WGS-84 model
+                    d(j, i) = d(i, j) = distance.geodesic(c1, c2).km
+
+        self.distances = d
