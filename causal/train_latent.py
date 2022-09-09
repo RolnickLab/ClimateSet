@@ -262,11 +262,31 @@ class TrainingLatent:
     #     return nll
 
     def get_regularisation(self) -> float:
+        reg = sparsity_reg()
+        if self.hp.latent:
+            reg = reg + connectivity_reg()
+        return reg
+
+    def sparsity_reg(self):
         adj = self.model.get_adj()
         reg = self.hp.reg_coeff * torch.norm(adj, p=1)
         reg /= adj.shape[0] ** 2
 
         return reg
+
+    def connectivity_reg(self):
+        """
+        Calculate the connectivity constraint, ie the sum of all the distances
+        inside each clusters.
+        """
+        c = torch.tensor([0.])
+        w = self.model.w
+        d = self.data.distances
+        for i in self.d:
+            for k in self.k:
+                c = c + torch.sum(torch.outer(w[i, :, k], w[i, :, k]) * d)
+        return self.hp.reg_coeff_connect * c
+
 
     def threshold(self):
         with torch.no_grad():
@@ -278,18 +298,6 @@ class TrainingLatent:
     def save_results(self):
         # TODO
         pass
-
-    def connectivity_constraint(w: torch.Tensor, coordinates: np.ndarray):
-        """
-        Calculate the connectivity constraint, ie the sum of all the distances
-        inside each clusters.
-        """
-        c = torch.tensor([0.])
-        d = self.data.distances
-        for i in self.d:
-            for k in self.k:
-                c = c + torch.sum(torch.outer(w[i, :, k], w[i, :, k]) * d)
-        return c
 
 # if not self.latent:
 #     raise ValueError("The orthogonality constraint only makes sense \

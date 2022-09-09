@@ -160,7 +160,7 @@ class DataLoader:
     def get_geodisic_distances(coordinates: np.ndarray):
         """
         Calculate the distance matrix between every pair of coordinates.
-        Use the geodesic distance with the WGS-84 model
+        Use the geodesic distance with the WGS-84 model.
         """
         d = np.zeros((self.d_x, self.d_x))
         for i, c1 in coordinates:

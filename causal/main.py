@@ -217,7 +217,8 @@ if __name__ == "__main__":
 
     # Model hyperparameters: optimization
     parser.add_argument("--optimizer", type=str, help="sgd|rmsprop")
-    parser.add_argument("--reg-coeff", type=float, help="Coefficient for the regularisation term")
+    parser.add_argument("--reg-coeff", type=float, help="Coefficient for the sparsity regularisation term")
+    parser.add_argument("--reg-coeff-connect", type=float, help="Coefficient for the connectivity regularisation term")
     parser.add_argument("--lr", type=float, help="learning rate for optim")
     parser.add_argument("--random-seed", type=int, help="Random seed for torch and numpy")
     parser.add_argument("--hard-gumbel", action="store_true",
