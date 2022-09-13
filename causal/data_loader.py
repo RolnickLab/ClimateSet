@@ -42,11 +42,6 @@ class DataLoader:
 
         # Load and split the data
         self._load_data()
-        self.n = self.x.shape[0]
-        self.d = self.x.shape[2]
-        self.d_x = self.x.shape[3]
-        if not self.no_gt and self.latent:
-            self.k = self.z.shape[3]
         self._split_data()
 
     def _load_data(self):
@@ -65,9 +60,18 @@ class DataLoader:
             f = tables.open_file(os.path.join(self.data_path, 'data.h5'), mode='r')
             self.x = f.root.data
 
+        # names for X, Z dimensions
+        self.n = self.x.shape[0]
+        self.d = self.x.shape[2]
+        self.d_x = self.x.shape[3]
+        if not self.no_gt and self.latent:
+            self.k = self.z.shape[3]
+
         # use coordinates if using real-world datasets
         if self.no_gt:
             self.coordinates = np.load(os.path.join(self.data_path, 'coordinates.npy'))
+            # TODO: decide if keep or not
+            # self.distances = self.get_geodisic_distances(self.coordinates)
 
     def _split_data(self):
         """
@@ -157,18 +161,21 @@ class DataLoader:
 
         return x_, y_, z_
 
-    def get_geodisic_distances(coordinates: np.ndarray):
+    def get_geodisic_distances(self, coordinates: np.ndarray):
         """
         Calculate the distance matrix between every pair of coordinates.
         Use the geodesic distance with the WGS-84 model.
+
+        might be too slow for 10000 grid locations...
         """
         d = np.zeros((self.d_x, self.d_x))
-        for i, c1 in coordinates:
-            for j, c2 in coordinates:
+        for i, c1 in enumerate(coordinates):
+            for j, c2 in enumerate(coordinates):
                 if i == j:
-                    d(j, i) = d(i, j) = 0
+                    d[i, j] = d[j, i] = 0
                 else:
                     # by default, use the WGS-84 model
-                    d(j, i) = d(i, j) = distance.geodesic(c1, c2).km
+                    d[i, j] = d[j, i] = distance.geodesic(c1, c2).km
+                # print(j + i * coordinates.shape[0])
 
-        self.distances = d
+        return d

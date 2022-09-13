@@ -91,10 +91,10 @@ def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
     """
     Plot the regions
     Args:
-        w_adj: xxx
-        coordinates: xxx
-        iteration: xxx
-        path: xxx
+        w_adj: weight of edges between X and latents Z
+        coordinates: lat, lon of every grid location
+        iteration: number of training iteration
+        path: path where to save the plot
     """
 
     # plot the map
@@ -118,7 +118,7 @@ def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
     for k, color in zip(range(d_z), colors):
         region = coordinates[idx[0] == k]
         c = np.repeat(np.array([color]), region.shape[0], axis=0)
-        map.scatter(x=region[:, 1], y=region[:, 0], c=c, s=6, latlon=True)
+        map.scatter(x=region[:, 1], y=region[:, 0], c=c, s=4, latlon=True)
 
     plt.title("Spatial aggregation")
     # plt.legend()

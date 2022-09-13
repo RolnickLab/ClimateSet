@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+from geopy import distance
 from dag_optim import compute_dag_constraint
 from plot import plot
 
@@ -262,9 +263,9 @@ class TrainingLatent:
     #     return nll
 
     def get_regularisation(self) -> float:
-        reg = sparsity_reg()
+        reg = self.sparsity_reg()
         if self.hp.latent:
-            reg = reg + connectivity_reg()
+            reg = reg + self.connectivity_reg()
         return reg
 
     def sparsity_reg(self):
@@ -274,19 +275,36 @@ class TrainingLatent:
 
         return reg
 
-    def connectivity_reg(self):
+    def connectivity_reg_complete(self):
         """
         Calculate the connectivity constraint, ie the sum of all the distances
         inside each clusters.
         """
         c = torch.tensor([0.])
-        w = self.model.w
+        w = self.model.encoder_decoder.get_w()
         d = self.data.distances
         for i in self.d:
             for k in self.k:
                 c = c + torch.sum(torch.outer(w[i, :, k], w[i, :, k]) * d)
         return self.hp.reg_coeff_connect * c
 
+    def connectivity_reg(self, ratio: float = 0.0001):
+        """
+        Calculate a connectivity regularisation only on a subsample of the
+        complete data.
+        """
+        c = torch.tensor([0.])
+        w = self.model.encoder_decoder.get_w()
+        n = int(self.d_x * ratio)
+        points = np.random.choice(np.arange(self.d_x), n)
+
+        for d in range(self.d):
+            for k in range(self.k):
+                for i, c1 in enumerate(self.data.coordinates[points]):
+                    for j, c2 in enumerate(self.data.coordinates[points]):
+                        dist = distance.geodesic(c1, c2).km
+                        c = c + w[d, i, k] * w[d, j, k] * dist
+        return self.hp.reg_coeff_connect * c
 
     def threshold(self):
         with torch.no_grad():

@@ -16,7 +16,7 @@
     "num_output": 2,
     "optimizer": "rmsprop",
     "reg_coeff": 1e-1,
-    "reg_coeff_connect": 1e-1,
+    "reg_coeff_connect": 1e6,
     "lr": 0.001,
     "random_seed": 3,
     "hard_gumbel": true,
