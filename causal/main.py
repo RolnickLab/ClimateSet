@@ -196,7 +196,8 @@ if __name__ == "__main__":
     # Dataset properties
     parser.add_argument("--data-path", type=str, help="Path to the dataset")
     parser.add_argument("--data-format", type=str, help="numpy|hdf5")
-    parser.add_argument("--no-gt", action="store_true", help="If True, does not use any ground-truth for plotting and metrics")
+    parser.add_argument("--no-gt", action="store_true",
+                        help="If True, does not use any ground-truth for plotting and metrics")
 
     # specific to model with latent variables
     parser.add_argument("--latent", action="store_true", help="Use the model that assumes latent variables")
@@ -228,12 +229,18 @@ if __name__ == "__main__":
     parser.add_argument("--omega-gamma", type=float, help="Precision to declare convergence of subproblems")
     parser.add_argument("--omega-mu", type=float, help="After subproblem solved, h should have reduced by this ratio")
     parser.add_argument("--mu-init", type=float, help="initial value of mu")
-    parser.add_argument("--mu-mult-factor", type=float, help="Multiply mu by this amount when constraint not sufficiently decreasing")
-    parser.add_argument("--h-threshold", type=float, help="Can stop if h smaller than h-threshold")
-    parser.add_argument("--min-iter-convergence", type=int, help="Minimal number of iteration before checking if has converged")
-    parser.add_argument("--max-iteration", type=int, help="Maximal number of iteration before stopping")
-    parser.add_argument("--patience", type=int, help="Patience used after the acyclicity constraint is respected")
-    parser.add_argument("--patience-post-thresh", type=int, help="Patience used after the thresholding of the adjacency matrix")
+    parser.add_argument("--mu-mult-factor", type=float,
+                        help="Multiply mu by this amount when constraint not sufficiently decreasing")
+    parser.add_argument("--h-threshold", type=float,
+                        help="Can stop if h smaller than h-threshold")
+    parser.add_argument("--min-iter-convergence", type=int,
+                        help="Minimal number of iteration before checking if has converged")
+    parser.add_argument("--max-iteration", type=int,
+                        help="Maximal number of iteration before stopping")
+    parser.add_argument("--patience", type=int,
+                        help="Patience used after the acyclicity constraint is respected")
+    parser.add_argument("--patience-post-thresh", type=int,
+                        help="Patience used after the thresholding of the adjacency matrix")
 
     # logging
     parser.add_argument("--plot-freq", type=int, help="Plotting frequency")
@@ -254,7 +261,7 @@ if __name__ == "__main__":
             params = json.load(f)
 
         for key, val in params.items():
-            if default_params[key] is None or default_params[key] == False:
+            if default_params[key] is None or not default_params[key]:
                 default_params[key] = val
         args = Bunch(**default_params)
 

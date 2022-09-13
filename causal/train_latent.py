@@ -75,15 +75,13 @@ class TrainingLatent:
             if self.latent:
                 eps = 1e-8
                 almost_orthogonal = torch.zeros((model.d_x, model.k))
-                partition = np.array([model.d_x // model.k + (1 if x < model.d_x % model.k else 0) for x in range (model.k)])
+                partition = np.array([model.d_x // model.k + (1 if x < model.d_x % model.k else 0) for x in range(model.k)])
                 idx = np.repeat(np.arange(model.k), partition)
                 almost_orthogonal[np.arange(model.d_x), idx] = 1
                 almost_orthogonal = almost_orthogonal / np.linalg.norm(almost_orthogonal, axis=0)
                 almost_orthogonal = almost_orthogonal + eps
 
-                self.ortho_constraint_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal - torch.eye(model.k), p=2)
-                print(self.ortho_constraint_normalization)
-                __import__('ipdb').set_trace()
+                self.ortho_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal - torch.eye(model.k), p=2)
 
     def log_losses(self):
         self.train_h_list.append(self.train_h)
@@ -203,7 +201,7 @@ class TrainingLatent:
         reg = self.get_regularisation()
 
         # compute loss
-        h = get_ortho_constraint(self.model.encoder_decoder.get_w())
+        h = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
         loss = nll + reg + 0.5 * self.mu * h ** 2  # TODO: have a different mu
         # if self.instantaneous and not self.converged:
         #     h = self.get_acyclicity_violation()
@@ -233,7 +231,7 @@ class TrainingLatent:
         reg = self.get_regularisation()
 
         # compute loss
-        h = get_ortho_constraint(self.model.encoder_decoder.get_w())
+        h = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
         loss = nll + reg + 0.5 * self.mu * h ** 2  # TODO: have a different mu
         # if self.instantaneous and not self.converged:
         #     h = self.get_acyclicity_violation()
@@ -317,13 +315,13 @@ class TrainingLatent:
         # TODO
         pass
 
-# if not self.latent:
-#     raise ValueError("The orthogonality constraint only makes sense \
-#                      when there is latent variables (spatial agg.)")
-def get_ortho_constraint(w: torch.Tensor) -> float:
-    constraint = torch.tensor([0.])
-    k = w.size(2)
-    for i in range(w.size(0)):
-        constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
+    # if not self.latent:
+    #     raise ValueError("The orthogonality constraint only makes sense \
+    #                      when there is latent variables (spatial agg.)")
+    def get_ortho_constraint(self, w: torch.Tensor) -> float:
+        constraint = torch.tensor([0.])
+        k = w.size(2)
+        for i in range(w.size(0)):
+            constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
 
-    return constraint  # / self.ortho_constraint_normalization
+        return constraint / self.ortho_normalization

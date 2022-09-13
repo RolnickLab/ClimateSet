@@ -87,6 +87,7 @@ def plot(learner):
                              learner.iteration,
                              path=learner.hp.exp_path)
 
+
 def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
     """
     Plot the regions
@@ -98,13 +99,13 @@ def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
     """
 
     # plot the map
-    map = Basemap(projection='mill')  # , lat_0=-90, lon_0=0)
+    map = Basemap(projection='robin', lon_0=0)  # 'mill' , lat_0=-90, lon_0=0)
     map.drawcoastlines()
     map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
     map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
 
-    d = w_adj.shape[0]
-    d_x = w_adj.shape[1]
+    # d = w_adj.shape[0]
+    # d_x = w_adj.shape[1]
     d_z = w_adj.shape[2]
 
     # find the argmax per row
@@ -165,6 +166,12 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
     plt.savefig(os.path.join(path, f"loss_{iteration}.png"))
     plt.close()
 
+
+def plot_learning_curves2(train_loss: list, train_recons: list = None,
+                          train_kl: list = None, valid_loss: list = None,
+                          valid_recons: list = None, valid_kl: list = None,
+                          iteration: int = 0, path: str = ""):
+    pass
 
 # TODO: add no_gt
 def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str,
