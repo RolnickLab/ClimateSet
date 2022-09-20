@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -33,6 +32,18 @@ def plot(learner):
                              valid_kl=learner.valid_kl_list,
                              iteration=learner.iteration,
                              path=learner.hp.exp_path)
+        losses = [{"name": "tr loss", "data": learner.train_loss_list, "s": "-"},
+                  {"name": "tr recons", "data": learner.train_recons_list, "s": "-"},
+                  {"name": "tr kl", "data": learner.train_kl_list, "s": "-"},
+                  {"name": "tr sparsity", "data": learner.train_sparsity_list, "s": "-"},
+                  {"name": "tr connect", "data": learner.train_connect_list, "s": "-"},
+                  {"name": "tr ortho", "data": learner.train_ortho_list, "s": "-"},
+                  {"name": "tr acyclic", "data": learner.train_ortho_list, "s": "-"},
+                  {"name": "val loss", "data": learner.train_ortho_list, "s": "-"}
+                 ]
+        plot_learning_curves2(losses=losses,
+                              iteration=learner.iteration,
+                              path=learner.hp.exp_path)
     else:
         plot_learning_curves(train_loss=learner.train_loss_list,
                              valid_loss=learner.valid_loss_list,
@@ -167,11 +178,28 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
     plt.close()
 
 
-def plot_learning_curves2(train_loss: list, train_recons: list = None,
-                          train_kl: list = None, valid_loss: list = None,
-                          valid_recons: list = None, valid_kl: list = None,
-                          iteration: int = 0, path: str = ""):
-    pass
+def plot_learning_curves2(losses: list, iteration: int = 0, path: str = ""):
+    """
+    Plot all list present in 'losses'.
+    Args:
+        losses: contains losses, their name, and style
+        iteration: number of iterations
+        path: path where to save the plot
+    """
+    ax = plt.gca()
+    ax.set_yscale("log")
+
+    # compute moving_averages and
+    # remove first steps to avoid really high values
+    for loss in losses:
+        smoothed_loss = moving_average(loss["data"][10:])
+        plt.plot(smoothed_loss, label=loss["name"])
+
+    plt.title("Learning curves")
+    plt.legend()
+    plt.savefig(os.path.join(path, f"loss_detailed_{iteration}.png"))
+    plt.close()
+
 
 # TODO: add no_gt
 def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str,
