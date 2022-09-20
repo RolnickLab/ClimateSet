@@ -4,6 +4,7 @@ import numpy as np
 from geopy import distance
 from dag_optim import compute_dag_constraint
 from plot import plot
+from prox import monkey_patch_RMSprop
 
 
 class TrainingLatent:
@@ -20,7 +21,7 @@ class TrainingLatent:
         self.converged = False
         self.thresholded = False
         self.ended = False
-        self.mu = hp.mu_init
+
         self.d = data.x.shape[2]
         self.patience = hp.patience
         self.best_valid_loss = np.inf
@@ -32,17 +33,24 @@ class TrainingLatent:
         self.patience_freq = 1000
 
         # TODO: put as arguments
-        self.train_h_list = []
         self.train_loss_list = []
         self.train_elbo_list = []
         self.train_recons_list = []
         self.train_kl_list = []
-        self.valid_h_list = []
+        self.train_sparsity_reg_list = []
+        self.train_connect_reg_list = []
+        self.train_ortho_cons_list = []
+        self.train_acyclic_cons_list = []
+
         self.valid_loss_list = []
         self.valid_elbo_list = []
         self.valid_recons_list = []
         self.valid_kl_list = []
-        self.mu_list = []
+        self.valid_sparsity_reg_list = []
+        self.valid_connect_reg_list = []
+        self.valid_ortho_cons_list = []
+        self.valid_acyclic_cons_list = []
+
 
         # TODO just equal size of G
         if self.instantaneous:
@@ -62,6 +70,8 @@ class TrainingLatent:
         if hp.optimizer == "sgd":
             self.optimizer = torch.optim.SGD(model.parameters(), lr=hp.lr)
         elif hp.optimizer == "rmsprop":
+            # TODO: put back
+            # monkey_patch_RMSprop(torch.optim.RMSprop)
             self.optimizer = torch.optim.RMSprop(model.parameters(), lr=hp.lr)
         else:
             raise NotImplementedError("optimizer {} is not implemented".format(hp.optimizer))
@@ -71,6 +81,7 @@ class TrainingLatent:
             full_adjacency = torch.ones((model.d, model.d)) - torch.eye(model.d)
             self.acyclic_constraint_normalization = compute_dag_constraint(full_adjacency).item()
 
+            # TODO: to change, use Frobenius norm!
             # orthogonal up to a small variation epsilon
             if self.latent:
                 eps = 1e-8
@@ -84,18 +95,28 @@ class TrainingLatent:
                 self.ortho_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal - torch.eye(model.k), p=2)
 
     def log_losses(self):
-        self.train_h_list.append(self.train_h)
+        # train
         self.train_loss_list.append(self.train_loss)
         self.train_recons_list.append(-self.train_recons)
         self.train_kl_list.append(self.train_kl)
-        self.valid_h_list.append(self.valid_h)
+
+        self.train_sparsity_reg_list.append(self.train_sparsity_reg)
+        self.train_connect_reg_list.append(self.train_connect_reg)
+        self.train_ortho_cons_list.append(self.train_ortho_cons)
+        self.train_acyclic_cons_list.append(self.train_acyclic_cons)
+
+        # valid
         self.valid_loss_list.append(self.valid_loss)
         self.valid_recons_list.append(-self.valid_recons)
         self.valid_kl_list.append(self.valid_kl)
-        self.mu_list.append(self.mu)
 
-        adj = self.model.get_adj().detach().numpy()
-        self.adj_tt[self.iteration] = adj
+        self.valid_sparsity_reg_list.append(self.valid_sparsity_reg)
+        self.valid_connect_reg_list.append(self.valid_connect_reg)
+        self.valid_ortho_cons_list.append(self.valid_ortho_cons)
+        self.valid_acyclic_cons_list.append(self.valid_acyclic_cons)
+
+        # self.mu_ortho_list.append(self.mu_ortho)
+        self.adj_tt[self.iteration] = self.model.get_adj().detach().numpy()
         w = self.model.encoder_decoder.get_w().detach().numpy()
         if not self.no_gt:
             self.adj_w_tt[self.iteration] = w
@@ -103,7 +124,6 @@ class TrainingLatent:
     def print_results(self):
         print("============================================================")
         print(f"Iteration #{self.iteration}")
-        print(f"train_h: {self.train_h}")
         # print(f"train_loss: {self.train_loss:.4f}")
         # print(f"train_elbo: {self.train_elbo:.4f}")
         print(f"train_nll: {self.train_nll:.4f}")
@@ -111,23 +131,35 @@ class TrainingLatent:
         print(f"train_kl: {self.train_kl:.4f}")
         print("-------------------------------")
 
-        print(f"valid_h: {self.valid_h}")
         # print(f"valid_loss: {self.valid_loss:.4f}")
         # print(f"valid_elbo: {self.valid_elbo:.4f}")
         print(f"valid_nll: {self.valid_nll:.4f}")
         print(f"valid_recons: {self.valid_recons:.4f}")
         print(f"valid_kl: {self.valid_kl:.4f}")
-        print(f"mu: {self.mu}")
+        # print(f"mu_ortho: {self.mu_ortho}")
+        # print(f"mu_acyclic: {self.mu_acyclic}")
         print(f"patience: {self.patience}")
 
     def train_with_QPM(self):
         self.iteration = 1
+        self.ALM_ortho = ALM(self.hp.ortho_mu_init,
+                             self.hp.ortho_mu_mult_factor,
+                             self.hp.ortho_omega_gamma,
+                             self.hp.ortho_omega_mu,
+                             self.hp.ortho_h_threshold,
+                             self.hp.ortho_min_iter_convergence)
+        self.QPM_acyclic = ALM(self.hp.acyclic_mu_init,
+                               self.hp.acyclic_mu_mult_factor,
+                               self.hp.acyclic_omega_gamma,
+                               self.hp.acyclic_omega_mu,
+                               self.hp.acyclic_h_threshold,
+                               self.hp.acyclic_min_iter_convergence)
 
         while self.iteration < self.hp.max_iteration and not self.ended:
 
             # train and valid step
-            self.train_loss, self.train_nll, self.train_recons, self.train_kl, self.train_h = self.train_step()
-            self.valid_loss, self.valid_nll, self.valid_recons, self.valid_kl, self.valid_h = self.valid_step()
+            self.train_step()
+            self.valid_step()
             self.log_losses()
             if self.iteration % self.hp.print_freq == 0:
                 self.print_results()
@@ -138,7 +170,12 @@ class TrainingLatent:
             if not self.converged:
                 # train with penalty method
                 if self.iteration % self.qpm_freq == 0:
-                    self.QPM(self.iteration, self.valid_loss, self.valid_h)
+                    self.ALM_ortho.update(self.iteration,
+                                         self.valid_ortho_cons_list,
+                                         self.valid_loss_list)
+                    self.QPM_acyclic.update(self.iteration,
+                                            self.valid_acyclic_cons_list,
+                                            self.valid_loss_list)
             else:
                 # continue training without penalty method
                 if not self.thresholded and self.iteration % self.patience_freq == 0:
@@ -163,20 +200,6 @@ class TrainingLatent:
         plot(self)
         self.print_results()
 
-    def QPM(self, iteration: int, valid_loss: float, h: float):
-        # check if QPM has converged
-        if self.iteration > self.hp.min_iter_convergence and h <= self.hp.h_threshold:
-            self.converged = True
-        else:
-            # check if subproblem has converged
-            if self.valid_loss_list[-1] > self.valid_loss_list[-2]:
-                if self.valid_h_list[-1] > self.valid_h_list[-2] * self.hp.omega_mu:
-                    self.mu *= self.hp.mu_mult_factor
-                    # print(self.valid_loss_list[-1])
-                    # print(self.valid_loss_list[-2])
-                    # print(self.valid_h_list[-1])
-                    # print(self.valid_h_list[-2])
-                    # __import__('ipdb').set_trace()
 
     def has_patience(self, patience_init, valid_loss):
         if self.patience > 0:
@@ -197,26 +220,42 @@ class TrainingLatent:
         x, y, z = self.data.sample(self.batch_size, valid=False)
         nll, recons, kl = self.get_nll(x, y, z)
 
-        # get acyclicity constraint, regularisation
-        reg = self.get_regularisation()
+        # compute regularisations (sparsity and connectivity) 
+        sparsity_reg = self.get_regularisation()
+        connect_reg = torch.tensor([0.])
+        if self.hp.latent:
+            connect_reg = self.connectivity_reg()
 
-        # compute loss
-        h = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
-        loss = nll + reg + 0.5 * self.mu * h ** 2  # TODO: have a different mu
-        # if self.instantaneous and not self.converged:
-        #     h = self.get_acyclicity_violation()
-        #     loss = loss + 0.5 * self.mu * h ** 2
-        # else:
-        #     h = torch.tensor([0])
+        # compute constraints (acyclicity and orthogonality)
+        h_acyclic = torch.tensor([0.])
+        h_ortho = torch.tensor([0.])
+        if self.instantaneous and not self.converged:
+            h_acyclic = self.get_acyclicity_violation()
+        if self.hp.reg_coeff_connect:
+            h_ortho = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
+
+        # compute total loss
+        loss = nll + sparsity_reg + connect_reg
+        loss = loss + self.ALM_ortho.gamma * h_ortho + \
+                0.5 * self.ALM_ortho.mu * h_ortho ** 2
+        loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
         # backprop
         self.optimizer.zero_grad()
         loss.backward()
         _, _ = self.optimizer.step() if self.hp.optimizer == "rmsprop" else self.optimizer.step(), self.hp.lr
 
-        return loss.item(), nll.item(), recons.item(), kl.item(), h.item()
+        self.train_loss = loss.item()
+        self.train_nll = nll.item()
+        self.train_recons = recons.item()
+        self.train_kl = kl.item()
+        self.train_sparsity_reg = sparsity_reg.item()
+        self.train_connect_reg = connect_reg.item()
+        self.train_ortho_cons =  h_ortho.item()
+        self.train_acyclic_cons = h_acyclic.item()
 
     def valid_step(self):
+        # TODO: merge valid and train step? almost the same
         self.model.eval()
 
         # sample data
@@ -226,20 +265,34 @@ class TrainingLatent:
         x, y, z = self.data.sample(self.data.n_valid - self.data.tau, valid=True)
         nll, recons, kl = self.get_nll(x, y, z)
 
-        # get acyclicity constraint, regularisation, elbo
-        # h = self.get_acyclicity_violation()
-        reg = self.get_regularisation()
+        # compute regularisations (sparsity and connectivity) 
+        sparsity_reg = self.get_regularisation()
+        connect_reg = torch.tensor([0.])
+        if self.hp.latent:
+            connect_reg = self.connectivity_reg()
 
-        # compute loss
-        h = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
-        loss = nll + reg + 0.5 * self.mu * h ** 2  # TODO: have a different mu
-        # if self.instantaneous and not self.converged:
-        #     h = self.get_acyclicity_violation()
-        #     loss = loss + 0.5 * self.mu * h ** 2
-        # else:
-        #     h = torch.tensor([0])
+        # compute constraints (acyclicity and orthogonality)
+        h_acyclic = torch.tensor([0.])
+        h_ortho = torch.tensor([0.])
+        if self.instantaneous and not self.converged:
+            h_acyclic = self.get_acyclicity_violation()
+        if self.hp.reg_coeff_connect:
+            h_ortho = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
 
-        return loss.item(), nll.item(), recons.item(), kl.item(), h.item()
+        # compute total loss
+        loss = nll + sparsity_reg + connect_reg
+        loss = loss + self.ALM_ortho.gamma * h_ortho + \
+                0.5 * self.ALM_ortho.mu * h_ortho ** 2
+        loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
+
+        self.valid_loss = loss.item()
+        self.valid_nll = nll.item()
+        self.valid_recons = recons.item()
+        self.valid_kl = kl.item()
+        self.valid_sparsity_reg = sparsity_reg.item()
+        self.valid_connect_reg = connect_reg.item()
+        self.valid_ortho_cons =  h_ortho.item()
+        self.valid_acyclic_cons = h_acyclic.item()
 
     def get_acyclicity_violation(self) -> torch.Tensor:
         adj = self.model.get_adj()[-1].view(self.d, self.d)
@@ -262,8 +315,6 @@ class TrainingLatent:
 
     def get_regularisation(self) -> float:
         reg = self.sparsity_reg()
-        if self.hp.latent:
-            reg = reg + self.connectivity_reg()
         return reg
 
     def sparsity_reg(self):
@@ -325,3 +376,71 @@ class TrainingLatent:
             constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
 
         return constraint / self.ortho_normalization
+
+
+class ALM:
+    """
+    Augmented Lagrangian Method
+    To use the quadratic penalty method (e.g. for the acyclicity constraint),
+    just ignore 'self.mu'
+    """
+    def __init__(self,
+                 mu_init: float,
+                 mu_mult_factor: float,
+                 omega_gamma: float,
+                 omega_mu: float,
+                 h_threshold: float,
+                 min_iter_convergence: int):
+        self.gamma = 0
+        self.mu = mu_init
+        self.min_iter_convergence = min_iter_convergence
+        self.h_threshold = h_threshold
+        self.omega_mu = omega_mu
+        self.omega_gamma = omega_gamma
+        self.mu_mult_factor = mu_mult_factor
+        self.stop_crit_window = 100
+
+    def _compute_delta_gamma(self, iteration: int, val_loss: list):
+        # compute delta for gamma
+        if iteration >= 2 * self.stop_crit_window and \
+           iteration % (2 * self.stop_crit_window) == 0:
+            t0, t_half, t1 = val_loss[-3], val_loss[-2], val_loss[-1]
+
+            # if the validation loss went up and down, do not update lagrangian and penalty coefficients.
+            if not (min(t0, t1) < t_half < max(t0, t1)):
+                self.delta_gamma = -np.inf
+            else:
+                self.delta_gamma = (t1 - t0) / self.stop_crit_window
+        else:
+            self.delta_gamma = -np.inf  # do not update gamma nor mu
+
+    def update(self, iteration: int, h_list: list, val_loss: list):
+        """
+        Update the value of mu and gamma. Return True if it has converged.
+        Args:
+            iteration: number of training iterations completed
+            h_list: list of the values of the constraint
+            val_loss: list of validation loss
+        Returns:
+            has_converged: True if it has converged.
+        """
+        h = h_list[-1]
+        past_h = h_list[-2]
+
+        has_converged = False
+        # check if QPM has converged
+        if iteration > self.min_iter_convergence and h <= self.h_threshold:
+            has_converged = True
+        else:
+            # update delta_gamma
+            self._compute_delta_gamma(iteration, val_loss)
+
+            # if we have found a stationary point of the augmented loss
+            if abs(self.delta_gamma) < self.omega_gamma or self.delta_gamma > 0:
+                self.gamma = self.mu * h
+
+                # increase mu if the constraint has sufficiently decreased
+                if h > self.omega_mu * past_h:
+                    self.mu *= self.mu_mult_factor
+
+        return has_converged
