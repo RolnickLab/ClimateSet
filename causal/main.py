@@ -231,8 +231,10 @@ if __name__ == "__main__":
                         help="initial value of mu for the constraint")
     parser.add_argument("--ortho-mu-mult-factor", type=float,
                         help="Multiply mu by this amount when constraint not sufficiently decreasing")
-    parser.add_argument("--ortho-omega-gamma", type=float, help="Precision to declare convergence of subproblems")
-    parser.add_argument("--ortho-omega-mu", type=float, help="After subproblem solved, h should have reduced by this ratio")
+    parser.add_argument("--ortho-omega-gamma", type=float,
+                        help="Precision to declare convergence of subproblems")
+    parser.add_argument("--ortho-omega-mu", type=float,
+                        help="After subproblem solved, h should have reduced by this ratio")
     parser.add_argument("--ortho-h-threshold", type=float,
                         help="Can stop if h smaller than h-threshold")
     parser.add_argument("--ortho-min-iter-convergence", type=int,
@@ -243,8 +245,10 @@ if __name__ == "__main__":
                         help="initial value of mu for the constraint")
     parser.add_argument("--acyclic-mu-mult-factor", type=float,
                         help="Multiply mu by this amount when constraint not sufficiently decreasing")
-    parser.add_argument("--acyclic-omega-gamma", type=float, help="Precision to declare convergence of subproblems")
-    parser.add_argument("--acyclic-omega-mu", type=float, help="After subproblem solved, h should have reduced by this ratio")
+    parser.add_argument("--acyclic-omega-gamma", type=float,
+                        help="Precision to declare convergence of subproblems")
+    parser.add_argument("--acyclic-omega-mu", type=float,
+                        help="After subproblem solved, h should have reduced by this ratio")
     parser.add_argument("--acyclic-h-threshold", type=float,
                         help="Can stop if h smaller than h-threshold")
     parser.add_argument("--acyclic-min-iter-convergence", type=int,

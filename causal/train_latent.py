@@ -4,7 +4,7 @@ import numpy as np
 from geopy import distance
 from dag_optim import compute_dag_constraint
 from plot import plot
-from prox import monkey_patch_RMSprop
+# from prox import monkey_patch_RMSprop
 
 
 class TrainingLatent:
@@ -51,7 +51,6 @@ class TrainingLatent:
         self.valid_ortho_cons_list = []
         self.valid_acyclic_cons_list = []
 
-
         # TODO just equal size of G
         if self.instantaneous:
             raise NotImplementedError("Soon")
@@ -63,7 +62,6 @@ class TrainingLatent:
         if not self.no_gt:
             self.adj_w_tt = np.zeros((self.hp.max_iteration, self.d, self.d_x, self.k))
 
-        # TODO: just for tests, remove
         # self.model.mask.fix(self.gt_dag)
 
         # optimizer
@@ -86,13 +84,15 @@ class TrainingLatent:
             if self.latent:
                 eps = 1e-8
                 almost_orthogonal = torch.zeros((model.d_x, model.k))
-                partition = np.array([model.d_x // model.k + (1 if x < model.d_x % model.k else 0) for x in range(model.k)])
+                partition = np.array([model.d_x // model.k + (1 if x < model.d_x % model.k else 0)
+                                      for x in range(model.k)])
                 idx = np.repeat(np.arange(model.k), partition)
                 almost_orthogonal[np.arange(model.d_x), idx] = 1
                 almost_orthogonal = almost_orthogonal / np.linalg.norm(almost_orthogonal, axis=0)
                 almost_orthogonal = almost_orthogonal + eps
 
-                self.ortho_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal - torch.eye(model.k), p=2)
+                self.ortho_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal
+                                                               - torch.eye(model.k), p=2)
 
     def log_losses(self):
         # train
@@ -171,8 +171,8 @@ class TrainingLatent:
                 # train with penalty method
                 if self.iteration % self.qpm_freq == 0:
                     self.ALM_ortho.update(self.iteration,
-                                         self.valid_ortho_cons_list,
-                                         self.valid_loss_list)
+                                          self.valid_ortho_cons_list,
+                                          self.valid_loss_list)
                     self.QPM_acyclic.update(self.iteration,
                                             self.valid_acyclic_cons_list,
                                             self.valid_loss_list)
@@ -200,7 +200,6 @@ class TrainingLatent:
         plot(self)
         self.print_results()
 
-
     def has_patience(self, patience_init, valid_loss):
         if self.patience > 0:
             if valid_loss < self.best_valid_loss:
@@ -220,7 +219,7 @@ class TrainingLatent:
         x, y, z = self.data.sample(self.batch_size, valid=False)
         nll, recons, kl = self.get_nll(x, y, z)
 
-        # compute regularisations (sparsity and connectivity) 
+        # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
         connect_reg = torch.tensor([0.])
         if self.hp.latent:
@@ -237,7 +236,7 @@ class TrainingLatent:
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
         loss = loss + self.ALM_ortho.gamma * h_ortho + \
-                0.5 * self.ALM_ortho.mu * h_ortho ** 2
+            0.5 * self.ALM_ortho.mu * h_ortho ** 2
         loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
         # backprop
@@ -251,7 +250,7 @@ class TrainingLatent:
         self.train_kl = kl.item()
         self.train_sparsity_reg = sparsity_reg.item()
         self.train_connect_reg = connect_reg.item()
-        self.train_ortho_cons =  h_ortho.item()
+        self.train_ortho_cons = h_ortho.item()
         self.train_acyclic_cons = h_acyclic.item()
 
     def valid_step(self):
@@ -265,7 +264,7 @@ class TrainingLatent:
         x, y, z = self.data.sample(self.data.n_valid - self.data.tau, valid=True)
         nll, recons, kl = self.get_nll(x, y, z)
 
-        # compute regularisations (sparsity and connectivity) 
+        # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
         connect_reg = torch.tensor([0.])
         if self.hp.latent:
@@ -282,7 +281,7 @@ class TrainingLatent:
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
         loss = loss + self.ALM_ortho.gamma * h_ortho + \
-                0.5 * self.ALM_ortho.mu * h_ortho ** 2
+            0.5 * self.ALM_ortho.mu * h_ortho ** 2
         loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
         self.valid_loss = loss.item()
@@ -291,7 +290,7 @@ class TrainingLatent:
         self.valid_kl = kl.item()
         self.valid_sparsity_reg = sparsity_reg.item()
         self.valid_connect_reg = connect_reg.item()
-        self.valid_ortho_cons =  h_ortho.item()
+        self.valid_ortho_cons = h_ortho.item()
         self.valid_acyclic_cons = h_acyclic.item()
 
     def get_acyclicity_violation(self) -> torch.Tensor:

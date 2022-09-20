@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -40,7 +41,7 @@ def plot(learner):
                   {"name": "tr ortho", "data": learner.train_ortho_list, "s": "-"},
                   {"name": "tr acyclic", "data": learner.train_ortho_list, "s": "-"},
                   {"name": "val loss", "data": learner.train_ortho_list, "s": "-"}
-                 ]
+                  ]
         plot_learning_curves2(losses=losses,
                               iteration=learner.iteration,
                               path=learner.hp.exp_path)
