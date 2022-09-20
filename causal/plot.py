@@ -36,11 +36,11 @@ def plot(learner):
         losses = [{"name": "tr loss", "data": learner.train_loss_list, "s": "-"},
                   {"name": "tr recons", "data": learner.train_recons_list, "s": "-"},
                   {"name": "tr kl", "data": learner.train_kl_list, "s": "-"},
-                  {"name": "tr sparsity", "data": learner.train_sparsity_list, "s": "-"},
-                  {"name": "tr connect", "data": learner.train_connect_list, "s": "-"},
-                  {"name": "tr ortho", "data": learner.train_ortho_list, "s": "-"},
-                  {"name": "tr acyclic", "data": learner.train_ortho_list, "s": "-"},
-                  {"name": "val loss", "data": learner.train_ortho_list, "s": "-"}
+                  {"name": "tr sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
+                  {"name": "tr connect", "data": learner.train_connect_reg_list, "s": "-"},
+                  {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": "-"},
+                  {"name": "tr acyclic", "data": learner.train_acyclic_cons_list, "s": "-"},
+                  {"name": "val loss", "data": learner.valid_loss_list, "s": "-"}
                   ]
         plot_learning_curves2(losses=losses,
                               iteration=learner.iteration,

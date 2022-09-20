@@ -254,7 +254,6 @@ if __name__ == "__main__":
     parser.add_argument("--acyclic-min-iter-convergence", type=int,
                         help="Minimal number of iteration before checking if has converged")
 
-
     parser.add_argument("--mu-acyclic-init", type=float,
                         help="initial value of mu for the acyclicity constraint")
     parser.add_argument("--h-acyclic-threshold", type=float,

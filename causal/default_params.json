@@ -37,7 +37,7 @@
     "max_iteration": 200000,
     "patience": 20,
     "patience_post_thresh": 10,
-    "plot_freq": 1000,
+    "plot_freq": 500,
     "valid_freq": 100,
     "print_freq": 100,
     "gpu": false,
