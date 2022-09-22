@@ -12,6 +12,7 @@ class LatentTSDCD(nn.Module):
                  num_hidden: int,
                  num_input: int,
                  num_output: int,
+                 coeff_kl: float,
                  distr_z0: str,
                  distr_encoder: str,
                  distr_transition: str,
@@ -34,6 +35,7 @@ class LatentTSDCD(nn.Module):
             num_hidden: number of hidden units of each MLP
             num_input: number of inputs of each MLP
             num_output: number of inputs of each MLP
+            coeff_kl: coefficient of the KL term
 
             distr_z0: distribution of the first z (gaussian)
             distr_encoder: distribution parametrized by the encoder (gaussian)
@@ -61,6 +63,7 @@ class LatentTSDCD(nn.Module):
         self.num_hidden = num_hidden
         self.num_input = num_input
         self.num_output = num_output
+        self.coeff_kl = coeff_kl
 
         self.d = d
         self.d_x = d_x
@@ -123,8 +126,6 @@ class LatentTSDCD(nn.Module):
         encode X and Y into latent variables Z
         """
         b = x.size(0)
-
-        # TODO: be more efficient without the loop
         z = torch.zeros(b, self.tau + 1, self.d, self.k)
         mu = torch.zeros(b, self.d, self.k)
         std = torch.zeros(b, self.d, self.k)
@@ -218,7 +219,7 @@ class LatentTSDCD(nn.Module):
         kl = distr.kl_divergence(p, q).mean()
         assert kl >= 0, f"KL={kl} has to be >= 0"
         recons = torch.mean(px_distr.log_prob(y))
-        elbo = recons - 0.0001 * kl
+        elbo = recons - self.coeff_kl * kl
         if is_timing:
             print(f"kl time: {time.time() - st}")
 
@@ -266,10 +267,10 @@ class EncoderDecoder(nn.Module):
 
         unif = (1 - 0.1) * torch.rand(size=(d, d_x, k)) + 0.1
         self.log_w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.k)))
-        # self.logvar_encoder = nn.Parameter(torch.rand(d) * 0.1)
-        # self.logvar_decoder = nn.Parameter(torch.rand(d) * 0.1)
-        self.logvar_decoder = torch.log(torch.ones(d) * 0.001)  # TODO: test
-        self.logvar_encoder = torch.log(torch.ones(d) * 0.001)  # TODO: test
+        # self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.1)
+        # self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.1)
+        self.logvar_decoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
+        self.logvar_encoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
 
     def forward(self, x, i, encoder: bool):
         if self.debug_gt_w:
@@ -388,8 +389,6 @@ class TransitionModel(nn.Module):
         # param_z = torch.zeros(z_past.size(0), 2)
         z = z.view(mask.size())
         masked_z = (mask * z).view(z.size(0), -1)
-        # TODO: more efficient with einsum ?
-        # masked_z = z_past.view(z_past.size(0), -1)
 
         param_z = self.nn[i * self.k + k](masked_z)
         # param_z = self.nn(masked_z)

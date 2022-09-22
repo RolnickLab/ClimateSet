@@ -90,6 +90,7 @@ def main(hp):
                             num_hidden=hp.num_hidden,
                             num_input=num_input,
                             num_output=2,
+                            coeff_kl=hp.coeff_kl,
                             d=d,
                             distr_z0="gaussian",
                             distr_encoder="gaussian",
@@ -201,6 +202,7 @@ if __name__ == "__main__":
 
     # specific to model with latent variables
     parser.add_argument("--latent", action="store_true", help="Use the model that assumes latent variables")
+    parser.add_argument("--coeff-kl", type=float, help="coefficient that is multiplied to the KL term ")
     parser.add_argument("--k", type=int, help="if latent, k is the number of cluster z")
     parser.add_argument("--d-x", type=int, help="if latent, d_x is the number of gridcells")
 

@@ -199,7 +199,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert NetCDF files to numpy or hdf5. Can also plot visualizations.")
-    parser.add_argument("--data-path", type=str, default="data/sea_level_pressure",
+    parser.add_argument("--data-path", type=str, default="data/sea_level_pressure_all",
                         help="Path to the directory containing the NetCDF files")
     parser.add_argument("--output-path", type=str, default="sea_level_results",
                         help="Path where to save the results.")
