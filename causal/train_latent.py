@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import os
 
 from geopy import distance
 from dag_optim import compute_dag_constraint
@@ -82,17 +83,21 @@ class TrainingLatent:
             # TODO: to change, use Frobenius norm!
             # orthogonal up to a small variation epsilon
             if self.latent:
-                eps = 1e-8
-                almost_orthogonal = torch.zeros((model.d_x, model.k))
-                partition = np.array([model.d_x // model.k + (1 if x < model.d_x % model.k else 0)
-                                      for x in range(model.k)])
-                idx = np.repeat(np.arange(model.k), partition)
-                almost_orthogonal[np.arange(model.d_x), idx] = 1
-                almost_orthogonal = almost_orthogonal / np.linalg.norm(almost_orthogonal, axis=0)
-                almost_orthogonal = almost_orthogonal + eps
+                # eps = 1e-8
+                # almost_orthogonal = torch.zeros((model.d_x, model.k))
+                # partition = np.array([model.d_x // model.k + (1 if x < model.d_x % model.k else 0)
+                #                       for x in range(model.k)])
+                # idx = np.repeat(np.arange(model.k), partition)
+                # almost_orthogonal[np.arange(model.d_x), idx] = 1
+                # almost_orthogonal = almost_orthogonal / np.linalg.norm(almost_orthogonal, axis=0)
+                # almost_orthogonal = almost_orthogonal + eps
 
-                self.ortho_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal
-                                                               - torch.eye(model.k), p=2)
+                # self.ortho_normalization = self.d * torch.norm(almost_orthogonal.T @ almost_orthogonal
+                #                                                - torch.eye(model.k), p=2)
+
+                # expected frobenius norm of A^TA where A_ij \sim U([0, 1])
+                self.ortho_normalization = 1./16 * self.d_x ** 2 * self.k ** 2
+                + 7./144 * self.d_x * self.k
 
     def log_losses(self):
         # train
@@ -199,6 +204,10 @@ class TrainingLatent:
         # final plotting and printing
         plot(self)
         self.print_results()
+
+        # save matrix W
+        w = self.model.encoder_decoder.get_w().cpu().numpy()
+        np.save("w_tensor", w)
 
     def has_patience(self, patience_init, valid_loss):
         if self.patience > 0:
