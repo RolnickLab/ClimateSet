@@ -25,6 +25,20 @@ def plot(learner):
     # plot learning curves
     # (for latent models, there is a finer decomposition of the loss)
     if learner.latent:
+
+        # ============================
+        # TODO: temporary, remove
+        # save matrix W
+        print("save W")
+        w = learner.model.encoder_decoder.get_w().detach().numpy()
+        np.save(os.path.join(learner.hp.exp_path, f"w_tensor"), w)
+
+        # plot distribution of weights
+        plt.hist(w.flatten(), bins=50)
+        plt.savefig(os.path.join(learner.hp.exp_path, f"w_distr_{learner.iteration}.png"))
+
+        # ============================
+
         plot_learning_curves(train_loss=learner.train_loss_list,
                              train_recons=learner.train_recons_list,
                              train_kl=learner.train_kl_list,
@@ -120,21 +134,26 @@ def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
     # d_x = w_adj.shape[1]
     d_z = w_adj.shape[2]
 
+    # TODO: make sure it works for multiple features
+
     # find the argmax per row
-    idx = np.argmax(w_adj, axis=2)
+    idx = np.argmax(w_adj, axis=2)[0]
+    # norms = np.linalg.norm(w_adj, axis=2)[0]
+    norms = np.max(w_adj, axis=2)[0]
 
     # plot the regions
     colors = plt.cm.rainbow(np.linspace(0, 1, d_z))
 
-    # TODO: add code for several features
-    # for i in range(d):
     for k, color in zip(range(d_z), colors):
-        region = coordinates[idx[0] == k]
+        alpha = norms[idx == k] / np.max(norms)
+        threshold = np.percentile(alpha, 30)
+        alpha[alpha < threshold] = 0
+        print(alpha)
+        region = coordinates[idx == k]
         c = np.repeat(np.array([color]), region.shape[0], axis=0)
-        map.scatter(x=region[:, 1], y=region[:, 0], c=c, s=4, latlon=True)
+        map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
 
-    plt.title("Spatial aggregation")
-    # plt.legend()
+    plt.title("Learned regions")
     plt.savefig(os.path.join(path, f"spatial_aggregation_{iteration}.png"))
     plt.close()
 
