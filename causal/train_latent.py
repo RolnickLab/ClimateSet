@@ -129,20 +129,27 @@ class TrainingLatent:
     def print_results(self):
         print("============================================================")
         print(f"Iteration #{self.iteration}")
-        # print(f"train_loss: {self.train_loss:.4f}")
-        # print(f"train_elbo: {self.train_elbo:.4f}")
+        print(f"Converged: {self.converged}")
+
         print(f"train_nll: {self.train_nll:.4f}")
         print(f"train_recons: {self.train_recons:.4f}")
         print(f"train_kl: {self.train_kl:.4f}")
+
+        print(f"train_sparsity_reg: {self.train_sparsity_reg:.1e}")
+        print(f"train_connect_reg: {self.train_connect_reg:.1e}")
+
+        print(f"ortho cons: {self.train_ortho_cons:.1e}")
+        print(f"ortho mu: {self.ALM_ortho.mu}")
+
+        print(f"")
+        if self.instantaneous:
+            print(f"acyclic cons: {self.train_acyclic_cons:.4f}")
+            print(f"acyclic gamma: {self.QPM_ortho.mu}")
         print("-------------------------------")
 
-        # print(f"valid_loss: {self.valid_loss:.4f}")
-        # print(f"valid_elbo: {self.valid_elbo:.4f}")
         print(f"valid_nll: {self.valid_nll:.4f}")
         print(f"valid_recons: {self.valid_recons:.4f}")
         print(f"valid_kl: {self.valid_kl:.4f}")
-        # print(f"mu_ortho: {self.mu_ortho}")
-        # print(f"mu_acyclic: {self.mu_acyclic}")
         print(f"patience: {self.patience}")
 
     def train_with_QPM(self):
@@ -153,12 +160,13 @@ class TrainingLatent:
                              self.hp.ortho_omega_mu,
                              self.hp.ortho_h_threshold,
                              self.hp.ortho_min_iter_convergence)
-        self.QPM_acyclic = ALM(self.hp.acyclic_mu_init,
-                               self.hp.acyclic_mu_mult_factor,
-                               self.hp.acyclic_omega_gamma,
-                               self.hp.acyclic_omega_mu,
-                               self.hp.acyclic_h_threshold,
-                               self.hp.acyclic_min_iter_convergence)
+        if self.instantaneous:
+            self.QPM_acyclic = ALM(self.hp.acyclic_mu_init,
+                                   self.hp.acyclic_mu_mult_factor,
+                                   self.hp.acyclic_omega_gamma,
+                                   self.hp.acyclic_omega_mu,
+                                   self.hp.acyclic_h_threshold,
+                                   self.hp.acyclic_min_iter_convergence)
 
         while self.iteration < self.hp.max_iteration and not self.ended:
 
@@ -178,9 +186,10 @@ class TrainingLatent:
                     self.ALM_ortho.update(self.iteration,
                                           self.valid_ortho_cons_list,
                                           self.valid_loss_list)
-                    self.QPM_acyclic.update(self.iteration,
-                                            self.valid_acyclic_cons_list,
-                                            self.valid_loss_list)
+                    if self.instantaneous:
+                        self.QPM_acyclic.update(self.iteration,
+                                                self.valid_acyclic_cons_list,
+                                                self.valid_loss_list)
             else:
                 # continue training without penalty method
                 if not self.thresholded and self.iteration % self.patience_freq == 0:
@@ -246,7 +255,8 @@ class TrainingLatent:
         loss = nll + sparsity_reg + connect_reg
         loss = loss + self.ALM_ortho.gamma * h_ortho + \
             0.5 * self.ALM_ortho.mu * h_ortho ** 2
-        loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
+        if self.instantaneous:
+            loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
         # backprop
         self.optimizer.zero_grad()
@@ -291,7 +301,8 @@ class TrainingLatent:
         loss = nll + sparsity_reg + connect_reg
         loss = loss + self.ALM_ortho.gamma * h_ortho + \
             0.5 * self.ALM_ortho.mu * h_ortho ** 2
-        loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
+        if self.instantaneous:
+            loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
         self.valid_loss = loss.item()
         self.valid_nll = nll.item()
@@ -345,7 +356,7 @@ class TrainingLatent:
                 c = c + torch.sum(torch.outer(w[i, :, k], w[i, :, k]) * d)
         return self.hp.reg_coeff_connect * c
 
-    def connectivity_reg(self, ratio: float = 0.0001):
+    def connectivity_reg(self, ratio: float = 0.0005):
         """
         Calculate a connectivity regularisation only on a subsample of the
         complete data.
@@ -355,12 +366,16 @@ class TrainingLatent:
         n = int(self.d_x * ratio)
         points = np.random.choice(np.arange(self.d_x), n)
 
+        if n <= 1:
+            raise ValueError("You should use a higher value for the ratio of considered points for the connectivity constraint")
+
         for d in range(self.d):
             for k in range(self.k):
                 for i, c1 in enumerate(self.data.coordinates[points]):
                     for j, c2 in enumerate(self.data.coordinates[points]):
-                        dist = distance.geodesic(c1, c2).km
-                        c = c + w[d, i, k] * w[d, j, k] * dist
+                        if i > j:
+                            dist = distance.geodesic(c1, c2).km
+                            c = c + w[d, i, k] * w[d, j, k] * dist
         return self.hp.reg_coeff_connect * c
 
     def threshold(self):

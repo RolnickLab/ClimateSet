@@ -29,7 +29,6 @@ def plot(learner):
         # ============================
         # TODO: temporary, remove
         # save matrix W
-        print("save W")
         w = learner.model.encoder_decoder.get_w().detach().numpy()
         np.save(os.path.join(learner.hp.exp_path, f"w_tensor"), w)
 
@@ -148,7 +147,6 @@ def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
         alpha = norms[idx == k] / np.max(norms)
         threshold = np.percentile(alpha, 30)
         alpha[alpha < threshold] = 0
-        print(alpha)
         region = coordinates[idx == k]
         c = np.repeat(np.array([color]), region.shape[0], axis=0)
         map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)

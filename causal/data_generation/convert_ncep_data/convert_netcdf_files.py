@@ -156,6 +156,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         if verbose:
             print(df.shape)
             print(f"Converting to numpy and saving to {data_path}.")
+            print(df.values.mean())
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
         # expand to have axis for n and d, respectively the number of timeseries and of features
@@ -164,6 +165,10 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         np_array = np.expand_dims(np_array, axis=0)
         np_array = np.expand_dims(np_array, axis=2)
         n += np_array.shape[1]
+
+        # plot data
+        timeserie_path = os.path.join(args.output_path, f"timeserie_{i}.png")
+        plot_timeserie(df, coordinates, frequency, features_name[0], timeserie_path)
 
         if i == 0:
             first_df = df
