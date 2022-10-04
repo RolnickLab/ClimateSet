@@ -1,6 +1,7 @@
 from utils.constants import RES_TO_CHUNKSIZE
 from pyesgf.search import SearchConnection
-#from pyesgf.logon import LogonManager
+
+# from pyesgf.logon import LogonManager
 
 from utils.constants import (
     MODEL_SOURCES,
@@ -11,7 +12,8 @@ from utils.constants import (
 )
 from utils.helper_funcs import get_keys_from_value, get_MIP
 import netCDF4
-#import h5py
+
+# import h5py
 import pandas as pd
 import xarray as xr
 import os
@@ -25,11 +27,12 @@ class Downloader:
     """
     Class handling the downloading of the data. It communicates with the esgf nodes to search and download the specified data.
     """
-    def __init__(
 
+    def __init__(
         self,
         model: str = "NorESM2-LM",  # defaul as in ClimateBench
-        experiments: [str] = ["historical",
+        experiments: [str] = [
+            "historical",
             "ssp370",
             "hist-GHG",
             "piControl",
@@ -39,7 +42,7 @@ class Downloader:
         vars: [str] = ["tas", "pr", "SO2", "BC"],
         data_dir: str = "data/data/",
     ):
-        """ Init method for the Downloader
+        """Init method for the Downloader
         params:
             model (str): Id of the model from which output should be downloaded. A list of all supported model ids can be find in utils.constants.MODEL_SOURCES. Model data only.
             experiments ([str]):  List of simulations from which data should be downloaded. Model data only.
@@ -47,8 +50,8 @@ class Downloader:
             data_dir: (str): Relative or absolute path to the directory where data should be stored. Will be created if not yet existent.
         """
 
-        self.model=model
-        self.experiments = experiments # TODO: have a list of supported experiments before trying to look for them on the node to reduce computation cost
+        self.model = model
+        self.experiments = experiments  # TODO: have a list of supported experiments before trying to look for them on the node to reduce computation cost
         # assign vars to either target or raw source
         self.raw_vars = []
         self.model_vars = []
@@ -84,10 +87,10 @@ class Downloader:
         print("model node link:", self.model_node_link)
 
         # log on Manager
-        #self.lm = LogonManager()
-        #self.lm.logoff()
-        #self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
-        #print("Log In to Node:", self.lm.is_logged_on())
+        # self.lm = LogonManager()
+        # self.lm.logoff()
+        # self.lm.logon_with_openid(openid=OPENID, password=PASSWORD, bootstrap=True)
+        # print("Log In to Node:", self.lm.is_logged_on())
 
         self.data_dir_parent = data_dir
         self.overwrite = False
@@ -100,12 +103,12 @@ class Downloader:
         self,
         variable: str,
         experiment: str,
-        project: str="CMIP6",
-        default_frequency: str="mon",
-        default_version: str="latest",
-        default_grid_label: str="gn",
+        project: str = "CMIP6",
+        default_frequency: str = "mon",
+        default_version: str = "latest",
+        default_grid_label: str = "gn",
     ):
-        """ Function handling the download of a single variable-experiment pair that is associated wtih a model's output (CMIP data).
+        """Function handling the download of a single variable-experiment pair that is associated wtih a model's output (CMIP data).
         params:
             variable (str): variable Id
             experiment (str): experiment Id
@@ -118,22 +121,18 @@ class Downloader:
         conn = SearchConnection(self.model_node_link, distrib=False)
 
         facets = "project,experiment_id,source_id,variable,frequency,variant_label,variable, nominal_resolution, version, grid_label, experiment_id"
-        ctx = conn.new_context(
-            project=project,
-            experiment=experiment,
-            variable=variable,
-            source_id=self.model,
-            facets=facets,
-        )
+
+        """"
 
         # extracting available facets
-        """
+        ctx = conn.new_context(project=project, source_id=self.model)
         available_facets=ctx.facet_counts
         for k in available_facets.keys():
             print(f"\n facet {k}")
             vs=[str(v) for v in available_facets[k].keys()]
             print(vs)
         raise RuntimeError
+        
         """
 
         ctx = conn.new_context(
@@ -185,17 +184,12 @@ class Downloader:
 
         print("Available variants:", variants, "\n")
 
-
         # default: get data by all variants
 
-        for i, ensemble_member in enumerate(
-            variants
-        ):
-
+        for i, ensemble_member in enumerate(variants):
 
             print(f"Ensembles member: {ensemble_member}")
             ctx = ctx_origin.constrain(variant_label=ensemble_member)
-
 
             # pick a version
             versions = list(ctx.facet_counts["version"].keys())
@@ -235,15 +229,18 @@ class Downloader:
                 for f in file_names:
                     # try to opend datset
                     try:
-                        ds = xr.open_dataset(f, chunks={"time": chunksize}, engine='netcdf4')
+                        ds = xr.open_dataset(
+                            f, chunks={"time": chunksize}, engine="netcdf4"
+                        )
 
                     except OSError:
-                        print("Having problems downloading th edateset. The server might be down. Skipping")
+                        print(
+                            "Having problems downloading th edateset. The server might be down. Skipping"
+                        )
                         continue
 
                     years = np.unique(ds.time.dt.year.to_numpy())
                     print(f"Data covering years: {years[0]} to {years[-1]}")
-
 
                     for y in years:
                         y = str(y)
@@ -277,12 +274,12 @@ class Downloader:
         self,
         variable,
         project="input4mips",
-        institution_id='PNNL-JGCRI', # make sure that we have the correct data
+        institution_id="PNNL-JGCRI",  # make sure that we have the correct data
         default_frequency="mon",
         default_version="latest",
         default_grid_label="gn",
     ):
-        """ Function handling the download of a all input4mips data associated with a single variable. A
+        """Function handling the download of a all input4mips data associated with a single variable. A
         params:
             variable (str): variable Id
             project (str): umbrella project, here "input4mips"
@@ -297,8 +294,12 @@ class Downloader:
         facets = "project,frequency,variable,nominal_resolution,version,target_mip,grid_label"
 
         # basic constraining (projec, var, institution)
-        ctx = conn.new_context(project=project, variable=variable, institution_id=institution_id, facets=facets)
-
+        ctx = conn.new_context(
+            project=project,
+            variable=variable,
+            institution_id=institution_id,
+            facets=facets,
+        )
 
         # dealing with grid labels
         grid_labels = list(ctx.facet_counts["grid_label"].keys())
@@ -401,13 +402,17 @@ class Downloader:
                         print("Downloading data for experiment:", experiment)
                     else:
 
-                        print(f"Experiment {experiment} not in wanted experiments ({self.experiments}). Skipping")
+                        print(
+                            f"Experiment {experiment} not in wanted experiments ({self.experiments}). Skipping"
+                        )
                         continue
 
                     try:
                         ds = xr.open_dataset(f, chunks={"time": chunksize})
                     except OSError:
-                        print("Having problems downloading th edateset. The server might be dwon. Skipping")
+                        print(
+                            "Having problems downloading th edateset. The server might be dwon. Skipping"
+                        )
                         continue
 
                     years = np.unique(ds.time.dt.year.to_numpy())
@@ -444,7 +449,7 @@ class Downloader:
 
     def extract_target_mip_exp_name(self, filename: str, target_mip: str):
 
-        """ Helper function extracting the target experiment name from a given file name and the target's umbrella MIP.
+        """Helper function extracting the target experiment name from a given file name and the target's umbrella MIP.
         supported target mips: "CMIP" "ScenarioMIP", "DAMIP", "AerChemMIP"
 
         params:
@@ -474,11 +479,13 @@ class Downloader:
 
         return experiment
 
-    def download_from_model(self,
-            project: str="CMIP6",
-            default_frequency: str="mon",
-            default_version: str="latest",
-            default_grid_label: str="gn", ):
+    def download_from_model(
+        self,
+        project: str = "CMIP6",
+        default_frequency: str = "mon",
+        default_version: str = "latest",
+        default_grid_label: str = "gn",
+    ):
         """
         Function handling the download of all variables that are associated wtih a model's output
         Searches for all filles associated with the respected variables and experiment that the downloader wsa initialized with. #TODO: allow resetting of specifications
@@ -505,7 +512,6 @@ class Downloader:
 
         """
 
-
         # iterate over respective vars
         for v in self.model_vars:
             print(f"Downloading data for variable: {v} \n \n ")
@@ -520,11 +526,14 @@ class Downloader:
                         f"Chosen experiment {e} not supported. All supported experiments: {SUPPORTED_EXPERIMENTS}. \n Skipping. \n"
                     )
 
-    def download_raw_input(self, project="input4mips",
-        institution_id='PNNL-JGCRI', # make sure that we have the correct data
+    def download_raw_input(
+        self,
+        project="input4mips",
+        institution_id="PNNL-JGCRI",  # make sure that we have the correct data
         default_frequency="mon",
         default_version="latest",
-        default_grid_label="gn", ):
+        default_grid_label="gn",
+    ):
 
         """
         Function handling the download of all variables that are associated wtih a model's input (input4mips).

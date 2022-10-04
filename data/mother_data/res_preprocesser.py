@@ -4,9 +4,9 @@ from typing import List, Tuple, Dict
 
 # TODO MOVE THIS to utils/constants or sth like that
 # indicating which aggregation and interpolation methods this class can handle
-AGGREGATION_METHODS = ["mean", "median", "minimum", "max", "total"] # and more ...
-INTERPOLATION_METHODS = ["repeat"] # only one for the beginning
-RES_HIERARCHY = ["TODO"] # hierarchy of resolutions
+AGGREGATION_METHODS = ["mean", "median", "minimum", "max", "total"]  # and more ...
+INTERPOLATION_METHODS = ["repeat"]  # only one for the beginning
+RES_HIERARCHY = ["TODO"]  # hierarchy of resolutions
 
 # class
 # params:
@@ -29,12 +29,18 @@ RES_HIERARCHY = ["TODO"] # hierarchy of resolutions
 # - scale for all models / ensembles / experiments
 # - scale for all dimensions, not only temporal resolution
 class ResProcesser:
-    def __init__(self, resolutions: Tuple[int, int, int, int],
-        aggregations: Dict[str, str], interpolations: Dict[str, str],
-        source: Path, store: Path,
-        models: List[str] = [], ensemble: List[str] = [],
-        experiments: List[str] = []):
-        """ Creates the desired resolutions of the data (same resolution for all).
+    def __init__(
+        self,
+        resolutions: Tuple[int, int, int, int],
+        aggregations: Dict[str, str],
+        interpolations: Dict[str, str],
+        source: Path,
+        store: Path,
+        models: List[str] = [],
+        ensemble: List[str] = [],
+        experiments: List[str] = [],
+    ):
+        """Creates the desired resolutions of the data (same resolution for all).
         Parameters:
             resolutions (tuple): temporal, vertical, longitudinal and latitudinal desired resolution
             aggregations (dict<str, str>): mapping which aggregation should be used for which variable
@@ -57,7 +63,7 @@ class ResProcesser:
 
     # TODO scale this: for all models/assembles/scenarios/ (adapt efficiently)
     def create_resolutions(self, vars: List[str], res: str):
-        """ Method that looks at a set of variables and creates the same resolutions
+        """Method that looks at a set of variables and creates the same resolutions
         for all of them.
         Assuming right now: All data has the same year-duration!
         Parameters:
@@ -70,18 +76,18 @@ class ResProcesser:
         # if all vars exist already: copy everything?
 
         # go through the vars-existance list
-            # if exists:
-                # copy resolution to LOAD_DATA
-            # else:
-                # pair with the right aggregation/interpolation method
-                # create path where the new data will live: new_res_path (self.store + new_res + var)
-                # apply agg/int method on variable & store results:
-                # self.__apply_res_func__(func_str, var_path, new_res_path)
+        # if exists:
+        # copy resolution to LOAD_DATA
+        # else:
+        # pair with the right aggregation/interpolation method
+        # create path where the new data will live: new_res_path (self.store + new_res + var)
+        # apply agg/int method on variable & store results:
+        # self.__apply_res_func__(func_str, var_path, new_res_path)
 
         raise NotImplementedError
 
     def __check_existing_res__(self, vars: List[str], res: str) -> List[int]:
-        """ Checks if the resolution already exists for the variables.
+        """Checks if the resolution already exists for the variables.
         Parameters:
             vars (list<str>]): Variables that should get the same resolution
             res (str): Which resolution all the vars should have
@@ -95,7 +101,7 @@ class ResProcesser:
         raise NotImplementedError
 
     def __apply_res_func__(self, func_str: str, var_path: Path, store_path: Path):
-        """ Applies the right aggregation and interpolation function on a given
+        """Applies the right aggregation and interpolation function on a given
         variable (location). Stores it in new dir (self.store).
         Parameters:
             func_str (str): string of the aggregation/interpolation function
