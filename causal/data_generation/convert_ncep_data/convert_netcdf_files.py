@@ -10,7 +10,7 @@ from pathlib import Path
 from plot_map import plot_timeserie, plot_average, plot_gif
 
 
-def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str = "day"):
+def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str):
     """
     Convert a NetCDF file to a pandas dataframe using xarray.
     Args:
@@ -60,9 +60,49 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str 
     return df_pivoted, coordinates, ds.attrs, features_name
 
 
-def standardize(df: pd.DataFrame) -> pd.DataFrame:
+def standardize(df: pd.DataFrame, mean = None, std = None) -> pd.DataFrame:
     """ Remove the mean and divide by the standard deviation """
-    return (df - df.mean())  # / df.std()
+    if mean is None and std is None:
+        mean = df.mean()
+        std = df.std()
+
+    df_out = (df - mean) / std
+    return df_out
+
+class SeasonRemover:
+    """ Remove the seasonal cycle. Basically remove the mean for each day/week of
+    the year. Update keeps track of the mean and std in an online fashion """
+    def __init__(self, t_per_year, d_x):
+        self.count = 0
+        self.mean = np.zeros((t_per_year, d_x))
+        self.std = np.zeros((t_per_year, d_x))
+        self.m2 = np.zeros((t_per_year, d_x))  # this is \sum(x_i - mean) ** 2
+
+    def update(self, data):
+        self.count += 1
+        delta = data - self.mean
+        self.mean += delta / self.count
+        delta2 = data - self.mean
+        self.m2 += delta * delta2
+
+    def remove_season(df: pd.DataFrame) -> pd.DataFrame:
+        std = self.m2 / self.count
+        return (df - self.mean) / std
+
+# def update(self, data):
+#     n_a = self.count
+#     n_b = data.shape[0]
+#
+#     __import__('ipdb').set_trace()
+#     self.mean = (n_a * self.mean + n_b * data.mean(axis=0)) / (n_a + n_b)
+#     self.count += n_b
+#
+#     m2_a = self.m2
+#     m2_b = np.mean((data - data.mean(axis=0)) ** 2)
+#     self.m2 = m2_a + m2_b + delta ** 2 * n_a * n_b / (n_a + n_b)
+
+def detrending():
+    pass
 
 
 def find_all_nc_files(directory: str) -> list:
@@ -127,7 +167,9 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     return df, df.shape[0], coordinates, features_name
 
 
-def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, frequency: str, verbose: bool):
+def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
+              frequency: str, verbose: bool, remove_season: bool = True,
+              lat_reweight: bool = True):
     """
     Convert netCDF4 files from the NCEP-NCAR Reanalysis project to a hdf5 file.
     Only open one files at a time and append the data to the hdf5 file
@@ -137,6 +179,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         samples, an array of the coordinates and the features_name of the first file
     """
     df = None
+    sections = []
     n = 0
 
     # find all the netCDF4 in the directory `netcdf_directory`
@@ -144,12 +187,16 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
     if verbose:
         print(f"NetCDF Files found: {filenames}")
 
+    # arr_total = None
+
     # convert all netCDF4 files in a directory to pandas dataframe and append
     # it to the hdf5 file
     for i, filename in enumerate(filenames):
         if verbose:
             print(f"opening file: {filename}")
-        df, coordinates, metadata, features_name = convert_netcdf_to_pandas(filename, features_name, frequency)
+        df, coordinates, metadata, features_name = convert_netcdf_to_pandas(filename,
+                                                                            features_name,
+                                                                            frequency)
 
         # convert the dataframe to numpy, create the path if necessary and save it
         data_path = os.path.join(output_path, "data.h5")
@@ -160,17 +207,22 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
         # expand to have axis for n and d, respectively the number of timeseries and of features
-        df = standardize(df)
         np_array = df.values
         np_array = np.expand_dims(np_array, axis=0)
         np_array = np.expand_dims(np_array, axis=2)
         n += np_array.shape[1]
+        sections.append(np_array.shape[1])
 
         # plot data
         timeserie_path = os.path.join(args.output_path, f"timeserie_{i}.png")
         plot_timeserie(df, coordinates, frequency, features_name[0], timeserie_path)
 
         if i == 0:
+            # keep the mean and std per day. Useful for removing the season effect
+            if remove_season:
+                season_remover = SeasonRemover(df.shape[0], df.shape[1])
+                season_remover.update(df.values)
+
             first_df = df
             first_features_name = features_name
 
@@ -190,6 +242,28 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
             f = tables.open_file(data_path, mode='a')
             f.root.data.append(np_array)
             f.close()
+            if remove_season:
+                season_remover.update(df.values)
+
+    # repass through the data to remove the seasonal effect
+    if remove_season or lat_reweight:
+        idx = 0
+        f = tables.open_file(data_path, mode='r+')
+        for section in sections:
+            data = f.root.data[:, idx:idx + section]
+            if remove_season:
+                m2 = season_remover.m2.reshape(data.shape)
+                mean = season_remover.mean.reshape(data.shape)
+
+                std = np.sqrt(m2 / season_remover.count)
+                f.root.data[:, idx:idx + section] = (data - mean) / std
+            if lat_reweight:
+                lat_radian = coordinates[:, 0] * np.pi / 180
+                f.root.data[:, idx:idx + section] = data * np.cos(lat_radian)
+
+            idx += section
+        f.close()
+
 
     # quick reading test
     f = tables.open_file(data_path, mode='r')
@@ -204,7 +278,7 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list, freq
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert NetCDF files to numpy or hdf5. Can also plot visualizations.")
-    parser.add_argument("--data-path", type=str, default="data/sea_level_pressure_all",
+    parser.add_argument("--data-path", type=str, default="data/sea_level_pressure",
                         help="Path to the directory containing the NetCDF files")
     parser.add_argument("--output-path", type=str, default="sea_level_results",
                         help="Path where to save the results.")
