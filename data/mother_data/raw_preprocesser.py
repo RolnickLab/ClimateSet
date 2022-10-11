@@ -195,17 +195,7 @@ class RawProcesser:
                                             print("File corrupt. Skipping")
                                             continue
 
-                                        # preprocessing stuff
-                                        # do stuff
-                                        # 1. deal with sectors
-                                        # store it with same hierachy structure in a preprocessed foleder (self.store)
-                                        print("preprocessing")
-                                        print(file_name)
-                                        print("loading")
-                                        ds = data.load()
-                                        print("summing over sectors")
-                                        ds = self.sum_over_sectors(ds)
-                                        print(ds)
+                                      
                                         write_dir = file_dir = (
                                             self.store
                                             + "/"
@@ -234,16 +224,32 @@ class RawProcesser:
                                             # Create a new directory because it does not exist
                                             os.makedirs(path)
                                             print("The new directory is created!", path)
-                                        # reformat it from netcdf to h5
-                                        # we can open it with xarray, transform it and then save it to .h5 with another engine
-                                        # TODO: we might want to store directly as .h5 in the downloader?
+
                                         outfile = path + file_name.replace(".nc", ".h5")
                                         print(outfile)
+
+                                        if (not overwrite) and os.path.isfile(outfile):
+                                            print(f"File {outfile} already exists, skipping.")
+                                            continue
+
+                                        # preprocessing stuff
+                                        # do stuff
+                                        # 1. deal with sectors
+                                        # store it with same hierachy structure in a preprocessed foleder (self.store)
+                                        print("preprocessing")
+
+
+                                        print("loading")
+                                        ds = data.load()
+                                        print("summing over sectors")
+                                        ds = self.sum_over_sectors(ds)
+                                        print(ds)
+                                        print("saving")
                                         ds.to_netcdf(outfile, engine="h5netcdf")
 
                 else:
                     print("cmip6")
-                    continue
+                    #continue
                     
                     for model in os.listdir(self.source + "/" + project):
 
@@ -395,6 +401,47 @@ class RawProcesser:
                                                     corrupt_files.append(
                                                         file_dir + file_name
                                                     )
+                                                    continue
+                                                write_dir = file_dir = (
+                                                    self.store
+                                                    + "/"
+                                                    + project
+                                                    + "/"
+                                                    + experiment
+                                                    + "/"
+                                                    + var
+                                                    + "/"
+                                                    + nom_res
+                                                    + "/"
+                                                    + freq
+                                                    + "/"
+                                                    + y
+                                                    + "/"
+                                                )
+                                                path = write_dir
+                                                print(path)
+
+                                                # check if path exist, create path if necessary
+
+                                                isExist = os.path.exists(path)
+
+                                                if not isExist:
+
+                                                    # Create a new directory because it does not exist
+                                                    os.makedirs(path)
+                                                    print(
+                                                        "The new directory is created!",
+                                                        path,
+                                                    )
+                                                # reformat it from netcdf to h5
+                                                # we can open it with xarray, transform it and then save it to .h5 with another engine
+                                                # TODO: we might want to store directly as .h5 in the downloader?
+                                                outfile = path + file_name.replace(
+                                                    ".nc", ".h5"
+                                                )
+                                                print(outfile)
+                                                if (not overwrite) and os.path.isfile(outfile):
+                                                    print(f"File {outfile} already exists, skipping.")
                                                     continue
 
                                                 # preprocessing stuff
