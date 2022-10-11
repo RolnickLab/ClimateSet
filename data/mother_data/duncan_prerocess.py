@@ -9,7 +9,7 @@ from utils.constants import RES_TO_CHUNKSIZE
 
 duncan_path="/home/charlie/Documents/MILA/causalpaca/data/climate_bench_inputs/"
 data_dir_parent="/home/charlie/Documents/MILA/causalpaca/data/data/" # to store
-overwrite=False
+overwrite=True
 
 
 def extract_target_mip_exp_name(filename: str, target_mip: str):

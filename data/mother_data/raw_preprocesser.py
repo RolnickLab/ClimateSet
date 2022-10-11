@@ -477,7 +477,7 @@ class RawProcesser:
 
 
 
-    def check_units(
+    def check(
         self, forcing_default_unit="kg m^-2 s^-1",  cmip_force_consistency=True, check_time=True
     ):
         """
