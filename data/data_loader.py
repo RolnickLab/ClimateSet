@@ -4,7 +4,7 @@ import os
 import torch
 import tables  # for handling the h5py files
 import numpy as np
-from typing import Tuple
+#from typing import Concatenate, Tuple
 import xarray as xr
 from mother_data.utils.helper_funcs import get_keys_from_value
 from mother_data.utils.constants import VAR_SOURCE_LOOKUP, RES_TO_CHUNKSIZE
@@ -23,8 +23,9 @@ class DataLoader:
         debug_gt_w: bool,  # If true, use the ground truth graph (use only to debug)"
         instantaneous: bool,  # Use instantaneous connections
         tau: int,  # time window size
-        years: [str],
-        experiments: [str],
+        years: [str], #TODO: different years for different experiments? (historical??)
+        experiments_train: [str], # we want to split the datasets according to experiments
+        experiments_valid: [str],
         vars: [str],
         resolution="250_km",
         freq="mon",
@@ -38,8 +39,8 @@ class DataLoader:
         d_x = the number of grid locations
 
         @params:
-            ratio_train (float): ratio of the dataset to be used for training
-            ratio_valid (float): ratio of the dataset to be used for validation
+            ratio_train (float): ratio of the dataset to be used for training -> DEPRICATED
+            ratio_valid (float): ratio of the dataset to be used for validation -> DEPRICATED
             data_path (str): path to the preprocessed data
             latent (bool): if we use a model that has latent variables e.g. spatial aggregation
             no_gt (bool): if we have a ground-truth causal graph to compare with, If True, does not use any ground-truth for plotting and metrics
@@ -69,7 +70,9 @@ class DataLoader:
         self.k = 0
 
         self.years = years
-        self.experiments = experiments
+        self.experiments = experiments_train+experiments_valid
+        self.experiments_train=experiments_train
+        self.experiments_valid=experiments_valid
         self.resolution = resolution
         self.freq = freq
 
@@ -91,38 +94,193 @@ class DataLoader:
 
         # Load and split the data
         self._load_data()
-        self._split_data()
+        self._split_data() #-> DEPRICATED
 
-    def _load_data(self, shuffle=True):
+    def _load_data(self):
         """
         Open and store the data files.
-
-        @params:
-            shuffle (bool): if the data should be shuffled before loading
+        
+        @returns:
+            data (np.array): Data is sorted by experiments and has the size (num_exp*years_per_exp, t, d, d_x)
+            exp_to_index (Dict([str]: Tuple(int))): Dictonary storing the respective indexes of each experiment along the first dimension of the data (n)
         """
 
         # build correct path
         res_freq = f"/{self.resolution}/{self.freq}/"
 
-        n = len(self.experiments) * len(self.years)
+        #n = len(self.experiments) * len(self.years)
+
         # num of target vars
         d_m = len(self.model_vars)
         # num_of forcings
         d_f = len(self.forcing_vars)
+
         t = RES_TO_CHUNKSIZE[self.freq]
 
         d_x = (96, 144)  # TODO NOM RES TO GRID LOOKUP
+        
         data = []
 
-        # handle cmip6 target variables
+     
+
+
+        # 1 bacth = all years for a specific scenario
+        # track available data per experiments             
+        data_per_exp=[]
+
+        # dictionary to store indexes of data per experiment
+
+        exp_to_indexes = {}
+
+        # initial index for experiment
+        start_counter=0
+
+        # iterate through all experiments
+        for  e in self.experiments:
+
+            # flag if we have enough variables for the experiment/y pair
+            enough_data=True
+    
+            # track data per year
+            data_per_y=[]
+            # counter for number of years with sufficient data (all variables present)
+            year_counter=0
+            
+            # iterate throuhg years
+            for y in self.years:
+            
+                # track data per variable 
+                data_per_var=[]
+
+                # if variables are missing, skip the years
+                #enough_data=True
+            
+
+                if d_m >= 1:
+
+                    for i, v in enumerate(self.model_vars):
+
+                            # empty array for storing -> one array per experiment
+                            #model_data = np.zeros((, t, d_m, *d_x)) we don't know in advance cause we might be missing years / vars e.g. historical
+                        
+                                # create path names
+                                path = f"{self.data_path}CMIP6/{e}/{v}{res_freq}{y}/"
+
+                                isExist = os.path.exists(path)
+
+                                if not isExist:
+                                    print(f"WARNING: Experiment, variable, year pair does not exist: {e,v,y}. Skipping.")
+                                    enough_data=False
+                                    continue
+                                            
+                              
+
+                                # todo : insert is exist checkup
+
+                                f_list = os.listdir(path)
+                                if len(f_list)==0:
+                                    print(f"WARNING: No data available for the pair {e, v}. Skipping.")
+                                    enough_data=False
+                                    continue
+                                f_name = f_list[0]
+
+                                # make daat per var stackable along the var dimension (2)
+                                data_per_var.append(np.expand_dims(np.asarray(
+                                    tables.open_file(path + f_name, mode="r").root._f_get_child(
+                                        v
+                                    )),1))
+                                
+
+
+                                    
+                                
+                    #  handle input4mips variables
+                    if d_f >= 1:
+                        #forcing_data = np.zeros((n, t, d_f, *d_x))
+                        for j, v in enumerate(self.forcing_vars):
+                            
+                                path = f"{self.data_path}input4mips/{e}/{v}{res_freq}{y}/"
+
+                                isExist = os.path.exists(path)
+                                if not isExist:
+                                    print(f"WARNING: Experiment, variable, year pair does not exist: {e,v,y}. Skipping.")
+                                    enough_data=False
+                                    continue
+                                            
+                                
+                                f_name = os.listdir(path)[0]
+
+                                # make data per var stackable along the var dimension (2)
+                                data_per_var.append(np.expand_dims(np.asarray(
+                                    tables.open_file(path + f_name, mode="r").root._f_get_child(
+                                        v
+                                    )
+                                ),1))
+                                
+                if enough_data:
+                        # concatenate over variables
+                        array_vars=np.concatenate(data_per_var, axis=1)
+                        # make stackable along num_time series dimension
+                        array_vars=np.expand_dims(array_vars, 0)
+                        
+                        data_per_y.append(array_vars)
+                        year_counter+=1
+                else: 
+                        print(f"WARNING: Not all vars available for the specified year: {y}. Skipping.")
+                        continue
+
+            if len(data_per_y)==0:
+                print(f"WARNING: No data for year {y}. Skipping.")
+                continue
+            else:
+                array_years=np.concatenate(data_per_y,0)
+             
+                data_per_exp.append(array_years)
+                exp_to_indexes[e]=(start_counter, start_counter+year_counter)
+                start_counter=start_counter+year_counter
+
+        # in the end the whole dataset should be indexable by experiment / num years
+        # so wee need a mapping for experiment to indexes e.g "ssp126" -> index 0-5 (5 years), "ssp370" = index 5-15
+        #data.append(forcing_data)
+
+            
+        self.exp_to_indexes=exp_to_indexes
+        # combine all variables
+        if len(data_per_exp)==0:
+            print("WARNING: No data available. Please check your specifications and make sure you have all variables for all years specfiied.")
+            raise ValueError
+        self.data = np.concatenate(data_per_exp)
+      
+        # read out dimensions
+        self.n = self.data.shape[0]
+        self.t = self.data.shape[1]
+        self.d = self.data.shape[2]
+        # flatten out grid cells
+        self.data = np.reshape(self.data, (self.n, self.t, self.d, -1))
+        self.d_x = self.data.shape[-1]
+    
+
+        return data, exp_to_indexes
+
+      
+        """
+        OLD CODE save
+         # handle cmip6 target variables
+        
         if d_m >= 1:
-            # empty array for storing
             model_data = np.zeros((n, t, d_m, *d_x))
+            
             for i, v in enumerate(self.model_vars):
+
+
                 for j, e in enumerate(self.experiments):
+
+                    # empty array for storing -> one array per experiment sot
+                    
                     for k, y in enumerate(self.years):
                         # create path names
                         path = f"{self.data_path}CMIP6/{e}/{v}{res_freq}{y}/"
+                        print(path)
                         f_name = os.listdir(path)[0]
 
                         model_data[j + k, :, i, :] = np.asarray(
@@ -130,6 +288,7 @@ class DataLoader:
                                 v
                             )
                         )
+                        data_per_exp.append()
 
             data.append(model_data)
 
@@ -149,6 +308,7 @@ class DataLoader:
                         )
 
             data.append(forcing_data)
+            
 
         # combine all variables
         self.data = np.concatenate(data)
@@ -162,7 +322,7 @@ class DataLoader:
 
         if shuffle:
             np.random.shuffle(self.data)
-        print("DATA shape", self.data.shape)
+        print("DATA shape", self.data.shape)"""
 
         # use coordinates if using real-world datasets
         # if self.no_gt:
@@ -172,8 +332,11 @@ class DataLoader:
         #    # self.distances = self.get_geodisic_distances(self.coordinates)
 
     def _split_data(self):
-        """
+        """ DEPRICATED
         Determine the indices for training and validation sets.
+
+
+        In our case, we should split along the experiments.....
         """
         t_max = (
             self.t
@@ -209,19 +372,18 @@ class DataLoader:
             #     self.z_train = self.z[self.idx_train]
             #     self.z_valid = self.z[self.idx_valid]
 
-    def sample(self, batch_size: int, valid: bool) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, batch_size=None, drop_remainder=False, valid=bool):
         """
-        Sampling sliced time series from the trainin / validation dataset.
+        Sampling sliced time series from the train / validation dataset.
 
         @params:
-            batch_size (int): the number of examples in a minibatch
-            valid (bool): if True, sample from validation set
+            batch_size (int): if batch size is none, the batch_size equals the number of years available for each experiment
+            valid (bool): if True, sample from validation dataset
         @returns:
             x (tensor): of the data with time-series (batch_size, tau, d, d_x)
-            y (tensor): data to predict (batch_size, d, d_x)
+            y (tensor): data to predict (batch_size, d, d_x) 
 
         """
-
         # initiliaze empty arrays
         if (
             self.instantaneous
@@ -290,19 +452,110 @@ class DataLoader:
             z_ = torch.tensor(z)
         else:
             z_ = z
-
         #print(x_, y_, z_)
         """
         return x_, y_
 
+    def sample_per_experiment(self, batch_size: int, valid: bool = False):
+        """
+        Sampling sliced time series from the trainin / validation dataset.
+        Returns a batch for each experiment present in the respective dataset.
+
+        @params:
+            batch_size (int): the number of examples in a minibatch
+            valid (bool): if True, sample from validation set
+        @returns:
+            x (tensor): batch of the data with time-window (num_experiments, batch_size, tau, d, d_x)
+            y (tensor): data to predict (num_experiments, batch_size, d, d_x)
+
+        """
+
+        # initiliaze empty arrays
+        if (
+            self.instantaneous
+        ):  # if we have instantaneous connections consider x_{t} .. x_{t-i}
+            x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
+            t1 = 1  #  modifier
+
+            """ depricated
+            if not self.no_gt and self.latent: # if we have ground truth and are dealing with latents
+                z = np.zeros((batch_size, self.tau + 2, self.d, self.k))
+            else:
+                z = None
+            """
+
+        else:  # only consider x_{t-1} ... x_{t-i}
+            x = np.zeros((batch_size, self.tau, self.d, self.d_x))
+            t1 = 0
+            """ deprecated (?)
+            if not self.no_gt and self.latent:
+                z = np.zeros((batch_size, self.tau + 1, self.d, self.k))
+            else:
+                z = None
+            """
+
+        # targets without time-windows
+        y = np.zeros((batch_size, self.d, self.d_x))
+
+        if valid:
+            experiments=self.experiments_valid
+        else:
+            experiments=self.experiments_train
+
+        num_exp=len(experiments)
+
+        full_x=np.zeros((num_exp, batch_size, self.tau, self.d, self.d_x))
+        full_y=np.zeros((num_exp, batch_size, self.d, self.d_x))
+
+        for i,exp in enumerate(experiments):
+            try:
+                start, end = self.exp_to_indexes[exp]
+            except KeyError:
+                aspect="validation" if valid else "training"
+
+                print(f"WARNING: Experiment {exp} not existent in {aspect} dataset.")
+        
+                if ((i+1)==len(experiments)) & (len(data_per_batch)==0):
+                    print("WARNING: No data found, please confirm your experiment selection. Aborting.")
+                    raise exit(0)
+                continue
+
+            data_per_batch = self.data[start:end, :]
+            dataset_idx = np.arange(start, end)
+            n=start-end
+            # single time-series (one year), select random index along the time dimension
+            if n==1:
+                random_idx=np.random.choice(dataset_idx, replace=True, size=batch_size)
+                for i, idx in enumerate(random_idx):
+                    # first dimension is 1
+                    x[i, :] = np.squeeze(self.data_per_batch)[idx - self.tau : idx + t1, :, :]
+                    y[i, :] = np.squeeze(self.data_per_batch)[idx + t1]
+            # multiple time series
+            else:
+                # with replacement cause bigger batch_size than number of time series
+                random_idx = np.random.choice(dataset_idx, replace=True, size=batch_size)
+                for i, idx in enumerate(random_idx):
+                    x[i] = self.data[idx, 0 : self.tau + t1]
+                    y[i] = self.data[idx, self.tau + t1]
+            full_x[i:]=x
+            full_y[i:]=y
+        # convert to torch tensors
+        full_x_ = torch.tensor(full_x)
+        full_y_ = torch.tensor(full_y)
+
+        return full_x_, full_y_
+
+        
 
 if __name__ == "__main__":
     ratio_train = 0.8
     ratio_valid = 0.2
     data_path = "/home/charlie/Documents/MILA/causalpaca/data/data_processed/"  # /home/charlie/Documents/MILA/causalpaca/data/test_data/"
-    years = ["2016"]  # ,"2020"]
-    experiments = ["ssp126"]  # , "ssp370"]
-    vars = ["pr", "tas"]
+    years = [str(y) for y in np.arange(2015, 2056,5)]
+    print(years)  # ,"2020"]
+    experiments_train = ["ssp370", "ssp126"]  # , "ssp370"]
+    experiments_valid= ["ssp126"]
+    vars = ["pr", "tas"]#, "BC_em_anthro", "CH4_em_anthro", "CO2_em_anthro", "SO2_em_anthro"]
 
     data_loader = DataLoader(
         ratio_train,
@@ -314,10 +567,16 @@ if __name__ == "__main__":
         instantaneous=False,
         tau=4,
         years=years,
-        experiments=experiments,
+        experiments_train=experiments_train,
+        experiments_valid=experiments_valid,
         vars=vars,
+       
     )
 
-    x, y = data_loader.sample(8, False)
+    x, y = data_loader.sample_per_experiment(8)
 
     print(x.size(), y.size())
+
+    x,y = data_loader.sample(8)
+
+    print(x.shape, y.shape)
