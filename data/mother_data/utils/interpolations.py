@@ -10,8 +10,13 @@ import numpy as np
 
 ### ABSTRACT CLASS #############################################################
 class Interpolation(ABC):
+<<<<<<< HEAD
     def __init__(self, var_path: Path, store_path: Path, another_var = np.array):
         """ Init method that is the same for all subclasses
+=======
+    def __init__(self, var_path: Path, store_path: Path):
+        """Init method that is the same for all subclasses
+>>>>>>> 92458c42c347e7fca218a3cf44f820fa72acab7d
         Parameters:
             var_path (pathlib.Path)
             store_path (pathlib.Path)
@@ -29,17 +34,17 @@ class Interpolation(ABC):
     # every subclass must implement the abstract methods
     @abstractmethod
     def aggregate(self):
-        """ Some description what the function must be able to do
+        """Some description what the function must be able to do
         # TODO
         """
         pass
 
     # not abstract method because all subclasses can use that one
     def __store__(self):
-        """ Stores the interpolated data in the right place
-        """
+        """Stores the interpolated data in the right place"""
         # TODO store results, use self.store_path
         raise NotImplementedError
+
 
 ### SPECIFIC CLASSES ###########################################################
 
