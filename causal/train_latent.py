@@ -30,7 +30,7 @@ class TrainingLatent:
         self.tau = hp.tau
         self.d_x = hp.d_x
         self.instantaneous = hp.instantaneous
-        self.qpm_freq = 100
+        self.qpm_freq = 1
         self.patience_freq = 1000
 
         # TODO: put as arguments
@@ -96,8 +96,9 @@ class TrainingLatent:
                 #                                                - torch.eye(model.k), p=2)
 
                 # expected frobenius norm of A^TA where A_ij \sim U([0, 1])
-                self.ortho_normalization = 1./16 * self.d_x ** 2 * self.k ** 2
-                + 7./144 * self.d_x * self.k
+                self.ortho_normalization = self.d_x * self.k
+                # 1./16 * self.d_x ** 2 * self.k ** 2
+                # + 7./144 * self.d_x * self.k
 
     def log_losses(self):
         # train
@@ -154,6 +155,8 @@ class TrainingLatent:
 
     def train_with_QPM(self):
         self.iteration = 1
+
+        # initialize ALM/QPM for orthogonality and acyclicity constraints
         self.ALM_ortho = ALM(self.hp.ortho_mu_init,
                              self.hp.ortho_mu_mult_factor,
                              self.hp.ortho_omega_gamma,
@@ -240,7 +243,7 @@ class TrainingLatent:
         # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
         connect_reg = torch.tensor([0.])
-        if self.hp.latent:
+        if self.hp.latent and self.hp.reg_coeff_connect > 0:
             connect_reg = self.connectivity_reg()
 
         # compute constraints (acyclicity and orthogonality)
@@ -248,8 +251,8 @@ class TrainingLatent:
         h_ortho = torch.tensor([0.])
         if self.instantaneous and not self.converged:
             h_acyclic = self.get_acyclicity_violation()
-        if self.hp.reg_coeff_connect:
-            h_ortho = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
+        # if self.hp.reg_coeff_connect:
+        h_ortho = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
@@ -262,6 +265,9 @@ class TrainingLatent:
         self.optimizer.zero_grad()
         loss.backward()
         _, _ = self.optimizer.step() if self.hp.optimizer == "rmsprop" else self.optimizer.step(), self.hp.lr
+
+        # projection of the gradient for w
+        self.model.encoder_decoder.project_gradient()
 
         self.train_loss = loss.item()
         self.train_nll = nll.item()
@@ -286,7 +292,7 @@ class TrainingLatent:
         # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
         connect_reg = torch.tensor([0.])
-        if self.hp.latent:
+        if self.hp.latent and self.hp.reg_coeff_connect > 0:
             connect_reg = self.connectivity_reg()
 
         # compute constraints (acyclicity and orthogonality)
@@ -294,8 +300,7 @@ class TrainingLatent:
         h_ortho = torch.tensor([0.])
         if self.instantaneous and not self.converged:
             h_acyclic = self.get_acyclicity_violation()
-        if self.hp.reg_coeff_connect:
-            h_ortho = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
+        h_ortho = self.get_ortho_constraint(self.model.encoder_decoder.get_w())
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
@@ -447,23 +452,25 @@ class ALM:
         Returns:
             has_converged: True if it has converged.
         """
-        h = h_list[-1]
-        past_h = h_list[-2]
-
         has_converged = False
-        # check if QPM has converged
-        if iteration > self.min_iter_convergence and h <= self.h_threshold:
-            has_converged = True
-        else:
-            # update delta_gamma
-            self._compute_delta_gamma(iteration, val_loss)
 
-            # if we have found a stationary point of the augmented loss
-            if abs(self.delta_gamma) < self.omega_gamma or self.delta_gamma > 0:
-                self.gamma = self.mu * h
+        if len(h_list) >= 2:
+            h = h_list[-1]
+            past_h = h_list[-2]
 
-                # increase mu if the constraint has sufficiently decreased
-                if h > self.omega_mu * past_h:
-                    self.mu *= self.mu_mult_factor
+            # check if QPM has converged
+            if iteration > self.min_iter_convergence and h <= self.h_threshold:
+                has_converged = True
+            else:
+                # update delta_gamma
+                self._compute_delta_gamma(iteration, val_loss)
+
+                # if we have found a stationary point of the augmented loss
+                if abs(self.delta_gamma) < self.omega_gamma or self.delta_gamma > 0:
+                    self.gamma = self.mu * h
+
+                    # increase mu if the constraint has sufficiently decreased
+                    if h > self.omega_mu * past_h:
+                        self.mu *= self.mu_mult_factor
 
         return has_converged

@@ -159,7 +159,7 @@ class LatentTSDCD(nn.Module):
                 pz_params[:, k] = self.transition_model(z, mask[:, :, i * self.k + k], i, k)
             mu[:, i] = pz_params[:, :, 0]
             # factor to ensure that doesnt output inf when training is starting
-            factor = 1e-3
+            factor = 1e-10
             std[:, i] = 0.5 * torch.exp(factor * pz_params[:, :, 1])
 
         return mu, std
@@ -207,7 +207,8 @@ class LatentTSDCD(nn.Module):
         # set distribution with obtained parameters
         if is_timing:
             st = time.time()
-        p = distr.Normal(pz_mu.view(b, -1), pz_std.view(b, -1))
+        # TODO: test replace by pz_std.view(b, -1)
+        p = distr.Normal(pz_mu.view(b, -1), torch.ones_like(pz_mu) * 0.01)
         q = distr.Normal(q_mu_y.view(b, -1), q_std_y.view(b, -1))
         px_distr = self.distr_decoder(px_mu, px_std)
         if is_timing:
@@ -259,6 +260,8 @@ class EncoderDecoder(nn.Module):
             gt_w: ground-truth W
         """
         super().__init__()
+        self.use_grad_projection = True
+
         self.d = d
         self.d_x = d_x
         self.k = k
@@ -266,17 +269,24 @@ class EncoderDecoder(nn.Module):
         self.gt_w = gt_w
 
         unif = (1 - 0.1) * torch.rand(size=(d, d_x, k)) + 0.1
-        self.log_w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.k)))
-        # self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.1)
-        # self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.1)
-        self.logvar_decoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
-        self.logvar_encoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
+        if self.use_grad_projection:
+            self.w = nn.Parameter(unif / torch.tensor(self.k))
+        else:
+            # otherwise, self.w is the log of W
+            self.w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.k)))
+        self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.1)
+        self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.1)
+        # self.logvar_decoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
+        # self.logvar_encoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
 
     def forward(self, x, i, encoder: bool):
-        if self.debug_gt_w:
-            w = self.gt_w[i]
-        else:
-            w = torch.exp(self.log_w[i])
+        # if self.debug_gt_w:
+        #     w = self.gt_w[i]
+        # elif self.use_grad_projection:
+        #     w = self.w[i]
+        # else:
+        #     w = torch.exp(self.w[i])
+        w = self.get_w()[i]
 
         if encoder:
             mu = torch.matmul(x, w)
@@ -290,9 +300,18 @@ class EncoderDecoder(nn.Module):
     def get_w(self) -> torch.tensor:
         if self.debug_gt_w:
             w = self.gt_w
+        elif self.use_grad_projection:
+            w = self.w
         else:
-            w = torch.exp(self.log_w)
+            w = torch.exp(self.w)
+
         return w
+
+    def project_gradient(self):
+        assert self.use_grad_projection
+        with torch.no_grad():
+            self.w.clamp_(min=0.)
+        assert torch.min(self.w) >= 0.
 
 
 class Decoder(nn.Module):
@@ -341,7 +360,7 @@ class Encoder(nn.Module):
         self.d = d
         self.d_x = d_x
         self.k = k
-        self.w = nn.Parameter(torch.rand(size=(d, d_x, k)) - 0.5)
+        self.w = nn.Parameter(torch.rand(size=(d, d_x, k)))
         self.var = torch.rand(self.d)
 
     def forward(self, x, i):
