@@ -10,7 +10,8 @@ from pathlib import Path
 from plot_map import plot_timeserie, plot_average, plot_gif
 
 
-def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str):
+def convert_netcdf_to_pandas(filename: str, features_name: list, frequency:
+                             str, remove_poles: bool):
     """
     Convert a NetCDF file to a pandas dataframe using xarray.
     Args:
@@ -32,6 +33,9 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str)
     if not features_name:
         features_name = list(set(df.columns) - {"lat", "lon", "time"})
     columns_to_keep = ["lat", "lon"] + features_name
+
+    if remove_poles:
+        df = df[(df["lat"] != -90.) & (df["lat"] != 90.)]
 
     # average the data over week or month
     # Note: using pd.Grouper can lead to problems for week aggregation as the number
@@ -131,7 +135,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
         df, n, coordinates, features_name: the complete dataframe, the number of
         samples, an array of the coordinates and the features_name
     """
-    # TODO: could add year anomalizing, detrending?
+    # TODO: could add detrending?
     df = None
 
     # find all the netCDF4 in the directory `netcdf_directory`
@@ -174,11 +178,11 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
 
 def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
               frequency: str, verbose: bool, remove_season: bool = True,
-              lat_reweight: bool = False):
+              lat_reweight: bool = False, remove_poles: bool = True):
     """
     Convert netCDF4 files from the NCEP-NCAR Reanalysis project to a hdf5 file.
     Only open one files at a time and append the data to the hdf5 file
-    All the files are expected to be in the directory `netcdf_directory`
+    All the files are expected to be in the directory `netcdf_directory`.
     Returns:
         df, n, coordinates, features_name: the first dataframe, the number of
         samples, an array of the coordinates and the features_name of the first file
@@ -201,7 +205,8 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
             print(f"opening file: {filename}")
         df, coordinates, metadata, features_name = convert_netcdf_to_pandas(filename,
                                                                             features_name,
-                                                                            frequency)
+                                                                            frequency,
+                                                                            remove_poles)
 
         # convert the dataframe to numpy, create the path if necessary and save it
         data_path = os.path.join(output_path, "data.h5")
@@ -265,8 +270,6 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
                 f.root.data[:, idx:idx + section] = (data - mean) / std
             if lat_reweight:
                 lat_radian = coordinates[:, 0] * np.pi / 180
-                # TODO: remove, just a test
-                lat_radian = lat_radian * 0.8
                 f.root.data[:, idx:idx + section] = data * np.cos(lat_radian)
 
             idx += section
@@ -301,6 +304,9 @@ if __name__ == "__main__":
     parser.add_argument("--gif-max-step", type=int, default=20,
                         help="Maximal number of step to consider to generate the gif")
     args = parser.parse_args()
+
+    # example of default command:
+    # python convert_netcdf_files.py --verbose --frequency week --hdf5
 
     # TODO: if necessary, adapt to multiple feature. Now, probably only works
     # for one feature
