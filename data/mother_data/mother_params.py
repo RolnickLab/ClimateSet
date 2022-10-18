@@ -47,7 +47,7 @@ GRID = "grid"
 # THIS must be moved somewhere else, because it's not static
 # tuple of "means" of preprocesser for each variable, e.g.
 # [("CO2", "mean"), ["CH4", "median"]
-CHOSEN_AGGREGATIONS = {"nan"}
+CHOSEN_AGGREGATIONS = ["MeanAggregation", "MinAggregation", "MaxAggregation", "InstAggregation"]
 # TODO communicate to other persons which data structure etc you use here
 CHOSEN_INTERPOLATIONS = {"nan"}
 # TODO create a fixed list for all vars: which aggregation and interpolation
