@@ -34,10 +34,15 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency: str)
     columns_to_keep = ["lat", "lon"] + features_name
 
     # average the data over week or month
+    # Note: using pd.Grouper can lead to problems for week aggregation as the number
+    # of week can vary from 53 to 54 depending on the year.
     if frequency == "day":
-        pass
+        # check if it is a leap year, if so remove 29 Feb
+        if df["time"].iloc[0].is_leap_year:
+            df = df.drop(df[(df["time"].dt.month == 2) & (df["time"].dt.day == 29)].index)
+            print("remove February 29th")
     elif frequency == "week":
-        df = df.groupby([pd.Grouper(key='time', freq="W"), "lat", "lon"])[features_name].mean().reset_index()
+        df = df.groupby([pd.Grouper(key='time', freq="W-MON"), "lat", "lon"])[features_name].mean().reset_index()
     elif frequency == "month":
         df = df.groupby([pd.Grouper(key='time', freq="M"), "lat", "lon"])[features_name].mean().reset_index()
     else:
@@ -169,7 +174,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
 
 def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
               frequency: str, verbose: bool, remove_season: bool = True,
-              lat_reweight: bool = True):
+              lat_reweight: bool = False):
     """
     Convert netCDF4 files from the NCEP-NCAR Reanalysis project to a hdf5 file.
     Only open one files at a time and append the data to the hdf5 file
@@ -214,8 +219,9 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
         sections.append(np_array.shape[1])
 
         # plot data
-        timeserie_path = os.path.join(args.output_path, f"timeserie_{i}.png")
-        plot_timeserie(df, coordinates, frequency, features_name[0], timeserie_path)
+        if not remove_season:
+            timeserie_path = os.path.join(args.output_path, f"timeserie_{i}.png")
+            plot_timeserie(df, coordinates, frequency, features_name[0], timeserie_path)
 
         if i == 0:
             # keep the mean and std per day. Useful for removing the season effect
@@ -259,6 +265,8 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
                 f.root.data[:, idx:idx + section] = (data - mean) / std
             if lat_reweight:
                 lat_radian = coordinates[:, 0] * np.pi / 180
+                # TODO: remove, just a test
+                lat_radian = lat_radian * 0.8
                 f.root.data[:, idx:idx + section] = data * np.cos(lat_radian)
 
             idx += section
