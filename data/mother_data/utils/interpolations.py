@@ -10,13 +10,8 @@ import numpy as np
 
 ### ABSTRACT CLASS #############################################################
 class Interpolation(ABC):
-<<<<<<< HEAD
-    def __init__(self, var_path: Path, store_path: Path, another_var = np.array):
-        """ Init method that is the same for all subclasses
-=======
     def __init__(self, var_path: Path, store_path: Path):
         """Init method that is the same for all subclasses
->>>>>>> 92458c42c347e7fca218a3cf44f820fa72acab7d
         Parameters:
             var_path (pathlib.Path)
             store_path (pathlib.Path)
