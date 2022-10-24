@@ -1,5 +1,6 @@
 # Input4MIPs data is preprocessed here after downloading them
 import os
+import numpy as np
 import netCDF4 as nc
 import xarray as xr
 from typing import List
@@ -151,6 +152,8 @@ class Input4mipsRawPreprocesser:
     # TODO add option to use different kinds of aggregations
     # TODO this function can be used in the res preprocesser as well
     # -> find an elegant, generalized solution for that
+    # ATTENTION right now this only works for mapping from X km to Y km,
+         # where Y is 2-fold number of X! (2-times, 4-times, etc.)
     def spat_aggregate_single_var(
         self,
         old_res: str = "25_km",
@@ -177,6 +180,106 @@ class Input4mipsRawPreprocesser:
             overwrite (bool): Indicating if the files should be overwritten if
                 they already exist for this resolution.
         """
+        # testing here how to aggregate a normal file, this is a 50km one
+        scenario = "historical"
+        a_var = "BC_em_anthro"
+        a_path = self.raw_path / scenario / a_var / "50_km" / "mon" / "1750"
+        a_file = a_path / "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
+        b_path = self.raw_path / scenario / var / "25_km" / "mon" / "1750"
+        b_file = b_path / "input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc"
+        new_file_path = self.raw_path / "None" / "test_file.nc"
+
+        a = xr.open_dataset(a_file)
+        b = xr.open_dataset(b_file) # TODO: grap first available file here
+        #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
+        #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
+        #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
+
+        res_ratio = int(old_res.split('_')[0]) / int(new_res.split('_')[0])
+        # TODO!!! Desired degree resolution
+        res_degree = 0.5
+
+        # create new nc file with lower res for lon and lat
+        old_lon_dim = len(b["longitude"]) # TODO does openburning use "lon" or "longitude"
+        old_lat_dim = len(b["latitude"])
+        old_time_dim = len(b["time"])
+
+        ncfile = nc.Dataset(new_file_path, mode='w', format="NETCDF4_CLASSIC")
+        ncfile.title = "Spatially aggregated openburning input4mips data"
+        # create dimensions
+        new_lon_dim = ncfile.createDimension("lon", old_lon_dim * res_ratio)
+        new_lat_dim = ncfile.createDimension("lat", old_lat_dim * res_ratio)
+        new_time_dim = ncfile.createDimension("time", old_time_dim)
+        # create variables
+        lat = ncfile.createVariable("lat", "f4", ("lat",))
+        lat.units = "degrees_north"
+        lat.long_name = "latitude"
+        lon = ncfile.createVariable("lon", "f4", ("lon",))
+        lon.units = "degrees_east"
+        lon.long_name = "longitude"
+        time = ncfile.createVariable("time", "f8", ("time",))
+        time.units = "day dates (monthly average / snapshots)"
+        time.long_name = "time"
+        # create BC variable
+        temp = ncfile.createVariable("BC", "f8", ("time","lat","lon")) # TODO short name
+        temp.units = "kg m-2 s-1" # flux of emissions
+        temp.long_name = var # the long name of the variable
+
+        # create coordinates
+        # longitude coordinates
+        start_lon = -180 + (res_degree / 2) # e.g. -179.75 for 0.5 degree res
+        lon_coords = []
+        for i in range(0, len(ncfile["lon"])):
+            lon_coords.append(start_lon)
+            start_lon += res_degree
+        # latitude coordinates
+        start_lat = -90 + (res_degree / 2) # e.g. -89.75 for 0.5 degree res
+        lat_coords = []
+        for i in range(0, len(ncfile["lat"])):
+            lat_coords.append(start_lat)
+            start_lat += res_degree
+        # time coordinates
+        time_coords = b["time"].values # old time coordinates, nothing changes here
+        # aggregation size
+        aggr_size = res_ratio**(-1)
+
+        # replace all nans with zeros
+        # CONTINUE HERE
+        #nc_file
+
+        # move over high res file, aggregate and fill the new low res file
+        for i_lon, lon in enumerate(lon_coords):
+            mid_lon = (aggr_size * i_lon) + (0.5 * aggr_size)
+            str_lon = int(mid_lon - (0.5 * aggr_size))
+            end_lon = int(mid_lon + (0.5 * aggr_size))
+            for i_lat, lat in enumerate(lat_coords):
+                mid_lat = (aggr_size * i_lat) + (0.5 * aggr_size)
+                str_lat = int(mid_lat - (0.5 * aggr_size))
+                end_lat = int(mid_lat + (0.5 * aggr_size))
+                for i_t, t in enumerate(time_coords):
+                    # TODO adapt to real data (order etc)
+                    # what I want: the 2 (agg_size) values "closest" to lon
+                    print(str_lon, end_lon)
+                    print(str_lat, end_lat)
+                    # print(b["longitude"].values)
+                    print(b["BC"][i_t, str_lat:end_lat, str_lon:end_lon]) # order: time, lat, lon
+                    exit(0)
+                    # CONTINUE HERE
+                    # high_res_values = b["BC"][t, lon:x, lat:x]
+                    # aggr_value = sum(high_res_values)
+                    # ncfile["BC"][t, lat, lon] = aggr_value
+                    # exit(0)
+        # iterate with kernel over b_file
+
+
+        # for higher res data:
+        # 1. replace nans with 0 (if necessary)
+        # 2. create new nc data file with lower res (empty)
+        # 3. move a window above high res data --> sum up the values & store in new file
+
+
+        # Questions: What do the different sectors mean?
+        exit(0)
         curr_path = self.raw_path / scenario / var
 
         # check if old res exists
