@@ -30,8 +30,10 @@ class TrainingLatent:
         self.tau = hp.tau
         self.d_x = hp.d_x
         self.instantaneous = hp.instantaneous
-        self.qpm_freq = 1
         self.patience_freq = 1000
+
+        self.iteration = 1
+        self.logging_iter = 0
 
         # TODO: put as arguments
         self.train_loss_list = []
@@ -140,21 +142,21 @@ class TrainingLatent:
         print(f"train_connect_reg: {self.train_connect_reg:.1e}")
 
         print(f"ortho cons: {self.train_ortho_cons:.1e}")
+        print(f"ortho delta_gamma: {self.ALM_ortho.delta_gamma}")
+        print(f"ortho gamma: {self.ALM_ortho.gamma}")
         print(f"ortho mu: {self.ALM_ortho.mu}")
 
-        print(f"")
         if self.instantaneous:
             print(f"acyclic cons: {self.train_acyclic_cons:.4f}")
             print(f"acyclic gamma: {self.QPM_ortho.mu}")
         print("-------------------------------")
 
         print(f"valid_nll: {self.valid_nll:.4f}")
-        print(f"valid_recons: {self.valid_recons:.4f}")
-        print(f"valid_kl: {self.valid_kl:.4f}")
+        # print(f"valid_recons: {self.valid_recons:.4f}")
+        # print(f"valid_kl: {self.valid_kl:.4f}")
         print(f"patience: {self.patience}")
 
     def train_with_QPM(self):
-        self.iteration = 1
 
         # initialize ALM/QPM for orthogonality and acyclicity constraints
         self.ALM_ortho = ALM(self.hp.ortho_mu_init,
@@ -175,24 +177,40 @@ class TrainingLatent:
 
             # train and valid step
             self.train_step()
-            self.valid_step()
-            self.log_losses()
-            if self.iteration % self.hp.print_freq == 0:
-                self.print_results()
+            if self.iteration % self.hp.valid_freq == 0:
+                self.logging_iter += 1
+                self.valid_step()
+                self.log_losses()
+
+                # print and plot losses
+                if self.iteration % (self.hp.valid_freq * self.hp.print_freq) == 0:
+                    self.print_results()
+                if self.logging_iter > 10 and self.iteration % (self.hp.valid_freq * self.hp.plot_freq) == 0:
+                    plot(self)
 
             # train in 3 phases: first with QPM, then until the likelihood
             # remain stable, then continue after thresholding the adjacency
             # matrix
             if not self.converged:
                 # train with penalty method
-                if self.iteration % self.qpm_freq == 0:
+                if self.iteration % self.hp.valid_freq == 0:
                     self.ALM_ortho.update(self.iteration,
                                           self.valid_ortho_cons_list,
                                           self.valid_loss_list)
+                    self.converged = self.ALM_ortho.has_converged
+
+                    if self.ALM_ortho.has_increased_mu:
+                        if self.hp.optimizer == "sgd":
+                            self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.hp.lr)
+                        elif self.hp.optimizer == "rmsprop":
+                            self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=self.hp.lr)
+
                     if self.instantaneous:
                         self.QPM_acyclic.update(self.iteration,
                                                 self.valid_acyclic_cons_list,
                                                 self.valid_loss_list)
+                        self.converged = self.converged & self.QPM_acyclic.has_converged
+                        # TODO: add optimizer reinit
             else:
                 # continue training without penalty method
                 if not self.thresholded and self.iteration % self.patience_freq == 0:
@@ -205,11 +223,6 @@ class TrainingLatent:
                     if self.iteration % self.patience_freq == 0:
                         if not self.has_patience(self.hp.patience_post_thresh, self.valid_loss):
                             self.ended = True
-
-            # Utilities: log, plot and save results
-            if self.iteration % self.hp.plot_freq == 0:
-                plot(self)
-            # self.save()
 
             self.iteration += 1
 
@@ -420,6 +433,7 @@ class ALM:
                  h_threshold: float,
                  min_iter_convergence: int):
         self.gamma = 0
+        self.delta_gamma = -np.inf
         self.mu = mu_init
         self.min_iter_convergence = min_iter_convergence
         self.h_threshold = h_threshold
@@ -427,6 +441,8 @@ class ALM:
         self.omega_gamma = omega_gamma
         self.mu_mult_factor = mu_mult_factor
         self.stop_crit_window = 100
+        self.constraint_violation = []
+        self.has_converged = False
 
     def _compute_delta_gamma(self, iteration: int, val_loss: list):
         # compute delta for gamma
@@ -449,18 +465,16 @@ class ALM:
             iteration: number of training iterations completed
             h_list: list of the values of the constraint
             val_loss: list of validation loss
-        Returns:
-            has_converged: True if it has converged.
         """
-        has_converged = False
+        self.has_increased_mu = False
 
-        if len(h_list) >= 2:
+        if len(val_loss) >= 3:
             h = h_list[-1]
             past_h = h_list[-2]
 
             # check if QPM has converged
             if iteration > self.min_iter_convergence and h <= self.h_threshold:
-                has_converged = True
+                self.has_converged = True
             else:
                 # update delta_gamma
                 self._compute_delta_gamma(iteration, val_loss)
@@ -469,8 +483,11 @@ class ALM:
                 if abs(self.delta_gamma) < self.omega_gamma or self.delta_gamma > 0:
                     self.gamma = self.mu * h
 
-                    # increase mu if the constraint has sufficiently decreased
-                    if h > self.omega_mu * past_h:
-                        self.mu *= self.mu_mult_factor
+                    self.constraint_violation.append(h)
 
-        return has_converged
+                    # increase mu if the constraint has sufficiently decreased
+                    # since the last subproblem
+                    if len(self.constraint_violation) >= 2:
+                        if h > self.omega_mu * self.constraint_violation[-2]:
+                            self.mu *= self.mu_mult_factor
+                            self.has_increased_mu = True

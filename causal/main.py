@@ -269,8 +269,8 @@ if __name__ == "__main__":
                         help="Patience used after the thresholding of the adjacency matrix")
 
     # logging
+    parser.add_argument("--valid-freq", type=int, help="Frequency of evaluating the loss on the validation set")
     parser.add_argument("--plot-freq", type=int, help="Plotting frequency")
-    parser.add_argument("--valid-freq", type=int, help="Plotting frequency for validation")
     parser.add_argument("--print-freq", type=int, help="Printing frequency")
 
     # device and numerical precision

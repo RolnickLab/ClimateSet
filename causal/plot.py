@@ -29,12 +29,14 @@ def plot(learner):
         # ============================
         # TODO: temporary, remove
         # save matrix W
+
         w = learner.model.encoder_decoder.get_w().detach().numpy()
         np.save(os.path.join(learner.hp.exp_path, f"w_tensor"), w)
 
         # plot distribution of weights
         plt.hist(w.flatten(), bins=50)
         plt.savefig(os.path.join(learner.hp.exp_path, f"w_distr_{learner.iteration}.png"))
+        plt.close()
 
         # ============================
 
@@ -44,7 +46,7 @@ def plot(learner):
                              valid_loss=learner.valid_loss_list,
                              valid_recons=learner.valid_recons_list,
                              valid_kl=learner.valid_kl_list,
-                             iteration=learner.iteration,
+                             iteration=learner.logging_iter,
                              path=learner.hp.exp_path)
         losses = [{"name": "tr loss", "data": learner.train_loss_list, "s": "-"},
                   {"name": "tr recons", "data": learner.train_recons_list, "s": "-"},
@@ -56,12 +58,12 @@ def plot(learner):
                   {"name": "val loss", "data": learner.valid_loss_list, "s": "-"}
                   ]
         plot_learning_curves2(losses=losses,
-                              iteration=learner.iteration,
+                              iteration=learner.logging_iter,
                               path=learner.hp.exp_path)
     else:
         plot_learning_curves(train_loss=learner.train_loss_list,
                              valid_loss=learner.valid_loss_list,
-                             iteration=learner.iteration,
+                             iteration=learner.logging_iter,
                              path=learner.hp.exp_path)
 
     # plot the adjacency matrix (learned vs ground-truth)
@@ -81,7 +83,7 @@ def plot(learner):
 
         plot_adjacency_through_time(learner.adj_tt,
                                     gt_dag,
-                                    learner.iteration,
+                                    learner.logging_iter,
                                     learner.hp.exp_path,
                                     'transition')
     else:
@@ -103,13 +105,13 @@ def plot(learner):
         if not learner.no_gt:
             plot_adjacency_through_time_w(learner.adj_w_tt,
                                           learner.gt_w,
-                                          learner.iteration,
+                                          learner.logging_iter,
                                           learner.hp.exp_path,
                                           'w')
         else:
             plot_regions_map(adj_w,
                              learner.data.coordinates,
-                             learner.iteration,
+                             learner.logging_iter,
                              path=learner.hp.exp_path)
 
 
@@ -171,11 +173,13 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
       path: path where to save the plot
     """
     # remove first steps to avoid really high values
-    t_loss = moving_average(train_loss[10:])
-    v_loss = moving_average(valid_loss[10:])
+    start = 1
+    t_loss = moving_average(train_loss[start:])
+    v_loss = moving_average(valid_loss[start:])
+
     if train_recons is not None:
-        t_recons = moving_average(train_recons[10:])
-        t_kl = moving_average(train_kl[10:])
+        t_recons = moving_average(train_recons[start:])
+        t_kl = moving_average(train_kl[start:])
         # v_recons = moving_average(valid_recons[10:])
         # v_kl = moving_average(valid_kl[10:])
 
@@ -210,7 +214,7 @@ def plot_learning_curves2(losses: list, iteration: int = 0, path: str = ""):
     # compute moving_averages and
     # remove first steps to avoid really high values
     for loss in losses:
-        smoothed_loss = moving_average(loss["data"][10:])
+        smoothed_loss = moving_average(loss["data"][1:])
         plt.plot(smoothed_loss, label=loss["name"])
 
     plt.title("Learning curves")
