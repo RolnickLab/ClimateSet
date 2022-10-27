@@ -207,8 +207,8 @@ class LatentTSDCD(nn.Module):
         # set distribution with obtained parameters
         if is_timing:
             st = time.time()
-        # TODO: test replace by pz_std.view(b, -1)
-        p = distr.Normal(pz_mu.view(b, -1), torch.ones_like(pz_mu) * 0.01)
+        p = distr.Normal(pz_mu.view(b, -1), pz_std.view(b, -1))
+        # test with fixed var: torch.ones_like(pz_mu.view(b, -1)) * 0.01)
         q = distr.Normal(q_mu_y.view(b, -1), q_std_y.view(b, -1))
         px_distr = self.distr_decoder(px_mu, px_std)
         if is_timing:
@@ -276,8 +276,8 @@ class EncoderDecoder(nn.Module):
             self.w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.k)))
         self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.1)
         self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.1)
-        # self.logvar_decoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
-        # self.logvar_encoder = torch.log(torch.ones(d) * 0.1)  # TODO: test
+        # self.logvar_decoder = torch.log(torch.ones(d) * 0.1)
+        # self.logvar_encoder = torch.log(torch.ones(d) * 0.1)
 
     def forward(self, x, i, encoder: bool):
         # if self.debug_gt_w:

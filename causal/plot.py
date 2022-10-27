@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from mpl_toolkits.basemap import Basemap
-from metrics import mean_corr_coef
+from metrics import mcc_latent
 
 
 def moving_average(a: np.ndarray, n: int = 10):
@@ -74,7 +74,7 @@ def plot(learner):
         if learner.latent:
             # for latent models, find the right permutation of the latent
             # variables using MCC
-            score, cc_program_perm, assignments, z, z_hat = mean_corr_coef(learner.model, learner.data)
+            score, cc_program_perm, assignments, z, z_hat = mcc_latent(learner.model, learner.data)
             print(score)
             print(assignments)
             permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
