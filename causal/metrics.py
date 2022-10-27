@@ -1,18 +1,20 @@
 import numpy as np
+import glob
 import torch
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import spearmanr
 
 
-def mean_corr_coef_np(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
-                      indices: list = None) -> float:
+def mean_corr_coef(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
+                   indices: list = None) -> float:
     """
     Source: https://github.com/ilkhem/icebeem/blob/master/metrics/mcc.py
-    A numpy implementation of the mean correlation coefficient metric.
+    A numpy implementation of the mean correlation coefficient (MCC) metric.
     Args:
         x: numpy.ndarray
         y: numpy.ndarray
-        method: The method used to compute the correlation coefficients ['pearson', 'spearman']
+        method: The method used to compute the correlation coefficients
+        ['pearson', 'spearman']
         indices: list of indices to consider, if None consider all variables
     """
     d = x.shape[1]
@@ -40,7 +42,7 @@ def mean_corr_coef_np(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
     return score, cc_program_perm, assignments
 
 
-def mean_corr_coef(model, data_loader, num_samples=int(1e5), method='pearson', indices=None):
+def mcc_latent(model, data_loader, num_samples=int(1e5), method='pearson', indices=None):
     """Source: https://github.com/ilkhem/icebeem/blob/master/metrics/mcc.py"""
     with torch.no_grad():
         model.eval()
@@ -55,7 +57,7 @@ def mean_corr_coef(model, data_loader, num_samples=int(1e5), method='pearson', i
 
         # Load data
         while sample_counter < num_samples:
-            x, y, z = data_loader.sample_train(64)
+            x, y, z = data_loader.sample(64, valid=False)
             z_hat, _, _ = model.encode(x, y)
 
             z_list.append(z)
@@ -70,8 +72,49 @@ def mean_corr_coef(model, data_loader, num_samples=int(1e5), method='pearson', i
         z = z.reshape(z.shape[0] * z.shape[1], z.shape[2] * z.shape[3])
         z_hat = z_hat.reshape(z_hat.shape[0] * z_hat.shape[1], z_hat.shape[2] * z_hat.shape[3])
 
-        score, cc_program_perm, assignments = mean_corr_coef_np(z, z_hat, method, indices)
+        score, cc_program_perm, assignments = mean_corr_coef(z, z_hat, method, indices)
         return score, cc_program_perm, assignments, z, z_hat
+
+
+def assignment_l1(x, y):
+    d = x.shape[1]
+    dist = np.zeros((d, d))
+
+    for i in range(d):
+        for j in range(d):
+            dist[i, j] = np.linalg.norm(x[i] - y[j], ord=1)
+
+    assignments = linear_sum_assignment(dist)
+    score = dist[assignments].mean()
+
+    return score, assignments
+
+
+def clustering_consistency(path: str):
+    """
+    Test how consistent the clusters at the grid-location level
+    are consistent (find the best permutation since labels are arbitrary)
+    """
+    # find all the experiments in the given directory
+    files = glob.glob(f"{path}/exp*/w_tensor.npy")
+    print(files)
+
+    ws = []
+    n = len(files)
+    score = np.zeros((n, n))
+
+    # loop over all tensors W
+    for file in files:
+        ws.append(np.load(file)[0])
+
+    for i in range(n):
+        for j in range(i+1, n):
+            # find the best cluster alignment for each pair
+            score[i, j], assignments = assignment_l1(ws[i], ws[j])
+            score[j, i] = score[i, j]
+    print(np.mean(score) / 2)
+
+    return np.mean(score) / 2
 
 
 def edge_errors(pred: np.ndarray, target: np.ndarray) -> dict:
@@ -137,33 +180,35 @@ def f1_score(pred: np.ndarray, target: np.ndarray) -> float:
 
 
 if __name__ == "__main__":
+    clustering_consistency("./test")
+
     # simple tests
-    from sklearn.metrics import f1_score as sk_f1_score
-    from scipy.spatial.distance import hamming
+    # from sklearn.metrics import f1_score as sk_f1_score
+    # from scipy.spatial.distance import hamming
 
-    pred = np.asarray([[0, 1, 0],
-                       [1, 0, 1],
-                       [0, 0, 1]])
-    good_pred = np.asarray([[1, 1, 0],
-                            [0, 0, 0],
-                            [1, 1, 0]])
-    true = np.asarray([[1, 1, 0],
-                       [0, 0, 0],
-                       [1, 1, 1]])
+    # pred = np.asarray([[0, 1, 0],
+    #                    [1, 0, 1],
+    #                    [0, 0, 1]])
+    # good_pred = np.asarray([[1, 1, 0],
+    #                         [0, 0, 0],
+    #                         [1, 1, 0]])
+    # true = np.asarray([[1, 1, 0],
+    #                    [0, 0, 0],
+    #                    [1, 1, 1]])
 
-    print(f"F1 score: {f1_score(pred, true)}")
-    print(f"F1 score: {f1_score(good_pred, true)}")
-    print(f"F1 score: {f1_score(true, true)}")
-    print("----------")
-    average_type = 'weighted'
-    print(f"F1 score (sklearn): {sk_f1_score(pred.flatten(), true.flatten(), average=average_type)}")
-    print(f"F1 score (sklearn): {sk_f1_score(good_pred.flatten(), true.flatten(), average=average_type)}")
-    print(f"F1 score (sklearn): {sk_f1_score(true.flatten(), true.flatten(), average=average_type)}")
-    print("==============================")
-    print(f"SHD: {shd(pred, true)}")
-    print(f"SHD: {shd(good_pred, true)}")
-    print(f"SHD: {shd(true, true)}")
-    print("----------")
-    print(f"SHD (sklearn): {9 * hamming(pred.flatten(), true.flatten())}")
-    print(f"SHD (sklearn): {9 * hamming(good_pred.flatten(), true.flatten())}")
-    print(f"SHD (sklearn): {9 * hamming(true.flatten(), true.flatten())}")
+    # print(f"F1 score: {f1_score(pred, true)}")
+    # print(f"F1 score: {f1_score(good_pred, true)}")
+    # print(f"F1 score: {f1_score(true, true)}")
+    # print("----------")
+    # average_type = 'weighted'
+    # print(f"F1 score (sklearn): {sk_f1_score(pred.flatten(), true.flatten(), average=average_type)}")
+    # print(f"F1 score (sklearn): {sk_f1_score(good_pred.flatten(), true.flatten(), average=average_type)}")
+    # print(f"F1 score (sklearn): {sk_f1_score(true.flatten(), true.flatten(), average=average_type)}")
+    # print("==============================")
+    # print(f"SHD: {shd(pred, true)}")
+    # print(f"SHD: {shd(good_pred, true)}")
+    # print(f"SHD: {shd(true, true)}")
+    # print("----------")
+    # print(f"SHD (sklearn): {9 * hamming(pred.flatten(), true.flatten())}")
+    # print(f"SHD (sklearn): {9 * hamming(good_pred.flatten(), true.flatten())}")
+    # print(f"SHD (sklearn): {9 * hamming(true.flatten(), true.flatten())}")

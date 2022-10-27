@@ -1,4 +1,5 @@
 import argparse
+import warnings
 import os
 import json
 import torch
@@ -58,7 +59,9 @@ def main(hp):
     data_loader = DataLoader(ratio_train=hp.ratio_train,
                              ratio_valid=hp.ratio_valid,
                              data_path=hp.data_path,
+                             data_format=hp.data_format,
                              latent=hp.latent,
+                             no_gt=hp.no_gt,
                              debug_gt_w=hp.debug_gt_w,
                              instantaneous=hp.instantaneous,
                              tau=hp.tau)
@@ -87,16 +90,18 @@ def main(hp):
                             num_hidden=hp.num_hidden,
                             num_input=num_input,
                             num_output=2,
+                            coeff_kl=hp.coeff_kl,
                             d=d,
                             distr_z0="gaussian",
                             distr_encoder="gaussian",
                             distr_transition="gaussian",
                             distr_decoder="gaussian",
                             d_x=hp.d_x,
-                            k=hp.k,
+                            d_z=hp.d_z,
                             tau=hp.tau,
                             instantaneous=hp.instantaneous,
                             hard_gumbel=hp.hard_gumbel,
+                            no_gt=hp.no_gt,
                             debug_gt_graph=hp.debug_gt_graph,
                             debug_gt_z=hp.debug_gt_z,
                             debug_gt_w=hp.debug_gt_w,
@@ -117,22 +122,59 @@ def main(hp):
         trainer = TrainingLatent(model, data_loader, hp)
     trainer.train_with_QPM()
 
-    # save final results (shd, f1 score, etc)
-    gt_dag = trainer.gt_dag
-    learned_dag = trainer.model.get_adj().detach().numpy().reshape(gt_dag.shape[0], gt_dag.shape[1], -1)
-    errors = metrics.edge_errors(learned_dag, gt_dag)
-    shd = metrics.shd(learned_dag, gt_dag)
-    __import__('ipdb').set_trace()
-    f1 = metrics.f1_score(learned_dag, gt_dag)
-    errors["shd"] = shd
-    errors["f1"] = f1
-    print(errors)
-    with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
-        json.dump(errors, file, indent=4)
+    # save final results if have GT (shd, f1 score, etc)
+    if not hp.no_gt:
+        gt_dag = trainer.gt_dag
+        learned_dag = trainer.model.get_adj().detach().numpy().reshape(gt_dag.shape[0], gt_dag.shape[1], -1)
+        errors = metrics.edge_errors(learned_dag, gt_dag)
+        shd = metrics.shd(learned_dag, gt_dag)
+        f1 = metrics.f1_score(learned_dag, gt_dag)
+        errors["shd"] = shd
+        errors["f1"] = f1
+        print(errors)
+        with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
+            json.dump(errors, file, indent=4)
+
+
+def assert_args(args):
+    """
+    Raise errors or warnings if some args should not take some combination of
+    values.
+    """
+    # raise errors if some args should not take some combination of values
+    if args.no_gt and (args.debug_gt_graph or args.debug_gt_z or args.debug_gt_w):
+        raise ValueError("Since no_gt==True, all other args should not use ground-truth values")
+
+    if args.latent and (args.d_z is None or args.d_x is None or args.d_z <= 0 or args.d_x <= 0):
+        raise ValueError("When using latent model, you need to define k and d_x with integer values greater than 0")
+
+    if args.ratio_valid == 0:
+        args.ratio_valid = 1 - args.ratio_train
+    if args.ratio_train + args.ratio_valid > 1:
+        raise ValueError("The sum of the ratio for training and validation set is higher than 1")
+
+    # string input with limited possible values
+    supported_dataformat = ["numpy", "hdf5"]
+    if args.data_format not in supported_dataformat:
+        raise ValueError(f"This file format ({args.data_format}) is not \
+                         supported. Supported types are: {supported_dataformat}")
+    supported_optimizer = ["sgd", "rmsprop"]
+    if args.optimizer not in supported_optimizer:
+        raise ValueError(f"This optimizer type ({args.optimizer}) is not \
+                         supported. Supported types are: {supported_optimizer}")
+
+    # warnings, strange choice of args combination
+    if not args.latent and args.debug_gt_z:
+        warnings.warn("Are you sure you want to use gt_z even if you don't have latents")
+    if args.latent and (args.d_z > args.d_x):
+        warnings.warn("Are you sure you want to have a higher dimension for k than d_x")
+
+    return args
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Causal models for climate data")
+    # for the default values, check default_params.json
 
     parser.add_argument("--exp-path", type=str, default="causal_climate_exp",
                         help="Path to experiments")
@@ -141,11 +183,10 @@ if __name__ == "__main__":
     parser.add_argument("--use-data-config", action="store_true",
                         help="If true, overwrite some parameters to fit \
                         parameters that have been used to generate data")
-    parser.add_argument("--exp-id", type=int, default=0,
+    parser.add_argument("--exp-id", type=int,
                         help="ID specific to the experiment")
-    parser.add_argument("--data-path", type=str, default="dataset/data0",
-                        help="Path to the dataset")
 
+    # For synthetic datasets, can use the ground-truth values to do ablation studies
     parser.add_argument("--debug-gt-z", action="store_true",
                         help="If true, use the ground truth value of Z (use only to debug)")
     parser.add_argument("--debug-gt-w", action="store_true",
@@ -154,75 +195,83 @@ if __name__ == "__main__":
                         help="If true, use the ground truth graph (use only to debug)")
 
     # Dataset properties
+    parser.add_argument("--data-path", type=str, help="Path to the dataset")
+    parser.add_argument("--data-format", type=str, help="numpy|hdf5")
+    parser.add_argument("--no-gt", action="store_true",
+                        help="If True, does not use any ground-truth for plotting and metrics")
 
     # specific to model with latent variables
-    parser.add_argument("--latent", action="store_true",
-                        help="Use the model that assumes latent variables")
-    parser.add_argument("--k", type=int,
-                        help="if latent, k is the number of cluster z")
-    parser.add_argument("--d-x", type=int,
-                        help="if latent, d_x is the number of gridcells")
+    parser.add_argument("--latent", action="store_true", help="Use the model that assumes latent variables")
+    parser.add_argument("--coeff-kl", type=float, help="coefficient that is multiplied to the KL term ")
+    parser.add_argument("--d-z", type=int, help="if latent, d_z is the number of cluster z")
+    parser.add_argument("--d-x", type=int, help="if latent, d_x is the number of gridcells")
 
-    parser.add_argument("--instantaneous", action="store_true",
-                        help="Use instantaneous connections")
-    parser.add_argument("--tau", type=int, default=3,
-                        help="Number of past timesteps to consider")
-    parser.add_argument("--tau-neigh", type=int, default=0,
-                        help="Radius of neighbor cells to consider")
-    parser.add_argument("--ratio-train", type=int, default=0.8,
-                        help="Proportion of the data used for the training set")
-    parser.add_argument("--ratio-valid", type=int, default=0.2,
-                        help="Proportion of the data used for the validation set")
-    parser.add_argument("--batch-size", type=int, default=32,
-                        help="Number of samples per minibatch")
+    parser.add_argument("--instantaneous", action="store_true", help="Use instantaneous connections")
+    parser.add_argument("--tau", type=int, help="Number of past timesteps to consider")
+    parser.add_argument("--tau-neigh", type=int, help="Radius of neighbor cells to consider")
+    parser.add_argument("--ratio-train", type=int, help="Proportion of the data used for the training set")
+    parser.add_argument("--ratio-valid", type=int, help="Proportion of the data used for the validation set")
+    parser.add_argument("--batch-size", type=int, help="Number of samples per minibatch")
 
     # Model hyperparameters: architecture
-    parser.add_argument("--num-hidden", type=int, default=16,
-                        help="Number of hidden units")
-    parser.add_argument("--num-layers", type=int, default=1,
-                        help="number of hidden layers")
-    parser.add_argument("--num-output", type=int, default=2,
-                        help="number of output units")
+    parser.add_argument("--num-hidden", type=int, help="Number of hidden units")
+    parser.add_argument("--num-layers", type=int, help="Number of hidden layers")
+    parser.add_argument("--num-output", type=int, help="Number of output units")
 
     # Model hyperparameters: optimization
-    parser.add_argument("--optimizer", type=str, default="rmsprop",
-                        help="sgd|rmsprop")
-    parser.add_argument("--reg-coeff", type=float, default=1e-2,
-                        help="Coefficient for the regularisation term")
-    parser.add_argument("--lr", type=float, default=1e-3,
-                        help="learning rate for optim")
-    parser.add_argument("--random-seed", type=int, default=2,
-                        help="Random seed for torch and numpy")
+    parser.add_argument("--optimizer", type=str, help="sgd|rmsprop")
+    parser.add_argument("--reg-coeff", type=float, help="Coefficient for the sparsity regularisation term")
+    parser.add_argument("--reg-coeff-connect", type=float, help="Coefficient for the connectivity regularisation term")
+    parser.add_argument("--lr", type=float, help="learning rate for optim")
+    parser.add_argument("--random-seed", type=int, help="Random seed for torch and numpy")
     parser.add_argument("--hard-gumbel", action="store_true",
                         help="If true, use the hard version when sampling the masks")
 
-    # QPM options
-    parser.add_argument("--omega-gamma", type=float, default=1e-4,
-                        help="Precision to declare convergence of subproblems")
-    parser.add_argument("--omega-mu", type=float, default=0.9,
-                        help="After subproblem solved, h should have reduced by this ratio")
-    parser.add_argument("--mu-init", type=float, default=1e-1,
-                        help="initial value of mu")
-    parser.add_argument("--mu-mult-factor", type=float, default=2,
+    # ALM/QPM options
+    # orthogonality constraint
+    parser.add_argument("--ortho-mu-init", type=float,
+                        help="initial value of mu for the constraint")
+    parser.add_argument("--ortho-mu-mult-factor", type=float,
                         help="Multiply mu by this amount when constraint not sufficiently decreasing")
-    parser.add_argument("--h-threshold", type=float, default=1e-8,
+    parser.add_argument("--ortho-omega-gamma", type=float,
+                        help="Precision to declare convergence of subproblems")
+    parser.add_argument("--ortho-omega-mu", type=float,
+                        help="After subproblem solved, h should have reduced by this ratio")
+    parser.add_argument("--ortho-h-threshold", type=float,
                         help="Can stop if h smaller than h-threshold")
-    parser.add_argument("--min-iter-convergence", type=int, default=1000,
+    parser.add_argument("--ortho-min-iter-convergence", type=int,
                         help="Minimal number of iteration before checking if has converged")
-    parser.add_argument("--max-iteration", type=int, default=100000,
+
+    # acyclicity constraint
+    parser.add_argument("--acyclic-mu-init", type=float,
+                        help="initial value of mu for the constraint")
+    parser.add_argument("--acyclic-mu-mult-factor", type=float,
+                        help="Multiply mu by this amount when constraint not sufficiently decreasing")
+    parser.add_argument("--acyclic-omega-gamma", type=float,
+                        help="Precision to declare convergence of subproblems")
+    parser.add_argument("--acyclic-omega-mu", type=float,
+                        help="After subproblem solved, h should have reduced by this ratio")
+    parser.add_argument("--acyclic-h-threshold", type=float,
+                        help="Can stop if h smaller than h-threshold")
+    parser.add_argument("--acyclic-min-iter-convergence", type=int,
+                        help="Minimal number of iteration before checking if has converged")
+
+    parser.add_argument("--mu-acyclic-init", type=float,
+                        help="initial value of mu for the acyclicity constraint")
+    parser.add_argument("--h-acyclic-threshold", type=float,
+                        help="Can stop if h smaller than h-threshold")
+
+    parser.add_argument("--max-iteration", type=int,
                         help="Maximal number of iteration before stopping")
-    parser.add_argument("--patience", type=int, default=1000,
+    parser.add_argument("--patience", type=int,
                         help="Patience used after the acyclicity constraint is respected")
-    parser.add_argument("--patience-post-thresh", type=int, default=100,
+    parser.add_argument("--patience-post-thresh", type=int,
                         help="Patience used after the thresholding of the adjacency matrix")
 
     # logging
-    parser.add_argument("--plot-freq", type=int, default=1000,
-                        help="Plotting frequency")
-    parser.add_argument("--valid-freq", type=int, default=100,
-                        help="Plotting frequency")
-    parser.add_argument("--print-freq", type=int, default=100,
-                        help="Printing frequency")
+    parser.add_argument("--valid-freq", type=int, help="Frequency of evaluating the loss on the validation set")
+    parser.add_argument("--plot-freq", type=int, help="Plotting frequency")
+    parser.add_argument("--print-freq", type=int, help="Printing frequency")
 
     # device and numerical precision
     parser.add_argument("--gpu", action="store_true", help="Use GPU")
@@ -236,18 +285,26 @@ if __name__ == "__main__":
         default_params = vars(args)
         with open(args.config_path, 'r') as f:
             params = json.load(f)
-        default_params.update(params)
+
+        for key, val in params.items():
+            if default_params[key] is None or not default_params[key]:
+                default_params[key] = val
         args = Bunch(**default_params)
 
     # use some parameters from the data generating process
     if args.use_data_config != "":
         with open(os.path.join(args.data_path, "data_params.json"), 'r') as f:
             params = json.load(f)
-        args.tau = params['tau']
-        args.tau_neigh = params['neighborhood']
-        args.latent = params['latent']
-        if args.latent:
-            args.k = params['k']
-            args.d_x = params['d_x']
+        args.d_x = params['d_x']
+        if 'latent' in params:
+            args.latent = params['latent']
+            if args.latent:
+                args.d_z = params['d_z']
+        if 'tau' in params:
+            args.tau = params['tau']
+        if 'neighborhood' in params:
+            args.tau_neigh = params['neighborhood']
+
+    args = assert_args(args)
 
     main(args)

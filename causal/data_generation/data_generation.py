@@ -27,7 +27,7 @@ class DataGeneratorWithLatent:
         else:
             self.t = hp.num_timesteps
 
-        self.k = hp.k
+        self.d_z = hp.d_z
         self.prob = hp.prob
         self.noise_coeff = hp.noise_coeff
 
@@ -36,9 +36,10 @@ class DataGeneratorWithLatent:
         self.non_linearity = hp.non_linearity
         self.same_cluster_assign = False
 
-        assert self.d_x > self.k, f"dx={self.d_x} should be larger than k={self.k}"
+        assert self.d_x > self.d_z, f"dx={self.d_x} should be larger than dz={self.d_z}"
 
-    def save_data(self, path):
+    def save_data(self, path: str):
+        """ Save all files to 'path' """
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
@@ -53,7 +54,7 @@ class DataGeneratorWithLatent:
         Returns:
             A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
         """
-        prob_tensor = torch.ones((self.tau, self.d * self.k, self.d * self.k)) * self.prob
+        prob_tensor = torch.ones((self.tau, self.d * self.d_z, self.d * self.d_z)) * self.prob
         # set diagonal to 1
         # prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
@@ -71,13 +72,13 @@ class DataGeneratorWithLatent:
         if isinstance(model, torch.nn.modules.Linear):
             torch.nn.init.normal_(model.weight.data, mean=0., std=1)
 
-    def sample_mlp(self, n_timesteps):
+    def sample_mlp(self, n_timesteps: int):
         """Sample a MLP that outputs the parameters for the distributions of Z
         Args:
             n_timesteps: Number of previous timesteps considered
         """
         mlps = nn.ModuleList()
-        num_first_layer = n_timesteps * self.d * self.k
+        num_first_layer = n_timesteps * self.d * self.d_z
         num_last_layer = 2
 
         if self.non_linearity == "relu":
@@ -88,7 +89,7 @@ class DataGeneratorWithLatent:
             raise NotImplementedError("Nonlinearity is not implemented yet")
 
         for i_d in range(self.d):
-            for k in range(self.k):
+            for k in range(self.d_z):
                 dict_layers = OrderedDict()
                 for i in range(self.num_layers + 1):
                     num_input = self.num_hidden
@@ -118,15 +119,15 @@ class DataGeneratorWithLatent:
         Returns:
             A tensor w (shape: d, d_x, k)
         """
-        mask = torch.zeros((self.d, self.d_x, self.k))
+        mask = torch.zeros((self.d, self.d_x, self.d_z))
         for i in range(self.d):
             # assign d_xs uniformly to a cluster k
-            cluster_assign = np.random.choice(self.k, size=self.d_x - self.k)
-            cluster_assign = np.append(cluster_assign, np.arange(self.k))
+            cluster_assign = np.random.choice(self.d_z, size=self.d_x - self.d_z)
+            cluster_assign = np.append(cluster_assign, np.arange(self.d_z))
             np.random.shuffle(cluster_assign)
             mask[i, np.arange(self.d_x), cluster_assign] = 1
 
-        w = torch.empty((self.d, self.d_x, self.k)).uniform_(0.5, 2)
+        w = torch.empty((self.d, self.d_x, self.d_z)).uniform_(0.5, 2)
         w = w * mask
 
         # normalize to make w orthonormal
@@ -141,7 +142,7 @@ class DataGeneratorWithLatent:
             X, Z, respectively the observable data and the latent
         """
         # initialize Z for the first timesteps
-        self.Z = torch.zeros((self.n, self.t, self.d, self.k))
+        self.Z = torch.zeros((self.n, self.t, self.d, self.d_z))
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
         # sample graphs and NNs
@@ -171,9 +172,9 @@ class DataGeneratorWithLatent:
 
                     # nn_input = (g * z).view(-1)
                     for i_d in range(self.d):
-                        for k in range(self.k):
-                            nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.k]).view(1, -1)
-                            params = self.f[nn_idx][k + i_d * self.k](nn_input)
+                        for k in range(self.d_z):
+                            nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.d_z]).view(1, -1)
+                            params = self.f[nn_idx][k + i_d * self.d_z](nn_input)
 
                             # TODO: change back, only a test, smaller variance
                             # params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.01
