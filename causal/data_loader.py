@@ -38,7 +38,7 @@ class DataLoader:
         self.z = None  # use with latent model
         self.gt_w = None
         self.coordinates = None  # used when using real-world data
-        self.k = 0
+        self.d_z = 0
 
         # Load and split the data
         self._load_data()
@@ -65,13 +65,11 @@ class DataLoader:
         self.d = self.x.shape[2]
         self.d_x = self.x.shape[3]
         if not self.no_gt and self.latent:
-            self.k = self.z.shape[3]
+            self.d_z = self.z.shape[3]
 
         # use coordinates if using real-world datasets
         if self.no_gt:
             self.coordinates = np.load(os.path.join(self.data_path, 'coordinates.npy'))
-            # TODO: decide if keep or not
-            # self.distances = self.get_geodisic_distances(self.coordinates)
 
     def _split_data(self):
         """
@@ -79,17 +77,12 @@ class DataLoader:
         """
         t_max = self.x.shape[1]
 
-        # TODO: be more general
+        # TODO: be more general, n > 1 with different t
         if self.n == 1:
             self.n_train = int(t_max * self.ratio_train)
             self.n_valid = int(t_max * self.ratio_valid)
             self.idx_train = np.arange(self.tau, self.n_train)
             self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
-            # self.x_train = self.x[:, self.idx_train]
-            # self.x_valid = self.x[:, self.idx_valid]
-            # if self.latent:
-            #     self.z_train = self.z[:, self.idx_train]
-            #     self.z_valid = self.z[:, self.idx_valid]
         else:
             self.n_train = int(self.n * self.ratio_train)
             self.n_valid = int(self.n * self.ratio_valid)
@@ -97,11 +90,6 @@ class DataLoader:
             self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
             np.random.shuffle(self.idx_train)
             np.random.shuffle(self.idx_valid)
-            # self.x_train = self.x[self.idx_train]
-            # self.x_valid = self.x[self.idx_valid]
-            # if self.latent:
-            #     self.z_train = self.z[self.idx_train]
-            #     self.z_valid = self.z[self.idx_valid]
 
     def sample(self, batch_size: int, valid: bool) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -116,14 +104,14 @@ class DataLoader:
         if self.instantaneous:
             x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
             if not self.no_gt and self.latent:
-                z = np.zeros((batch_size, self.tau + 2, self.d, self.k))
+                z = np.zeros((batch_size, self.tau + 2, self.d, self.d_z))
             else:
                 z = None
             t1 = 1
         else:
             x = np.zeros((batch_size, self.tau, self.d, self.d_x))
             if not self.no_gt and self.latent:
-                z = np.zeros((batch_size, self.tau + 1, self.d, self.k))
+                z = np.zeros((batch_size, self.tau + 1, self.d, self.d_z))
             else:
                 z = None
             t1 = 0
@@ -176,6 +164,5 @@ class DataLoader:
                 else:
                     # by default, use the WGS-84 model
                     d[i, j] = d[j, i] = distance.geodesic(c1, c2).km
-                # print(j + i * coordinates.shape[0])
 
         return d

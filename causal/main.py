@@ -97,7 +97,7 @@ def main(hp):
                             distr_transition="gaussian",
                             distr_decoder="gaussian",
                             d_x=hp.d_x,
-                            k=hp.k,
+                            d_z=hp.d_z,
                             tau=hp.tau,
                             instantaneous=hp.instantaneous,
                             hard_gumbel=hp.hard_gumbel,
@@ -145,7 +145,7 @@ def assert_args(args):
     if args.no_gt and (args.debug_gt_graph or args.debug_gt_z or args.debug_gt_w):
         raise ValueError("Since no_gt==True, all other args should not use ground-truth values")
 
-    if args.latent and (args.k is None or args.d_x is None or args.k <= 0 or args.d_x <= 0):
+    if args.latent and (args.d_z is None or args.d_x is None or args.d_z <= 0 or args.d_x <= 0):
         raise ValueError("When using latent model, you need to define k and d_x with integer values greater than 0")
 
     if args.ratio_valid == 0:
@@ -166,7 +166,7 @@ def assert_args(args):
     # warnings, strange choice of args combination
     if not args.latent and args.debug_gt_z:
         warnings.warn("Are you sure you want to use gt_z even if you don't have latents")
-    if args.latent and (args.k > args.d_x):
+    if args.latent and (args.d_z > args.d_x):
         warnings.warn("Are you sure you want to have a higher dimension for k than d_x")
 
     return args
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     # specific to model with latent variables
     parser.add_argument("--latent", action="store_true", help="Use the model that assumes latent variables")
     parser.add_argument("--coeff-kl", type=float, help="coefficient that is multiplied to the KL term ")
-    parser.add_argument("--k", type=int, help="if latent, k is the number of cluster z")
+    parser.add_argument("--d-z", type=int, help="if latent, d_z is the number of cluster z")
     parser.add_argument("--d-x", type=int, help="if latent, d_x is the number of gridcells")
 
     parser.add_argument("--instantaneous", action="store_true", help="Use instantaneous connections")
@@ -299,7 +299,7 @@ if __name__ == "__main__":
         if 'latent' in params:
             args.latent = params['latent']
             if args.latent:
-                args.k = params['k']
+                args.d_z = params['d_z']
         if 'tau' in params:
             args.tau = params['tau']
         if 'neighborhood' in params:
