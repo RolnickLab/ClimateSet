@@ -224,7 +224,7 @@ class LatentTSDCD(nn.Module):
         if is_timing:
             print(f"kl time: {time.time() - st}")
 
-        return elbo, recons, kl
+        return elbo, recons, kl, px_mu
 
     def get_kl(self, mu1, sigma1, mu2, sigma2) -> float:
         """KL between two multivariate Gaussian Q and P.

@@ -37,7 +37,6 @@ def plot(learner):
         plt.hist(w.flatten(), bins=50)
         plt.savefig(os.path.join(learner.hp.exp_path, f"w_distr_{learner.iteration}.png"))
         plt.close()
-
         # ============================
 
         plot_learning_curves(train_loss=learner.train_loss_list,
@@ -65,6 +64,9 @@ def plot(learner):
                              valid_loss=learner.valid_loss_list,
                              iteration=learner.logging_iter,
                              path=learner.hp.exp_path)
+
+    # TODO: plot the prediction vs gt
+    # plot_compare_prediction(x, x_hat)
 
     # plot the adjacency matrix (learned vs ground-truth)
     adj = learner.model.get_adj().detach().numpy()
@@ -115,6 +117,56 @@ def plot(learner):
                              path=learner.hp.exp_path)
 
 
+def plot_compare_prediction(x, x_past, x_hat, coordinates: np.ndarray, path: str):
+    """
+    Plot the predicted x_hat compared to the ground-truth x
+    Args:
+        x: ground-truth x (for a specific physical variable)
+        x_past: ground-truth x at (t-1)
+        x_hat: x predicted by the model
+        coordinates: xxx
+        path: path where to save the plot
+    """
+
+    fig = plt.figure()
+    fig.suptitle("Ground-truth vs prediction")
+
+    lat = np.unique(coordinates[:, 0])
+    lon = np.unique(coordinates[:, 1])
+    X, Y = np.meshgrid(lon, lat)
+
+    for i in range(3):
+        if i == 0:
+            z = x_past
+            axes = fig.add_subplot(311)
+            axes.set_title("Previous GT")
+        if i == 1:
+            z = x
+            axes = fig.add_subplot(312)
+            axes.set_title("Ground-truth")
+        if i == 2:
+            z = x_hat
+            axes = fig.add_subplot(313)
+            axes.set_title("Prediction")
+
+        map = Basemap(projection='robin', lon_0=0)
+        map.drawcoastlines()
+        map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+        # map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+
+        Z = z.reshape(X.shape[0], X.shape[1])
+
+        map.contourf(X, Y, Z, latlon=True)
+
+    # plt.colorbar()
+    plt.savefig(os.path.join(path, f"prediction.png"), format="png")
+    plt.close()
+
+
+def plot_compare_regions():
+    pass
+
+
 def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
     """
     Plot the regions
@@ -126,7 +178,7 @@ def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
     """
 
     # plot the map
-    map = Basemap(projection='robin', lon_0=0)  # 'mill' , lat_0=-90, lon_0=0)
+    map = Basemap(projection='robin', lon_0=0)
     map.drawcoastlines()
     map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
     map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])

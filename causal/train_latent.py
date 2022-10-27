@@ -4,7 +4,7 @@ import os
 
 from geopy import distance
 from dag_optim import compute_dag_constraint
-from plot import plot
+from plot import plot, plot_compare_prediction
 # from prox import monkey_patch_RMSprop
 
 
@@ -179,7 +179,7 @@ class TrainingLatent:
             self.train_step()
             if self.iteration % self.hp.valid_freq == 0:
                 self.logging_iter += 1
-                self.valid_step()
+                x, y, y_pred = self.valid_step()
                 self.log_losses()
 
                 # print and plot losses
@@ -187,6 +187,12 @@ class TrainingLatent:
                     self.print_results()
                 if self.logging_iter > 10 and self.iteration % (self.hp.valid_freq * self.hp.plot_freq) == 0:
                     plot(self)
+                    # TODO: WIP
+                    plot_compare_prediction(x[0, -1].detach().numpy(),
+                                            y[0].detach().numpy(),
+                                            y_pred[0].detach().numpy(),
+                                            self.data.coordinates,
+                                            self.hp.exp_path)
 
             # train in 3 phases: first with QPM, then until the likelihood
             # remain stable, then continue after thresholding the adjacency
@@ -251,7 +257,7 @@ class TrainingLatent:
 
         # sample data
         x, y, z = self.data.sample(self.batch_size, valid=False)
-        nll, recons, kl = self.get_nll(x, y, z)
+        nll, recons, kl, pred = self.get_nll(x, y, z)
 
         # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
@@ -291,6 +297,8 @@ class TrainingLatent:
         self.train_ortho_cons = h_ortho.item()
         self.train_acyclic_cons = h_acyclic.item()
 
+        return pred
+
     def valid_step(self):
         # TODO: merge valid and train step? almost the same
         self.model.eval()
@@ -300,7 +308,7 @@ class TrainingLatent:
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
         x, y, z = self.data.sample(self.data.n_valid - self.data.tau, valid=True)
-        nll, recons, kl = self.get_nll(x, y, z)
+        nll, recons, kl, y_pred = self.get_nll(x, y, z)
 
         # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
@@ -331,6 +339,8 @@ class TrainingLatent:
         self.valid_ortho_cons = h_ortho.item()
         self.valid_acyclic_cons = h_acyclic.item()
 
+        return x, y, y_pred
+
     def get_acyclicity_violation(self) -> torch.Tensor:
         adj = self.model.get_adj()[-1].view(self.d, self.d)
         # __import__('ipdb').set_trace()
@@ -339,8 +349,8 @@ class TrainingLatent:
         return h
 
     def get_nll(self, x, y, z=None) -> torch.Tensor:
-        elbo, recons, kl = self.model(x, y, z, self.iteration)
-        return -elbo, recons, kl
+        elbo, recons, kl, pred = self.model(x, y, z, self.iteration)
+        return -elbo, recons, kl, pred
 
     # def get_nll(self, x, y) -> torch.Tensor:
     #     density_param = self.model(x)

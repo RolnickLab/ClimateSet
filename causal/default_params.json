@@ -16,7 +16,7 @@
     "num_layers": 0,
     "num_output": 2,
     "optimizer": "rmsprop",
-    "reg_coeff": 1e-5,
+    "reg_coeff": 1e-6,
     "reg_coeff_connect": 0,
     "lr": 0.001,
     "random_seed": 3,
