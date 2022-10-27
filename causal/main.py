@@ -122,18 +122,18 @@ def main(hp):
         trainer = TrainingLatent(model, data_loader, hp)
     trainer.train_with_QPM()
 
-    # save final results (shd, f1 score, etc)
-    gt_dag = trainer.gt_dag
-    learned_dag = trainer.model.get_adj().detach().numpy().reshape(gt_dag.shape[0], gt_dag.shape[1], -1)
-    errors = metrics.edge_errors(learned_dag, gt_dag)
-    shd = metrics.shd(learned_dag, gt_dag)
-    __import__('ipdb').set_trace()
-    f1 = metrics.f1_score(learned_dag, gt_dag)
-    errors["shd"] = shd
-    errors["f1"] = f1
-    print(errors)
-    with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
-        json.dump(errors, file, indent=4)
+    # save final results if have GT (shd, f1 score, etc)
+    if not hp.no_gt:
+        gt_dag = trainer.gt_dag
+        learned_dag = trainer.model.get_adj().detach().numpy().reshape(gt_dag.shape[0], gt_dag.shape[1], -1)
+        errors = metrics.edge_errors(learned_dag, gt_dag)
+        shd = metrics.shd(learned_dag, gt_dag)
+        f1 = metrics.f1_score(learned_dag, gt_dag)
+        errors["shd"] = shd
+        errors["f1"] = f1
+        print(errors)
+        with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
+            json.dump(errors, file, indent=4)
 
 
 def assert_args(args):

@@ -69,7 +69,7 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency:
     return df_pivoted, coordinates, ds.attrs, features_name
 
 
-def standardize(df: pd.DataFrame, mean = None, std = None) -> pd.DataFrame:
+def standardize(df: pd.DataFrame, mean=None, std=None) -> pd.DataFrame:
     """ Remove the mean and divide by the standard deviation """
     if mean is None and std is None:
         mean = df.mean()
@@ -77,6 +77,7 @@ def standardize(df: pd.DataFrame, mean = None, std = None) -> pd.DataFrame:
 
     df_out = (df - mean) / std
     return df_out
+
 
 class SeasonRemover:
     """ Remove the seasonal cycle. Basically remove the mean for each day/week of
@@ -94,10 +95,6 @@ class SeasonRemover:
         delta2 = data - self.mean
         self.m2 += delta * delta2
 
-    def remove_season(df: pd.DataFrame) -> pd.DataFrame:
-        std = self.m2 / self.count
-        return (df - self.mean) / std
-
 # def update(self, data):
 #     n_a = self.count
 #     n_b = data.shape[0]
@@ -109,6 +106,7 @@ class SeasonRemover:
 #     m2_a = self.m2
 #     m2_b = np.mean((data - data.mean(axis=0)) ** 2)
 #     self.m2 = m2_a + m2_b + delta ** 2 * n_a * n_b / (n_a + n_b)
+
 
 def detrending():
     pass
@@ -274,7 +272,6 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
 
             idx += section
         f.close()
-
 
     # quick reading test
     f = tables.open_file(data_path, mode='r')

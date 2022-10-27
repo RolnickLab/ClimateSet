@@ -30,7 +30,7 @@ class TrainingLatent:
         self.tau = hp.tau
         self.d_x = hp.d_x
         self.instantaneous = hp.instantaneous
-        self.patience_freq = 1000
+        self.patience_freq = 50
 
         self.iteration = 1
         self.logging_iter = 0
@@ -157,6 +157,7 @@ class TrainingLatent:
         print(f"patience: {self.patience}")
 
     def train_with_QPM(self):
+        # TODO: add comment
 
         # initialize ALM/QPM for orthogonality and acyclicity constraints
         self.ALM_ortho = ALM(self.hp.ortho_mu_init,
@@ -187,12 +188,13 @@ class TrainingLatent:
                     self.print_results()
                 if self.logging_iter > 10 and self.iteration % (self.hp.valid_freq * self.hp.plot_freq) == 0:
                     plot(self)
-                    # TODO: WIP
-                    plot_compare_prediction(x[0, -1].detach().numpy(),
-                                            y[0].detach().numpy(),
-                                            y_pred[0].detach().numpy(),
-                                            self.data.coordinates,
-                                            self.hp.exp_path)
+
+                    if self.no_gt:
+                        plot_compare_prediction(x[0, -1].detach().numpy(),
+                                                y[0].detach().numpy(),
+                                                y_pred[0].detach().numpy(),
+                                                self.data.coordinates,
+                                                self.hp.exp_path)
 
             # train in 3 phases: first with QPM, then until the likelihood
             # remain stable, then continue after thresholding the adjacency
@@ -236,8 +238,8 @@ class TrainingLatent:
         plot(self)
         self.print_results()
 
-        # save matrix W
-        w = self.model.encoder_decoder.get_w().cpu().numpy()
+        # save tensor W
+        w = self.model.encoder_decoder.get_w().detach().numpy()
         np.save("w_tensor", w)
 
     def has_patience(self, patience_init, valid_loss):
