@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-import os
 
 from geopy import distance
 from dag_optim import compute_dag_constraint
@@ -397,7 +396,8 @@ class TrainingLatent:
         points = np.random.choice(np.arange(self.d_x), n)
 
         if n <= 1:
-            raise ValueError("You should use a higher value for the ratio of considered points for the connectivity constraint")
+            raise ValueError("You should use a higher value for the ratio of \
+                             considered points for the connectivity constraint")
 
         for d in range(self.d):
             for k in range(self.k):
@@ -482,7 +482,6 @@ class ALM:
 
         if len(val_loss) >= 3:
             h = h_list[-1]
-            past_h = h_list[-2]
 
             # check if QPM has converged
             if iteration > self.min_iter_convergence and h <= self.h_threshold:

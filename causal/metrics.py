@@ -6,7 +6,7 @@ from scipy.stats import spearmanr
 
 
 def mean_corr_coef(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
-                      indices: list = None) -> float:
+                   indices: list = None) -> float:
     """
     Source: https://github.com/ilkhem/icebeem/blob/master/metrics/mcc.py
     A numpy implementation of the mean correlation coefficient (MCC) metric.
@@ -143,6 +143,7 @@ def edge_errors(pred: np.ndarray, target: np.ndarray) -> dict:
 
     return {"tp": float(tp), "tn": float(tn), "fp": float(fp), "fn": float(fn),
             "fp_rev": float(fp_rev), "fn_rev": float(fn_rev), "rev": float(rev)}
+
 
 def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False) -> float:
     """

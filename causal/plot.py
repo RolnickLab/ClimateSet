@@ -31,7 +31,7 @@ def plot(learner):
         # save matrix W
 
         w = learner.model.encoder_decoder.get_w().detach().numpy()
-        np.save(os.path.join(learner.hp.exp_path, f"w_tensor"), w)
+        np.save(os.path.join(learner.hp.exp_path, "w_tensor"), w)
 
         # plot distribution of weights
         plt.hist(w.flatten(), bins=50)
@@ -159,7 +159,7 @@ def plot_compare_prediction(x, x_past, x_hat, coordinates: np.ndarray, path: str
         map.contourf(X, Y, Z, latlon=True)
 
     # plt.colorbar()
-    plt.savefig(os.path.join(path, f"prediction.png"), format="png")
+    plt.savefig(os.path.join(path, "prediction.png"), format="png")
     plt.close()
 
 
