@@ -6,6 +6,7 @@ from data_paths import PROCESSED_DATA
 from mother_data.utils.helper_funcs import get_keys_from_value
 import h5py
 from torch.utils.data import  DataLoader
+from torch import Tensor
 import random
 from typing import Dict, Optional, List, Callable, Tuple, Union
 import shutil
@@ -62,6 +63,7 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
         self.model_variables = []
         self.forcing_variables = []
 
+        # assign variables to source
         for v in variables:
 
             t = get_keys_from_value(VAR_SOURCE_LOOKUP, v)
@@ -94,14 +96,11 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
             instantaneous=self.instantaneous
         ) 
 
-    
+
+        # assign dset classes
 
         if self.load_h5_into_mem:
-            print("WARNING: Load into mem not yet implemented")
             if target=='emulator':
-
-                # given emulator, we get batch size many experiment_variables pairs sample batch_size examples form them
-                # each sample contains all possible year
                 dset_class = Causalpaca_HdF5_FastSingleDataset_Emulator
             elif target=='causal':
                 raise NotImplementedError
@@ -120,10 +119,9 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
         self.h5_dsets_forcing= {} # create list of dset objects
         self.h5_dsets_model = {}
 
+        # get forcing data -> one dataset per experiment
         if have_forcing:
-            # onne forcing dataset per experiment
             for exp in self.experiments: 
-
                 try:
                     exp_h5_dset_forcing=dset_class(experiment='ssp119', variables=self.forcing_variables, nom_res=forcing_nom_res, aspect='forcing', **dset_kwargs) # redo Debugging
                 except ValueError:
@@ -139,39 +137,28 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
 
             self.dataset_size_forcing=dataset_size_forcing
 
+        # get model data -> one datesest per experiment-model-member pair
         if have_model:
             for exp in self.experiments:
-               
+
+                # dict mapping from experiment to all available datasets (model - member combinations)
                 self.h5_dsets_model[exp]=[]
                 for  model in self.models:
                     for member in self.ensemble_members:
-                        
                         try:
                             exp_h5_dset_model=dset_class(model=model, experiment='ssp126', member=member, variables=self.model_variables, nom_res=model_nom_res, aspect='model', **dset_kwargs)
                         except ValueError:
-                            continue
-                        n_samples =len(exp_h5_dset_model)
-                         
+                            continue # continue if no data available for the combination
+                        n_samples =len(exp_h5_dset_model)  
                         if n_samples==0:
                             print(f"wARNING: No data available for pairing: model {model} member {member} exp {exp}. Skipping.")
                             continue
-                        
                         dataset_size_model+= n_samples
                        
                         self.h5_dsets_model[exp].append(exp_h5_dset_model)
 
                         # copy to slurm
                         exp_h5_dset_model.copy_to_slurm_tmp_dir(aspect='model')
-               
-            """
-            # TODO: test if it works
-            for exp in self.experiments:
-                
-                for dset in self.h5_dsets_forcing[exp]:
-                    dset.copy_to_slurm_tmp_dir(aspect='forcing')
-                for dset in self.h5_dsets_model[exp]:
-                    dset.copy_to_slurm_tmp_dir(aspect='model')
-            """
     @property
     def name(self):
         return self.name.upper()
@@ -184,7 +171,7 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
         return len(self.years)
 
     
-    def __getitem__(self, item): ## add type signature
+    def __getitem__(self, item) -> (Dict[str, Tensor], Dict[str, Tensor]):
 
         # choose a random experiment 
         exp=random.choice(self.experiments)
@@ -231,16 +218,36 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
             aspect : str, #either 'model' or 'forcing'
             model: Optional[str] = "",
             member: Optional[str] = "",
-            tau : int = 0, # not relevant for emulator part
+            tau : int = None, # not relevant for emulator part
             instantaneous : bool = False, # not relevant for emulator part
             
             ):
+
+        """
+        Single Dataset class. 
+        Stores all available filenames per variable for a specific experiment (model-member) combination and reads out spatial dimensions.
+        Loads the data every time anew from the files.
+
+        @params:
+            experiment (str): The specified experiment e.g. "ssp126"
+            variables (List[str]): List of variables.
+            data_dir (str): Path to the preprocessed data.
+            years (List[int]): List of years that sholud be considered. If not all years are available the combination will not be loaded and skipped.
+            freq (str): Temporal frequency of the data e.g. "mon" for monthly
+            nom_res (str): Nominal resolution of the data referring to the size of the gird cells e.g. "50_km"
+            aspect (str): Either 'model' if variables belong to a model source or 'forcing' otherwise.
+            target (str): Either 'causal' or 'emulator' dependent on weather the dataset is targeted at the causal or emulator datapipeline. This will have an effect on the get_item method.
+            model (Optional[str]): Name of the model, only needed for aspect="model".
+            member (Optional[str]): Name of the ensemble member belonging to a model, only needed for aspect="model".
+            tau (int): Size of the time-window, only relevant if target="causal". If None, the full time series will be returned.
+            instantaneous (bool): Flag if instantaneous connections are considered. Only relevant if target="causal".
+        
+        """
       
         self.experiment=experiment
         self.data_dir=data_dir
         self.variables=variables
         self.years=years
-        
         self.freq=freq
         self.nom_res=nom_res
         self.aspect=aspect
@@ -248,11 +255,6 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
         self.instantaneous=instantaneous
 
         self.name=f"{experiment}_{model}_{member}_{years[0]}_{years[-1]}"
-
-
-        # ignore these 
-        #self.tau=tau
-        #self.instantaneous=instantaneous
 
 
         # built list of file names
@@ -319,25 +321,28 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
         # flatten out spatial dimension
         data=np.reshape(data, (data.shape[0], data.shape[1], data.shape[2], -1))   
 
-         
-        
-        # other way of getting the dimensions? -> we can just get the dimensions from the specifications but won't get faulty files
-        self.data=data #TODO: if we have this anyway, do we need to redo it every time in the get_item?
-        # TODO: set dimensions
+        #self.data=data
+    
         d_x=data.shape[-1]
         n=data.shape[0]
         d=data.shape[2]
         t=data.shape[1]
 
-        self.spatial_dim=(n,t,d,d_x)
+        self.spatial_dim= {"n": n, "t": t, "d": d, "d_x": d_x}
 
-    def spatial_dim(self):
+    def spatial_dim(self) -> Dict[str, int]:
         return self.spatial_dim
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._num_examples
   
-    def __getitem__(self, item): # TODO figure out type signature
+    def __getitem__(self, item) -> Dict[str, Tensor]:
+            """
+            Loads and returns all years for the given combination. For
+
+            @returns:
+                D  (Dict["Data", Tensor]): Tensor of shape (n=number of years, t = t max, d = number of variables, d_x = total number of grid cells)
+            """
 
             # should get all years for a given experimnt
             array_per_var=[]
@@ -351,12 +356,17 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
             y = torch.as_tensor(data)
             # return dictionary
             D={"Data": y}
-            #TODO: do it here or just od it once per initialization and then retunrn it here?
-            # right now (n_years, freq, var, d_x) -> we could possibly bring together the first 2 dimensions
             return D
 
 
-    def copy_to_slurm_tmp_dir(self, aspect):
+    def copy_to_slurm_tmp_dir(self, aspect: str):
+        """
+        Copy all data to SLURM_TMPDIR. 
+        
+        @params:
+            aspect (str): If "forcing" files will be stored under "SLURM_TMPDIR/inputs/", else if "model" files will be stored at "SLRM_TMPDIR/targets".
+        
+        """
 
         if 'SLURM_TMPDIR' in os.environ:
         #if True:
@@ -365,11 +375,11 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
             for v in self.all_files:
                 if aspect=='forcing':
                     
-                    path=f"{os.environ['SLURM_TMPDIR']}/input/"
+                    path=f"{os.environ['SLURM_TMPDIR']}/inputs/"
                     #path = 'test/target/'
 
                 elif aspect=='model':
-                    path=f"{os.environ['SLURM_TMPDIR']}/target/"
+                    path=f"{os.environ['SLURM_TMPDIR']}/targets/"
                     #path = 'test/input/'
             
                 isExist= os.path.exists(path)
@@ -381,11 +391,12 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
                 h5_path_new_in = [path + f for f in self.filenames[v]]
                 
                 for old_f , new_f in zip(self.all_files[v], h5_path_new_in):
-                    #print(old_f, new_f)
                     shutil.copyfile(old_f, new_f)
                 
+                # rename file names to location on SLURM
                 self.all_files[v]=h5_path_new_in
                 self.data_dir=os.environ["SLURM_TMPDIR"]
+
 
 class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_Emulator):
 
@@ -395,23 +406,28 @@ class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_E
                  write_data: bool = True,
                  reload_if_exists: bool = True,
                  *args, **kwargs):
+        """
+        Fast Single Dataset. Inherits properties form Single Dataset.
+        Loads the full data into memory. Stored in self.data.
 
-
+        @params:
+            normalizer (Opitonal[Dict[str, Callable]]: Normalization method that should be applied to the data. Only applied once.
+            transform (Opitonal[AbstarctTransform]: Transform method that should be applied to the data. Applied only once. 
+            write_data (bool): If set to True, the full data with normalization and transformation already applied will be stored as .npz files in the data_dir of the parent class.
+            reload_if_exists (bool): If set to True, processed .npz data will be reloaded once if existent, else the data will be preprocessed again
+        """
         super().__init__(*args, **kwargs)
 
         
         pkwargs = dict(
             normalizer=normalizer,
             transform=transform,
-           
         )
        
-        #self.input_transform = input_transform
-        #self.output_transform = output_transform
         self.transform=transform
         self.normalizer=normalizer
-        ending = f"{self.aspect}.npz" 
-
+        ending = f"_{self.aspect}.npz" 
+        # get the name of the processed dataset
         processed_fname=get_processed_fname(data_dir=self.data_dir, name=self.name, **pkwargs, ending=ending)
        
         # if everything preprocessed already existent, reload it
@@ -426,18 +442,33 @@ class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_E
                 print("INFO: Writing preprocessed data.")
                 self._write_data(fname=processed_fname, data=self.data)
                 
-    def _reload_data(self, fname):
+
+    def _reload_data(self, fname : str):
+        """
+        Reloads data for a given file name.
+        
+        @params:
+            fname (str): Name of the preprocessed filename, should end with .npz.
+
+        @returns:
+            data (Dict["Data": np.ndarray]): Dictionary containing the data.
+        """
         print(f'INFO: Reloading from {fname}.')
         try:
-            in_data = np.load(fname, allow_pickle=True)
+            data = np.load(fname, allow_pickle=True)
         except zipfile.BadZipFile as e:
             print(f"WARNING: {fname} was not properly saved or has been corrupted.")
             raise e
       
-        return in_data
+        return data
 
-    def _write_data(self, fname, data):
+    def _write_data(self, fname: str, data: Dict[str, np.ndarray]):
 
+        """
+        @params:
+            fname (str): Name of the file where the data should be stored to.
+            data (Dict[str, np.ndarray]): Dictionarry containnig the data under key "Data".
+        """
         os.makedirs(os.path.dirname(fname), exist_ok=True)
 
         if isinstance(data, dict) or isinstance(data, np.ndarray):
@@ -457,6 +488,13 @@ class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_E
     def _preprocess_h5data(self,
                            normalizer: Optional[Dict[str, Callable]] = None,
                            ):
+
+        """
+        Loads and preprocesses the specified data i.e. applying a normalization method if given.
+
+        @returns:
+            data (Dict[str, np.ndarray]): Ditionary storing the data under the key "Data". Array of the dimension (n=number of years, t = t max, d = number of variables, d_x = total number of grid cells)
+        """
         # create data array
         # should get all years for a given experimnt
         array_per_var=[]
@@ -484,13 +522,18 @@ class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_E
 
         return return_data
 
-    def copy_to_slurm_tmp_dir(self, aspect): #TODO: figure out if we inherit that or pass it
+    def copy_to_slurm_tmp_dir(self, aspect): #TODO: figure out if we want to inherit that or pass it
         pass
 
-    # TODO: CHANGE AROUND
-    def __getitem__(self, index) -> (Dict[str, np.ndarray]):
+    def __getitem__(self, index) -> Dict[str, Tensor]:
+        """
+        Returns the preprocessed preloadde Data. Only apply transform if the data was not yet saved with the transform already applied.
 
-       
+        @retruns:
+         @returns:
+            data (Dict[str, np.ndarray]): Ditionary storing the data under the key "Data". Array of the dimension (n=number of years, t = t max, d = number of variables, d_x = total number of grid cells)
+        """
+        
         if isinstance(self.data['Data'], np.ndarray) and len(self.data['Data'].shape) == 0:
             # Recover a nested dictionary of np arrays back, i.e. transform np.ndarray of object dtype into dict
             self.data['Data'] = self.Data['data'].item()
@@ -510,7 +553,13 @@ class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_E
         return X  
 
 def get_processed_fname(data_dir: str, name: str, ending='.npz', **kwargs):
-    processed = f"{data_dir}/{name}"
+    """
+    Helper function creating the name of the processed data file that should be loaded into memonry for a given combination.
+
+    @returns:
+        f_n_processed (str): File name of the preprocessed data. in the form {experiment}_{model}_{member}_{year_start}_{year_end}_{type/"No"}_normalizer_{type/"No"}_transform_{aspect}.npz
+    """
+    f_n_processed = f"{data_dir}/{name}"
     for k, v in kwargs.items():
         if v is None:
             tr_name = 'No'
@@ -524,8 +573,9 @@ def get_processed_fname(data_dir: str, name: str, ending='.npz', **kwargs):
             except Exception as e:
                 print(e)
                 name = "?"
-        processed += f'_{tr_name}_{k}'
-    return processed + f'{ending}'
+        f_n_processed += f'_{tr_name}_{k}' + ending
+
+    return f_n_processed
 
 
 
