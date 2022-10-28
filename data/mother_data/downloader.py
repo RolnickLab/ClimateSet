@@ -567,7 +567,7 @@ if __name__ == "__main__":
 
     if test_mother:
         print("testing mother")
-        vars = ["schmarn", "tas", "CO2_em_anthro"]
+        vars = ["schmarn", "CO2_em_anthro", "tas"]
         downloader = Downloader(experiments=["ssp126", "historical"], vars=vars)
-        downloader.download_from_model()
+        # downloader.download_from_model()
         downloader.download_raw_input()
