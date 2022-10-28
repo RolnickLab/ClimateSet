@@ -49,6 +49,7 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
         self.model_nom_res=model_nom_res
         self.tau=tau
         self.instantaneous=instantaneous
+        self.target=target
 
         # if no data dir is given, take default 
         if data_dir is None:
@@ -110,8 +111,7 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
             if target=='emulator':
                 dset_class = Causalpaca_HdF5_SingleDataset_Emulator
             elif target=='causal':
-                print("WARNING: Causal Dataloader not yet implemented")
-                raise NotImplementedError
+                print("Single Dataset Casal")
                 dset_class = Causalpaca_HdF5_SingleDataset_Causal
 
         dataset_size_forcing = 0 # TODO: check up if forcing data n matches model n 
@@ -171,28 +171,76 @@ class Causalpaca_HdF5_Dataset(torch.utils.data.Dataset): # TODO: where to do t
         return len(self.years)
 
     
-    def __getitem__(self, item) -> (Dict[str, Tensor], Dict[str, Tensor]):
+    def __getitem__(self, item=None) -> (Tuple[Dict[str, Tensor], Dict[str, Tensor]]):
 
         # choose a random experiment 
         exp=random.choice(self.experiments)
         # load forcing for a random experiment, load all years
-        forcing=self.h5_dsets_forcing[exp]
-        raw_Ys = forcing["Data"]
+        forcing_data=self.h5_dsets_forcing[exp]
+        
 
         # choose data belonging to a random model / member pair
         model_data=random.choice(self.h5_dsets_model[exp])
-        raw_Xs = model_data["Data"]
-
-        if self.load_h5_into_mem:
-            X = raw_Xs["Data"]
-            Y = raw_Ys["Data"]
         
-        else:
-            # possabilty to apply transforms and normalizations 
-            # TODO
-            X=raw_Xs["Data"]
-            Y=raw_Ys["Data"]
+
+        if self.target=='emulator':
+            raw_Ys = forcing_data[item]
+            raw_Xs = model_data[item]
+        
+            if self.load_h5_into_mem:
+                X = raw_Xs["Data"]
+                Y = raw_Ys["Data"]
+            
+            else:
+                # possabilty to apply transforms and normalizations 
+                # TODO
+                X=raw_Xs["Data"]
+                Y=raw_Ys["Data"]
      
+        elif self.target=='causal':
+
+            #check if dimensions match
+            spatial_dim_f=forcing_data.spatial_dim
+            spatial_dim_m = model_data.spatial_dim
+
+            n_f=spatial_dim_f["n"]*spatial_dim_f["t"]
+            n_m=spatial_dim_m["n"]*spatial_dim_m["t"]
+            assert n_f == n_m, "WARNING: Not the same time series lenght for forcing and model data."
+
+            d_x_f=spatial_dim_f["d_x"]
+            d_x_m=spatial_dim_m["d_x"]
+            assert d_x_f==d_x_m, "WARNING: Spatial dimension of forcing and model data do not match."
+            
+            # random index along time dimension
+            # if tau is given, select a random time window from the full serios
+            if self.tau is not None:
+                
+                if self.instantaneous: 
+                    tau=self.tau+1
+                    t1=1
+                else: 
+                    tau=self.tau
+                    t1=0
+
+                assert self.tau < (n_m-t1), f"WARNING: Time window size {self.tau} bigger than available timeseries lenght {n_m}."
+                random_idx = np.random.randint(self.tau, n_m-t1)
+             
+            else: 
+                random_idx=None
+                tau=self.tau
+           
+            raw_f = forcing_data[(random_idx,tau,t1)]
+            raw_m = model_data[(random_idx, tau, t1)]
+
+            x_1,y_1 = raw_f["X"], raw_f["Y"]
+            x_2, y_2 = raw_m["X"], raw_m["Y"]
+           
+            X = torch.cat((x_1,x_2),1)
+            Y = torch.cat((y_1,y_2),1)
+        else:
+            print(f"WARNING: Uknown target {self.target}")
+            raise ValueError
+
         return X, Y
 
     def output_dim(self):
@@ -336,9 +384,10 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
     def __len__(self) -> int:
         return self._num_examples
   
-    def __getitem__(self, item) -> Dict[str, Tensor]:
+    def __getitem__(self, item=None) -> Dict[str, Tensor]:
             """
             Loads and returns all years for the given combination. For
+
 
             @returns:
                 D  (Dict["Data", Tensor]): Tensor of shape (n=number of years, t = t max, d = number of variables, d_x = total number of grid cells)
@@ -396,6 +445,69 @@ class Causalpaca_HdF5_SingleDataset_Emulator(torch.utils.data.Dataset):
                 # rename file names to location on SLURM
                 self.all_files[v]=h5_path_new_in
                 self.data_dir=os.environ["SLURM_TMPDIR"]
+
+
+class Causalpaca_HdF5_SingleDataset_Causal(Causalpaca_HdF5_SingleDataset_Emulator):
+
+    def __init__(self,
+                *args, **kwargs
+                ):
+        """
+        Single Dataset for Causal.
+        """
+
+        super().__init__(*args, **kwargs)
+        # TODO: do i need to add anything to the init function??
+
+    def __getitem__(self, item=None) -> Dict[str, Tensor]:
+
+
+        """
+        Loads and returns a time window of size self.tau randomly selected from all years for the given combination or all years of the given combination given self.tau=None
+        @params:
+            item (Triple[int]): random_idx, tau, t1 
+        @returns:
+            D  (Dict["Data", Tensor]): Tensor of shape (n=number of yearsxt_max / tau = size time window, t = t max, d = number of variables, d_x = total number of grid cells)
+           
+        """
+       
+        random_idx, tau, t1 = item
+
+        # should get all years for a given experimnt
+        array_per_var=[]
+        for v in self.all_files:
+            # concatenate along t dimension
+            array_per_var.append(np.concatenate([h5py.File(f, 'r')[v] for f in self.all_files[v]],axis=0))
+
+        # stack variables along d dimension
+        data=np.stack(array_per_var, axis=1)
+        print("Causa get item data size check", data.shape)
+
+        # flatten out spatial dimension (n, d, d_x)
+        data=np.reshape(data, (data.shape[0], data.shape[1], -1))
+
+        print("check after flatten", data.shape)
+
+        if tau is not None:
+            # get a time window slice
+            x = data[random_idx - tau : random_idx + t1, :, :]
+            y = data[random_idx + t1]
+        else:
+            x = data
+            y = data[-1,:,:] #TODO: question to phillipe if that's what we want...
+
+
+
+        print("check after time window slice", x.shape, y.shape)
+
+        x_ = torch.as_tensor(x)
+        y_ = torch.as_tensor(np.expand_dims(y,0))
+        # return dictionary
+        D={"X": x_, "Y":y_}
+
+        return D
+
+    
 
 
 class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_Emulator):
@@ -525,7 +637,7 @@ class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_E
     def copy_to_slurm_tmp_dir(self, aspect): #TODO: figure out if we want to inherit that or pass it
         pass
 
-    def __getitem__(self, index) -> Dict[str, Tensor]:
+    def __getitem__(self,item=None) -> Dict[str, Tensor]:
         """
         Returns the preprocessed preloadde Data. Only apply transform if the data was not yet saved with the transform already applied.
 
@@ -542,7 +654,7 @@ class Causalpaca_HdF5_FastSingleDataset_Emulator(Causalpaca_HdF5_SingleDataset_E
             X = torch.from_numpy(self.data['Data']).float()
         else:
             #TODO: not sure what the else is here
-            X = {k: torch.from_numpy(v[index]).float() for k, v in self.data['Data'].items()}
+            raise TypeError
 
         if self.transform is not None and not self.transform.save_transformed_data:
             X = self.transform.transform(X)
@@ -587,7 +699,7 @@ if __name__ == '__main__':
         batch_size=2
 
 
-        ds=Causalpaca_HdF5_Dataset(experiments=experiments, variables=variables, years=years, load_h5_into_mem=True)
+        ds=Causalpaca_HdF5_Dataset(experiments=experiments, variables=variables, years=years, load_h5_into_mem=True, target='emulator', tau=4)
         #for x,y in ds:
         #    print(x.size, y.size)
 
