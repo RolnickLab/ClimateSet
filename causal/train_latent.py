@@ -56,13 +56,13 @@ class TrainingLatent:
 
         if self.instantaneous:
             raise NotImplementedError("Soon")
-            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau + 1,
+            self.adj_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.tau + 1,
                                     self.d * self.d_z, self.d * self.d_z))
         else:
-            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau, self.d *
+            self.adj_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.tau, self.d *
                                     self.d_z, self.d * self.d_z))
         if not self.no_gt:
-            self.adj_w_tt = np.zeros((self.hp.max_iteration, self.d, self.d_x, self.d_z))
+            self.adj_w_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.d, self.d_x, self.d_z))
 
         # self.model.mask.fix(self.gt_dag)
 
@@ -308,10 +308,10 @@ class TrainingLatent:
         self.valid_acyclic_cons_list.append(self.valid_acyclic_cons)
 
         # self.mu_ortho_list.append(self.mu_ortho)
-        self.adj_tt[self.iteration] = self.model.get_adj().detach().numpy()
+        self.adj_tt[int(self.iteration / self.hp.valid_freq)] = self.model.get_adj().detach().numpy()
         w = self.model.encoder_decoder.get_w().detach().numpy()
         if not self.no_gt:
-            self.adj_w_tt[self.iteration] = w
+            self.adj_w_tt[int(self.iteration / self.hp.valid_freq)] = w
 
     def print_results(self):
         """Print values of many variable: losses, constraint violation, etc.
