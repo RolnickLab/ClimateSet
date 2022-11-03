@@ -1,10 +1,12 @@
 # Input4MIPs data is preprocessed here after downloading them
 import os
+import cftime
 import numpy as np
 import netCDF4 as nc
 import xarray as xr
 from typing import List
 from pathlib import Path
+from cftime import num2date, date2num
 
 
 # EXTERNAL TODOS
@@ -190,19 +192,22 @@ class Input4mipsRawPreprocesser:
         new_file_path = self.raw_path / "None" / "test_file.nc"
 
         a = xr.open_dataset(a_file)
-        b = xr.open_dataset(b_file) # TODO: grap first available file here
+        b_file = xr.open_dataset(b_file) # TODO: grap first available file here
         #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
         #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
         #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
 
+        # resolution ratio (old / new res)
         res_ratio = int(old_res.split('_')[0]) / int(new_res.split('_')[0])
         # TODO!!! Desired degree resolution
         res_degree = 0.5
+        # aggregation size
+        aggr_size = res_ratio**(-1)
 
         # create new nc file with lower res for lon and lat
-        old_lon_dim = len(b["longitude"]) # TODO does openburning use "lon" or "longitude"
-        old_lat_dim = len(b["latitude"])
-        old_time_dim = len(b["time"])
+        old_lon_dim = len(b_file["longitude"]) # TODO does openburning use "lon" or "longitude"
+        old_lat_dim = len(b_file["latitude"])
+        old_time_dim = len(b_file["time"])
 
         ncfile = nc.Dataset(new_file_path, mode='w', format="NETCDF4_CLASSIC")
         ncfile.title = "Spatially aggregated openburning input4mips data"
@@ -218,10 +223,12 @@ class Input4mipsRawPreprocesser:
         lon.units = "degrees_east"
         lon.long_name = "longitude"
         time = ncfile.createVariable("time", "f8", ("time",))
-        time.units = "day dates (monthly average / snapshots)"
+        time.units = "hours since 0001-01-01 00:00:00.0"
+        time.calendar = "noleap"
         time.long_name = "time"
         # create BC variable
-        temp = ncfile.createVariable("BC", "f8", ("time","lat","lon")) # TODO short name
+        abbr_var = "BC" # TODO create this for the different GHG
+        temp = ncfile.createVariable(abbr_var, "f8", ("time","lat","lon")) # TODO short name
         temp.units = "kg m-2 s-1" # flux of emissions
         temp.long_name = var # the long name of the variable
 
@@ -239,13 +246,27 @@ class Input4mipsRawPreprocesser:
             lat_coords.append(start_lat)
             start_lat += res_degree
         # time coordinates
-        time_coords = b["time"].values # old time coordinates, nothing changes here
-        # aggregation size
-        aggr_size = res_ratio**(-1)
+        print(b_file)
+        time_coords = date2num(b_file["time"].values, units=time.units, calendar=time.calendar) # old time coordinates, nothing changes here
+        ncfile.time = time_coords
+        print(ncfile)
+        exit(0)
+        # set these coordinates for new file
+        #print(lat_coords)
+        #print(b_file["time"].values)
+        ncfile.latitude = lat_coords
+        ncfile.longitude = lon_coords
+        ncfile.time = b_file.time.data
+        print(b_file)
+        exit(0)
+        #ncfile.time = time_coords
+        ncfile["BC"][0, -11.25, 77.25] = 30
+        print(ncfile["BC"][0, -11.25, 77.25])
+        exit(0)
+
 
         # replace all nans with zeros
-        # CONTINUE HERE
-        #nc_file
+        b = b.where(~np.isnan(b[abbr_var][:, :, :]), 0) # later: could be accelerated
 
         # move over high res file, aggregate and fill the new low res file
         for i_lon, lon in enumerate(lon_coords):
@@ -259,18 +280,21 @@ class Input4mipsRawPreprocesser:
                 for i_t, t in enumerate(time_coords):
                     # TODO adapt to real data (order etc)
                     # what I want: the 2 (agg_size) values "closest" to lon
-                    print(str_lon, end_lon)
-                    print(str_lat, end_lat)
-                    # print(b["longitude"].values)
-                    print(b["BC"][i_t, str_lat:end_lat, str_lon:end_lon]) # order: time, lat, lon
+                    high_res_values = b[abbr_var][i_t, str_lat:end_lat, str_lon:end_lon] # order: time, lat, lon
+                    #print(high_res_values)
+                    aggr_value = high_res_values.sum()
+                    print(b)
+                    print(ncfile)
                     exit(0)
-                    # CONTINUE HERE
+                    print(t, lat, lon)
+                    ncfile[abbr_var][i_t, lat, lon] = aggr_value
+                    print(ncfile)
+                    exit(0)
                     # high_res_values = b["BC"][t, lon:x, lat:x]
                     # aggr_value = sum(high_res_values)
                     # ncfile["BC"][t, lat, lon] = aggr_value
                     # exit(0)
         # iterate with kernel over b_file
-
 
         # for higher res data:
         # 1. replace nans with 0 (if necessary)
