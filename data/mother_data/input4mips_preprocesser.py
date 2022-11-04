@@ -192,7 +192,7 @@ class Input4mipsRawPreprocesser:
         new_file_path = self.raw_path / "None" / "test_file.nc"
 
         a = xr.open_dataset(a_file)
-        b_file = xr.open_dataset(b_file) # TODO: grap first available file here
+        b = xr.open_dataset(b_file) # TODO: grap first available file here
         #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
         #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
         #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
@@ -205,9 +205,9 @@ class Input4mipsRawPreprocesser:
         aggr_size = res_ratio**(-1)
 
         # create new nc file with lower res for lon and lat
-        old_lon_dim = len(b_file["longitude"]) # TODO does openburning use "lon" or "longitude"
-        old_lat_dim = len(b_file["latitude"])
-        old_time_dim = len(b_file["time"])
+        old_lon_dim = len(b["longitude"]) # TODO does openburning use "lon" or "longitude"
+        old_lat_dim = len(b["latitude"])
+        old_time_dim = len(b["time"])
 
         ncfile = nc.Dataset(new_file_path, mode='w', format="NETCDF4_CLASSIC")
         ncfile.title = "Spatially aggregated openburning input4mips data"
@@ -246,24 +246,12 @@ class Input4mipsRawPreprocesser:
             lat_coords.append(start_lat)
             start_lat += res_degree
         # time coordinates
-        print(b_file)
-        time_coords = date2num(b_file["time"].values, units=time.units, calendar=time.calendar) # old time coordinates, nothing changes here
-        ncfile.time = time_coords
-        print(ncfile)
-        exit(0)
+        time_coords = date2num(b["time"].values, units=time.units, calendar=time.calendar) # old time coordinates, nothing changes here
+
         # set these coordinates for new file
-        #print(lat_coords)
-        #print(b_file["time"].values)
         ncfile.latitude = lat_coords
         ncfile.longitude = lon_coords
-        ncfile.time = b_file.time.data
-        print(b_file)
-        exit(0)
-        #ncfile.time = time_coords
-        ncfile["BC"][0, -11.25, 77.25] = 30
-        print(ncfile["BC"][0, -11.25, 77.25])
-        exit(0)
-
+        ncfile.time = time_coords
 
         # replace all nans with zeros
         b = b.where(~np.isnan(b[abbr_var][:, :, :]), 0) # later: could be accelerated
@@ -281,19 +269,17 @@ class Input4mipsRawPreprocesser:
                     # TODO adapt to real data (order etc)
                     # what I want: the 2 (agg_size) values "closest" to lon
                     high_res_values = b[abbr_var][i_t, str_lat:end_lat, str_lon:end_lon] # order: time, lat, lon
-                    #print(high_res_values)
                     aggr_value = high_res_values.sum()
-                    print(b)
-                    print(ncfile)
-                    exit(0)
-                    print(t, lat, lon)
+                    if aggr_value != 0:
+                        print(aggr_value)
                     ncfile[abbr_var][i_t, lat, lon] = aggr_value
-                    print(ncfile)
+                    print(i_t, lat, lon)
+                    print(ncfile[abbr_var][i_t, lat, lon])
+                    print(ncfile[abbr_var][0, :, :])
                     exit(0)
-                    # high_res_values = b["BC"][t, lon:x, lat:x]
-                    # aggr_value = sum(high_res_values)
-                    # ncfile["BC"][t, lat, lon] = aggr_value
-                    # exit(0)
+
+                print(ncfile[abbr_var][0, :, :])
+                exit(0)
         # iterate with kernel over b_file
 
         # for higher res data:
