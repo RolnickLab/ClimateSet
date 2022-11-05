@@ -191,18 +191,66 @@ class Input4mipsRawPreprocesser:
         b_file = b_path / "input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc"
         new_file_path = self.raw_path / "None" / "test_file.nc"
 
-        a = xr.open_dataset(a_file)
-        b = xr.open_dataset(b_file) # TODO: grap first available file here
-        #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
-        #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
-        #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
-
         # resolution ratio (old / new res)
         res_ratio = int(old_res.split('_')[0]) / int(new_res.split('_')[0])
         # TODO!!! Desired degree resolution
         res_degree = 0.5
         # aggregation size
         aggr_size = res_ratio**(-1)
+        # sectors
+        # TODO read out from b file
+        new_sectors = 1 # we only have 1 sector for biomassburning
+
+        # create new nc file with lower res for lon and lat
+
+        # copy the original dataset (desired dimensions etc)
+            # ATTENTION: we have 8 sectors in our antro files! (but 0 in anthro)
+            # solution: only copy a subset of the sectors
+            # bug potential if new sector size is bigger than original sector size!
+        copy_original = xr.open_dataset(a_file)
+        # HERE --> change only the sector dimension!!! somehow!!
+        copy_original = original[:][:, 0:new_sectors, :, :]
+        print(original)
+        print(copy_original)
+        exit(0)
+        print(original[a_var][:, :, :, :])
+        exit(0)
+
+        print(original[a_var][:, :, :, :])
+        copy_original = original[a_var][:, 0:new_sectors, :, :].copy()
+        print(copy_original[a_var])
+        exit(0)
+        copy_original[a_var][:, ]
+        copy_original["sector"].sel(drop=True)
+        print(copy_original[a_var][:, :, :].shape)
+        exit(0)
+        # replace with nans
+        copy_original[a_var][:, :, :] = np.nan
+        print(copy_original[a_var][:, 0:2, 0:2])
+        # rename GHG variable (target var that changes resolution!)
+        copy_original[var] = copy_original[a_var]
+        copy_original = copy_original.drop(a_var)
+        # save as new nc file
+        copy_original.to_netcdf(new_file_path)
+
+        # rename variable?
+        print(copy_original[var][:, 0, 0])
+        print(a_var)
+        print(var)
+        exit(0)
+
+
+        # open
+
+        #############################################
+
+        # open both nc files
+        a = xr.open_dataset(a_file)
+        b = xr.open_dataset(b_file) # TODO: grap first available file here
+        #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
+        #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
+        #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
+
 
         # create new nc file with lower res for lon and lat
         old_lon_dim = len(b["longitude"]) # TODO does openburning use "lon" or "longitude"
