@@ -199,6 +199,7 @@ class Input4mipsRawPreprocesser:
         aggr_size = res_ratio**(-1)
         # sectors
         # TODO read out from b file
+        # TODO: user can only decide between "same_sectors" and "aggr_sectors"
         new_sectors = 1 # we only have 1 sector for biomassburning
 
         ### create new nc file with lower res for lon and lat ###
@@ -216,7 +217,7 @@ class Input4mipsRawPreprocesser:
             copy_original = full_sector_original
 
         # replace with nans
-        copy_original[a_var][:, :, :] = np.nan
+        copy_original[a_var][:, :, :, :] = np.nan
 
         # rename GHG variable (target var that changes resolution!) if needed
         if var != a_var:
@@ -225,68 +226,22 @@ class Input4mipsRawPreprocesser:
 
         # save as new nc file
         copy_original.to_netcdf(new_file_path)
-        
+
         #############################################
 
         # open both nc files
-        a = xr.open_dataset(a_file)
-        b = xr.open_dataset(b_file) # TODO: grap first available file here
+        a = full_sector_original
+        b = copy_original
+        #xr.open_dataset(b_file) # TODO: grap first available file here
         #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
         #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
         #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
 
-
-        # create new nc file with lower res for lon and lat
-        old_lon_dim = len(b["longitude"]) # TODO does openburning use "lon" or "longitude"
-        old_lat_dim = len(b["latitude"])
-        old_time_dim = len(b["time"])
-
-        ncfile = nc.Dataset(new_file_path, mode='w', format="NETCDF4_CLASSIC")
-        ncfile.title = "Spatially aggregated openburning input4mips data"
-        # create dimensions
-        new_lon_dim = ncfile.createDimension("lon", old_lon_dim * res_ratio)
-        new_lat_dim = ncfile.createDimension("lat", old_lat_dim * res_ratio)
-        new_time_dim = ncfile.createDimension("time", old_time_dim)
-        # create variables
-        lat = ncfile.createVariable("lat", "f4", ("lat",))
-        lat.units = "degrees_north"
-        lat.long_name = "latitude"
-        lon = ncfile.createVariable("lon", "f4", ("lon",))
-        lon.units = "degrees_east"
-        lon.long_name = "longitude"
-        time = ncfile.createVariable("time", "f8", ("time",))
-        time.units = "hours since 0001-01-01 00:00:00.0"
-        time.calendar = "noleap"
-        time.long_name = "time"
-        # create BC variable
-        abbr_var = "BC" # TODO create this for the different GHG
-        temp = ncfile.createVariable(abbr_var, "f8", ("time","lat","lon")) # TODO short name
-        temp.units = "kg m-2 s-1" # flux of emissions
-        temp.long_name = var # the long name of the variable
-
-        # create coordinates
-        # longitude coordinates
-        start_lon = -180 + (res_degree / 2) # e.g. -179.75 for 0.5 degree res
-        lon_coords = []
-        for i in range(0, len(ncfile["lon"])):
-            lon_coords.append(start_lon)
-            start_lon += res_degree
-        # latitude coordinates
-        start_lat = -90 + (res_degree / 2) # e.g. -89.75 for 0.5 degree res
-        lat_coords = []
-        for i in range(0, len(ncfile["lat"])):
-            lat_coords.append(start_lat)
-            start_lat += res_degree
-        # time coordinates
-        time_coords = date2num(b["time"].values, units=time.units, calendar=time.calendar) # old time coordinates, nothing changes here
-
-        # set these coordinates for new file
-        ncfile.latitude = lat_coords
-        ncfile.longitude = lon_coords
-        ncfile.time = time_coords
-
         # replace all nans with zeros
-        b = b.where(~np.isnan(b[abbr_var][:, :, :]), 0) # later: could be accelerated
+        b = b.where(~np.isnan(b[var][:, :, :, :]), 0) # later: could be accelerated
+        exit(0)
+
+        # HERE
 
         # move over high res file, aggregate and fill the new low res file
         for i_lon, lon in enumerate(lon_coords):
