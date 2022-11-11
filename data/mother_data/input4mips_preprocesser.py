@@ -201,47 +201,31 @@ class Input4mipsRawPreprocesser:
         # TODO read out from b file
         new_sectors = 1 # we only have 1 sector for biomassburning
 
-        # create new nc file with lower res for lon and lat
+        ### create new nc file with lower res for lon and lat ###
 
         # copy the original dataset (desired dimensions etc)
-            # ATTENTION: we have 8 sectors in our antro files! (but 0 in anthro)
-            # solution: only copy a subset of the sectors
-            # bug potential if new sector size is bigger than original sector size!
-        copy_original = xr.open_dataset(a_file)
-        # HERE --> change only the sector dimension!!! somehow!!
-        copy_original = original[:][:, 0:new_sectors, :, :]
-        print(original)
-        print(copy_original)
-        exit(0)
-        print(original[a_var][:, :, :, :])
-        exit(0)
+        full_sector_original = xr.open_dataset(a_file)
 
-        print(original[a_var][:, :, :, :])
-        copy_original = original[a_var][:, 0:new_sectors, :, :].copy()
-        print(copy_original[a_var])
-        exit(0)
-        copy_original[a_var][:, ]
-        copy_original["sector"].sel(drop=True)
-        print(copy_original[a_var][:, :, :].shape)
-        exit(0)
+        # change the sector dimension if necessary
+        old_sectors = full_sector_original.sizes["sector"]
+        if new_sectors < old_sectors:
+            copy_original = full_sector_original.where(full_sector_original.sector < new_sectors).dropna(dim="sector")
+        elif new_sectors > old_sectors:
+            raise ValueError("Trying to create more sectors than available in original file. We are not able to do this.")
+        else:
+            copy_original = full_sector_original
+
         # replace with nans
         copy_original[a_var][:, :, :] = np.nan
-        print(copy_original[a_var][:, 0:2, 0:2])
-        # rename GHG variable (target var that changes resolution!)
-        copy_original[var] = copy_original[a_var]
-        copy_original = copy_original.drop(a_var)
+
+        # rename GHG variable (target var that changes resolution!) if needed
+        if var != a_var:
+            copy_original[var] = copy_original[a_var]
+            copy_original = copy_original.drop(a_var)
+
         # save as new nc file
         copy_original.to_netcdf(new_file_path)
-
-        # rename variable?
-        print(copy_original[var][:, 0, 0])
-        print(a_var)
-        print(var)
-        exit(0)
-
-
-        # open
-
+        
         #############################################
 
         # open both nc files
