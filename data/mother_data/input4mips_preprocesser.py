@@ -185,6 +185,7 @@ class Input4mipsRawPreprocesser:
         # testing here how to aggregate a normal file, this is a 50km one
         scenario = "historical"
         a_var = "BC_em_anthro"
+        abbr_var = "BC" # used instead of "BC_em_biomassburning" in the files!
         a_path = self.raw_path / scenario / a_var / "50_km" / "mon" / "1750"
         a_file = a_path / "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
         b_path = self.raw_path / scenario / var / "25_km" / "mon" / "1750"
@@ -197,24 +198,25 @@ class Input4mipsRawPreprocesser:
         res_degree = 0.5
         # aggregation size
         aggr_size = res_ratio**(-1)
+
+        # open both files
+        high_res_file = xr.open_dataset(b_file)
+        full_original = xr.open_dataset(a_file)
+
         # sectors
-        # TODO read out from b file
-        # TODO: user can only decide between "same_sectors" and "aggr_sectors"
-        new_sectors = 1 # we only have 1 sector for biomassburning
+        old_sectors = full_original.sizes["sector"]
+        # TODO make this a user param
+        aggr_sectors = True # True (default): summarize all sectors to one False: leave them as it is
+        new_sectors = 1 if aggr_sectors else old_sectors # we only have 1 sector for biomassburning
 
         ### create new nc file with lower res for lon and lat ###
-
         # copy the original dataset (desired dimensions etc)
-        full_sector_original = xr.open_dataset(a_file)
-
-        # change the sector dimension if necessary
-        old_sectors = full_sector_original.sizes["sector"]
-        if new_sectors < old_sectors:
-            copy_original = full_sector_original.where(full_sector_original.sector < new_sectors).dropna(dim="sector")
+        if new_sectors < old_sectors: # change the sector dimension if necessary
+            copy_original = full_original.where(full_original.sector < new_sectors).dropna(dim="sector")
         elif new_sectors > old_sectors:
             raise ValueError("Trying to create more sectors than available in original file. We are not able to do this.")
         else:
-            copy_original = full_sector_original
+            copy_original = full_original
 
         # replace with nans
         copy_original[a_var][:, :, :, :] = np.nan
@@ -224,46 +226,54 @@ class Input4mipsRawPreprocesser:
             copy_original[var] = copy_original[a_var]
             copy_original = copy_original.drop(a_var)
 
-        # save as new nc file
-        copy_original.to_netcdf(new_file_path)
-
         #############################################
 
         # open both nc files
-        a = full_sector_original
-        b = copy_original
+        a = full_original # TO DEL
+        b = copy_original # TO DEL
         #xr.open_dataset(b_file) # TODO: grap first available file here
         #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
         #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
         #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
 
-        # replace all nans with zeros
-        b = b.where(~np.isnan(b[var][:, :, :, :]), 0) # later: could be accelerated
-        exit(0)
+        aggr_file = copy_original
 
-        # HERE
+        # replace nans with zeros
+        high_res_file = high_res_file.where(~np.isnan(high_res_file[abbr_var][:, :, :]), 0) # later: could be accelerated
 
         # move over high res file, aggregate and fill the new low res file
-        for i_lon, lon in enumerate(lon_coords):
+        for i_lon, lon in enumerate(aggr_file.lon.values):
             mid_lon = (aggr_size * i_lon) + (0.5 * aggr_size)
             str_lon = int(mid_lon - (0.5 * aggr_size))
             end_lon = int(mid_lon + (0.5 * aggr_size))
-            for i_lat, lat in enumerate(lat_coords):
+            for i_lat, lat in enumerate(aggr_file.lat.values):
                 mid_lat = (aggr_size * i_lat) + (0.5 * aggr_size)
                 str_lat = int(mid_lat - (0.5 * aggr_size))
                 end_lat = int(mid_lat + (0.5 * aggr_size))
-                for i_t, t in enumerate(time_coords):
-                    # TODO adapt to real data (order etc)
-                    # what I want: the 2 (agg_size) values "closest" to lon
-                    high_res_values = b[abbr_var][i_t, str_lat:end_lat, str_lon:end_lon] # order: time, lat, lon
-                    aggr_value = high_res_values.sum()
-                    if aggr_value != 0:
-                        print(aggr_value)
-                    ncfile[abbr_var][i_t, lat, lon] = aggr_value
-                    print(i_t, lat, lon)
-                    print(ncfile[abbr_var][i_t, lat, lon])
-                    print(ncfile[abbr_var][0, :, :])
-                    exit(0)
+                for i_t, t in enumerate(aggr_file.time.values): # maybe use without values here
+                    #aggr_sectors = False
+                    if not aggr_sectors:
+                        # another for loop over sectors
+                        for i_s, s in enumerate(aggr_file.sector.values):
+                            print(aggr_file.sector.values)
+                            exit(0)
+                            # CONTINUE LATER
+                    else:
+                        # TODO make the order dynamic - this is hardcoded right now...
+                        high_res_values = high_res_file[abbr_var][i_t, str_lat:end_lat, str_lon:end_lon] # order: time, lat, lon
+                        aggr_value = high_res_values.sum()
+                        if aggr_value != 0:
+                            print(aggr_value)
+                        # HERE
+                        # CONTINUE: use the right order, add sectors (and bounds)
+                        # TODO add here also option to use the same sectors or to aggregate them to one sector
+                        print(aggr_file)
+                        aggr_file[var][i_t, lat, lon] = aggr_value
+                        exit(0)
+                        print(i_t, lat, lon)
+                        print(aggr_file[var][i_t, lat, lon])
+                        print(aggr_file[var][0, :, :])
+                        exit(0)
 
                 print(ncfile[abbr_var][0, :, :])
                 exit(0)
@@ -274,6 +284,8 @@ class Input4mipsRawPreprocesser:
         # 2. create new nc data file with lower res (empty)
         # 3. move a window above high res data --> sum up the values & store in new file
 
+        # save as new nc file
+        copy_original.to_netcdf(new_file_path)
 
         # Questions: What do the different sectors mean?
         exit(0)
