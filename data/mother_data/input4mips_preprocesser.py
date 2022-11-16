@@ -4,6 +4,7 @@ import cftime
 import numpy as np
 import netCDF4 as nc
 import xarray as xr
+from tqdm import tqdm
 from typing import List
 from pathlib import Path
 from cftime import num2date, date2num
@@ -182,6 +183,8 @@ class Input4mipsRawPreprocesser:
             overwrite (bool): Indicating if the files should be overwritten if
                 they already exist for this resolution.
         """
+        # TODO rename longitude and latitude -> must be consistent for all files
+
         # testing here how to aggregate a normal file, this is a 50km one
         scenario = "historical"
         a_var = "BC_em_anthro"
@@ -208,6 +211,9 @@ class Input4mipsRawPreprocesser:
         # TODO make this a user param
         aggr_sectors = True # True (default): summarize all sectors to one False: leave them as it is
         new_sectors = 1 if aggr_sectors else old_sectors # we only have 1 sector for biomassburning
+
+        if (not aggr_sectors) and (not "sector" in high_res_file):
+            raise ValueError("If you do not want to aggregate sectors, sectors must exists in the high res file! Consider setting aggr_sectors=True.")
 
         ### create new nc file with lower res for lon and lat ###
         # copy the original dataset (desired dimensions etc)
@@ -241,8 +247,12 @@ class Input4mipsRawPreprocesser:
         # replace nans with zeros
         high_res_file = high_res_file.where(~np.isnan(high_res_file[abbr_var][:, :, :]), 0) # later: could be accelerated
 
+        # TODO make this is a looot faster ...
+            # calculate lon lat block once separately
+            # find a way to use an "apply" method that is faster
+
         # move over high res file, aggregate and fill the new low res file
-        for i_lon, lon in enumerate(aggr_file.lon.values):
+        for i_lon, lon in tqdm(enumerate(aggr_file.lon.values), total=aggr_file.lon.size):
             mid_lon = (aggr_size * i_lon) + (0.5 * aggr_size)
             str_lon = int(mid_lon - (0.5 * aggr_size))
             end_lon = int(mid_lon + (0.5 * aggr_size))
@@ -251,43 +261,37 @@ class Input4mipsRawPreprocesser:
                 str_lat = int(mid_lat - (0.5 * aggr_size))
                 end_lat = int(mid_lat + (0.5 * aggr_size))
                 for i_t, t in enumerate(aggr_file.time.values): # maybe use without values here
-                    #aggr_sectors = False
                     if not aggr_sectors:
                         # another for loop over sectors
                         for i_s, s in enumerate(aggr_file.sector.values):
-                            print(aggr_file.sector.values)
-                            exit(0)
-                            # CONTINUE LATER
+                            high_res_indices = dict(time=i_t,
+                                                    sector=i_s,
+                                                    latitude=slice(str_lat, end_lat),
+                                                    longitude=slice(str_lon, end_lon))
+                            high_res_values = high_res_file[abbr_var][high_res_indices]
+                            aggr_value = high_res_values.sum().values
+                            low_res_coord_labels = dict(time=t, lat=lat, lon=lon, sector=s)
+                            aggr_file[var].loc[low_res_coord_labels] = aggr_value
                     else:
-                        # TODO make the order dynamic - this is hardcoded right now...
-                        high_res_values = high_res_file[abbr_var][i_t, str_lat:end_lat, str_lon:end_lon] # order: time, lat, lon
-                        aggr_value = high_res_values.sum()
-                        if aggr_value != 0:
-                            print(aggr_value)
-                        # HERE
-                        # CONTINUE: use the right order, add sectors (and bounds)
-                        # TODO add here also option to use the same sectors or to aggregate them to one sector
-                        print(aggr_file)
-                        aggr_file[var][i_t, lat, lon] = aggr_value
-                        exit(0)
-                        print(i_t, lat, lon)
-                        print(aggr_file[var][i_t, lat, lon])
-                        print(aggr_file[var][0, :, :])
-                        exit(0)
+                        # Attention: problems can arise when names are not "longitude" & "latitude"
+                        high_res_indices = dict(time=i_t,
+                                                latitude=slice(str_lat, end_lat),
+                                                longitude=slice(str_lon, end_lon))
+                        high_res_values = high_res_file[abbr_var][high_res_indices]
+                        aggr_value = high_res_values.sum().values
+                        # check if coordinate sector exists
+                        if "sector" in aggr_file.coords:
+                            low_res_coord_labels = dict(time=t, lat=lat, lon=lon, sector=0)
+                        else:
+                            low_res_coord_labels = dict(time=t, lat=lat, lon=lon)
+                        aggr_file[var].loc[low_res_coord_labels] = aggr_value
+                        #print(aggr_file[var].loc[low_res_coord_labels])
 
-                print(ncfile[abbr_var][0, :, :])
-                exit(0)
-        # iterate with kernel over b_file
-
-        # for higher res data:
-        # 1. replace nans with 0 (if necessary)
-        # 2. create new nc data file with lower res (empty)
-        # 3. move a window above high res data --> sum up the values & store in new file
+        print("Finished!")
+        print(aggr_file)
 
         # save as new nc file
-        copy_original.to_netcdf(new_file_path)
-
-        # Questions: What do the different sectors mean?
+        aggr_file.to_netcdf(new_file_path)
         exit(0)
         curr_path = self.raw_path / scenario / var
 
