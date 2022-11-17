@@ -2,8 +2,11 @@
 import os
 import cftime
 import numpy as np
-import netCDF4 as nc
+import xesmf as xe
 import xarray as xr
+import netCDF4 as nc
+import matplotlib.pyplot as plt
+
 from tqdm import tqdm
 from typing import List
 from pathlib import Path
@@ -108,6 +111,7 @@ class Input4mipsRawPreprocesser:
         return full_scenarios
 
     # this is part of the raw preprocesser
+    # TODO calendar checks
     def sanity_checks(self) -> bool:
         """ Checks if all Input4MIPs files use the expected unit (fluxes in
         kg m-2 s-1). Checks if the temporal and nominal resolution in the file
@@ -151,6 +155,89 @@ class Input4mipsRawPreprocesser:
         """ Converting future scenarios with a 5y frequency to annual scenarios.
         """
         pass
+
+    def spat_aggregate(
+        self,
+        old_res: str = "25_km",
+        new_res: str = "50_km",
+        scenario: str = "historical",
+        var: str = "BC_em_biomassburning", # TODO make this a list option
+        overwrite: bool = False,
+    ):
+        """ Testing the xesmf regridder
+        """
+        # testing here how to aggregate a normal file, this is a 50km one
+        scenario = "historical"
+        a_var = "BC_em_anthro"
+        abbr_var = "BC" # used instead of "BC_em_biomassburning" in the files!
+        a_path = self.raw_path / scenario / a_var / "50_km" / "mon" / "1750"
+        a_file = a_path / "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
+        b_path = self.raw_path / scenario / var / "25_km" / "mon" / "1750"
+        b_file = b_path / "input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc"
+        new_file_path = self.raw_path / "None" / "test_file.nc"
+
+        # resolution ratio (old / new res)
+        res_ratio = int(old_res.split('_')[0]) / int(new_res.split('_')[0])
+        # TODO!!! Desired degree resolution
+        res_degree = 0.5
+        # aggregation size
+        aggr_size = res_ratio**(-1)
+
+        # open both files
+        in_ds = xr.open_dataset(b_file)
+        role_model_ds = xr.open_dataset(a_file)
+
+        ##### MOVE THIS OUTSIDE ###############
+        # sectors
+        old_sectors = role_model_ds.sizes["sector"]
+        # TODO make this a user param
+        aggr_sectors = True # True (default): summarize all sectors to one False: leave them as it is
+        new_sectors = 1 if aggr_sectors else old_sectors # we only have 1 sector for biomassburning
+
+        if (not aggr_sectors) and (not "sector" in high_res_file):
+            raise ValueError("If you do not want to aggregate sectors, sectors must exists in the high res file! Consider setting aggr_sectors=True.")
+
+        ### create new nc file with lower res for lon and lat ###
+        # copy the original dataset (desired dimensions etc)
+        if new_sectors < old_sectors: # change the sector dimension if necessary
+            out_ds = role_model_ds.where(role_model_ds.sector < new_sectors).dropna(dim="sector")
+        elif new_sectors > old_sectors:
+            raise ValueError("Trying to create more sectors than available in original file. We are not able to do this.")
+        else:
+            out_ds = role_model_ds
+
+        # replace with nans
+        out_ds[a_var][:, :, :, :] = np.nan
+
+        # rename GHG variable (target var that changes resolution!) if needed
+        if var != a_var:
+            out_ds[var] = out_ds[a_var]
+            out_ds = out_ds.drop(a_var)
+        ##############################################
+
+        # CONTINUE HERE: try to create a new file with just long and lat?
+        out_ds_test = xr.Dataset({"lat": (["lat"], role_model_ds.lat.values),
+                                  "lon": (["lon"], role_model_ds.lon.values),
+                                 })
+        print("Role Model")
+        role_model_ds.sel(time="1750-01-16 00:00:00", sector=4)["BC_em_anthro"].squeeze().plot.pcolormesh(vmin=0, vmax=5e-11)
+        plt.show()
+        print("Input File")
+        print(in_ds)
+        regridder = xe.Regridder(in_ds, out_ds_test, "bilinear")
+        print("Regridder")
+        print(regridder)
+        regridded_file = regridder(in_ds)
+        print("Output File")
+        print(regridded_file)
+        # Bug analysis:
+            # time is missing / not as expected
+            # sectors are missing
+        # hence: cannot be plotted
+        regridded_file.sel(time="1750-01-16 00:00:00")["BC"].squeeze().plot.pcolormesh(vmin=0, vmax=5e-11)
+        plt.show()
+        # BUG BC has only nans
+        exit(0)
 
     # TODO add option to use different kinds of aggregations
     # TODO this function can be used in the res preprocesser as well
@@ -250,6 +337,7 @@ class Input4mipsRawPreprocesser:
         # TODO make this is a looot faster ...
             # calculate lon lat block once separately
             # find a way to use an "apply" method that is faster
+
 
         # move over high res file, aggregate and fill the new low res file
         for i_lon, lon in tqdm(enumerate(aggr_file.lon.values), total=aggr_file.lon.size):
@@ -400,7 +488,7 @@ if __name__ == '__main__':
         ghg_vars=VARS)
 
     # aggregate all the historical openburnings (they have 25km res instead of 50)
-    raw_preprocesser.spat_aggregate_single_var(
+    raw_preprocesser.spat_aggregate(
         old_res="25_km",
         new_res="50_km",
         scenario="historical",
