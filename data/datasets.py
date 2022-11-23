@@ -134,12 +134,12 @@ class Causalpaca_HdF5_Dataset(
             for exp in self.experiments:
                 try:
                     exp_h5_dset_forcing = dset_class(
-                        experiment="ssp119",
+                        experiment=exp,
                         variables=self.forcing_variables,
                         nom_res=forcing_nom_res,
                         aspect="forcing",
                         **dset_kwargs,
-                    )  # redo Debugging
+                    )  
                 except ValueError:
                     continue
 
@@ -164,7 +164,7 @@ class Causalpaca_HdF5_Dataset(
                         try:
                             exp_h5_dset_model = dset_class(
                                 model=model,
-                                experiment="ssp126",
+                                experiment=exp,
                                 member=member,
                                 variables=self.model_variables,
                                 nom_res=model_nom_res,
@@ -185,6 +185,8 @@ class Causalpaca_HdF5_Dataset(
 
                         # copy to slurm
                         exp_h5_dset_model.copy_to_slurm_tmp_dir(aspect="model")
+        self.dataset_size_forcing=dataset_size_forcing
+        self.dataset_size_model=dataset_size_model
 
     @property
     def name(self):
@@ -195,7 +197,8 @@ class Causalpaca_HdF5_Dataset(
         return s
 
     def __len__(self):
-        return len(self.years)
+        # for both parts, lenght is determined by to number of cmip combinations * number of available years
+        return self.dataset_size_model
 
     def __getitem__(self, item=None) -> (Tuple[Dict[str, Tensor], Dict[str, Tensor]]):
 
@@ -883,16 +886,16 @@ def get_processed_fname(data_dir: str, name: str, ending=".npz", **kwargs):
 if __name__ == "__main__":
 
     experiments = ["ssp119", "ssp460"]
-    variables = ["CO2_em_anthro", "pr", "tas"]
-    years = [2020, 2030, 2040]
-    batch_size = 2
+    variables = ["CO2_em_anthro", "tas"]
+    years = [2020, 2030, 2040, 2050]
+    batch_size = 3
 
     ds = Causalpaca_HdF5_Dataset(
         experiments=experiments,
         variables=variables,
         years=years,
-        load_h5_into_mem=True,
-        target="causal",
+        load_h5_into_mem=False,
+        target="emulator",
         tau=4,
     )
     # for x,y in ds:
