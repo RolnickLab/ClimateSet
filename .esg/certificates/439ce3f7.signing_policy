@@ -1,0 +1,4 @@
+# UK e-Science TopLevel SLCS CA (this CA signs SLCS CAs)
+ access_id_CA   X509   '/C=UK/O=eScienceSLCSHierarchy/OU=Authority/CN=SLCS Top Level CA'
+ pos_rights     globus  CA:sign
+ cond_subjects  globus '"/C=UK/O=eScienceSLCSHierarchy/*" "/DC=uk/DC=ac/*"'
