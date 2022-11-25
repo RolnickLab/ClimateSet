@@ -1,3 +1,9 @@
+"""
+Dataset classes for efficiently data handling to be passed on to a torch.data.DataLoader
+
+Disclaimer: inspired by ClimART #TODO: insert github link
+"""
+
 import torch
 import numpy as np
 import os
@@ -23,20 +29,20 @@ class Causalpaca_HdF5_Dataset(
     """Class for working with multiple HDF5 datasets"""
 
     def __init__(
-        self,
-        years: List[int],
-        experiments: List[str],
-        variables: List[str],
-        name: str = "test",
-        data_dir: str = None,
-        load_h5_into_mem: bool = False,
-        models: List[str] = ["NorESM2-LM"],
-        ensemble_members: List[str] = ["r1i1p1f1", "r2i1p1f1", "r3i1p1f1"],
-        freq: str = "mon",
-        forcing_nom_res: str = "50_km",
-        model_nom_res: str = "250_km",
-        tau: int = 4,
-        instantaneous: bool = False,
+         self,
+        years: List[int], # list of years to consider
+        experiments: List[str], # list of experiments to consider
+        variables: List[str], # list of variables to consider
+        name: str = "template",
+        data_dir: str = None, #if set to None, data dir as set in utils.constants will be assumed
+        load_h5_into_mem: bool = False, # if True, creating Fast Single H5 Datasets storet into memory
+        models: List[str] = ["NorESM2-LM"], # list of models to consider
+        ensemble_members: List[str] = ["r1i1p1f1", "r2i1p1f1", "r3i1p1f1"], # list of ensemble members to consider
+        freq: str = "mon", # temporal resolution / ferquency
+        forcing_nom_res: str = "50_km", # spatial / nomianl resolution of forcing (input4mips) data
+        model_nom_res: str = "250_km", # spatial / nomianl resolution of model output (CMIP) data
+        tau: int = 4, # time window size, only revelant for causal pathway
+        instantaneous: bool = False, # flag if instantaneous connections are considered, only relevant for causal pathway
         target: str = "emulator",  # other choice is 'causal' leading to a different choice of base dataset / sampling
     ):
 
@@ -129,6 +135,10 @@ class Causalpaca_HdF5_Dataset(
         self.h5_dsets_forcing = {}  # create list of dset objects
         self.h5_dsets_model = {}
 
+        # debug print
+        print("data dir content:", data_dir)
+        print(os.listdir(data_dir))
+
         # get forcing data -> one dataset per experiment
         if have_forcing:
             for exp in self.experiments:
@@ -186,6 +196,8 @@ class Causalpaca_HdF5_Dataset(
                         # copy to slurm
                         exp_h5_dset_model.copy_to_slurm_tmp_dir(aspect="model")
 
+        self.size=dataset_size_forcing+dataset_size_model
+
     @property
     def name(self):
         return self.name.upper()
@@ -195,7 +207,7 @@ class Causalpaca_HdF5_Dataset(
         return s
 
     def __len__(self):
-        return len(self.years)
+        return self.size
 
     def __getitem__(self, item=None) -> (Tuple[Dict[str, Tensor], Dict[str, Tensor]]):
 
@@ -882,7 +894,7 @@ def get_processed_fname(data_dir: str, name: str, ending=".npz", **kwargs):
 
 if __name__ == "__main__":
 
-    experiments = ["ssp119", "ssp460"]
+    experiments = ["ssp119"]
     variables = ["CO2_em_anthro", "pr", "tas"]
     years = [2020, 2030, 2040]
     batch_size = 2
@@ -894,7 +906,9 @@ if __name__ == "__main__":
         load_h5_into_mem=True,
         target="causal",
         tau=4,
+        data_dir=f"{os.environ['SLURM_TMPDIR']}/data/PROCESSED_DATA/"
     )
+   
     # for x,y in ds:
     #    print(x.size, y.size)
 
@@ -912,8 +926,9 @@ if __name__ == "__main__":
             print("model")
             print(x.shape)
             break
-        """
-
+    """
+    print("CHECKING data paths")
+    
     ds_loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
     print("got data loder")
     print(len(ds))

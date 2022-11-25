@@ -11,7 +11,7 @@
 
 # 1. Load Python
 
-module load python/3.9
+module load python/3.7
 
 
 # 3. Create or Set Up Environment
@@ -22,10 +22,10 @@ if [ -a env4/bin/activate ]; then
 
 else
 
-    python3.9 -m venv env4
+    python3.7 -m venv env4
     source env4/bin/activate
-    python3.9 -m pip install --upgrade pip
-    pip3.9 install wheel setuptools
+    python3.7 -m pip install --upgrade pip
+    pip3.7 install wheel setuptools
 fi
 
 
@@ -33,7 +33,7 @@ fi
 
 if [ -a requirements.txt ]; then
 
-    pip3.9 install -r requirements2.txt
+    pip3.7 install -r requirements2.txt
 
 fi
 #source /home/mila/c/charlotte.lange/causalpaca/bin/activate
@@ -56,10 +56,10 @@ cd $SLURM_TMPDIR/causalpaca/data/
 # 8. Run Python
 
 echo "Running mother_data/downloader.py ..."
-python3.9 mother_data/downloader.py
+python3.7 mother_data/downloader.py
 
 
-# 9. Copy output to scratch
+# 7. Copy output to scratch
 cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/c/charlotte.lange/causalpaca/data/data/
 
 # try and copy to julia's scratch

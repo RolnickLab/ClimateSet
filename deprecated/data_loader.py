@@ -1,4 +1,7 @@
-# phillipe's code
+"""
+Data Loader code from Phillipe for his causal project. Just for reference. Not applicable to climate model data.
+"""
+
 
 import os
 import torch
@@ -9,6 +12,7 @@ import numpy as np
 import xarray as xr
 from mother_data.utils.helper_funcs import get_keys_from_value
 from mother_data.utils.constants import VAR_SOURCE_LOOKUP, RES_TO_CHUNKSIZE
+from typing import List
 
 # from geopy import distance
 
@@ -22,12 +26,12 @@ class DataLoader:
         latent: bool,  # if we use a model that has latent variables e.g. spatial aggregation
         instantaneous: bool,  # Use instantaneous connections
         tau: int,  # time window size
-        years: [str],  # TODO: different years for different experiments? (historical??)
-        experiments_train: [
+        years: List[str],  # TODO: different years for different experiments? (historical??)
+        experiments_train: List[
             str
         ],  # we want to split the datasets according to experiments
-        experiments_valid: [str],
-        vars: [str],
+        experiments_valid: List[str],
+        vars: List[str],
         resolution="250_km",
         freq="mon",
         model="NorESM2-LM",

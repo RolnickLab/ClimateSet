@@ -1,5 +1,6 @@
 from utils.constants import RES_TO_CHUNKSIZE
 from pyesgf.search import SearchConnection
+from mother_params import VARS, SCENARIOS
 
 # from pyesgf.logon import LogonManager
 
@@ -563,11 +564,17 @@ class Downloader:
 
 
 if __name__ == "__main__":
-    test_mother = True
+  
+    vars=VARS
+    experiments=SCENARIOS
+    model="CanESM5"
+    vars=["pr"]
+    experiments=["ssp126"]
+    #vars=["BC_em_anthro", "BC_em_openburning"]
+    #experiments=["ssp126", "historical"]
+    #model="NorESM2-LM"
+    data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/RAW_DATA/"
 
-    if test_mother:
-        print("testing mother")
-        vars = ["schmarn", "CO2_em_anthro", "tas"]
-        downloader = Downloader(experiments=["ssp126", "historical"], vars=vars)
-        # downloader.download_from_model()
-        downloader.download_raw_input()
+    downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir)
+    downloader.download_from_model()
+    #downloader.download_raw_input()

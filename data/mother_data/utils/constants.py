@@ -1,7 +1,8 @@
 # Supported Model sources
 
 MODEL_SOURCES = {
-    "NorESM2-LM": {"node_link": "https://esgf-data.dkrz.de/esg-search", "center": "NCC"}
+    "NorESM2-LM": {"node_link": "https://esgf-data.dkrz.de/esg-search", "center": "NCC"},
+    "CanESM5" : {"node_link": "http://esgf-node.llnl.gov/esg-search/", "center": "CCCma"}
 }
 
 OPENID = "https://esgf-data.dkrz.de/esgf-idp/openid/causalpaca"

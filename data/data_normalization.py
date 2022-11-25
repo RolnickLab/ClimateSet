@@ -1,8 +1,10 @@
-# Copied from climart
-# Needs to be adjusted TODO
+"""
+Collectinos of Normalizations to be applied in Data Loader.
+Disclaimer: Adapted from ClimART #TODO: insert link
+# TODO: still missing adjustments
+"""
 
-
-import logging
+import logging # Not yet used
 from abc import ABC
 from typing import Optional, Union, Dict, Iterable, Sequence, List, Callable
 import numpy as np

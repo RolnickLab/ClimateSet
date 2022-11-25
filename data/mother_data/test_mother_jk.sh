@@ -14,27 +14,27 @@
 
 # 1. Load Python
 
-module load python/3.9
+module load python/3.7
 
 
 # 3. Create or Set Up Environment
 
-if [ -a env39/bin/activate ]; then
+if [ -a env37/bin/activate ]; then
     echo "pwd before activating venv"
     pwd
-    source env39/bin/activate
+    source env37/bin/activate
 
 else
-    echo "env39 does not exist"
-    python3.9 -m venv env39
-    source env39/bin/activate
-    python3.9 -m pip install --upgrade pip
-    pip3.9 install wheel setuptools
+    echo "env37 does not exist"
+    python3.7 -m venv env37
+    source env37/bin/activate
+    python3.7 -m pip install --upgrade pip
+    pip3.7 install wheel setuptools
 
     # 4. Install requirements.txt if it exists
 
     if [ -a requirements2.txt ]; then
-        pip3.9 install -r requirements2.txt
+        pip3.7 install -r requirements2.txt
     fi
 
 fi
@@ -61,10 +61,10 @@ pwd
 
 # 8. Run Python
 #echo "Running test file with easy verison"
-#python3.9 testing/test_downloader.py
+#python3.7 testing/test_downloader.py
 
 echo "Running mother_data/downloader.py ..."
-python3.9 mother_data/downloader.py
+python3.7 mother_data/downloader.py
 echo "pwd after running downloader"
 pwd
 

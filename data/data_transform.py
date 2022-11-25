@@ -1,3 +1,8 @@
+"""
+Collection of Different Transforms to be applied in Data Loading. 
+Disclaimer: inspired by ClimART #TODO: insert link to github
+"""
+
 from abc import ABC
 from typing import Dict, Any, Tuple, Union, Optional, Callable
 from collections import OrderedDict
