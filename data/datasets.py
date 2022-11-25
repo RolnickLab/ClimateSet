@@ -144,12 +144,12 @@ class Causalpaca_HdF5_Dataset(
             for exp in self.experiments:
                 try:
                     exp_h5_dset_forcing = dset_class(
-                        experiment="ssp119",
+                        experiment=exp,
                         variables=self.forcing_variables,
                         nom_res=forcing_nom_res,
                         aspect="forcing",
                         **dset_kwargs,
-                    )  # redo Debugging
+                    )  
                 except ValueError:
                     continue
 
@@ -174,7 +174,7 @@ class Causalpaca_HdF5_Dataset(
                         try:
                             exp_h5_dset_model = dset_class(
                                 model=model,
-                                experiment="ssp126",
+                                experiment=exp,
                                 member=member,
                                 variables=self.model_variables,
                                 nom_res=model_nom_res,
@@ -195,6 +195,8 @@ class Causalpaca_HdF5_Dataset(
 
                         # copy to slurm
                         exp_h5_dset_model.copy_to_slurm_tmp_dir(aspect="model")
+        self.dataset_size_forcing=dataset_size_forcing
+        self.dataset_size_model=dataset_size_model
 
         self.size=dataset_size_forcing+dataset_size_model
 
@@ -207,7 +209,12 @@ class Causalpaca_HdF5_Dataset(
         return s
 
     def __len__(self):
+<<<<<<< HEAD
         return self.size
+=======
+        # for both parts, lenght is determined by to number of cmip combinations * number of available years
+        return self.dataset_size_model
+>>>>>>> de68991b0fad47c296aa565d6c39032a22072a5c
 
     def __getitem__(self, item=None) -> (Tuple[Dict[str, Tensor], Dict[str, Tensor]]):
 
@@ -903,8 +910,8 @@ if __name__ == "__main__":
         experiments=experiments,
         variables=variables,
         years=years,
-        load_h5_into_mem=True,
-        target="causal",
+        load_h5_into_mem=False,
+        target="emulator",
         tau=4,
         data_dir=f"{os.environ['SLURM_TMPDIR']}/data/PROCESSED_DATA/"
     )

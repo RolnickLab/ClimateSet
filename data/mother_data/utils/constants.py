@@ -5,8 +5,9 @@ MODEL_SOURCES = {
     "CanESM5" : {"node_link": "http://esgf-node.llnl.gov/esg-search/", "center": "CCCma"}
 }
 
-OPENID = "https://esgf-data.dkrz.de/esgf-idp/openid/causalpaca"
-PASSWORD = "Wausalpaca.42"
+
+OPENID = "https://esgf-node.llnl.gov/esgf-idp/openid/causalpaca" #https://esgf-data.dkrz.de/esgf-idp/openid/causalpaca"
+PASSWORD = "Causalpaca.42"
 
 
 VAR_SOURCE_LOOKUP = {
@@ -1222,4 +1223,4 @@ REMOVE_RESOLUTONS = [
 ]  # resolution endings to remove e.g. kick CFsubhr if this contains 'subhr'
 
 
-RES_TO_CHUNKSIZE = {"year": 1, "mon": 12, "6hr": 1460, "3hr": 2920}
+RES_TO_CHUNKSIZE = {"year": 1, "mon": 12, "6hr": 1460, "3hr": 2920, "day":364}
