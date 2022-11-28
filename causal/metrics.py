@@ -133,8 +133,8 @@ def edge_errors(pred: np.ndarray, target: np.ndarray) -> dict:
 
     # errors
     diff = target - pred
-    diff_t = np.swapaxes(diff, 1, 2)
-    rev = (((diff + diff_t) == 0) & (diff != 0)).sum() / 2
+    diff_t = np.swapaxes(diff, -2, -1)
+    rev = (((diff + diff_t) == 0) & (diff != 0)).sum() // 2
     # Each reversed edge necessarily leads to one fp and one fn so we need to subtract those
     fn = (diff == 1).sum()
     fp = (diff == -1).sum()
@@ -157,10 +157,10 @@ def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False) -> fl
     """
     if rev_as_double:
         m = edge_errors(pred, target)
-        m["rev"] = 0
+        shd = sum([m["fp"], m["fn"]])
     else:
         m = edge_errors(pred, target)
-    shd = sum([m["fp"], m["fn"], m["rev"]])
+        shd = sum([m["fp_rev"], m["fn_rev"], m["rev"]])
     return float(shd)
 
 
@@ -180,14 +180,14 @@ def f1_score(pred: np.ndarray, target: np.ndarray) -> float:
 
 
 if __name__ == "__main__":
-    clustering_consistency("./test")
+    # clustering_consistency("./test")
 
     # simple tests
     # from sklearn.metrics import f1_score as sk_f1_score
     # from scipy.spatial.distance import hamming
 
     # pred = np.asarray([[0, 1, 0],
-    #                    [1, 0, 1],
+    #                    [0, 0, 1],
     #                    [0, 0, 1]])
     # good_pred = np.asarray([[1, 1, 0],
     #                         [0, 0, 0],
