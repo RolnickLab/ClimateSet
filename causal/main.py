@@ -124,6 +124,7 @@ def main(hp):
 
     # save final results if have GT (shd, f1 score, etc)
     if not hp.no_gt:
+        __import__('ipdb').set_trace()
         gt_dag = trainer.gt_dag
         learned_dag = trainer.model.get_adj().detach().numpy().reshape(gt_dag.shape[0], gt_dag.shape[1], -1)
         errors = metrics.edge_errors(learned_dag, gt_dag)
@@ -271,6 +272,8 @@ if __name__ == "__main__":
     # logging
     parser.add_argument("--valid-freq", type=int, help="Frequency of evaluating the loss on the validation set")
     parser.add_argument("--plot-freq", type=int, help="Plotting frequency")
+    parser.add_argument("--plot-through-time", action="store_true", help="If true, save each plot in a \
+                        different file with a name depending on the iteration")
     parser.add_argument("--print-freq", type=int, help="Printing frequency")
 
     # device and numerical precision

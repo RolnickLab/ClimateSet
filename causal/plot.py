@@ -34,8 +34,12 @@ def plot(learner):
         np.save(os.path.join(learner.hp.exp_path, "w_tensor"), w)
 
         # plot distribution of weights
+        if learner.hp.plot_through_time:
+            fname = f"w_distr_{learner.iteration}.png"
+        else:
+            fname = "w_distr.png"
         plt.hist(w.flatten(), bins=50)
-        plt.savefig(os.path.join(learner.hp.exp_path, f"w_distr_{learner.iteration}.png"))
+        plt.savefig(os.path.join(learner.hp.exp_path, fname))
         plt.close()
         # ============================
 
@@ -46,6 +50,7 @@ def plot(learner):
                              valid_recons=learner.valid_recons_list,
                              valid_kl=learner.valid_kl_list,
                              iteration=learner.logging_iter,
+                             plot_through_time=learner.hp.plot_through_time,
                              path=learner.hp.exp_path)
         losses = [{"name": "tr loss", "data": learner.train_loss_list, "s": "-"},
                   {"name": "tr recons", "data": learner.train_recons_list, "s": "-"},
@@ -58,11 +63,13 @@ def plot(learner):
                   ]
         plot_learning_curves2(losses=losses,
                               iteration=learner.logging_iter,
+                              plot_through_time=learner.hp.plot_through_time,
                               path=learner.hp.exp_path)
     else:
         plot_learning_curves(train_loss=learner.train_loss_list,
                              valid_loss=learner.valid_loss_list,
                              iteration=learner.logging_iter,
+                             plot_through_time=learner.hp.plot_through_time,
                              path=learner.hp.exp_path)
 
     # TODO: plot the prediction vs gt
@@ -114,6 +121,7 @@ def plot(learner):
             plot_regions_map(adj_w,
                              learner.data.coordinates,
                              learner.logging_iter,
+                             learner.hp.plot_through_time,
                              path=learner.hp.exp_path)
 
 
@@ -167,13 +175,15 @@ def plot_compare_regions():
     pass
 
 
-def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
+def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int,
+                     plot_through_time: bool, path: str):
     """
     Plot the regions
     Args:
         w_adj: weight of edges between X and latents Z
         coordinates: lat, lon of every grid location
         iteration: number of training iteration
+        plot_through_time: if False, overwrite the plot
         path: path where to save the plot
     """
 
@@ -205,14 +215,20 @@ def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int, path: str):
         c = np.repeat(np.array([color]), region.shape[0], axis=0)
         map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
 
+    if plot_through_time:
+        fname = f"spatial_aggregation_{iteration}.png"
+    else:
+        fname = "spatial_aggregation.png"
+
     plt.title("Learned regions")
-    plt.savefig(os.path.join(path, f"spatial_aggregation_{iteration}.png"))
+    plt.savefig(os.path.join(path, fname))
     plt.close()
 
 
 def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: list = None,
                          valid_loss: list = None, valid_recons: list = None,
-                         valid_kl: list = None, iteration: int = 0, path: str = ""):
+                         valid_kl: list = None, iteration: int = 0,
+                         plot_through_time: bool = False, path: str = ""):
     """ Plot the training and validation loss through time
     Args:
       train_loss: training loss
@@ -222,6 +238,7 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
       valid_recons: see train_recons
       valid_kl: see train_kl
       iteration: number of iterations
+      plot_through_time: if False, overwrite the plot
       path: path where to save the plot
     """
     # remove first steps to avoid really high values
@@ -246,18 +263,26 @@ def plot_learning_curves(train_loss: list, train_recons: list = None, train_kl: 
         # plt.plot(v_kl, label="val kl")
     else:
         plt.plot(t_loss, label="train")
+
+    if plot_through_time:
+        fname = f"loss_{iteration}.png"
+    else:
+        fname = "loss.png"
+
     plt.title("Learning curves")
     plt.legend()
-    plt.savefig(os.path.join(path, f"loss_{iteration}.png"))
+    plt.savefig(os.path.join(path, fname))
     plt.close()
 
 
-def plot_learning_curves2(losses: list, iteration: int = 0, path: str = ""):
+def plot_learning_curves2(losses: list, iteration: int = 0, plot_through_time:
+                          bool = False, path: str = ""):
     """
     Plot all list present in 'losses'.
     Args:
         losses: contains losses, their name, and style
         iteration: number of iterations
+        plot_through_time: if False, overwrite the plot
         path: path where to save the plot
     """
     ax = plt.gca()
@@ -269,9 +294,14 @@ def plot_learning_curves2(losses: list, iteration: int = 0, path: str = ""):
         smoothed_loss = moving_average(loss["data"][1:])
         plt.plot(smoothed_loss, label=loss["name"])
 
+    if plot_through_time:
+        fname = f"loss_detailed_{iteration}.png"
+    else:
+        fname = "loss_detailed.png"
+
     plt.title("Learning curves")
     plt.legend()
-    plt.savefig(os.path.join(path, f"loss_detailed_{iteration}.png"))
+    plt.savefig(os.path.join(path, fname))
     plt.close()
 
 
