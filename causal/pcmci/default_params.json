@@ -1,0 +1,15 @@
+{
+    "exp_path": "causal_climate_exp",
+    "use_data_config": true,
+    "data_path": "dataseta/data_benchmark0",
+    "no_gt": false,
+    "data_format": "numpy",
+    "ratio_train": 0.8,
+    "ratio_valid": 0.2,
+    "latent": true,
+    "tau_min": 1,
+    "tau": 2,
+    "random_seed": 0,
+    "pc_alpha": 0.2,
+    "ci_test": "nonlinear"
+}
