@@ -147,7 +147,7 @@ def assert_args(args):
         raise ValueError("Since no_gt==True, all other args should not use ground-truth values")
 
     if args.latent and (args.d_z is None or args.d_x is None or args.d_z <= 0 or args.d_x <= 0):
-        raise ValueError("When using latent model, you need to define k and d_x with integer values greater than 0")
+        raise ValueError("When using latent model, you need to define d_z and d_x with integer values greater than 0")
 
     if args.ratio_valid == 0:
         args.ratio_valid = 1 - args.ratio_train
@@ -168,7 +168,7 @@ def assert_args(args):
     if not args.latent and args.debug_gt_z:
         warnings.warn("Are you sure you want to use gt_z even if you don't have latents")
     if args.latent and (args.d_z > args.d_x):
-        warnings.warn("Are you sure you want to have a higher dimension for k than d_x")
+        warnings.warn("Are you sure you want to have a higher dimension for d_z than d_x")
 
     return args
 
