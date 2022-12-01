@@ -215,28 +215,50 @@ class Input4mipsRawPreprocesser:
             out_ds = out_ds.drop(a_var)
         ##############################################
 
-        # CONTINUE HERE: try to create a new file with just long and lat?
-        out_ds_test = xr.Dataset({"lat": (["lat"], role_model_ds.lat.values),
-                                  "lon": (["lon"], role_model_ds.lon.values),
+        # CONTINUE HERE: what is the state of the sectors? sectors are missing in the new file
+        # print(role_model_ds)
+        # print(in_ds)
+        # print(out_ds)
+        # exit(0)
+
+        # data array that we would like to regrid:
+        # in_array = in_ds["BC"]
+        # structure we would like to have for the output
+        out_ds_test = xr.Dataset({"lat": (["lat"], role_model_ds.lat.values, {"units": "degrees_north"}),
+                                  "lon": (["lon"], role_model_ds.lon.values, {"units": "degrees_east"}),
                                  })
+        # regridder = xe.Regridder(in_ds, out_ds_test, "bilinear")
+        # regridded_array = regridder(in_array, keep_attrs=True)
+        # regridded_file = in_ds
+        # regridded_file["BC"] = regridded_array
+        # print(regridded_file)
+        # exit(0)
         print("Role Model")
         role_model_ds.sel(time="1750-01-16 00:00:00", sector=4)["BC_em_anthro"].squeeze().plot.pcolormesh(vmin=0, vmax=5e-11)
         plt.show()
         print("Input File")
         print(in_ds)
-        regridder = xe.Regridder(in_ds, out_ds_test, "bilinear")
+        print(in_ds["BC"][0:10, 0:10, 0:10])
+        in_ds.sel(time="1750-01-16 12:00:00")["BC"].squeeze().plot.pcolormesh(vmin=0, vmax=5e-11)
+        plt.show()
         print("Regridder")
-        print(regridder)
-        regridded_file = regridder(in_ds)
+        regridder = xe.Regridder(in_ds, out_ds_test, "bilinear")
         print("Output File")
-        print(regridded_file)
+        regridded_file = regridder(in_ds, keep_attrs=True)
+        print(regridded_file["BC"][0:10, 0:10, 0:10])
+        regridded_file.sel(time="1750-01-16 12:00:00")["BC"].squeeze().plot.pcolormesh(vmin=0, vmax=5e-11)
+        plt.show()
+        # TODO update nominal resolution or add attribute: current_resolution:...
+
+        exit(0)
         # Bug analysis:
             # time is missing / not as expected
             # sectors are missing
         # hence: cannot be plotted
         regridded_file.sel(time="1750-01-16 00:00:00")["BC"].squeeze().plot.pcolormesh(vmin=0, vmax=5e-11)
         plt.show()
-        # BUG BC has only nans
+        # BUG BC has only nans. Answer: hm, input has nans, output has nans, makes sense to me
+        # TODO adapt nans to 0 beforehand
         exit(0)
 
     # TODO add option to use different kinds of aggregations
