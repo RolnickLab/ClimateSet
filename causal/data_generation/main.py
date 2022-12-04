@@ -47,7 +47,7 @@ def main(hp, func_types: list, noise_types: list):
 
 
 if __name__ == "__main__":
-    func_types = ["linear", "mlp"]
+    func_types = ["linear", "mlp", "add_nonlinear"]
     noise_types = ["gaussian", "laplacian", "uniform"]
 
     parser = argparse.ArgumentParser(description=" Code use to generate synthetic data to \
