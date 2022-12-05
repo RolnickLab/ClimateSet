@@ -159,7 +159,7 @@ class Downloader:
         try:
             nominal_resolutions = list(ctx.facet_counts["nominal_resolution"].keys())
             print("Available nominal resolution:", nominal_resolutions)
-            # TODO: deal with multipl nom resolutions availabe
+            # deal with multipl nom resolutions availabe
             if len(nominal_resolutions) > 1:
                 print(
                     "Multiple nominal resolutions exist, choosing smallest_nominal resolution (trying), please do a check up"
@@ -489,7 +489,7 @@ class Downloader:
     ):
         """
         Function handling the download of all variables that are associated wtih a model's output
-        Searches for all filles associated with the respected variables and experiment that the downloader wsa initialized with. #TODO: allow resetting of specifications
+        Searches for all filles associated with the respected variables and experiment that the downloader wsa initialized with.
 
         A search connection is established and the search is iterativeley constraint to meet all specifications.
         Data is downloaded and stored in a seperate file for each year. The default format is netCDF4.
@@ -518,7 +518,7 @@ class Downloader:
             print(f"Downloading data for variable: {v} \n \n ")
             # iterate over experiments
             for e in self.experiments:
-                # TODO: check if experiment is availabe
+                #check if experiment is availabe
                 if e in SUPPORTED_EXPERIMENTS:
                     print(f"Downloading data for experiment: {e}\n")
                     self.download_from_model_single_var(v, e)
