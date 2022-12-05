@@ -20,6 +20,7 @@ import xarray as xr
 import os
 import os.path
 import numpy as np
+from typing import List
 
 overwrite = False  # flag if files should be overwritten
 
@@ -32,7 +33,7 @@ class Downloader:
     def __init__(
         self,
         model: str = "NorESM2-LM",  # defaul as in ClimateBench
-        experiments: [str] = [
+        experiments: List[str] = [
             "historical",
             "ssp370",
             "hist-GHG",
@@ -40,8 +41,10 @@ class Downloader:
             "ssp434",
             "ssp126",
         ],  # sub-selection of ClimateBench defaul
-        vars: [str] = ["tas", "pr", "SO2", "BC"],
+        vars: List[str] = ["tas", "pr", "SO2", "BC"],
         data_dir: str = "data/data/",
+        max_ensemble_members: int = 10, #max ensemble members
+        ensemlble_members: List[str] = None #preferred ensemble members used, if None not considered
     ):
         """Init method for the Downloader
         params:
@@ -56,6 +59,8 @@ class Downloader:
         # assign vars to either target or raw source
         self.raw_vars = []
         self.model_vars = []
+        self.max_ensemble_members = max_ensemble_members
+        self.ensemble_members = ensemlble_members
 
         # take care of var mistype (node takes no spaces or '-' only '_')
         vars = [v.replace(" ", "_").replace("-", "_") for v in vars]
@@ -185,9 +190,24 @@ class Downloader:
 
         print("Available variants:", variants, "\n")
 
-        # default: get data by all variants
+        if self.ensemble_members is None:
+            if self.max_ensemble_members>len(variants):
+                print("Less ensemble members available than maximum number desired. Including all variants.")
+                ensemble_member_final_list=variants
+            else:
+                print(f"{len(variants)} ensemble members available than desired (max {self.max_ensemble_members}. Choosing only the first {self.max_ensemble_members}.).")
+                ensemble_member_final_list=variants[:self.max_ensemble_members]
+        else:
+            print(f"Desired list of ensemble members given: {self.ensemble_members}")
+            ensemble_member_final_list = list(set(variants) & set(self.ensemble_members))
+            if len(ensemble_member_final_list)==0:
+                print("WARNING: no overlap between available and desired ensemble members!")
+                print("Skipping.")
+                return None
 
-        for i, ensemble_member in enumerate(variants):
+
+
+        for i, ensemble_member in enumerate(ensemble_member_final_list):
 
             print(f"Ensembles member: {ensemble_member}")
             ctx = ctx_origin.constrain(variant_label=ensemble_member)
@@ -270,6 +290,7 @@ class Downloader:
                             print("writing file")
                             print(outfile)
                             ds_y.to_netcdf(outfile)
+                            
 
     def download_raw_input_single_var(
         self,
@@ -568,13 +589,15 @@ if __name__ == "__main__":
     vars=VARS
     experiments=SCENARIOS
     model="CanESM5"
-    vars=["pr"]
-    experiments=["ssp126"]
+    vars=["pr", "tas"]
+    #experiments=["ssp126", "ssp245", "ssp370", ""]
     #vars=["BC_em_anthro", "BC_em_openburning"]
     #experiments=["ssp126", "historical"]
     #model="NorESM2-LM"
-    data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/RAW_DATA/"
+    max_ensemble_members=1
+    ensemble_members=["r1i1p1f1"]
+    data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
 
-    downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir)
+    downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemlble_members=ensemble_members)
     downloader.download_from_model()
     #downloader.download_raw_input()
