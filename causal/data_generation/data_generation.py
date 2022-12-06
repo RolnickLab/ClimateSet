@@ -11,30 +11,31 @@ from collections import OrderedDict
 from typing import Tuple
 
 
-def sample_stationary_coeff(tau=2, d=3, d_z=2, eps=1e-5):
+def sample_stationary_coeff(tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.ndarray:
     """
     Sample linear coefficients such that the spectrum associated
     to this AR is equal to 1. This is a necessary condition in order
     to have a stationary process.
+    Returns:
+        coeff: (tau, d*d_z, d*d_z) an array of coefficients that should lead
+        to a stationary process
     """
-    # sample coefficients
+    # sample coefficients from Unif([-1, -0.2]U[0.2, 1])
     coeff = np.random.rand(tau, d * d_z, d * d_z) * 0.8 + 0.2
     sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 -1
     coeff = coeff * sign
 
+    # set the spectrum of the coeff to 1
     radius = get_spectrum(coeff)
-
     for t in range(tau):
         coeff[t] = coeff[t] / radius ** (t + 1)
-
     radius = get_spectrum(coeff)
     assert radius < 1 + eps
     print(radius)
 
     return coeff
 
-
-def get_spectrum(coeff) -> Tuple[bool, float]:
+def get_spectrum(coeff) -> float:
     """
     Return the spectrum of the linear coefficients corresponding to
     an autoregressive process.
@@ -52,6 +53,54 @@ def get_spectrum(coeff) -> Tuple[bool, float]:
     radius = np.max(np.abs(eigen_val))
 
     return radius
+
+
+class NonlinearStationaryMechanisms:
+    """
+    Additive nonlinear mechanisms that lead a stationary process.
+    The trick is to use nonlinear functions that are almost linear when x is
+    large, and have coefficients with a spectrum <= 1.
+    """
+    def __init__(self, tau, d, d_z):
+        self.tau = tau
+        self.d = d
+        self.d_z = d_z
+
+        self.fct_name = ["f0", "f1", "f2"]
+        self.fct = [lambda x: x,
+                    lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
+                    lambda x: x * (1 + 4 * x ** 3 * np.exp(-x ** 2 / 2))]
+        self.n_mech = len(self.fct)
+        self.prob_mech = [1/self.n_mech] * self.n_mech
+
+        self.sample_mech()
+        self.apply_vectorized = np.vectorize(self.apply_f)
+
+    def sample_mech(self):
+        self.mech = np.random.choice(self.n_mech,
+                                     size=(self.tau, self.d * self.d_z, self.d * self.d_z),
+                                     p=self.prob_mech)
+        self.coeff = sample_stationary_coeff(self.tau, self.d, self.d_z)
+
+    def apply_f(self, i, x):
+        return self.fct[i](x)
+
+    def apply(self, g, z, t):
+        """Apply the mechanisms to z and some noise"""
+        if t > self.tau:
+            t = self.tau
+
+        noise = np.random.normal(size=(self.d, self.d_z))
+
+        z = z.reshape(z.shape[0], -1, 1)
+        z = z.repeat(1, 1, z.shape[1])
+
+        output = self.apply_vectorized(self.mech[:t], z)
+        output = output * g.detach().numpy() * self.coeff[:t]
+        output = np.sum(output, axis=(0, 1))
+        output = output.reshape(self.d, self.d_z)
+        output += noise
+        return torch.from_numpy(output)
 
 
 class DataGeneratorWithLatent:
@@ -196,12 +245,13 @@ class DataGeneratorWithLatent:
             for t in range(1, self.tau + 1):
                 self.f.append(self.sample_mlp(t))
         elif self.func_type == "add_nonlinear":
-            self.f = []
-            for i in range(self.d):
-                for j in range(self.d_z):
-                    self.f.append(NonlinearStationaryMechanisms(self.tau,
-                                                                self.d,
-                                                                self.d_z))
+            # self.f = []
+            # for i in range(self.d):
+            #     for j in range(self.d_z):
+            #         self.f.append(NonlinearStationaryMechanisms(self.tau,
+            #                                                     self.d,
+            #                                                     self.d_z))
+            self.f = NonlinearStationaryMechanisms(self.tau, self.d, self.d_z)
         else:
             raise NotImplementedError("the only fct types are NN and stationary")
 
@@ -235,64 +285,20 @@ class DataGeneratorWithLatent:
                                     dist = distr.normal.Normal(params[:, 0], std)
                                     self.Z[i_n, t, i_d, k] = dist.rsample()
                     elif self.func_type == "add_nonlinear":
-                        for i_d in range(self.d):
-                            for k in range(self.d_z):
-                                mask = g[:, k + i_d * self.d_z]
-                                self.Z[i_n, t, i_d, k] = self.f[k + i_d * self.d_z].apply(mask, z, t)
+                        # for i_d in range(self.d):
+                        #     for k in range(self.d_z):
+                        self.Z[i_n, t] = self.f.apply(g, z, t)
             # sample the data X
             for t in range(self.t):
                 # TODO: probably error here:
                 for i_d in range(self.d):
-                    print(self.Z[i_n, t, i_d])
+                    # print(self.Z[i_n, t, i_d])
                     mu = torch.matmul(self.Z[i_n, t, i_d], self.w[i_d].T)
                     # TODO: could sample sigma
                     dist = distr.normal.Normal(mu, 0.0001)
                     self.X[i_n, t, i_d] = dist.rsample()
 
         return self.X, self.Z
-
-
-class NonlinearStationaryMechanisms:
-    def __init__(self, tau, d, d_z):
-        self.tau = tau
-        self.d = d
-        self.d_z = d_z
-
-        self.fct_name = ["f0", "f1", "f2"]
-        self.fct = [lambda x: x,
-                    lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
-                    lambda x: x * (1 + 4 * x ** 3 * np.exp(-x ** 2 / 2))]
-        self.n_mech = len(self.fct)
-        self.prob_mech = [1/self.n_mech] * self.n_mech
-
-        self.sample_mech()
-        self.apply_vectorized = np.vectorize(self.apply_f)
-
-    def apply_f(self, i, x):
-        return self.fct[i](x)
-
-    def sample_mech(self):
-        self.mech = np.random.choice(self.n_mech,
-                                     size=(self.tau, self.d, self.d_z),
-                                     p=self.prob_mech)
-        # sample coeff from uniform [-1, -0.2] U [0.2, 1]
-        coeff = np.random.rand(self.tau, self.d, self.d_z) * 0.8 + 0.2
-        sign = np.random.binomial(1, 0.5, size=(self.tau, self.d, self.d_z)) * 2 -1
-        self.coeff = coeff * sign
-
-    def apply(self, g, z, t):
-        if t > self.tau:
-            t = self.tau
-
-        noise = np.random.normal(size=(1,))
-        # noise = np.random.normal(size=(self.d, self.d_z))
-
-        output = self.apply_vectorized(self.mech[:t], z)
-        output = output * g.detach().numpy().reshape(t, self.d, self.d_z)
-        output = output * self.coeff[:t]
-        output = np.sum(output)
-        output += noise
-        return torch.from_numpy(output)
 
 
 class DataGeneratorWithoutLatent:
@@ -675,4 +681,4 @@ def is_acyclic(adjacency: np.ndarray) -> bool:
     return True
 
 if __name__ == "__main__":
-    sample_stationary_coeff()
+    sample_stationary_coeff(2, 3, 2)

@@ -50,7 +50,7 @@ if __name__ == "__main__":
     func_types = ["linear", "mlp", "add_nonlinear"]
     noise_types = ["gaussian", "laplacian", "uniform"]
 
-    parser = argparse.ArgumentParser(description=" Code use to generate synthetic data to \
+    parser = argparse.ArgumentParser(description="Code use to generate synthetic data to \
                                      test the end-to-end clustering idea.")
 
     parser.add_argument("--exp-path", type=str, default="../dataset/",
