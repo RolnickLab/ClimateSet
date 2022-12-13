@@ -55,21 +55,22 @@ def get_spectrum(coeff) -> float:
     return radius
 
 
-class NonlinearStationaryMechanisms:
+class StationaryMechanisms:
     """
     Additive nonlinear mechanisms that lead a stationary process.
     The trick is to use nonlinear functions that are almost linear when x is
     large, and have coefficients with a spectrum <= 1.
     """
-    def __init__(self, tau, d, d_z):
+    def __init__(self, tau, d, d_z, linear=False):
         self.tau = tau
         self.d = d
         self.d_z = d_z
 
-        self.fct_name = ["f0", "f1", "f2"]
-        self.fct = [lambda x: x,
-                    lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
-                    lambda x: x * (1 + 4 * x ** 3 * np.exp(-x ** 2 / 2))]
+        if linear:
+            self.fct = [lambda x: x]
+        else:
+            self.fct = [lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
+                        lambda x: x * (1 + 4 * x ** 3 * np.exp(-x ** 2 / 2))]
         self.n_mech = len(self.fct)
         self.prob_mech = [1/self.n_mech] * self.n_mech
 
@@ -152,7 +153,7 @@ class DataGeneratorWithLatent:
         """
         prob_tensor = torch.ones((self.tau, self.d * self.d_z, self.d * self.d_z)) * self.prob
         # set diagonal to 1
-        # prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
@@ -245,13 +246,9 @@ class DataGeneratorWithLatent:
             for t in range(1, self.tau + 1):
                 self.f.append(self.sample_mlp(t))
         elif self.func_type == "add_nonlinear":
-            # self.f = []
-            # for i in range(self.d):
-            #     for j in range(self.d_z):
-            #         self.f.append(NonlinearStationaryMechanisms(self.tau,
-            #                                                     self.d,
-            #                                                     self.d_z))
-            self.f = NonlinearStationaryMechanisms(self.tau, self.d, self.d_z)
+            self.f = StationaryMechanisms(self.tau, self.d, self.d_z, linear=False)
+        elif self.func_type == "linear":
+            self.f = StationaryMechanisms(self.tau, self.d, self.d_z, linear=True)
         else:
             raise NotImplementedError("the only fct types are NN and stationary")
 
@@ -284,19 +281,15 @@ class DataGeneratorWithLatent:
                                     std = torch.ones_like(params[:, 1]) * 0.0001
                                     dist = distr.normal.Normal(params[:, 0], std)
                                     self.Z[i_n, t, i_d, k] = dist.rsample()
-                    elif self.func_type == "add_nonlinear":
-                        # for i_d in range(self.d):
-                        #     for k in range(self.d_z):
+                    elif self.func_type == "add_nonlinear" or self.func_type == "linear":
                         self.Z[i_n, t] = self.f.apply(g, z, t)
-            # sample the data X
-            for t in range(self.t):
-                # TODO: probably error here:
-                for i_d in range(self.d):
-                    # print(self.Z[i_n, t, i_d])
-                    mu = torch.matmul(self.Z[i_n, t, i_d], self.w[i_d].T)
-                    # TODO: could sample sigma
-                    dist = distr.normal.Normal(mu, 0.0001)
-                    self.X[i_n, t, i_d] = dist.rsample()
+
+            # sample the data X (= WZ + noise)
+            mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
+            self.X = mu + torch.normal(0, 0.1, size=self.X.size())
+
+        if torch.max(torch.abs(self.Z)) > 100000:
+            raise ValueError("The generative process doesn't seem to be stationary")
 
         return self.X, self.Z
 
