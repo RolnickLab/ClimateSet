@@ -4,9 +4,8 @@ import os
 import json
 import torch
 import numpy as np
-import metrics
+from data_loader import DataLoader
 from pcmci import varimax_pcmci
-# from data_loader import DataLoader
 
 
 class Bunch:
@@ -41,17 +40,24 @@ def main(hp):
         os.makedirs(args.exp_path)
 
     # generate data and split train/test
-    # data_loader = DataLoader(ratio_train=hp.ratio_train,
-    #                          ratio_valid=hp.ratio_valid,
-    #                          data_path=hp.data_path,
-    #                          data_format=hp.data_format,
-    #                          latent=hp.latent,
-    #                          no_gt=hp.no_gt,
-    #                          debug_gt_w=hp.debug_gt_w,
-    #                          instantaneous=hp.instantaneous,
-    #                          tau=hp.tau)
+    data_loader = DataLoader(ratio_train=hp.ratio_train,
+                             ratio_valid=hp.ratio_valid,
+                             data_path=hp.data_path,
+                             data_format=hp.data_format,
+                             latent=hp.latent,
+                             no_gt=hp.no_gt,
+                             debug_gt_w=False,
+                             instantaneous=hp.instantaneous,
+                             tau=hp.tau)
+    data = data_loader.x
+    data = data.squeeze(0)
+    data = data.reshape(data.shape[0], -1)
 
-    learned_dag = varimax_pcmci(data, hp)
+    learned_dag, learned_W, metrics = varimax_pcmci(data, data_loader.idx_train,
+                                                    data_loader.idx_valid, hp,
+                                                    data_loader.z,
+                                                    data_loader.gt_w,
+                                                    data_loader.gt_graph)
 
     # create path to exp and save hyperparameters
     save_path = os.path.join(hp.exp_path, "train")
@@ -61,17 +67,8 @@ def main(hp):
         json.dump(vars(hp), file, indent=4)
 
     # save final results if have GT (shd, f1 score, etc)
-    if not hp.no_gt:
-        __import__('ipdb').set_trace()
-        gt_dag = trainer.gt_dag
-        errors = metrics.edge_errors(learned_dag, gt_dag)
-        shd = metrics.shd(learned_dag, gt_dag)
-        f1 = metrics.f1_score(learned_dag, gt_dag)
-        errors["shd"] = shd
-        errors["f1"] = f1
-        print(errors)
-        with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
-            json.dump(errors, file, indent=4)
+    with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
+        json.dump(metrics, file, indent=4)
 
 
 def assert_args(args):
@@ -117,6 +114,8 @@ if __name__ == "__main__":
                         parameters that have been used to generate data")
     parser.add_argument("--exp-id", type=int,
                         help="ID specific to the experiment")
+    parser.add_argument("--random-seed", type=int,
+                        help="Seed to use for random number generators")
 
     # For synthetic datasets, can use the ground-truth values to do ablation studies
     parser.add_argument("--debug-gt-z", action="store_true",
@@ -139,14 +138,18 @@ if __name__ == "__main__":
     parser.add_argument("--instantaneous", action="store_true", help="Use instantaneous connections")
     parser.add_argument("--tau-min", type=int, help="Number of past timesteps to consider")
     parser.add_argument("--tau", type=int, help="Number of past timesteps to consider")
-    parser.add_argument("--ratio-train", type=int, help="Proportion of the data used for the training set")
-    parser.add_argument("--ratio-valid", type=int, help="Proportion of the data used for the validation set")
+    parser.add_argument("--ratio-train", type=float,
+                        help="Proportion of the data used for the training set")
+    parser.add_argument("--ratio-valid", type=float,
+                        help="Proportion of the data used for the validation set")
 
     # Specific to PCMCI
     parser.add_argument("--pc-alpha", type=float,
                         help="Significance level (alpha) used by PCMCI")
     parser.add_argument("--ci-test", type=str,
                         help="Type of conditional independence test used by PCMCI")
+    parser.add_argument("--fct-type", type=str,
+                        help="Function used when ftiting the data [linear, gaussian_process]")
 
     args = parser.parse_args()
 
@@ -175,6 +178,9 @@ if __name__ == "__main__":
             args.tau = params['tau']
         if 'neighborhood' in params:
             args.tau_neigh = params['neighborhood']
+        if 'num_features' in params:
+            args.d = params['num_features']
+
 
     args = assert_args(args)
 

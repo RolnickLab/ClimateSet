@@ -1,7 +1,7 @@
 {
     "exp_path": "causal_climate_exp",
     "use_data_config": true,
-    "data_path": "dataseta/data_benchmark0",
+    "data_path": "../dataset/data0",
     "no_gt": false,
     "data_format": "numpy",
     "ratio_train": 0.8,
@@ -11,5 +11,7 @@
     "tau": 2,
     "random_seed": 0,
     "pc_alpha": 0.2,
-    "ci_test": "nonlinear"
+    "ci_test": "linear",
+    "fct_type": "linear",
+    "debug_gt_z": false
 }
