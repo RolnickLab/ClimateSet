@@ -113,7 +113,7 @@ class DataGeneratorWithLatent:
     def __init__(self, hp):
         self.hp = hp
         self.n = hp.n
-        self.d = hp.num_features
+        self.d = hp.d
         self.d_x = hp.d_x
         self.tau = hp.tau
         self.func_type = hp.func_type
@@ -121,7 +121,7 @@ class DataGeneratorWithLatent:
         if self.n > 1:
             self.t = self.tau + 1
         else:
-            self.t = hp.num_timesteps
+            self.t = hp.t
 
         self.d_z = hp.d_z
         self.prob = hp.prob
@@ -312,7 +312,7 @@ class DataGeneratorWithoutLatent:
     def __init__(self, hp):
         self.hp = hp
         self.n = hp.n
-        self.d = hp.num_features
+        self.d = hp.d
         self.d_x = hp.d_x
         self.world_dim = hp.world_dim
         self.tau = hp.tau
@@ -327,7 +327,7 @@ class DataGeneratorWithoutLatent:
         if self.n > 1:
             self.t = self.tau + 1
         else:
-            self.t = hp.num_timesteps
+            self.t = hp.t
 
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
