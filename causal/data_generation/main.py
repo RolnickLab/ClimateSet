@@ -35,13 +35,15 @@ def main(hp, func_types: list, noise_types: list):
 
     # Generate, save and plot data
     data = generator.generate()
+    print("Saving data...")
     generator.save_data(hp.exp_path)
+    print("Plotting data...")
     plot_adjacency_graphs(generator.G, hp.exp_path)
 
     plot_x(generator.X.detach().numpy(), hp.exp_path)
-    if hp.latent:
-        plot_z(generator.Z.detach().numpy(), hp.exp_path)
-        plot_adjacency_w(generator.w, hp.exp_path)
+    # if hp.latent:
+    #     plot_z(generator.Z.detach().numpy(), hp.exp_path)
+    #     plot_adjacency_w(generator.w, hp.exp_path)
 
     return data
 

@@ -28,7 +28,7 @@ def sample_stationary_coeff(tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.
     # set the spectrum of the coeff to 1
     radius = get_spectrum(coeff)
     for t in range(tau):
-        coeff[t] = coeff[t] / radius ** (t + 1)
+        coeff[t] = coeff[t] / (radius ** (t + 1) + 1e-12)
     radius = get_spectrum(coeff)
     assert radius < 1 + eps
     print(radius)
@@ -79,16 +79,16 @@ class StationaryMechanisms:
 
     def sample_mech(self):
         self.mech = np.random.choice(self.n_mech,
-                                     size=(self.tau, self.d * self.d_z, self.d * self.d_z),
+                                     size=(self.tau + 1, self.d * self.d_z, self.d * self.d_z),
                                      p=self.prob_mech)
-        self.coeff = sample_stationary_coeff(self.tau, self.d, self.d_z)
+        self.coeff = sample_stationary_coeff(self.tau + 1, self.d, self.d_z)
 
     def apply_f(self, i, x):
         return self.fct[i](x)
 
     def apply(self, g, z, t):
         """Apply the mechanisms to z and some noise"""
-        if t > self.tau:
+        if t >= self.tau + 1:
             t = self.tau
 
         noise = np.random.normal(size=(self.d, self.d_z))
@@ -96,8 +96,8 @@ class StationaryMechanisms:
         z = z.reshape(z.shape[0], -1, 1)
         z = z.repeat(1, 1, z.shape[1])
 
-        output = self.apply_vectorized(self.mech[:t], z)
-        output = output * g.detach().numpy() * self.coeff[:t]
+        output = self.apply_vectorized(self.mech[-t-1:], z)
+        output = output * g.detach().numpy() * self.coeff[-t-1:]
         output = np.sum(output, axis=(0, 1))
         output = output.reshape(self.d, self.d_z)
         output += noise
@@ -109,10 +109,8 @@ class DataGeneratorWithLatent:
     Code use to generate synthetic data with latent variables.
     Sample a DAG between latents and generate (X, Z).
     """
-    # TODO: add instantenous relations
+    # TODO: add instantaneous relations
     def __init__(self, hp):
-        if hp.instantaneous:
-            raise NotImplementedError("Instantaneous connections not implemented yet")
         self.hp = hp
         self.n = hp.n
         self.d = hp.num_features
@@ -127,13 +125,13 @@ class DataGeneratorWithLatent:
 
         self.d_z = hp.d_z
         self.prob = hp.prob
-        self.noise_coeff = hp.noise_coeff
 
+        # hp for MLP model
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
         self.non_linearity = hp.non_linearity
 
-        assert self.d_x > self.d_z, f"dx={self.d_x} should be larger than dz={self.d_z}"
+        assert self.d_x >= self.d_z, f"dx={self.d_x} should be larger or equal than dz={self.d_z}"
 
     def save_data(self, path: str):
         """ Save all files to 'path' """
@@ -144,18 +142,29 @@ class DataGeneratorWithLatent:
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
         np.save(os.path.join(path, 'graph_w'), self.w.detach().numpy())
 
-    def sample_graph(self) -> torch.Tensor:
+    def sample_graph(self, instantaneous: bool) -> torch.Tensor:
         """
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
+        Args:
+            instantaneous: if True, sample a DAG for G[0]
         Returns:
-            A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
+            A Tensor of tau graphs between the Z (shape: tau x (d x d_z) x (d x d_z))
         """
-        prob_tensor = torch.ones((self.tau, self.d * self.d_z, self.d * self.d_z)) * self.prob
-        # set diagonal to 1
-        prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        prob_tensor = torch.ones((self.tau + 1, self.d * self.d_z, self.d * self.d_z)) * self.prob
+
+        # set diagonal to 1 of the graph G_{t-1}
+        prob_tensor[-2, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
+
+        if instantaneous:
+            # for G_t sample a DAG
+            # G[-1] = self.sample_dag(G[0].shape)
+            raise ValueError("This is not implemented yet")
+        else:
+            # no instantaneous links, so set G_t to 0
+            G[-1] = 0
 
         return G
 
@@ -211,7 +220,7 @@ class DataGeneratorWithLatent:
         """Sample matrices that are non-negative and orthogonal.
         They are the links between Z and X.
         Returns:
-            A tensor w (shape: d, d_x, k)
+            A tensor w (shape: d, d_x, d_z)
         """
         mask = torch.zeros((self.d, self.d_x, self.d_z))
         for i in range(self.d):
@@ -221,7 +230,7 @@ class DataGeneratorWithLatent:
             np.random.shuffle(cluster_assign)
             mask[i, np.arange(self.d_x), cluster_assign] = 1
 
-        w = torch.empty((self.d, self.d_x, self.d_z)).uniform_(0.5, 2)
+        w = torch.empty((self.d, self.d_x, self.d_z)).uniform_(0.2, 1)
         w = w * mask
 
         # normalize to make w orthonormal
@@ -239,8 +248,10 @@ class DataGeneratorWithLatent:
         self.Z = torch.zeros((self.n, self.t, self.d, self.d_z))
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
-        # sample graphs and functions of the latents
-        self.G = self.sample_graph()
+        # sample graphs
+        self.G = self.sample_graph(self.hp.instantaneous)
+
+        # sample mechanisms
         if self.func_type == "mlp":
             self.f = [None]
             for t in range(1, self.tau + 1):
@@ -262,14 +273,14 @@ class DataGeneratorWithLatent:
                 if t == 0:
                     self.Z[i_n, t].normal_(0, 1)
                 else:
-                    if t < self.tau:
+                    if t < self.tau + 1:
                         idx = t
-                        g = self.G[:t]
-                        z = self.Z[i_n, :t]
+                        g = self.G[-t-1:]
+                        z = self.Z[i_n, :t+1]
                     else:
                         idx = -1
                         g = self.G
-                        z = self.Z[i_n, t - self.tau:t]
+                        z = self.Z[i_n, t - self.tau - 1:t]
 
                     # nn_input = (g * z).view(-1)
                     if self.func_type == "mlp":
