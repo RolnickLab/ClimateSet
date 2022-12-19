@@ -4,7 +4,7 @@ import os
 import json
 import torch
 import numpy as np
-import metrics
+from metrics import mcc_latent, shd, precision_recall
 from model.tsdcd import TSDCD
 from model.tsdcd_latent import LatentTSDCD
 from data_loader import DataLoader
@@ -122,19 +122,45 @@ def main(hp):
         trainer = TrainingLatent(model, data_loader, hp)
     trainer.train_with_QPM()
 
-    # save final results if have GT (shd, f1 score, etc)
+    # save final results, (MSE)
+    metrics = {"shd": 0., "precision": 0., "recall": 0., "train_mse": 0., "val_mse": 0., "mcc": 0.}
+    # if we have the GT, also compute (SHD, Pr, Re, MCC)
     if not hp.no_gt:
-        __import__('ipdb').set_trace()
-        gt_dag = trainer.gt_dag
-        learned_dag = trainer.model.get_adj().detach().numpy().reshape(gt_dag.shape[0], gt_dag.shape[1], -1)
-        errors = metrics.edge_errors(learned_dag, gt_dag)
-        shd = metrics.shd(learned_dag, gt_dag)
-        f1 = metrics.f1_score(learned_dag, gt_dag)
-        errors["shd"] = shd
-        errors["f1"] = f1
-        print(errors)
-        with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
-            json.dump(errors, file, indent=4)
+        if hp.instantaneous:
+            gt_graph = trainer.gt_dag
+        else:
+            gt_graph = trainer.gt_dag[:-1]  # remove the graph G_t
+
+        # TODO: doublecheck that
+        learned_graph = trainer.model.get_adj().detach().numpy().reshape(gt_graph.shape[0], gt_graph.shape[1], -1)
+
+        score, cc_program_perm, assignments, z, z_hat = mcc_latent(trainer.model, trainer.data)
+        permutation = np.zeros((gt_graph.shape[1], gt_graph.shape[1]))
+        permutation[np.arange(gt_graph.shape[1]), assignments[1]] = 1
+        gt_graph = permutation.T @ gt_graph @ permutation
+
+        metrics['mcc'] = score
+        metrics['shd'] = shd(learned_graph, gt_graph)
+        metrics['precision'], metrics['recall'] = precision_recall(learned_graph, gt_graph)
+
+    metrics['train_mse'] = prediction(trainer, False)
+    metrics['val_mse'] = prediction(trainer, True)
+
+    with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
+        json.dump(metrics, file, indent=4)
+
+
+def prediction(trainer, valid):
+    """
+    Calculate the MSE between X_{t+1} and X_hat_{t+1}
+    """
+    if not valid:
+        x, y, y_pred = trainer.train_step()
+    else:
+        x, y, y_pred = trainer.valid_step()
+
+    mse = torch.mean(0.5 * (y - y_pred) ** 2)
+    return mse.item()
 
 
 def assert_args(args):
