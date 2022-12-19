@@ -1,5 +1,6 @@
 import os
 import json
+import copy
 import numpy as np
 from pathlib import Path
 
@@ -15,14 +16,14 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
     i = 0
     func_type_list = ["linear", "add_nonlinear"]
 
-    for func_type in func_type_list:
-        for key_param, val_param in varying_params.items():
-            for p in val_param:
+    for key_param, val_param in varying_params.items():
+        for p in val_param:
+            for func_type in func_type_list:
                 seed = np.random.randint(1, 1000)
                 parent_directory = f"exp_{key_param}"
 
                 for i_exp in range(n_dataset):
-                    params = default_params
+                    params = copy.deepcopy(default_params)
                     params[key_param] = p
 
                     params["func_type"] = func_type
@@ -49,16 +50,15 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
 if __name__ == "__main__":
     varying_params = {
         "tau": [2, 3, 5, 10],
-        "prob": [0.2, 0.4],
+        "prob": [0.15, 0.3],
         "d_z": [5, 10, 20, 50]
     }
 
     default_params = {
         "latent": True,
         "tau": 2,
-        "prob": 0.2,
+        "prob": 0.15,
         "d_z": 10,
-        "tau": 2,
         "d_x": 100,
         "d": 1,
         "t": 5000,
@@ -67,4 +67,4 @@ if __name__ == "__main__":
         "instantaneous": False
     }
 
-    generate_all_dataset("datasets", varying_params, default_params)
+    generate_all_dataset("data", varying_params, default_params)
