@@ -3,6 +3,7 @@ import glob
 import torch
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import spearmanr
+from typing import Tuple
 
 
 def mean_corr_coef(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
@@ -164,6 +165,26 @@ def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False) -> fl
     return float(shd)
 
 
+def precision_recall(pred: np.ndarray, target: np.ndarray) -> Tuple[float, float]:
+    """
+    Calculates the Precision and Recall between the prediction and the target
+
+    Args:
+        pred: The predicted adjacency matrix
+        target: The true adjacency matrix
+    Returns: precision, recall
+    """
+    tp = ((pred == 1) & (pred == target)).sum()
+    diff = target - pred
+    fn = (diff == 1).sum()
+    fp = (diff == -1).sum()
+
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+
+    return precision, recall
+
+
 def f1_score(pred: np.ndarray, target: np.ndarray) -> float:
     """
     Calculates the F1 score, ie the harmonic mean of
@@ -180,6 +201,7 @@ def f1_score(pred: np.ndarray, target: np.ndarray) -> float:
 
 
 if __name__ == "__main__":
+    pass
     # clustering_consistency("./test")
 
     # simple tests
