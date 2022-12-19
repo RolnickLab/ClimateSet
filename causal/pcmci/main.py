@@ -181,7 +181,6 @@ if __name__ == "__main__":
         if 'd' in params:
             args.d = params['d']
 
-
     args = assert_args(args)
 
     main(args)

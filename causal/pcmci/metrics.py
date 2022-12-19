@@ -1,6 +1,5 @@
 import numpy as np
 import glob
-import torch
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import spearmanr
 from typing import Tuple
@@ -129,6 +128,7 @@ def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False) -> fl
         m = edge_errors(pred, target)
         shd = sum([m["fp_rev"], m["fn_rev"], m["rev"]])
     return float(shd)
+
 
 def precision_recall(pred: np.ndarray, target: np.ndarray) -> Tuple[float, float]:
     """

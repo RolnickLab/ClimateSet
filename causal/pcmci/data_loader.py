@@ -1,9 +1,6 @@
 import os
-import torch
 import tables
 import numpy as np
-from typing import Tuple
-from geopy import distance
 
 
 class DataLoader:

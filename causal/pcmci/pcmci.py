@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import sklearn
 from metrics import shd, mean_corr_coef, precision_recall
 
@@ -25,6 +24,7 @@ def dim_reduc(data, d_z, method='varimax'):
 
     return z_hat, W
 
+
 def pcmci(z_hat, ind_test, tau_min, tau_max, pc_alpha, alpha=0.05):
     pcmci = PCMCI(dataframe=z_hat, cond_ind_test=ind_test)
 
@@ -37,40 +37,6 @@ def pcmci(z_hat, ind_test, tau_min, tau_max, pc_alpha, alpha=0.05):
     #     graph = graph[:, :, 1]
 
     return graph
-
-
-def fit_model(dataframe, graph, tau_max):
-    dataframe = deepcopy(self.pcmci["varimax_pcmci"].dataframe)
-    med = LinearMediation(dataframe=dataframe)
-    med.fit_model(all_parents=self.parents_predict["varimax_pcmci"], tau_max=self.tau_max)
-    return med.phi
-
-
-def predict(dataframe):
-    # Prediction (only for pcmci methods)
-    T, N = dataframe.values.shape
-
-    pred = Prediction(dataframe=dataframe,
-                      cond_ind_test=None,
-                      prediction_model=LinearRegression(),
-                      train_indices=range(T),
-                      test_indices=range(T),
-                      data_transform=None,
-                      verbosity=self.verbose
-                      )
-    target_vars = range(N)
-    predict_matrix = np.zeros((N, T - self.tau_max))
-    for var in target_vars:
-        if len(self.parents_predict["varimax_pcmci"][var]) > 0:
-            # Fit for all the variables
-            pred.fit(target_predictors=self.parents_predict["varimax_pcmci"],
-                     selected_targets=[var],  # Requires a list
-                     tau_max=self.tau_max,
-                     )
-
-            predict_matrix[var, :] = pred.predict(var, new_data=None)
-
-    self.x_prediction["pca_corr"] = predict_matrix  # K times T
 
 
 def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
@@ -96,7 +62,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     # Options: ind_test, tau_max, pc_alpha
     tau_min = hp.tau_min
     tau_max = hp.tau
-    d_x = hp.d_x
+    # d_x = hp.d_x
     d_z = hp.d_z * hp.d
     pc_alpha = hp.pc_alpha
 
@@ -112,7 +78,8 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     elif hp.fct_type == "gaussian_process":
         prediction_model = sklearn.gaussian_process.GaussianProcessRegressor(),
     else:
-        raise ValueError(f"{hp.fct_type} is not valid as a type of function. It should be either 'linear' or 'gaussian_process'")
+        raise ValueError(f"{hp.fct_type} is not valid as a type of function. \
+                         It should be either 'linear' or 'gaussian_process'")
 
     # 1 - Apply varimax+ to the data in order to find W
     # (the relations from the grid locations to the modes)
@@ -148,16 +115,15 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
                           prediction_model=prediction_model,
                           data_transform=sklearn.preprocessing.StandardScaler(),
                           train_indices=idx_train,
-                          test_indices=idx_valid
-                         )
+                          test_indices=idx_valid)
         all_predictors = pred.get_predictors(selected_targets=range(d_z),
                                              steps_ahead=1,
                                              tau_max=tau_max,
-                                             pc_alpha=None
-                                             )
+                                             pc_alpha=None)
 
         pred.fit(target_predictors=all_predictors, tau_max=tau_max)
         predicted = pred.predict(list(range(d_z)))
+        print(predicted)
 
     elif method == "torch":
         train_mse, val_mse, flag_max_iter = train(graph,
