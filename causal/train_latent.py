@@ -180,7 +180,7 @@ class TrainingLatent:
 
         # sample data
         x, y, z = self.data.sample(self.batch_size, valid=False)
-        nll, recons, kl, pred = self.get_nll(x, y, z)
+        nll, recons, kl, y_pred = self.get_nll(x, y, z)
 
         # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
@@ -220,7 +220,7 @@ class TrainingLatent:
         self.train_ortho_cons = h_ortho.item()
         self.train_acyclic_cons = h_acyclic.item()
 
-        return pred
+        return x, y, y_pred
 
     def valid_step(self):
         self.model.eval()

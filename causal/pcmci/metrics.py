@@ -131,8 +131,15 @@ def shd(pred: np.ndarray, target: np.ndarray, rev_as_double: bool = False) -> fl
     return float(shd)
 
 def precision_recall(pred: np.ndarray, target: np.ndarray) -> Tuple[float, float]:
+    """
+    Calculates the Precision and Recall between the prediction and the target
+
+    Args:
+        pred: The predicted adjacency matrix
+        target: The true adjacency matrix
+    Returns: precision, recall
+    """
     tp = ((pred == 1) & (pred == target)).sum()
-    # tn = ((pred == 0) & (pred == target)).sum()
     diff = target - pred
     fn = (diff == 1).sum()
     fp = (diff == -1).sum()

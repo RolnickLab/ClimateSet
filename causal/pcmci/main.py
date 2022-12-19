@@ -178,8 +178,8 @@ if __name__ == "__main__":
             args.tau = params['tau']
         if 'neighborhood' in params:
             args.tau_neigh = params['neighborhood']
-        if 'num_features' in params:
-            args.d = params['num_features']
+        if 'd' in params:
+            args.d = params['d']
 
 
     args = assert_args(args)

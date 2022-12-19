@@ -82,8 +82,6 @@ def plot(learner):
             # for latent models, find the right permutation of the latent
             # variables using MCC
             score, cc_program_perm, assignments, z, z_hat = mcc_latent(learner.model, learner.data)
-            print(score)
-            print(assignments)
             permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
             permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
             gt_dag = permutation.T @ learner.gt_dag @ permutation

@@ -179,50 +179,34 @@ class LatentTSDCD(nn.Module):
         b = x.size(0)
 
         # sample Zs (based on X)
-        is_timing = False
-        if is_timing:
-            st = time.time()
         z, q_mu_y, q_std_y = self.encode(x, y)
-        if is_timing:
-            print(f"encode time: {time.time() - st}")
 
         if self.debug_gt_z:
             z = gt_z
 
         # get params of the transition model p(z^t | z^{<t})
-        if is_timing:
-            st = time.time()
         mask = self.mask(b)
         pz_mu, pz_std = self.transition(z[:, :-1].clone(), mask)
-        if is_timing:
-            print(f"transition time: {time.time() - st}")
 
         # get params from decoder p(x^t | z^t)
-        if is_timing:
-            st = time.time()
         px_mu, px_std = self.decode(z[:, -1])
-        if is_timing:
-            print(f"decode time: {time.time() - st}")
 
         # set distribution with obtained parameters
-        if is_timing:
-            st = time.time()
         p = distr.Normal(pz_mu.view(b, -1), pz_std.view(b, -1))
         # test with fixed var: torch.ones_like(pz_mu.view(b, -1)) * 0.01)
         q = distr.Normal(q_mu_y.view(b, -1), q_std_y.view(b, -1))
         px_distr = self.distr_decoder(px_mu, px_std)
-        if is_timing:
-            print(f"sampling time: {time.time() - st}")
 
         # compute the KL, the reconstruction and the ELBO
-        if is_timing:
-            st = time.time()
+        # __import__('ipdb').set_trace()
+        # print(pz_mu.shape)
+        # print(pz_mu.view(b, -1).shape)
         kl = distr.kl_divergence(p, q).mean()
         assert kl >= 0, f"KL={kl} has to be >= 0"
         recons = torch.mean(px_distr.log_prob(y))
+        # __import__('ipdb').set_trace()
+        # print(torch.mean((px_mu - y)**2))
         elbo = recons - self.coeff_kl * kl
-        if is_timing:
-            print(f"kl time: {time.time() - st}")
 
         return elbo, recons, kl, px_mu
 
