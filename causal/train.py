@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 from dag_optim import compute_dag_constraint
-from plot import plot
+from plot import Plotter
 
 
 class Training:
@@ -35,6 +35,8 @@ class Training:
         self.valid_loss_list = []
         self.valid_elbo_list = []
         self.mu_list = []
+
+        self.plotter = Plotter()
 
         # TODO just equal size of G
         if self.instantaneous:
@@ -117,7 +119,7 @@ class Training:
 
             # Utilities: log, plot and save results
             if self.iteration % self.hp.plot_freq == 0:
-                plot(self)
+                self.plotter.plot(self)
             # self.save()
 
             self.iteration += 1

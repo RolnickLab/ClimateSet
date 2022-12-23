@@ -3,7 +3,7 @@ import numpy as np
 
 from geopy import distance
 from dag_optim import compute_dag_constraint
-from plot import plot, plot_compare_prediction
+from plot import Plotter
 from utils import ALM
 from prox import monkey_patch_RMSprop
 
@@ -44,6 +44,8 @@ class TrainingLatent:
         self.train_connect_reg_list = []
         self.train_ortho_cons_list = []
         self.train_acyclic_cons_list = []
+        self.mu_ortho_list = []
+        self.h_ortho_list = []
 
         self.valid_loss_list = []
         self.valid_elbo_list = []
@@ -53,6 +55,8 @@ class TrainingLatent:
         self.valid_connect_reg_list = []
         self.valid_ortho_cons_list = []
         self.valid_acyclic_cons_list = []
+
+        self.plotter = Plotter()
 
         if self.instantaneous:
             raise NotImplementedError("Soon")
@@ -123,14 +127,14 @@ class TrainingLatent:
                 if self.iteration % (self.hp.valid_freq * self.hp.print_freq) == 0:
                     self.print_results()
                 if self.logging_iter > 10 and self.iteration % (self.hp.valid_freq * self.hp.plot_freq) == 0:
-                    plot(self)
+                    self.plotter.plot(self)
 
-                    if self.no_gt:
-                        plot_compare_prediction(x[0, -1].detach().numpy(),
-                                                y[0].detach().numpy(),
-                                                y_pred[0].detach().numpy(),
-                                                self.data.coordinates,
-                                                self.hp.exp_path)
+                    # if self.no_gt:
+                    #     plot_compare_prediction(x[0, -1].detach().numpy(),
+                    #                             y[0].detach().numpy(),
+                    #                             y_pred[0].detach().numpy(),
+                    #                             self.data.coordinates,
+                    #                             self.hp.exp_path)
 
             if not self.converged:
                 # train with penalty method
@@ -307,7 +311,8 @@ class TrainingLatent:
         self.valid_ortho_cons_list.append(self.valid_ortho_cons)
         self.valid_acyclic_cons_list.append(self.valid_acyclic_cons)
 
-        # self.mu_ortho_list.append(self.mu_ortho)
+        self.mu_ortho_list.append(self.ALM_ortho.mu)
+
         self.adj_tt[int(self.iteration / self.hp.valid_freq)] = self.model.get_adj().detach().numpy()
         w = self.model.encoder_decoder.get_w().detach().numpy()
         if not self.no_gt:
