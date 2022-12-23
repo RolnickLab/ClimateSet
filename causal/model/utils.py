@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 
 class Mask(nn.Module):
-    def __init__(self, d: int, d_x: int, tau: int, latent: bool, instantaneous: bool, drawhard: bool):
+    def __init__(self, d: int, d_z: int, tau: int, latent: bool, instantaneous: bool, drawhard: bool):
         super().__init__()
 
         self.d = d
@@ -14,7 +14,7 @@ class Mask(nn.Module):
             self.tau = tau + 1
         else:
             self.tau = tau
-        self.d_x = d_x
+        self.d_z = d_z
         self.latent = latent
         self.drawhard = drawhard
         self.fixed = False
@@ -22,20 +22,20 @@ class Mask(nn.Module):
         self.uniform = distr.uniform.Uniform(0, 1)
 
         if self.latent:
-            self.param = nn.Parameter(torch.ones((tau, d * d_x, d * d_x)) * 5)
+            self.param = nn.Parameter(torch.ones((tau, d * d_z, d * d_z)) * 5)
             self.fixed_mask = torch.ones_like(self.param)
         else:
             if self.instantaneous:
                 # initialize mask as log(mask_ij) = 1
-                self.param = nn.Parameter(torch.ones((tau + 1, d, d, d_x)) * 5)
+                self.param = nn.Parameter(torch.ones((tau + 1, d, d, d_z)) * 5)
                 self.fixed_mask = torch.ones_like(self.param)
                 # set diagonal 0 for G_t0
                 self.fixed_mask[-1, torch.arange(self.fixed_mask.size(1)), torch.arange(self.fixed_mask.size(2))] = 0
                 # TODO: set neighbors to 0
-                # self.fixed_mask[:, :, :, d_x] = 0
+                # self.fixed_mask[:, :, :, d_z] = 0
             else:
                 # initialize mask as log(mask_ij) = 1
-                self.param = nn.Parameter(torch.ones((tau, d, d, d_x)) * 5)
+                self.param = nn.Parameter(torch.ones((tau, d, d, d_z)) * 5)
                 self.fixed_mask = torch.ones_like(self.param)
 
     def forward(self, b: int, tau: float = 1) -> torch.Tensor:
