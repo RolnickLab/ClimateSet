@@ -85,6 +85,8 @@ def plot(learner):
             permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
             permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
             gt_dag = permutation.T @ learner.gt_dag @ permutation
+            gt_w = learner.gt_w[:, :, assignments[1]]
+
         else:
             gt_dag = learner.gt_dag
 
@@ -105,7 +107,7 @@ def plot(learner):
     if learner.latent:
         adj_w = learner.model.encoder_decoder.get_w().detach().numpy()
         plot_adjacency_matrix_w(adj_w,
-                                learner.gt_w,
+                                gt_w,
                                 learner.hp.exp_path,
                                 'w',
                                 learner.no_gt)
@@ -358,13 +360,13 @@ def plot_adjacency_matrix(mat1: np.ndarray, mat2: np.ndarray, path: str,
             for i in range(tau):
                 axes[i].set_title(f"t - {i+1}")
                 if row == 0:
-                    sns.heatmap(mat1[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                    sns.heatmap(mat1[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
                                 cmap="Blues", xticklabels=False, yticklabels=False)
                 elif row == 1:
                     sns.heatmap(mat2[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
                                 cmap="Blues", xticklabels=False, yticklabels=False)
                 elif row == 2:
-                    sns.heatmap(mat1[tau - i - 1] - mat2[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                    sns.heatmap(mat1[i] - mat2[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
                                 cmap="Blues", xticklabels=False, yticklabels=False)
 
     plt.savefig(os.path.join(path, f'adjacency_{name_suffix}.png'))
@@ -493,3 +495,6 @@ def plot_adjacency_through_time_w(w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
     fig.suptitle("Learned adjacencies through time")
     fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
     fig.clf()
+
+
+# def plot_mcc_and_assignement(score: float, assignments: ):
