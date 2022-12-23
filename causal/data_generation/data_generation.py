@@ -11,7 +11,7 @@ from collections import OrderedDict
 from typing import Tuple
 
 
-def sample_stationary_coeff(tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.ndarray:
+def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.ndarray:
     """
     Sample linear coefficients such that the spectrum associated
     to this AR is equal to 1. This is a necessary condition in order
@@ -23,15 +23,21 @@ def sample_stationary_coeff(tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.
     # sample coefficients from Unif([-1, -0.2]U[0.2, 1])
     coeff = np.random.rand(tau, d * d_z, d * d_z) * 0.8 + 0.2
     sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 -1
-    coeff = coeff * sign
+    coeff = coeff * sign * graph
 
     # set the spectrum of the coeff to 1
     radius = get_spectrum(coeff)
+    print(radius)
     for t in range(tau):
-        coeff[t] = coeff[t] / (radius ** (t + 1) + 1e-12)
+        coeff[t] = coeff[t] / (radius ** (tau - t) + 1e-1)
     radius = get_spectrum(coeff)
     assert radius < 1 + eps
     print(radius)
+
+    min_val = np.min(np.abs(coeff[coeff != 0.]))
+    print(f"Min value: {min_val}")
+    if min_val < 0.01:
+        print("Warning, the magnitude of some coefficients are lower than 0.01")
 
     return coeff
 
@@ -44,7 +50,7 @@ def get_spectrum(coeff) -> float:
     d = coeff.shape[1]
 
     # create a matrix A of dimension d x tau*d 
-    A = sparse.hstack([sparse.lil_matrix(coeff[t]) for t in range(tau)])
+    A = sparse.hstack([sparse.lil_matrix(coeff[tau - t - 1]) for t in range(tau)])
     # get a square matrix A of dimension tau*d x tau*d
     A = sparse.vstack([A, sparse.eye((tau - 1) * d, tau * d)])
 
@@ -61,10 +67,12 @@ class StationaryMechanisms:
     The trick is to use nonlinear functions that are almost linear when x is
     large, and have coefficients with a spectrum <= 1.
     """
-    def __init__(self, tau, d, d_z, linear=False):
+    def __init__(self, graph, tau, d, d_z, linear=False, noise_z_std=0.1):
         self.tau = tau
         self.d = d
         self.d_z = d_z
+        self.noise_z_std = noise_z_std
+        self.G = graph
 
         if linear:
             self.fct = [lambda x: x]
@@ -81,7 +89,7 @@ class StationaryMechanisms:
         self.mech = np.random.choice(self.n_mech,
                                      size=(self.tau + 1, self.d * self.d_z, self.d * self.d_z),
                                      p=self.prob_mech)
-        self.coeff = sample_stationary_coeff(self.tau + 1, self.d, self.d_z)
+        self.coeff = sample_stationary_coeff(self.G, self.tau + 1, self.d, self.d_z)
 
     def apply_f(self, i, x):
         return self.fct[i](x)
@@ -91,14 +99,14 @@ class StationaryMechanisms:
         if t >= self.tau + 1:
             t = self.tau
 
-        noise = np.random.normal(size=(self.d, self.d_z))
+        noise = np.random.normal(scale=self.noise_z_std, size=(self.d, self.d_z))
 
-        z = z.reshape(z.shape[0], -1, 1)
-        z = z.repeat(1, 1, z.shape[1])
+        z = z.reshape(z.shape[0], 1, -1)
+        z = z.repeat(1, z.shape[-1], 1)
 
         output = self.apply_vectorized(self.mech[-t-1:], z)
-        output = output * g.detach().numpy() * self.coeff[-t-1:]
-        output = np.sum(output, axis=(0, 1))
+        output = output * self.coeff[-t-1:]
+        output = np.sum(output, axis=(0, 2))
         output = output.reshape(self.d, self.d_z)
         output += noise
         return torch.from_numpy(output)
@@ -117,6 +125,9 @@ class DataGeneratorWithLatent:
         self.d_x = hp.d_x
         self.tau = hp.tau
         self.func_type = hp.func_type
+
+        self.noise_x_std = 1
+        self.noise_z_std = 1
 
         if self.n > 1:
             self.t = self.tau + 1
@@ -141,6 +152,9 @@ class DataGeneratorWithLatent:
         np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
         np.save(os.path.join(path, 'graph_w'), self.w.detach().numpy())
+
+        if self.func_type == "linear":
+            np.save(os.path.join(path, 'linear_coeff'), self.f.coeff)
 
     def sample_graph(self, instantaneous: bool) -> torch.Tensor:
         """
@@ -257,9 +271,13 @@ class DataGeneratorWithLatent:
             for t in range(1, self.tau + 1):
                 self.f.append(self.sample_mlp(t))
         elif self.func_type == "add_nonlinear":
-            self.f = StationaryMechanisms(self.tau, self.d, self.d_z, linear=False)
+            self.f = StationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
+                                          linear=False,
+                                          noise_z_std=self.noise_z_std)
         elif self.func_type == "linear":
-            self.f = StationaryMechanisms(self.tau, self.d, self.d_z, linear=True)
+            self.f = StationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
+                                          linear=True,
+                                          noise_z_std=self.noise_z_std)
         else:
             raise NotImplementedError("the only fct types are NN and stationary")
 
@@ -280,7 +298,7 @@ class DataGeneratorWithLatent:
                     else:
                         idx = -1
                         g = self.G
-                        z = self.Z[i_n, t - self.tau - 1:t]
+                        z = self.Z[i_n, t - self.tau:t + 1]
 
                     # nn_input = (g * z).view(-1)
                     if self.func_type == "mlp":
@@ -297,7 +315,7 @@ class DataGeneratorWithLatent:
 
             # sample the data X (= WZ + noise)
             mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
-            self.X = mu + torch.normal(0, 0.1, size=self.X.size())
+            self.X = mu + torch.normal(0, self.noise_x_std, size=self.X.size())
 
         if torch.max(torch.abs(self.Z)) > 100000:
             raise ValueError("The generative process doesn't seem to be stationary")
@@ -354,6 +372,7 @@ class DataGeneratorWithoutLatent:
             A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
         """
         # TODO: allow data with any number of dimension (1D, 2D, ...)
+        # prob_tensor = torch.ones((self.tau, self.d, self.num_neigh * self.d)) * self.prob
         prob_tensor = torch.ones((self.tau, self.d, self.num_neigh * self.d)) * self.prob
 
         if diagonal:
