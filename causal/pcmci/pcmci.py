@@ -139,6 +139,8 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
         with torch.no_grad():
             graph = np.transpose(graph, (2, 0, 1))
             graph = graph[1:]
+            gt_graph = gt_graph[:-1]
+            gt_graph = gt_graph[::1]
             assert graph.shape == gt_graph.shape, f"{graph.shape} != {gt_graph.shape}"
             gt_z = gt_z.reshape(gt_z.shape[0] * gt_z.shape[1], gt_z.shape[2] * gt_z.shape[3])
             # z_hat = z_hat.reshape(z_hat.shape[0] * z_hat.shape[1], z_hat.shape[2] * z_hat.shape[3])
