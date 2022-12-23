@@ -320,16 +320,16 @@ class TrainingLatent:
         print(f"Iteration #{self.iteration}")
         print(f"Converged: {self.converged}")
 
-        print(f"train_nll: {self.train_nll:.4f}")
-        print(f"train_recons: {self.train_recons:.4f}")
-        print(f"train_kl: {self.train_kl:.4f}")
+        print(f"ELBO: {self.train_nll:.4f}")
+        print(f"Recons: {self.train_recons:.4f}")
+        print(f"KL: {self.train_kl:.4f}")
 
-        print(f"train_sparsity_reg: {self.train_sparsity_reg:.1e}")
-        print(f"train_connect_reg: {self.train_connect_reg:.1e}")
+        print(f"Sparsity_reg: {self.train_sparsity_reg:.1e}")
+        # print(f"Connect_reg: {self.train_connect_reg:.1e}")
 
         print(f"ortho cons: {self.train_ortho_cons:.1e}")
-        print(f"ortho delta_gamma: {self.ALM_ortho.delta_gamma}")
-        print(f"ortho gamma: {self.ALM_ortho.gamma}")
+        # print(f"ortho delta_gamma: {self.ALM_ortho.delta_gamma}")
+        # print(f"ortho gamma: {self.ALM_ortho.gamma}")
         print(f"ortho mu: {self.ALM_ortho.mu}")
 
         if self.instantaneous:
@@ -337,7 +337,7 @@ class TrainingLatent:
             print(f"acyclic gamma: {self.QPM_ortho.mu}")
         print("-------------------------------")
 
-        print(f"valid_nll: {self.valid_nll:.4f}")
+        print(f"valid_ELBO: {self.valid_nll:.4f}")
         # print(f"valid_recons: {self.valid_recons:.4f}")
         # print(f"valid_kl: {self.valid_kl:.4f}")
         print(f"patience: {self.patience}")
