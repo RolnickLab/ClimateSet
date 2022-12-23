@@ -111,7 +111,10 @@ class LatentTSDCD(nn.Module):
 
         self.mask = Mask(d, d_z, tau, instantaneous=instantaneous, latent=True, drawhard=hard_gumbel)
         if self.debug_gt_graph:
-            self.mask.fix(self.gt_graph)
+            if self.instantaneous:
+                self.mask.fix(self.gt_graph)
+            else:
+                self.mask.fix(self.gt_graph[:-1])
 
     def get_adj(self):
         """
@@ -271,7 +274,7 @@ class EncoderDecoder(nn.Module):
         if self.tied_w:
             self.w_q = None
         else:
-            unif = (1 - 0.1) * torch.rand(size=(d, d_z, d_x)) + 0.1
+            unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
             self.w_q = nn.Parameter(unif / torch.tensor(self.d_z))
 
         self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.1)
@@ -287,8 +290,8 @@ class EncoderDecoder(nn.Module):
         else:
             # here x is in fact z
             # decoder p(x | z)
-            if self.tied_w:
-                w = w.T
+            # if self.tied_w:
+            w = w.T
             mu = torch.matmul(x, w)
             logvar = self.logvar_decoder[i]
         return mu, logvar
