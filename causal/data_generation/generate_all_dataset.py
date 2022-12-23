@@ -65,6 +65,8 @@ if __name__ == "__main__":
         "n": 1,
         "noise_type": "gaussian",
         "instantaneous": False
+        "noise_x_std": 1,
+        "noise_z_std": 1
     }
 
     generate_all_dataset("data", varying_params, default_params)

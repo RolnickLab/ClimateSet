@@ -126,8 +126,8 @@ class DataGeneratorWithLatent:
         self.tau = hp.tau
         self.func_type = hp.func_type
 
-        self.noise_x_std = 1
-        self.noise_z_std = 1
+        self.noise_x_std = hp.noise_x_std
+        self.noise_z_std = hp.noise_z_std
 
         if self.n > 1:
             self.t = self.tau + 1

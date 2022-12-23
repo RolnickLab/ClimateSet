@@ -111,6 +111,10 @@ if __name__ == "__main__":
                         help="Number of previous timestep that interacts with a timestep t")
     parser.add_argument("--noise-coeff", type=float,
                         help="Coefficient for the additive noise")
+    parser.add_argument("--noise-x-std", type=float,
+                        help="Std of the noise applied on X")
+    parser.add_argument("--noise-z-std", type=float,
+                        help="Std of the noise applied on Z")
 
     # params specific to non-latent
     parser.add_argument("--world-dim", type=float, default=1,
