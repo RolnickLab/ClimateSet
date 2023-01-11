@@ -41,7 +41,8 @@ from cftime import num2date, date2num
 
 
 # TODO import this from data_paths.py
-DATA_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpaca/data/data/input4mips/"
+DATA_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpaca/data/data/raw/input4mips/"
+PROCESSED_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpaca/data/data/processed/input4mips/"
 # TODO import this from mother_params
 VARS = ["BC", "CH4", "CO2", "SO2"]
 
@@ -55,6 +56,7 @@ class Input4mipsRawPreprocesser:
     def __init__(
         self,
         raw_path: Path,
+        processed_path: Path,
         test_scenario: bool = False,
         ghg_vars: List[str] = [],
     ):
@@ -67,6 +69,7 @@ class Input4mipsRawPreprocesser:
                 Input4MIPs data. E.g. ["CO2", "CH4", "SO2", "BC"]
         """
         self.raw_path = raw_path
+        self.processed_path = processed_path
         self.test_scenario = test_scenario
         self.vars = ghg_vars
 
@@ -156,7 +159,89 @@ class Input4mipsRawPreprocesser:
         """
         pass
 
+    # TODO move to utils
+    def spaced_name(
+        self,
+        name
+    ):
+        """ Replaces '_' chars and replaces with space.
+        """
+        return name.replace('_', ' ')
+
     def spat_aggregate(
+        self,
+        old_res: str = "25_km",
+        new_res: str = "50_km",
+        scenario: str = "historical",
+        in_var_file_naming = "BC_em_biomassburning",
+        in_var: str = "BC", # "BC_em_biomassburning" is only the file name, not how it is named in the dataset
+        role_model_var: str = "BC_em_anthro",
+        out_var_name: str = "", # if empty: same as in_var_file_naming
+        regridder_type: str = "bilinear",
+        overwrite: bool = False,
+        sectors_exist: bool = False,
+    ):
+        """ xesmf regridder large scale.
+
+        Notes: This function cannot regrid files with sectors. It includes
+        a call to aggregate sectors - please put [sectors_exist = False] if you
+        already aggregated the files and no sectors exists
+        """
+        # stuff that needs to be set / calculated in the beginning
+        if len(out_var_name) < 1:
+            out_var_name = in_var_file_naming
+
+        # Here: apply this to all files (create a large scale and a generic regridder function (put that in utils!!))
+        # right now: regridd a single file
+
+        # load files
+        # TODO adapt for multiple files
+        # TODO move this all out of this function!!
+        role_model_path = self.raw_path / scenario / role_model_var / "50_km" / "mon" / "1750"
+        role_model_name = "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
+        role_model_file = role_model_path / role_model_name
+        in_path = self.raw_path / scenario / in_var_file_naming / "25_km" / "mon" / "1750"
+        in_name = "input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc"
+        in_file = in_path / in_name
+        regridded_file_path = self.processed_path / scenario / out_var_name / new_res / "mon" / "1750"
+        os.makedirs(regridded_file_path, exist_ok=True) # create dirs if they do not exist yet
+        regridded_name = str(in_name).replace(old_res, new_res)
+        regridded_file = regridded_file_path / regridded_name
+        # test_path = self.raw_path / "None" / "test_file.nc"
+
+        in_ds = xr.open_dataset(in_file)
+        role_model_ds = xr.open_dataset(role_model_file) # define a role model for the latitude and longitude values
+
+        # QUESTION: How to handle the nans??
+            # ? make nans to zeros beforehand (when processing single files)
+            #in_ds = in_ds.fillna(value={in_var: 0})
+            # -> if we remove nans, no landscape. For emissions it might make sense to keep nans??
+
+        # create the output dataset in the right shape
+        out_ds = xr.Dataset({"lat": (["lat"], role_model_ds.lat.values, {"units": "degrees_north"}),
+                             "lon": (["lon"], role_model_ds.lon.values, {"units": "degrees_east"}),
+                            })
+
+        # regrid
+        regridder = xe.Regridder(in_ds, out_ds, regridder_type)
+        regridded_ds = regridder(in_ds, keep_attrs=True)
+
+        # rename GHG vars & nominal resolution
+        regridded_ds = regridded_ds.rename_vars({in_var: out_var_name})
+        regridded_ds.attrs["nominal_resolution"] = self.spaced_name(new_res)
+
+        # safe regridded data to file
+        regridded_ds.to_netcdf(regridded_file, mode="w", format="NETCDF4")
+        print("Saved the regridded file!")
+
+
+# TODO sector aggregation functionalities:
+# TWO functions: one for single aggregation (utils), one applying it to all
+# user can decide if certain sectors should be dropped
+# simplest version: all sectors are aggregated
+# finds automatically what the sectors are (different variable names?)
+
+    def spat_aggregate_plot_example(
         self,
         old_res: str = "25_km",
         new_res: str = "50_km",
@@ -191,10 +276,10 @@ class Input4mipsRawPreprocesser:
         # sectors
         old_sectors = role_model_ds.sizes["sector"]
         # TODO make this a user param
-        aggr_sectors = True # True (default): summarize all sectors to one False: leave them as it is
+        aggr_sectors = True # True (default): summarize all sectors to one; False: leave them as it is
         new_sectors = 1 if aggr_sectors else old_sectors # we only have 1 sector for biomassburning
 
-        if (not aggr_sectors) and (not "sector" in high_res_file):
+        if (not aggr_sectors) and (not "sector" in in_ds):
             raise ValueError("If you do not want to aggregate sectors, sectors must exists in the high res file! Consider setting aggr_sectors=True.")
 
         ### create new nc file with lower res for lon and lat ###
@@ -216,7 +301,7 @@ class Input4mipsRawPreprocesser:
         ##############################################
 
         # CONTINUE HERE: what is the state of the sectors? sectors are missing in the new file
-        # print(role_model_ds)
+
         # print(in_ds)
         # print(out_ds)
         # exit(0)
@@ -234,6 +319,7 @@ class Input4mipsRawPreprocesser:
         # print(regridded_file)
         # exit(0)
         print("Role Model")
+        print(role_model_ds)
         role_model_ds.sel(time="1750-01-16 00:00:00", sector=4)["BC_em_anthro"].squeeze().plot.pcolormesh(vmin=0, vmax=5e-11)
         plt.show()
         print("Input File")
@@ -506,13 +592,17 @@ if __name__ == '__main__':
     # create raw preprocesser
     raw_preprocesser = Input4mipsRawPreprocesser(
         raw_path=Path(DATA_PATH),
+        processed_path=Path(PROCESSED_PATH),
         test_scenario=True,
         ghg_vars=VARS)
+
+    #raw_preprocesser.spat_aggregate_plot_example()\
 
     # aggregate all the historical openburnings (they have 25km res instead of 50)
     raw_preprocesser.spat_aggregate(
         old_res="25_km",
         new_res="50_km",
         scenario="historical",
-        var="BC_em_biomassburning", # TODO make this a list option
+        in_var_file_naming="BC_em_biomassburning",  # TODO make this a list option
+        in_var="BC", # TODO this is a problem - should be aligned with in_var_file_naming...
         overwrite=False)
