@@ -1,6 +1,7 @@
 # Input4MIPs data is preprocessed here after downloading them
 import os
 import cftime
+import warnings
 import numpy as np
 import xesmf as xe
 import xarray as xr
@@ -12,6 +13,8 @@ from typing import List
 from pathlib import Path
 from cftime import num2date, date2num
 
+# to delete (only for testing)
+import pandas as pd
 
 # EXTERNAL TODOS
     # rename "mon" in input4mips to 5y
@@ -114,7 +117,7 @@ class Input4mipsRawPreprocesser:
         return full_scenarios
 
     # this is part of the raw preprocesser
-    # TODO calendar checks
+    # TODO calendar checks (type + number of days per year)
     def sanity_checks(self) -> bool:
         """ Checks if all Input4MIPs files use the expected unit (fluxes in
         kg m-2 s-1). Checks if the temporal and nominal resolution in the file
@@ -154,20 +157,166 @@ class Input4mipsRawPreprocesser:
         print("Checks ended successfully!")
         return True
 
+    # this is raw preprocessing (and needs to be done only one time)
+    def aggregate_emissions(self):
+        """ Summarizes all the emissions that are available within one scenario.
+        E.g. BC_em_anthro, BC_em_biomassburning and BC_em_air are summarized to
+        BC_em_total. This needs only to be done once.
+        """
+        pass
+
+    # # TODO move to utils
+    # def sum_xarray(ds, dim):
+    #     """ Sums over a given dimension
+    #     Args:
+    #         ds (xarray.DataSet): xarray dataset
+    #         dim (int): Dimension over which should be summed
+    #     Returns:
+    #
+    #     """
+
+
+
+    def sum_up_sectors(self, ds):
+        """ Summarizes all emissions that exist across different sectors.
+        Function changes the xarray dataset in place.
+
+        Args:
+            ds (xarray.DataSet): Dataset with emissions across different sectors.
+        """
+        # check if sectors exist
+        if "sector" not in ds.dims:
+            warnings.warn("...Warning: No sectors exist that could be summed up.")
+
+        ds_ghg = ds.attrs["variable_id"]
+        ds[ds_ghg] = ds.SO2_em_anthro.sum("sector", skipna=True, min_count=1, keep_attrs=True)
+
+
+    # TODO move this to RES preprocessing
     def temp_interpolate_future_scenarios(self):
         """ Converting future scenarios with a 5y frequency to annual scenarios.
         """
         pass
 
     # TODO move to utils
-    def spaced_name(
+    def space_name(
         self,
         name
     ):
         """ Replaces '_' chars and replaces with space.
+        Returns:
+            str: new string with spaces instead of underscores
         """
         return name.replace('_', ' ')
 
+    # TODO move to utils
+    def underscore_name(
+        self,
+        name
+    ):
+        """ Replaces spaces with underscores.
+        Returns:
+            str: new string with underscores instead of spaces
+        """
+        return name.replace(' ', '_')
+
+    def spat_aggregate_dir(
+        self,
+        #dir: Path,
+        #role_model_file: Path,
+        #store_path: Path,
+        regridder_type: str = "bilinear",
+        overwrite: bool = False,
+    ):
+        """ Spatially aggregates all files given in one directory according to a
+        role-model-file (which has the right resolution, etc.). Stores the Resulting
+        files in a given storage path. The function assumes that the aggregation
+        happens along the dimension of the variable (inferred from directory Path).
+        Must be nc files!
+
+        Args:
+            dir (Path): Directory which should be spatially aggregated.
+            role_model_file (Path): Full path to an example file, the 'role model'. The aggregation
+                happens such that the spatial resolution of this role model is matched.
+            store_path (Path): Where the new aggregated files should be stored
+            regridder_type (str): Which kind of regridder should be used
+            overwrite (bool): If the files in the storage dir should be overwritten
+                in case they already exist. Default: False
+        """
+        # test path
+        scenario = "historical"
+        role_model_var = "BC_em_anthro"
+        role_model_path = self.raw_path / scenario / role_model_var / "50_km" / "mon" / "1750"
+        role_model_name = "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
+        role_model_file = role_model_path / role_model_name
+        directory = Path(self.raw_path / "historical")
+
+        # checks
+        if not os.path.isfile(role_model_file):
+            raise ValueError("``role_model_file`` must be a file.")
+        if Path(role_model_file).suffix != ".nc":
+            raise ValueError("``role_model_file`` must be an .nc file (netCDF4).")
+        if not os.path.isdir(directory):
+            raise ValueError("``directory`` must be a directory.")
+
+        # load role model
+        role_model_ds = xr.open_dataset(role_model_file)
+        # extract relevant information from role_model
+        new_res = self.underscore_name(role_model_ds.attrs["nominal_resolution"])
+
+        # run through directory
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                # load dataset
+                in_ds = xr.open_dataset(os.path.join(root, file))
+                # extract relevant information
+                old_res = self.underscore_name(in_ds.attrs["nominal_resolution"])
+                in_var = in_ds.attrs["variable_id"]
+                in_var_file_naming = '_'.join(file.split('_')[2:5])
+                sectors_exist = True if "sector" in in_ds.dims else False
+
+                # sum over sectors (should I do that here??)
+                if sectors_exist:
+                    self.sum_up_sectors(in_ds)
+
+                exit(0)
+                # aggregate
+                # old_res CHECK
+                # new_res CHECK
+                # regridder type CHECK
+                # overwrite CHECK
+                # sectors_exist = False
+
+                # new ones: in_file, rolde_model_file, regridded_file (Path)
+
+                self.spat_aggregate(
+                    old_res = old_res, # TODO can be done within spat_aggregate
+                    new_res = new_res, # TODO can be done within spat_aggregate
+                    in_ds = in_ds, # TODO two cases: 
+                    regridder_type = regridder_type,
+                    overwrite = overwrite,
+                    sectors_exist = False,
+                )
+                exit(0)
+                # TODO change in spat_aggregate:
+                # divide between the "Path" and "xarray" case
+
+
+            # # extract relevant information from single file
+            # # example: input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc
+            # old_res # from file name or from file??
+            # in_var # from file itself
+            # sectors_exist # from file itself (in or role model??)
+            #
+            # new_store_path # create that one
+            #
+            # # call spat_aggregate
+
+    # TODO Documentation
+    # TODO clean up / add simple file name args
+    # TODO sectors_exist??
+    # TODO include call the aggregate sectors
+    # TODO overwrite -> implement before safing!
     def spat_aggregate(
         self,
         old_res: str = "25_km",
@@ -207,7 +356,6 @@ class Input4mipsRawPreprocesser:
         os.makedirs(regridded_file_path, exist_ok=True) # create dirs if they do not exist yet
         regridded_name = str(in_name).replace(old_res, new_res)
         regridded_file = regridded_file_path / regridded_name
-        # test_path = self.raw_path / "None" / "test_file.nc"
 
         in_ds = xr.open_dataset(in_file)
         role_model_ds = xr.open_dataset(role_model_file) # define a role model for the latitude and longitude values
@@ -228,7 +376,7 @@ class Input4mipsRawPreprocesser:
 
         # rename GHG vars & nominal resolution
         regridded_ds = regridded_ds.rename_vars({in_var: out_var_name})
-        regridded_ds.attrs["nominal_resolution"] = self.spaced_name(new_res)
+        regridded_ds.attrs["nominal_resolution"] = self.space_name(new_res)
 
         # safe regridded data to file
         regridded_ds.to_netcdf(regridded_file, mode="w", format="NETCDF4")
@@ -240,7 +388,6 @@ class Input4mipsRawPreprocesser:
 # user can decide if certain sectors should be dropped
 # simplest version: all sectors are aggregated
 # finds automatically what the sectors are (different variable names?)
-
     def spat_aggregate_plot_example(
         self,
         old_res: str = "25_km",
@@ -347,176 +494,6 @@ class Input4mipsRawPreprocesser:
         # TODO adapt nans to 0 beforehand
         exit(0)
 
-    # TODO add option to use different kinds of aggregations
-    # TODO this function can be used in the res preprocesser as well
-    # -> find an elegant, generalized solution for that
-    # ATTENTION right now this only works for mapping from X km to Y km,
-         # where Y is 2-fold number of X! (2-times, 4-times, etc.)
-    def spat_aggregate_single_var(
-        self,
-        old_res: str = "25_km",
-        new_res: str = "50_km",
-        scenario: str = "historical",
-        var: str = "BC_em_biomassburning", # TODO make this a list option
-        overwrite: bool = False,
-    ):
-        """ Spatial aggregation of higher res openburning files to the standard
-        nominal resolution used for the other files. This function can be used
-        multiple times for different desired resolutions. This function is
-        intended to use to spatiall aggregate historical openburning files.
-        The function can be used equally for other scenarios if necessary
-        (see Args). The desired nominal resolution must be given as argument
-        (Number_unit: [50_km]).
-
-        Args:
-            old_res (str): Resolution the files currently have. E.g. "25 km".
-            new_res (str): Resolution the files should have. E.g. "50 km"
-            scenario (str): A subdir such as "historical" that describes a
-                scenario run by the climate models.
-            var (str): Which variable is considered within the scenario. E.g.
-                "BC_em_biomassburning".
-            overwrite (bool): Indicating if the files should be overwritten if
-                they already exist for this resolution.
-        """
-        # TODO rename longitude and latitude -> must be consistent for all files
-
-        # testing here how to aggregate a normal file, this is a 50km one
-        scenario = "historical"
-        a_var = "BC_em_anthro"
-        abbr_var = "BC" # used instead of "BC_em_biomassburning" in the files!
-        a_path = self.raw_path / scenario / a_var / "50_km" / "mon" / "1750"
-        a_file = a_path / "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
-        b_path = self.raw_path / scenario / var / "25_km" / "mon" / "1750"
-        b_file = b_path / "input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc"
-        new_file_path = self.raw_path / "None" / "test_file.nc"
-
-        # resolution ratio (old / new res)
-        res_ratio = int(old_res.split('_')[0]) / int(new_res.split('_')[0])
-        # TODO!!! Desired degree resolution
-        res_degree = 0.5
-        # aggregation size
-        aggr_size = res_ratio**(-1)
-
-        # open both files
-        high_res_file = xr.open_dataset(b_file)
-        full_original = xr.open_dataset(a_file)
-
-        # sectors
-        old_sectors = full_original.sizes["sector"]
-        # TODO make this a user param
-        aggr_sectors = True # True (default): summarize all sectors to one False: leave them as it is
-        new_sectors = 1 if aggr_sectors else old_sectors # we only have 1 sector for biomassburning
-
-        if (not aggr_sectors) and (not "sector" in high_res_file):
-            raise ValueError("If you do not want to aggregate sectors, sectors must exists in the high res file! Consider setting aggr_sectors=True.")
-
-        ### create new nc file with lower res for lon and lat ###
-        # copy the original dataset (desired dimensions etc)
-        if new_sectors < old_sectors: # change the sector dimension if necessary
-            copy_original = full_original.where(full_original.sector < new_sectors).dropna(dim="sector")
-        elif new_sectors > old_sectors:
-            raise ValueError("Trying to create more sectors than available in original file. We are not able to do this.")
-        else:
-            copy_original = full_original
-
-        # replace with nans
-        copy_original[a_var][:, :, :, :] = np.nan
-
-        # rename GHG variable (target var that changes resolution!) if needed
-        if var != a_var:
-            copy_original[var] = copy_original[a_var]
-            copy_original = copy_original.drop(a_var)
-
-        #############################################
-
-        # open both nc files
-        a = full_original # TO DEL
-        b = copy_original # TO DEL
-        #xr.open_dataset(b_file) # TODO: grap first available file here
-        #print(a["BC_em_anthro"][11, :, 359, 719]) # month (12), sector (8), lat (360), lon (720)
-        #print(b["BC"][11, 719, 1439]) # time (12), lon (720), lat (1440)
-        #print(b["BC"][6, 200:500, 1000:1200].values) # time (12), lon (720), lat (1440)
-
-        aggr_file = copy_original
-
-        # replace nans with zeros
-        high_res_file = high_res_file.where(~np.isnan(high_res_file[abbr_var][:, :, :]), 0) # later: could be accelerated
-
-        # TODO make this is a looot faster ...
-            # calculate lon lat block once separately
-            # find a way to use an "apply" method that is faster
-
-
-        # move over high res file, aggregate and fill the new low res file
-        for i_lon, lon in tqdm(enumerate(aggr_file.lon.values), total=aggr_file.lon.size):
-            mid_lon = (aggr_size * i_lon) + (0.5 * aggr_size)
-            str_lon = int(mid_lon - (0.5 * aggr_size))
-            end_lon = int(mid_lon + (0.5 * aggr_size))
-            for i_lat, lat in enumerate(aggr_file.lat.values):
-                mid_lat = (aggr_size * i_lat) + (0.5 * aggr_size)
-                str_lat = int(mid_lat - (0.5 * aggr_size))
-                end_lat = int(mid_lat + (0.5 * aggr_size))
-                for i_t, t in enumerate(aggr_file.time.values): # maybe use without values here
-                    if not aggr_sectors:
-                        # another for loop over sectors
-                        for i_s, s in enumerate(aggr_file.sector.values):
-                            high_res_indices = dict(time=i_t,
-                                                    sector=i_s,
-                                                    latitude=slice(str_lat, end_lat),
-                                                    longitude=slice(str_lon, end_lon))
-                            high_res_values = high_res_file[abbr_var][high_res_indices]
-                            aggr_value = high_res_values.sum().values
-                            low_res_coord_labels = dict(time=t, lat=lat, lon=lon, sector=s)
-                            aggr_file[var].loc[low_res_coord_labels] = aggr_value
-                    else:
-                        # Attention: problems can arise when names are not "longitude" & "latitude"
-                        high_res_indices = dict(time=i_t,
-                                                latitude=slice(str_lat, end_lat),
-                                                longitude=slice(str_lon, end_lon))
-                        high_res_values = high_res_file[abbr_var][high_res_indices]
-                        aggr_value = high_res_values.sum().values
-                        # check if coordinate sector exists
-                        if "sector" in aggr_file.coords:
-                            low_res_coord_labels = dict(time=t, lat=lat, lon=lon, sector=0)
-                        else:
-                            low_res_coord_labels = dict(time=t, lat=lat, lon=lon)
-                        aggr_file[var].loc[low_res_coord_labels] = aggr_value
-                        #print(aggr_file[var].loc[low_res_coord_labels])
-
-        print("Finished!")
-        print(aggr_file)
-
-        # save as new nc file
-        aggr_file.to_netcdf(new_file_path)
-        exit(0)
-        curr_path = self.raw_path / scenario / var
-
-        # check if old res exists
-        print(curr_path / old_res)
-
-        # check if new res exists (if overwrite false, exit the function)
-
-        # create folder if new res does not exist yet
-
-        # iterate through subdirs and files
-
-            # create the same subdirs (if they dont exist yet)
-
-            # aggregate the single file (from old dir) to desired res
-                # ... do stuff ...
-
-            # save as new file in the new dir
-
-        # finished
-        pass
-
-    # this is raw preprocessing (and needs to be done only one time)
-    def aggregate_emissions(self):
-        """ Summarizes all the emissions that are available within one scenario.
-        E.g. BC_em_anthro, BC_em_biomassburning and BC_em_air are summarized to
-        BC_em_total. This needs only to be done once.
-        """
-        pass
 
 class Input4mipsResPreprocesser:
     """ Responsible for all Input4mips data peprocessing connected to resolutions.
@@ -539,6 +516,11 @@ class Input4mipsResPreprocesser:
         # makes a list which folders are traversed (other ones are ignored)
 
         # create a preprocessed dir on the level above (default) path, or where the users want
+        pass
+
+    def print_res_inconsistencies():
+        """ function that lists all spatial and temporal resolution inconsistencies
+        """
         pass
 
     # we do not have an interpolation function, because input4mips usually has
@@ -599,10 +581,12 @@ if __name__ == '__main__':
     #raw_preprocesser.spat_aggregate_plot_example()\
 
     # aggregate all the historical openburnings (they have 25km res instead of 50)
-    raw_preprocesser.spat_aggregate(
-        old_res="25_km",
-        new_res="50_km",
-        scenario="historical",
-        in_var_file_naming="BC_em_biomassburning",  # TODO make this a list option
-        in_var="BC", # TODO this is a problem - should be aligned with in_var_file_naming...
-        overwrite=False)
+    # raw_preprocesser.spat_aggregate(
+    #     old_res="25_km",
+    #     new_res="50_km",
+    #     scenario="historical",
+    #     in_var_file_naming="BC_em_biomassburning",  # TODO make this a list option
+    #     in_var="BC", # TODO this is a problem - should be aligned with in_var_file_naming...
+    #     overwrite=False)
+    raw_preprocesser.spat_aggregate_dir()
+    print("hello end")
