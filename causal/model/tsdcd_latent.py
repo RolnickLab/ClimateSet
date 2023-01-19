@@ -264,7 +264,7 @@ class EncoderDecoder(nn.Module):
         self.debug_gt_w = debug_gt_w
         self.gt_w = gt_w
 
-        unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
+        unif = (1 - 0.4) * torch.rand(size=(d, d_x, d_z)) + 0.4
         if self.use_grad_projection:
             self.w = nn.Parameter(unif / torch.tensor(self.d_z))
         else:

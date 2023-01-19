@@ -58,20 +58,17 @@ class Plotter:
                                       iteration=learner.logging_iter,
                                       plot_through_time=learner.hp.plot_through_time,
                                       path=learner.hp.exp_path)
-            losses = [{"name": "tr ELBO", "data": learner.train_loss_list, "s": "-."},
-                      {"name": "Recons", "data": learner.train_recons_list, "s": "-"},
-                      {"name": "KL", "data": learner.train_kl_list, "s": "-"},
-                      {"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
-                      {"name": "val ELBO", "data": learner.valid_loss_list, "s": "-."},
+            losses = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
                       {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
-                      {"name": "mu ortho", "data": learner.valid_ortho_cons_list, "s": ":"},
+                      {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
                       ]
             # {"name": "tr acyclic", "data": learner.train_acyclic_cons_list, "s": "-"},
             # {"name": "tr connect", "data": learner.train_connect_reg_list, "s": "-"},
             self.plot_learning_curves2(losses=losses,
                                        iteration=learner.logging_iter,
                                        plot_through_time=learner.hp.plot_through_time,
-                                       path=learner.hp.exp_path)
+                                       path=learner.hp.exp_path,
+                                       fname="penalties")
             losses = [{"name": "tr ELBO", "data": learner.train_loss_list, "s": "-."},
                       {"name": "Recons", "data": learner.train_recons_list, "s": "-"},
                       {"name": "KL", "data": learner.train_kl_list, "s": "-"},
@@ -104,6 +101,8 @@ class Plotter:
                     self.mcc.append(1.)
                     self.assignments.append(np.arange(learner.gt_dag.shape[1]))
                 else:
+                    if learner.iteration % 10000 == 0:
+                        __import__('ipdb').set_trace()
                     score, cc_program_perm, assignments, z, z_hat = mcc_latent(learner.model, learner.data)
                     permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
                     permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
@@ -415,7 +414,7 @@ class Plotter:
         subfig_names = ["Learned", "Ground Truth", "Difference: Learned - GT"]
 
         fig = plt.figure(constrained_layout=True)
-        fig.suptitle("Adjacency matrices: learned vs ground-truth")
+        fig.suptitle("Matrices W")
 
         if no_gt:
             nrows = 1
@@ -429,16 +428,26 @@ class Plotter:
                     ax = axes
                 else:
                     ax = axes[row]
-                # axes.set_title(f"t - {i+1}")
+
                 if row == 0:
-                    sns.heatmap(mat1[0], ax=ax, cbar=False, vmin=-1, vmax=1,
-                                cmap="Blues", xticklabels=False, yticklabels=False)
+                    mat = mat1[0]
                 elif row == 1:
-                    sns.heatmap(mat2[0], ax=ax, cbar=False, vmin=-1, vmax=1,
-                                cmap="Blues", xticklabels=False, yticklabels=False)
-                elif row == 2:
-                    sns.heatmap(mat1[0] - mat2[0], ax=ax, cbar=False, vmin=-1, vmax=1,
-                                cmap="Blues", xticklabels=False, yticklabels=False)
+                    mat = mat2[0]
+                else:
+                    mat = mat1[0] - mat2[0]
+
+                sns.heatmap(mat, ax=ax, cbar=False, vmin=-1, vmax=1,
+                            annot=True, fmt=".5f", cmap="Blues",
+                            xticklabels=False, yticklabels=False)
+
+                # if the matrix is small enough, print also the value of each
+                # element of W in the heatmap
+                # if mat1.size < 500:
+                #     for i in range(mat.shape[0]):
+                #         for j in range(mat.shape[1]):
+                #             text = ax.text(j, i, f"{mat[i, j]:.1f}",
+                #                            ha="center", va="center", color="w")
+
 
         else:
             subfigs = fig.subfigures(nrows=nrows, ncols=1)

@@ -142,7 +142,11 @@ class TrainingLatent:
                     self.ALM_ortho.update(self.iteration,
                                           self.valid_ortho_cons_list,
                                           self.valid_loss_list)
-                    self.converged = self.ALM_ortho.has_converged
+                    if self.iteration > 20000:
+                        # self.converged = self.ALM_ortho.has_converged
+                        self.converged = False
+                    else:
+                        self.converged = False
 
                     if self.ALM_ortho.has_increased_mu:
                         if self.hp.optimizer == "sgd":
@@ -352,26 +356,37 @@ class TrainingLatent:
         return -elbo, recons, kl, pred
 
     def get_regularisation(self) -> float:
-        adj = self.model.get_adj()
-        reg = self.hp.reg_coeff * torch.norm(adj, p=1)
-        reg /= adj.shape[0] ** 2
+        # TODO: change configurable schedule!
+        if self.iteration > 50000:
+            adj = self.model.get_adj()
+            reg = self.hp.reg_coeff * torch.norm(adj, p=1)
+            reg /= adj.shape[0] ** 2
+        else:
+            reg = torch.tensor([0.])
 
         return reg
 
     def get_acyclicity_violation(self) -> torch.Tensor:
-        adj = self.model.get_adj()[-1].view(self.d, self.d)
-        # __import__('ipdb').set_trace()
-        h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
+        if self.iteration > 20000:
+            adj = self.model.get_adj()[-1].view(self.d, self.d)
+            # __import__('ipdb').set_trace()
+            h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
+        else:
+            h = torch.tensor([0.])
 
         return h
 
     def get_ortho_violation(self, w: torch.Tensor) -> float:
-        constraint = torch.tensor([0.])
-        k = w.size(2)
-        for i in range(w.size(0)):
-            constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
+        if self.iteration > 20000:
+            constraint = torch.tensor([0.])
+            k = w.size(2)
+            for i in range(w.size(0)):
+                constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
+            h = constraint / self.ortho_normalization
+        else:
+            h = torch.tensor([0.])
 
-        return constraint / self.ortho_normalization
+        return h
 
     def connectivity_reg_complete(self):
         """

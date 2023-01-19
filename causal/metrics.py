@@ -53,6 +53,8 @@ def mcc_latent(model, data_loader, num_samples=int(1e5), method='pearson', indic
 
         # if num_samples is greater than number of examples in dataset
         n = data_loader.x.shape[0]
+        if n == 1:
+            n = data_loader.x.shape[1]
         if sample_counter < n:
             num_samples = n
 
