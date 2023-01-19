@@ -175,21 +175,21 @@ class Input4mipsRawPreprocesser:
     #
     #     """
 
-
-
-    def sum_up_sectors(self, ds):
+    # TODO add a function that applies this to all files
+    # Later: user can decide if only certain sectors should be dropped?
+    def sum_up_sectors(self, ds: xr.Dataset):
         """ Summarizes all emissions that exist across different sectors.
         Function changes the xarray dataset in place.
 
         Args:
-            ds (xarray.DataSet): Dataset with emissions across different sectors.
+            ds (xarray.Dataset): Dataset with emissions across different sectors.
         """
         # check if sectors exist
         if "sector" not in ds.dims:
             warnings.warn("...Warning: No sectors exist that could be summed up.")
 
         ds_ghg = ds.attrs["variable_id"]
-        ds[ds_ghg] = ds.SO2_em_anthro.sum("sector", skipna=True, min_count=1, keep_attrs=True)
+        ds[ds_ghg] = ds[ds_ghg].sum("sector", skipna=True, min_count=1, keep_attrs=True)
 
 
     # TODO move this to RES preprocessing
@@ -199,32 +199,70 @@ class Input4mipsRawPreprocesser:
         pass
 
     # TODO move to utils
-    def space_name(
-        self,
-        name
-    ):
+    def space_name(self, name: str) -> str:
         """ Replaces '_' chars and replaces with space.
+        Args:
+            name (str): string or name that should be spaced
         Returns:
             str: new string with spaces instead of underscores
         """
         return name.replace('_', ' ')
 
     # TODO move to utils
-    def underscore_name(
-        self,
-        name
-    ):
+    def underscore_name(self, name: str) -> str:
         """ Replaces spaces with underscores.
+        Args:
+            name (str): string or name that should be underscored
         Returns:
             str: new string with underscores instead of spaces
         """
         return name.replace(' ', '_')
 
+    # TODO move to utils
+    # TODO may not be necessary anymore
+    def create_output_dirs(
+        self,
+        root: str,
+        dirs: List,
+    ):
+        """ Create directories from a list and a given (shared) root.
+        Args:
+            root (str): Root of the directories that should be created
+            dirs (list<str>): List of directories that should be created.
+        """
+        # makes only sense for non-empty list
+        if len(dirs) > 0:
+            # iterate over dir list
+            for dir in dirs:
+                # create path of output directory
+                output_dir = os.path.join(root, dir)
+                # create dir if it does not exist yet
+                if not os.path.isdir(output_dir):
+                    os.mkdir(output_dir)
+
+    def sectors_exist(self, ds: xr.Dataset) -> bool:
+        """ Checks if sectors are still used as coordinate for
+        the GHG variable.
+
+        Args:
+            ds (xarray.Dataset): xarray dataset that should be checked for
+                sector coordinates
+        Returns:
+            bool: True if sectors are used as coordinates, False if not.
+        """
+        coords = list(ds[ds.attrs["variable_id"]].coords)
+        return True if "sector" in coords else False
+
+    # TODO order (for preprocessing)
+    # 1. copy everything from raw to preprocessed
+    # 2. sum over all sectors
+    # 3. add new nominal resolution dirs to processed dir
+    # 4. add new temporal resolution dirs to processed dir
     def spat_aggregate_dir(
         self,
-        #dir: Path,
-        #role_model_file: Path,
-        #store_path: Path,
+        directory: Path,
+        role_model_file: Path,
+        store_dir_word: str = "processed",
         regridder_type: str = "bilinear",
         overwrite: bool = False,
     ):
@@ -235,22 +273,15 @@ class Input4mipsRawPreprocesser:
         Must be nc files!
 
         Args:
-            dir (Path): Directory which should be spatially aggregated.
+            directory (Path): Directory which should be spatially aggregated.
             role_model_file (Path): Full path to an example file, the 'role model'. The aggregation
                 happens such that the spatial resolution of this role model is matched.
-            store_path (Path): Where the new aggregated files should be stored
+            store_dir_word (str): In which subdir the processed data should be stored.
+                Default is ``processed``. (Automatically stored on the same level like ``raw``).
             regridder_type (str): Which kind of regridder should be used
             overwrite (bool): If the files in the storage dir should be overwritten
                 in case they already exist. Default: False
         """
-        # test path
-        scenario = "historical"
-        role_model_var = "BC_em_anthro"
-        role_model_path = self.raw_path / scenario / role_model_var / "50_km" / "mon" / "1750"
-        role_model_name = "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
-        role_model_file = role_model_path / role_model_name
-        directory = Path(self.raw_path / "historical")
-
         # checks
         if not os.path.isfile(role_model_file):
             raise ValueError("``role_model_file`` must be a file.")
@@ -259,111 +290,143 @@ class Input4mipsRawPreprocesser:
         if not os.path.isdir(directory):
             raise ValueError("``directory`` must be a directory.")
 
-        # load role model
+        # create output dir
+        output_directory = str(directory).replace("raw", "processed")
+        os.makedirs(output_directory, exist_ok=True)
+
+        # load role model & get its resolution
         role_model_ds = xr.open_dataset(role_model_file)
-        # extract relevant information from role_model
         new_res = self.underscore_name(role_model_ds.attrs["nominal_resolution"])
+        # sum over role model sectors
+        # TODO do this beforehand! (in raw preprocessing!)
+        if self.sectors_exist(role_model_ds):
+            self.sum_up_sectors(role_model_ds)
 
         # run through directory
         for root, dirs, files in os.walk(directory):
-            for file in files:
-                # load dataset
-                in_ds = xr.open_dataset(os.path.join(root, file))
-                # extract relevant information
-                old_res = self.underscore_name(in_ds.attrs["nominal_resolution"])
-                in_var = in_ds.attrs["variable_id"]
-                in_var_file_naming = '_'.join(file.split('_')[2:5])
-                sectors_exist = True if "sector" in in_ds.dims else False
+            # create dirs for output regridder files
+            output_root = root.replace("raw", "processed")
 
-                # sum over sectors (should I do that here??)
-                if sectors_exist:
-                    self.sum_up_sectors(in_ds)
+            # skip all of this in case the new res already exists
+            if not new_res in root:
+                for file in files:
+                    # load dataset
+                    in_path = os.path.join(root, file)
+                    in_ds = xr.open_dataset(in_path)
 
-                exit(0)
-                # aggregate
-                # old_res CHECK
-                # new_res CHECK
-                # regridder type CHECK
-                # overwrite CHECK
-                # sectors_exist = False
+                    # extract relevant information
+                    old_res = self.underscore_name(in_ds.attrs["nominal_resolution"])
+                    #in_var = in_ds.attrs["variable_id"]
+                    #in_var_file_naming = '_'.join(file.split('_')[2:5])
 
-                # new ones: in_file, rolde_model_file, regridded_file (Path)
+                    # create regridder file path & dirs
+                    out_path = os.path.join(output_root, file)
+                    regridded_file_path = Path(out_path.replace(old_res, new_res))
+                     # TODO remove when file creation has been moved  somewhere else
+                    os.makedirs(regridded_file_path.parent, exist_ok=True)
 
-                self.spat_aggregate(
-                    old_res = old_res, # TODO can be done within spat_aggregate
-                    new_res = new_res, # TODO can be done within spat_aggregate
-                    in_ds = in_ds, # TODO two cases: 
-                    regridder_type = regridder_type,
-                    overwrite = overwrite,
-                    sectors_exist = False,
-                )
-                exit(0)
-                # TODO change in spat_aggregate:
-                # divide between the "Path" and "xarray" case
+                    # sum over sectors
+                    # TODO do this beforehand! (raw preprocessing!)
+                    if self.sectors_exist(in_ds):
+                        self.sum_up_sectors(in_ds)
 
+                    self.spat_aggregate(
+                        in_ds = in_ds,
+                        role_model_ds = role_model_ds,
+                        regridded_file_path = regridded_file_path,
+                        regridder_type = regridder_type,
+                        overwrite = overwrite,
+                    )
+                    # TODO remove this print statement later, find different way to track progress
+                    print("Spatially aggregated the file and stored it!")
 
-            # # extract relevant information from single file
-            # # example: input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc
-            # old_res # from file name or from file??
-            # in_var # from file itself
-            # sectors_exist # from file itself (in or role model??)
-            #
-            # new_store_path # create that one
-            #
-            # # call spat_aggregate
-
-    # TODO Documentation
-    # TODO clean up / add simple file name args
-    # TODO sectors_exist??
-    # TODO include call the aggregate sectors
-    # TODO overwrite -> implement before safing!
-    def spat_aggregate(
+    # QUESTION: How to handle the nans??
+        # ? make nans to zeros beforehand (when processing single files)
+        #in_ds = in_ds.fillna(value={in_var: 0})
+        # -> if we remove nans, no landscape. For emissions it might make sense to keep nans??
+    # TODO move this to "internal testing"
+    def test_spat_aggregate(
         self,
-        old_res: str = "25_km",
-        new_res: str = "50_km",
         scenario: str = "historical",
         in_var_file_naming = "BC_em_biomassburning",
         in_var: str = "BC", # "BC_em_biomassburning" is only the file name, not how it is named in the dataset
         role_model_var: str = "BC_em_anthro",
         out_var_name: str = "", # if empty: same as in_var_file_naming
-        regridder_type: str = "bilinear",
-        overwrite: bool = False,
-        sectors_exist: bool = False,
     ):
-        """ xesmf regridder large scale.
-
-        Notes: This function cannot regrid files with sectors. It includes
-        a call to aggregate sectors - please put [sectors_exist = False] if you
-        already aggregated the files and no sectors exists
-        """
-        # stuff that needs to be set / calculated in the beginning
-        if len(out_var_name) < 1:
-            out_var_name = in_var_file_naming
-
-        # Here: apply this to all files (create a large scale and a generic regridder function (put that in utils!!))
-        # right now: regridd a single file
-
         # load files
-        # TODO adapt for multiple files
-        # TODO move this all out of this function!!
         role_model_path = self.raw_path / scenario / role_model_var / "50_km" / "mon" / "1750"
         role_model_name = "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc"
         role_model_file = role_model_path / role_model_name
         in_path = self.raw_path / scenario / in_var_file_naming / "25_km" / "mon" / "1750"
         in_name = "input4mips_historical_BC_em_biomassburning_25_km_mon_gn_1750.nc"
         in_file = in_path / in_name
-        regridded_file_path = self.processed_path / scenario / out_var_name / new_res / "mon" / "1750"
-        os.makedirs(regridded_file_path, exist_ok=True) # create dirs if they do not exist yet
-        regridded_name = str(in_name).replace(old_res, new_res)
-        regridded_file = regridded_file_path / regridded_name
-
         in_ds = xr.open_dataset(in_file)
         role_model_ds = xr.open_dataset(role_model_file) # define a role model for the latitude and longitude values
 
-        # QUESTION: How to handle the nans??
-            # ? make nans to zeros beforehand (when processing single files)
-            #in_ds = in_ds.fillna(value={in_var: 0})
-            # -> if we remove nans, no landscape. For emissions it might make sense to keep nans??
+        # get information from role_model and input file
+        old_res = self.underscore_name(in_ds.attrs["nominal_resolution"])
+        new_res = self.underscore_name(role_model_ds.attrs["nominal_resolution"])
+        in_var_name = in_ds.attrs["variable_id"]
+
+        # example, we could set the name of output variable
+        out_var_name = "BC_em_biomassburning"
+
+        # make regridder file
+        regridded_file_root = self.processed_path / scenario / out_var_name / new_res / "mon" / "1750"
+        os.makedirs(regridded_file_root, exist_ok=True) # create dirs if they do not exist yet
+        regridded_name = str(in_name).replace(old_res, new_res)
+        regridded_file_path = regridded_file_root / regridded_name
+
+        # aggregate
+        self.spat_aggregate(in_ds, role_model_ds, regridded_file_path, out_var_name)
+
+    # TODO Documentation
+    # TODO can this only aggregate? or does it regrid in both directions?
+    def spat_aggregate(
+        self,
+        in_ds: xr.Dataset,
+        role_model_ds: xr.Dataset,
+        regridded_file_path: Path,
+        out_var_name: str = "", # if empty: same as variable naming from input file
+        regridder_type: str = "bilinear",
+        overwrite: bool = False,
+    ):
+        """ Spatially aggregates a single file according to the nominal resolution
+        given by a role model dataset (``role_model_ds``). The input dataset
+        (``in_ds``) is aggregated in-place, i.e. no dataset will be returned.
+        Note: This function cannot regrid files with sectors.
+
+        Args:
+            in_ds (xarray.Dataset): The input dataset that should be regridded.
+            role_model_ds (xarray.Dataset): The role model - the output file
+                should look like the role model resolution-wise in the end.
+                The longitude-latitude structure from the role model is used to
+                build the new grid.
+            regridded_file_path (Path): Path where the regridded file should be
+                stored.
+            out_var_name (str): Can be changed in case the variable in the
+                regridded name should be different from the variable naming
+                of the input file. With default (empty string) the file will have
+                the same variable naming as listed as attribute ``variable_id``
+                in the input file.
+            regridder_type (str): See xesmf for that. All regridder types listed
+                there can be used here. Default is ``bilinear``.
+            overwrite (bool): Indicates if the regridded file should be overwritten
+                in case the file (from ``regridded_file_path``) already exists.
+        """
+        # check if sectors exist -> raise error if role_model or in_ds have sectors
+        if self.sectors_exist(in_ds):
+            raise ValueError("Argument ``in_ds`` is not allowed to contain sectors. Sum over sectors before.")
+        if self.sectors_exist(role_model_ds):
+            raise ValueError("Argument ``role_model_ds`` is not allowed to contain sectors. Sum over sectors before.")
+
+        # get relevant information
+        in_var = in_ds.attrs["variable_id"]
+        new_res = role_model_ds.attrs["nominal_resolution"]
+
+        # how the output variable should be named
+        if len(out_var_name) < 1:
+            out_var_name = in_var
 
         # create the output dataset in the right shape
         out_ds = xr.Dataset({"lat": (["lat"], role_model_ds.lat.values, {"units": "degrees_north"}),
@@ -376,18 +439,16 @@ class Input4mipsRawPreprocesser:
 
         # rename GHG vars & nominal resolution
         regridded_ds = regridded_ds.rename_vars({in_var: out_var_name})
-        regridded_ds.attrs["nominal_resolution"] = self.space_name(new_res)
+        regridded_ds.attrs["nominal_resolution"] = new_res
 
         # safe regridded data to file
-        regridded_ds.to_netcdf(regridded_file, mode="w", format="NETCDF4")
-        print("Saved the regridded file!")
+        if (not os.path.isfile(regridded_file_path)) or (overwrite):
+            regridded_ds.to_netcdf(regridded_file_path, mode="w", format="NETCDF4")
+            print("Saved the regridded file {}".format(regridded_file_path))
+        else:
+            print("Skipping file {}".format(regridded_file_path))
 
 
-# TODO sector aggregation functionalities:
-# TWO functions: one for single aggregation (utils), one applying it to all
-# user can decide if certain sectors should be dropped
-# simplest version: all sectors are aggregated
-# finds automatically what the sectors are (different variable names?)
     def spat_aggregate_plot_example(
         self,
         old_res: str = "25_km",
@@ -588,5 +649,10 @@ if __name__ == '__main__':
     #     in_var_file_naming="BC_em_biomassburning",  # TODO make this a list option
     #     in_var="BC", # TODO this is a problem - should be aligned with in_var_file_naming...
     #     overwrite=False)
-    raw_preprocesser.spat_aggregate_dir()
-    print("hello end")
+    #raw_preprocesser.test_spat_aggregate()
+
+    # define role model and which dir should be processed
+    role_model_file = Path(raw_preprocesser.raw_path / "historical"/ "BC_em_anthro" / "50_km" / "mon" / "1750" / "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc")
+    directory = Path(raw_preprocesser.raw_path / "historical")
+
+    raw_preprocesser.spat_aggregate_dir(directory, role_model_file)
