@@ -1,5 +1,6 @@
 # Input4MIPs data is preprocessed here after downloading them
 import os
+import re
 import cftime
 import warnings
 import numpy as np
@@ -49,8 +50,6 @@ PROCESSED_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpa
 # TODO import this from mother_params
 VARS = ["BC", "CH4", "CO2", "SO2"]
 
-ACCELERATE = True
-
 class Input4mipsRawPreprocesser:
     """ Responsible for the raw preprocessing of input4mips data.
     This class is used only once within the mother and should not be called by
@@ -72,6 +71,7 @@ class Input4mipsRawPreprocesser:
                 Input4MIPs data. E.g. ["CO2", "CH4", "SO2", "BC"]
         """
         self.raw_path = raw_path
+        # ATTENTION: this path is not used during res processing right now
         self.processed_path = processed_path
         self.test_scenario = test_scenario
         self.vars = ghg_vars
@@ -88,8 +88,46 @@ class Input4mipsRawPreprocesser:
         # store which scenarios do have all the vars
         self.full_scenarios = self._get_full_scenarios()
 
-        if not ACCELERATE: # TODO delete
+        # afterwards:
+        # 0. summing over sectors (and future other processes applied to all)
+        # 1. nominal resolution processing (different class)
+        # 2. temporal resolution processing (diff class)
+        # 3. emission processing - summing up
+        # 4. compare with CMIP6 data -> process and put into "loader"
+            # attention: CMIP6 might need a separate "checker"
+
+        # TODO: create one input4mips processer with different subclasses?
+
+    def run(
+        self,
+        sanity_checking: bool = True,
+        create_processed_dir: bool = True,
+        sum_over_sectors: bool = True
+    ):
+        """ Runs through all relevant raw preprocessing steps.
+
+        Args:
+            sanity_checking (bool): Indicates if sanity checks should be performed.
+                Needs only to be performed once.
+            create_processed_dir (bool): Indicates if the raw data should be
+                copied to the preprocessing directory. Needs only to be performed
+                once.
+            sum_over_sectors (bool): Indicates if sectors should be summed up
+                to one (within preprocessed dir).
+        """
+        if sanity_checking:
+            print("Starting sanity checks ...")
             self.sanity_checks()
+            if sanity: print("... checks ended successfully!")
+
+        if create_processed_dir:
+            print("Starting to copy raw data to processed data directory ...")
+            self.copy_raw_to_processed()
+            print("...finished copying all raw files to the processed directory.")
+        if sum_over_sectors:
+            print("Starting to sum over sectors ...")
+            self.
+
 
     def _get_full_scenarios(self) -> List[str]:
         """ Create a list of those scenarios that have all desired vars.
@@ -154,26 +192,55 @@ class Input4mipsRawPreprocesser:
                             except AttributeError:
                                 # e.g. historical openburning dataset by Van Merle et al. 2017
                                 print("Unit of the file could not be accessed. File: {}".format(file))
-        print("Checks ended successfully!")
         return True
 
-    # this is raw preprocessing (and needs to be done only one time)
-    def aggregate_emissions(self):
-        """ Summarizes all the emissions that are available within one scenario.
-        E.g. BC_em_anthro, BC_em_biomassburning and BC_em_air are summarized to
-        BC_em_total. This needs only to be done once.
+    # move to utils
+    def copy_file(self, src: Path, dst: Path, overwrite: bool = True):
+        """ Copies a single file. Might not work for all Operating Systems.
+        Args:
+            src (Path): Source of the file
+            dst (Path): Destination of the file
+            overwrite (bool): Whether an existing file should be overwritten.
+                Default is True.
         """
-        pass
+        if overwrite:
+            os.system("cp -p %s %s" % (src, dst))
+        else:
+            os.system("cp -p -n %s %s" % (src, dst))
 
-    # # TODO move to utils
-    # def sum_xarray(ds, dim):
-    #     """ Sums over a given dimension
-    #     Args:
-    #         ds (xarray.DataSet): xarray dataset
-    #         dim (int): Dimension over which should be summed
-    #     Returns:
-    #
-    #     """
+    def copy_raw_to_processed(self, overwrite: bool = True):
+        """ Copies the raw Input4Mips data to the processed path. This way the
+        processers can operate savely on the data without modifying the original
+        data.
+
+        Args:
+            overwrite (bool): If existing files should be overwritten. Default
+                is True.
+        """
+        # we assume that the scenarios are stored in the first level!
+        scenario_level = True
+
+        # copy all dirs and files
+        for root, dirs, files in os.walk(self.raw_path):
+            # use only eligible scenarios
+            if scenario_level:
+                dirs = self.full_scenarios
+                scenario_level = False
+
+            # determine eligible scenarios
+            eligible_scenarios = [bool(re.search(r'{0}$|{0}/|{0}\\'.format(scenario), root)) for scenario in self.full_scenarios]
+            if any(eligible_scenarios):
+                # create dirs
+                # TODO do the same thing in resolution processing
+                output_root = root.replace(str(self.raw_path), str(self.processed_path))
+                self.create_output_dirs(output_root, dirs)
+
+                output_root = Path(output_root)
+                root = Path(root)
+
+                # copy files from raw to processed directory
+                for file in files:
+                    self.copy_file(root/file, output_root/file, overwrite=overwrite)
 
     # TODO add a function that applies this to all files
     # Later: user can decide if only certain sectors should be dropped?
@@ -190,6 +257,16 @@ class Input4mipsRawPreprocesser:
 
         ds_ghg = ds.attrs["variable_id"]
         ds[ds_ghg] = ds[ds_ghg].sum("sector", skipna=True, min_count=1, keep_attrs=True)
+
+    # this is raw preprocessing (and needs to be done only one time)
+    def aggregate_emissions(self):
+        """ Summarizes all the emissions that are available within one scenario.
+        E.g. BC_em_anthro, BC_em_biomassburning and BC_em_air are summarized to
+        BC_em_total. This needs only to be done once.
+        """
+        # this has to happen AFTER the resolutions are matching each other
+        pass
+
 
 
     # TODO move this to RES preprocessing
@@ -227,7 +304,7 @@ class Input4mipsRawPreprocesser:
     ):
         """ Create directories from a list and a given (shared) root.
         Args:
-            root (str): Root of the directories that should be created
+            root (str): Root of the directories that should be created.
             dirs (list<str>): List of directories that should be created.
         """
         # makes only sense for non-empty list
@@ -449,6 +526,7 @@ class Input4mipsRawPreprocesser:
             print("Skipping file {}".format(regridded_file_path))
 
 
+    # TODO clean this up
     def spat_aggregate_plot_example(
         self,
         old_res: str = "25_km",
@@ -630,29 +708,32 @@ class Input4mipsResPreprocesser:
                 Must be available in mother_data/utils/interpolations.py.
             overwrite (bool): In case the target_res already exists, should the files be overwritten?
         """
+        pass
 
+# Big processer class:
+# - alls subclasses: same attributes & some functions they share
+# - everyone has to implement "run" with boolean guided instructions
 if __name__ == '__main__':
-    # create raw preprocesser
+    # create & run raw preprocesser
     raw_preprocesser = Input4mipsRawPreprocesser(
         raw_path=Path(DATA_PATH),
         processed_path=Path(PROCESSED_PATH),
         test_scenario=True,
         ghg_vars=VARS)
 
+    raw_preprocesser.run(
+        sanity_checking = False,
+        create_processed_dir = True,
+    )
+    exit(0)
+
+    # TODO Plotting must be moved outside! (different responsibility)
     #raw_preprocesser.spat_aggregate_plot_example()\
 
+    # TODO move this to a "resolution" preprocesser
     # aggregate all the historical openburnings (they have 25km res instead of 50)
-    # raw_preprocesser.spat_aggregate(
-    #     old_res="25_km",
-    #     new_res="50_km",
-    #     scenario="historical",
-    #     in_var_file_naming="BC_em_biomassburning",  # TODO make this a list option
-    #     in_var="BC", # TODO this is a problem - should be aligned with in_var_file_naming...
-    #     overwrite=False)
     #raw_preprocesser.test_spat_aggregate()
-
     # define role model and which dir should be processed
     role_model_file = Path(raw_preprocesser.raw_path / "historical"/ "BC_em_anthro" / "50_km" / "mon" / "1750" / "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc")
     directory = Path(raw_preprocesser.raw_path / "historical")
-
     raw_preprocesser.spat_aggregate_dir(directory, role_model_file)
