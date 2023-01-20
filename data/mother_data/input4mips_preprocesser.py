@@ -88,6 +88,10 @@ class Input4mipsRawPreprocesser:
         # store which scenarios do have all the vars
         self.full_scenarios = self._get_full_scenarios()
 
+        # size of directories
+        self.raw_len = sum([len(files) for r, d, files in os.walk(self.raw_path)])
+        self.processed_len = None
+
         # afterwards:
         # 0. summing over sectors (and future other processes applied to all)
         # 1. nominal resolution processing (different class)
@@ -98,6 +102,9 @@ class Input4mipsRawPreprocesser:
 
         # TODO: create one input4mips processer with different subclasses?
 
+    # TODO (later) make this TWO running through file loops:
+        # one loop (on raw data): sanity checks + copy
+        # second loop (on processed data): sum over sectors + future functions
     def run(
         self,
         sanity_checking: bool = True,
@@ -124,9 +131,12 @@ class Input4mipsRawPreprocesser:
             print("Starting to copy raw data to processed data directory ...")
             self.copy_raw_to_processed()
             print("...finished copying all raw files to the processed directory.")
+            self.processed_len = sum([len(files) for r, d, files in os.walk(self.processed_path)])
+
         if sum_over_sectors:
             print("Starting to sum over sectors ...")
-            self.
+            self.sum_up_sectors()
+            print("...finished summing over sectors.")
 
 
     def _get_full_scenarios(self) -> List[str]:
@@ -154,6 +164,45 @@ class Input4mipsRawPreprocesser:
 
         return full_scenarios
 
+    # TODO make this compatible for different OS (pathlib!)
+    def sanity_check_file(self, file: str, root: str) -> bool:
+        """ Makes sanity checks for a single file. Returns true if the checks
+        were passed. Checks if the file uses the expected unit (fluxes in
+        kg m-2 s-1). Checks if the temporal and nominal resolution in the file
+        name are also the resolutions used within the file.
+
+        Args:
+            file (str): File name
+            root (str): Root of the file
+
+        Returns:
+            True if all sanity checks were alright.
+        Raises:
+            AssertionErrors if there is a mismatch between expected and found
+                resolutions and units
+        """
+        # TODO optional check that could be added: does the root name (50_km/mon/) match with file names?
+        spat_res = file.split('_')[-5] + ' ' + file.split('_')[-4]
+        temp_res = file.split('_')[-3]
+        # read the file and check resolutions
+        with xr.open_dataset (root + '/' + file) as ds:
+            if spat_res != ds.nominal_resolution:
+                raise AssertionError("Nominal resolution is not as expected. File: {}".format(file))
+            if temp_res != ds.frequency:
+                raise AssertionError("Temporal resolution is not as expected. File: {}".format(file))
+            # is the variable's unit as expected?
+            try:
+                if self.ghg_unit != ds.variable_units:
+                    raise AssertionError("Unit is not as expected. File: {}".format(file))
+            except AttributeError:
+                try:
+                    if not (self.ghg_str_unit in ds.reporting_unit):
+                        raise AssertionError("Unit is not as expected. File: {}".format(file))
+                except AttributeError:
+                    # e.g. historical openburning dataset by Van Merle et al. 2017
+                    print("Unit of the file could not be accessed. File: {}".format(file))
+        return True
+
     # this is part of the raw preprocesser
     # TODO calendar checks (type + number of days per year)
     def sanity_checks(self) -> bool:
@@ -172,26 +221,7 @@ class Input4mipsRawPreprocesser:
             for root, dirs, files in os.walk(self.raw_path / scenario):
                 if len(files) > 0:
                     for file in files:
-                        # optional check that could be added: does the root name (50_km/mon/) match with file names?
-                        spat_res = file.split('_')[-5] + ' ' + file.split('_')[-4]
-                        temp_res = file.split('_')[-3]
-                        # read the file and check resolutions
-                        ds = xr.open_dataset(root + '/' + file)
-                        if spat_res != ds.nominal_resolution:
-                            raise AssertionError("Nominal resolution is not as expected. File: {}".format(file))
-                        if temp_res != ds.frequency:
-                            raise AssertionError("Temporal resolution is not as expected. File: {}".format(file))
-                        # is the variable's unit as expected?
-                        try:
-                            if self.ghg_unit != ds.variable_units:
-                                raise AssertionError("Unit is not as expected. File: {}".format(file))
-                        except AttributeError:
-                            try:
-                                if not (self.ghg_str_unit in ds.reporting_unit):
-                                    raise AssertionError("Unit is not as expected. File: {}".format(file))
-                            except AttributeError:
-                                # e.g. historical openburning dataset by Van Merle et al. 2017
-                                print("Unit of the file could not be accessed. File: {}".format(file))
+                        self.sanity_check_file(file, root)
         return True
 
     # move to utils
@@ -221,7 +251,7 @@ class Input4mipsRawPreprocesser:
         scenario_level = True
 
         # copy all dirs and files
-        for root, dirs, files in os.walk(self.raw_path):
+        for root, dirs, files in tqdm(os.walk(self.raw_path), total=self.raw_len):
             # use only eligible scenarios
             if scenario_level:
                 dirs = self.full_scenarios
@@ -242,21 +272,43 @@ class Input4mipsRawPreprocesser:
                 for file in files:
                     self.copy_file(root/file, output_root/file, overwrite=overwrite)
 
-    # TODO add a function that applies this to all files
-    # Later: user can decide if only certain sectors should be dropped?
-    def sum_up_sectors(self, ds: xr.Dataset):
-        """ Summarizes all emissions that exist across different sectors.
-        Function changes the xarray dataset in place.
+    def sum_up_sectors_ds(self, ds: xr.Dataset, log_warnings: bool = True) -> bool:
+        """ Summarizes all emissions that exist across different sectors for
+        a single  dataset. Function changes the xarray dataset in place.
 
         Args:
             ds (xarray.Dataset): Dataset with emissions across different sectors.
+            log_warnings (bool): If warnings should be printed. Default is True
+                (i.e. warnings will be printed).
+        Returns:
+            bool: True if sectors has been updated, False if nothing was changed
         """
         # check if sectors exist
-        if "sector" not in ds.dims:
-            warnings.warn("...Warning: No sectors exist that could be summed up.")
+        if not self.sectors_exist(ds):
+            if log_warnings: warnings.warn("...Warning: No sectors exist that could be summed up.")
+            return False
+        else:
+            ds_ghg = ds.attrs["variable_id"]
+            ds[ds_ghg] = ds[ds_ghg].sum("sector", skipna=True, min_count=1, keep_attrs=True)
+            return True
 
-        ds_ghg = ds.attrs["variable_id"]
-        ds[ds_ghg] = ds[ds_ghg].sum("sector", skipna=True, min_count=1, keep_attrs=True)
+    # TODO add a function that applies this to all files
+    # Later: user can decide if only certain sectors should be dropped?
+    def sum_up_sectors(self):
+        """ Summarizes all emissions that exist across different sectors for
+        a directory.
+        """
+        # run through all files
+        for root, dirs, files in tqdm(os.walk(self.processed_path), total=self.processed_len):
+            for file in files:
+                file_path = Path(root) / Path(file)
+                # open, sum-up, save new
+                with xr.open_dataset(file_path) as ds:
+                    sectors_were_updated = self.sum_up_sectors_ds(ds, log_warnings=False)
+                    ds.load() # we must load the ds to be able to save it after the with open statement
+
+                if sectors_were_updated:
+                    ds.to_netcdf(file_path) # can only be done outside of with open!!
 
     # this is raw preprocessing (and needs to be done only one time)
     def aggregate_emissions(self):
@@ -266,8 +318,6 @@ class Input4mipsRawPreprocesser:
         """
         # this has to happen AFTER the resolutions are matching each other
         pass
-
-
 
     # TODO move this to RES preprocessing
     def temp_interpolate_future_scenarios(self):
@@ -296,7 +346,6 @@ class Input4mipsRawPreprocesser:
         return name.replace(' ', '_')
 
     # TODO move to utils
-    # TODO may not be necessary anymore
     def create_output_dirs(
         self,
         root: str,
@@ -377,11 +426,12 @@ class Input4mipsRawPreprocesser:
         # sum over role model sectors
         # TODO do this beforehand! (in raw preprocessing!)
         if self.sectors_exist(role_model_ds):
-            self.sum_up_sectors(role_model_ds)
+            self.sum_up_sectors_ds(role_model_ds)
 
         # run through directory
         for root, dirs, files in os.walk(directory):
             # create dirs for output regridder files
+            # TODO do this elegantly via self.raw_path and self.processed_path
             output_root = root.replace("raw", "processed")
 
             # skip all of this in case the new res already exists
@@ -405,7 +455,7 @@ class Input4mipsRawPreprocesser:
                     # sum over sectors
                     # TODO do this beforehand! (raw preprocessing!)
                     if self.sectors_exist(in_ds):
-                        self.sum_up_sectors(in_ds)
+                        self.sum_up_sectors_ds(in_ds)
 
                     self.spat_aggregate(
                         in_ds = in_ds,
@@ -414,8 +464,11 @@ class Input4mipsRawPreprocesser:
                         regridder_type = regridder_type,
                         overwrite = overwrite,
                     )
+                    in_ds.close()
                     # TODO remove this print statement later, find different way to track progress
                     print("Spatially aggregated the file and stored it!")
+
+        role_model_ds.close()
 
     # QUESTION: How to handle the nans??
         # ? make nans to zeros beforehand (when processing single files)
@@ -446,7 +499,7 @@ class Input4mipsRawPreprocesser:
         in_var_name = in_ds.attrs["variable_id"]
 
         # example, we could set the name of output variable
-        out_var_name = "BC_em_biomassburning"
+        #out_var_name = "BC_em_biomassburning"
 
         # make regridder file
         regridded_file_root = self.processed_path / scenario / out_var_name / new_res / "mon" / "1750"
@@ -457,8 +510,13 @@ class Input4mipsRawPreprocesser:
         # aggregate
         self.spat_aggregate(in_ds, role_model_ds, regridded_file_path, out_var_name)
 
+        # close files
+        in_ds.close()
+        role_model.close()
+
     # TODO Documentation
     # TODO can this only aggregate? or does it regrid in both directions?
+    # TODO return a dataset - the file handling should be done elsewhere
     def spat_aggregate(
         self,
         in_ds: xr.Dataset,
@@ -517,6 +575,7 @@ class Input4mipsRawPreprocesser:
         # rename GHG vars & nominal resolution
         regridded_ds = regridded_ds.rename_vars({in_var: out_var_name})
         regridded_ds.attrs["nominal_resolution"] = new_res
+        regridded_ds.attrs["variable_id"] = out_var_name
 
         # safe regridded data to file
         if (not os.path.isfile(regridded_file_path)) or (overwrite):
@@ -633,6 +692,10 @@ class Input4mipsRawPreprocesser:
         # TODO adapt nans to 0 beforehand
         exit(0)
 
+        # close xarray files
+        in_ds.close()
+        role_model.close()
+
 
 class Input4mipsResPreprocesser:
     """ Responsible for all Input4mips data peprocessing connected to resolutions.
@@ -721,11 +784,21 @@ if __name__ == '__main__':
         test_scenario=True,
         ghg_vars=VARS)
 
-    raw_preprocesser.run(
-        sanity_checking = False,
-        create_processed_dir = True,
-    )
-    exit(0)
+    # test something
+    # test_file = Path(raw_preprocesser.processed_path / "historical"/ "BC_em_biomassburning" / "50_km" / "mon" / "1750" / "input4mips_historical_BC_em_biomassburning_50_km_mon_gn_1750.nc")
+    # ds = xr.open_dataset(test_file)
+    # print(ds.attrs["variable_id"])
+    # print(ds)
+    # print(raw_preprocesser.sectors_exist(ds))
+    # print("finished")
+    # exit(0)
+
+    # raw_preprocesser.run(
+    #     sanity_checking = False,
+    #     create_processed_dir = False,
+    #     sum_over_sectors = True,
+    # )
+    # exit(0)
 
     # TODO Plotting must be moved outside! (different responsibility)
     #raw_preprocesser.spat_aggregate_plot_example()\
