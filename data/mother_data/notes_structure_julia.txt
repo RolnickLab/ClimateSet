@@ -24,6 +24,10 @@
   # SO2: 1.56 days
   # BC:  days - weeks
 
+# Attention!
+  # when using netcdf files and calendars: check if data is in numerical or calendar date format!
+    the aggregated files are all in numerical time format and must be converted with num2date (or the other ones with date2num from cftime)
+
 # What needs to be aggregated:
 # Future scenarios:
   # anthro + openburning + AIR-anthro
