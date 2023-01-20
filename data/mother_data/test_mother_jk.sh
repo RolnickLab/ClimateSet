@@ -12,10 +12,14 @@
 
 # Note running: sbatch --partition=unkillable data/mother_data/test_mother_jk.sh
 
+# just writing some stuff, so I look like I am coding...
+# and this is another comment line...and another line
+
 # 1. Load Python
 
-module load python/3.9
+#module load python/3.9
 
+module load python/3.9
 
 # 3. Create or Set Up Environment
 
