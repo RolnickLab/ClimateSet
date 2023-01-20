@@ -1,5 +1,6 @@
 from utils.constants import RES_TO_CHUNKSIZE
 from pyesgf.search import SearchConnection
+from mother_params import VARS, SCENARIOS
 
 # from pyesgf.logon import LogonManager
 
@@ -19,6 +20,7 @@ import xarray as xr
 import os
 import os.path
 import numpy as np
+from typing import List
 
 overwrite = False  # flag if files should be overwritten
 
@@ -31,7 +33,7 @@ class Downloader:
     def __init__(
         self,
         model: str = "NorESM2-LM",  # defaul as in ClimateBench
-        experiments: [str] = [
+        experiments: List[str] = [
             "historical",
             "ssp370",
             "hist-GHG",
@@ -39,8 +41,10 @@ class Downloader:
             "ssp434",
             "ssp126",
         ],  # sub-selection of ClimateBench defaul
-        vars: [str] = ["tas", "pr", "SO2", "BC"],
+        vars: List[str] = ["tas", "pr", "SO2", "BC"],
         data_dir: str = "data/data/",
+        max_ensemble_members: int = 10, #max ensemble members
+        ensemlble_members: List[str] = None #preferred ensemble members used, if None not considered
     ):
         """Init method for the Downloader
         params:
@@ -55,6 +59,8 @@ class Downloader:
         # assign vars to either target or raw source
         self.raw_vars = []
         self.model_vars = []
+        self.max_ensemble_members = max_ensemble_members
+        self.ensemble_members = ensemlble_members
 
         # take care of var mistype (node takes no spaces or '-' only '_')
         vars = [v.replace(" ", "_").replace("-", "_") for v in vars]
@@ -158,7 +164,7 @@ class Downloader:
         try:
             nominal_resolutions = list(ctx.facet_counts["nominal_resolution"].keys())
             print("Available nominal resolution:", nominal_resolutions)
-            # TODO: deal with multipl nom resolutions availabe
+            # deal with multipl nom resolutions availabe
             if len(nominal_resolutions) > 1:
                 print(
                     "Multiple nominal resolutions exist, choosing smallest_nominal resolution (trying), please do a check up"
@@ -184,9 +190,24 @@ class Downloader:
 
         print("Available variants:", variants, "\n")
 
-        # default: get data by all variants
+        if self.ensemble_members is None:
+            if self.max_ensemble_members>len(variants):
+                print("Less ensemble members available than maximum number desired. Including all variants.")
+                ensemble_member_final_list=variants
+            else:
+                print(f"{len(variants)} ensemble members available than desired (max {self.max_ensemble_members}. Choosing only the first {self.max_ensemble_members}.).")
+                ensemble_member_final_list=variants[:self.max_ensemble_members]
+        else:
+            print(f"Desired list of ensemble members given: {self.ensemble_members}")
+            ensemble_member_final_list = list(set(variants) & set(self.ensemble_members))
+            if len(ensemble_member_final_list)==0:
+                print("WARNING: no overlap between available and desired ensemble members!")
+                print("Skipping.")
+                return None
 
-        for i, ensemble_member in enumerate(variants):
+
+
+        for i, ensemble_member in enumerate(ensemble_member_final_list):
 
             print(f"Ensembles member: {ensemble_member}")
             ctx = ctx_origin.constrain(variant_label=ensemble_member)
@@ -269,6 +290,7 @@ class Downloader:
                             print("writing file")
                             print(outfile)
                             ds_y.to_netcdf(outfile)
+                            
 
     def download_raw_input_single_var(
         self,
@@ -488,7 +510,7 @@ class Downloader:
     ):
         """
         Function handling the download of all variables that are associated wtih a model's output
-        Searches for all filles associated with the respected variables and experiment that the downloader wsa initialized with. #TODO: allow resetting of specifications
+        Searches for all filles associated with the respected variables and experiment that the downloader wsa initialized with.
 
         A search connection is established and the search is iterativeley constraint to meet all specifications.
         Data is downloaded and stored in a seperate file for each year. The default format is netCDF4.
@@ -517,7 +539,7 @@ class Downloader:
             print(f"Downloading data for variable: {v} \n \n ")
             # iterate over experiments
             for e in self.experiments:
-                # TODO: check if experiment is availabe
+                #check if experiment is availabe
                 if e in SUPPORTED_EXPERIMENTS:
                     print(f"Downloading data for experiment: {e}\n")
                     self.download_from_model_single_var(v, e)
@@ -563,11 +585,19 @@ class Downloader:
 
 
 if __name__ == "__main__":
-    test_mother = True
+  
+    vars=VARS
+    experiments=SCENARIOS
+    model="CanESM5"
+    vars=["pr", "tas"]
+    #experiments=["ssp126", "ssp245", "ssp370", ""]
+    #vars=["BC_em_anthro", "BC_em_openburning"]
+    #experiments=["ssp126", "historical"]
+    #model="NorESM2-LM"
+    max_ensemble_members=1
+    ensemble_members=["r1i1p1f1"]
+    data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
 
-    if test_mother:
-        print("testing mother")
-        vars = ["schmarn", "tas", "CO2_em_anthro"]
-        downloader = Downloader(experiments=["ssp126", "historical"], vars=vars)
-        downloader.download_from_model()
-        downloader.download_raw_input()
+    downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemlble_members=ensemble_members)
+    downloader.download_from_model()
+    #downloader.download_raw_input()

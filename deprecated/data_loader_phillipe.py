@@ -1,4 +1,7 @@
-# phillipe's code
+"""
+Simple Data Loader adapted from phillipe's code for his causal project for testing. Not efficient / relevant for full pipeline.
+"""
+
 
 import os
 import torch

@@ -1,0 +1,14 @@
+##############################################################################
+#NAMESPACES-VERSION: 1.0
+#
+# @(#)$Id: 8175c1cd.namespaces,v 1.1 2006/07/19 15:09:40 pmacvsdg Exp $
+# CA alias    : UKeScienceRoot
+#    subjectDN: /C=UK/O=eScienceRoot/OU=Authority/L=Root/CN=CA
+#    hash     : 8175c1cd
+#
+TO Issuer "/C=UK/O=eScienceRoot/OU=Authority/L=Root/CN=CA" \
+  PERMIT Subject "/C=UK/O=eScienceCA/OU=Authority/CN=CA"
+
+TO Issuer "/C=UK/O=eScienceCA/OU=Authority/CN=CA" \
+  PERMIT Subject "/C=UK/O=eScience/.*"
+

@@ -1,0 +1,6 @@
+# Signing policy for TERENA SSL CA
+# IPSL datanode vesg.ipsl.fr uses this CA.
+ access_id_CA	X509	'/C=NL/O=TERENA/CN=TERENA SSL CA'
+ pos_rights	globus	CA:sign
+ cond_subjects	globus	'"/C=FR/L=Guyancourt/O=CNRS/OU=FR636/CN=vesg.ipsl.fr","/C=NO/O=Norges Teknisk-Naturvitenskapelige Universitet NTNU/OU=GlobusTest/CN=norstore-trd-bio1.hpc.ntnu.no" "/C=IE/ST=Dublin/L=Dublin/O=Dublin Institute for Advanced Studies/CN=esg2.e-inis.ie"'
+

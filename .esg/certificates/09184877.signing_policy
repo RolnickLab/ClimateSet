@@ -1,0 +1,5 @@
+# CEDA MyProxy CA
+ access_id_CA   X509   '/DC=uk/DC=ac/DC=ceda/O=STFC RAL/CN=Centre for Environmental Data Analysis'
+ pos_rights     globus  CA:sign
+ cond_subjects  globus '"/DC=uk/DC=ac/DC=ceda/O=STFC RAL/*"'
+

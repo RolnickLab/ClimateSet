@@ -59,7 +59,7 @@ class RawProcesser:
         corrupt_files = self.check()
         print("corrupt files")
         print(corrupt_files)
-        #self.processed_flag = False
+        # self.processed_flag = False
         # self.check_processed()
         self.process(corrupt_files)
 
@@ -195,7 +195,6 @@ class RawProcesser:
                                             print("File corrupt. Skipping")
                                             continue
 
-                                      
                                         write_dir = file_dir = (
                                             self.store
                                             + "/"
@@ -229,7 +228,9 @@ class RawProcesser:
                                         print(outfile)
 
                                         if (not overwrite) and os.path.isfile(outfile):
-                                            print(f"File {outfile} already exists, skipping.")
+                                            print(
+                                                f"File {outfile} already exists, skipping."
+                                            )
                                             continue
 
                                         # preprocessing stuff
@@ -237,7 +238,6 @@ class RawProcesser:
                                         # 1. deal with sectors
                                         # store it with same hierachy structure in a preprocessed foleder (self.store)
                                         print("preprocessing")
-
 
                                         print("loading")
                                         ds = data.load()
@@ -249,8 +249,8 @@ class RawProcesser:
 
                 else:
                     print("cmip6")
-                    #continue
-                    
+                    # continue
+
                     for model in os.listdir(self.source + "/" + project):
 
                         print("model", model)
@@ -440,8 +440,12 @@ class RawProcesser:
                                                     ".nc", ".h5"
                                                 )
                                                 print(outfile)
-                                                if (not overwrite) and os.path.isfile(outfile):
-                                                    print(f"File {outfile} already exists, skipping.")
+                                                if (not overwrite) and os.path.isfile(
+                                                    outfile
+                                                ):
+                                                    print(
+                                                        f"File {outfile} already exists, skipping."
+                                                    )
                                                     continue
 
                                                 # preprocessing stuff
@@ -540,7 +544,7 @@ class RawProcesser:
                 return None, True
 
         # TODO: include other checkups (does year, grid label and nom_res fit file _name?)
-        #print("PASSED")
+        # print("PASSED")
 
         return data, False
 
@@ -693,7 +697,6 @@ class RawProcesser:
                                     if corrupt:
                                         corrupt_files.append(file_dir + file_name)
                                         continue
-                                    
 
                                     # CHECK UNIT
                                     unit = data[var].units.replace("-", "^-")

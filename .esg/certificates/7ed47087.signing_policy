@@ -1,0 +1,7 @@
+# Note that this root signing policy has been EXTENDED compared to the
+# IGTF accredited version: this is OK because relying parties (in this
+# case the NGS) are supposed to define their own signing policies.
+
+ access_id_CA   X509    '/C=UK/O=eScienceRoot/OU=Authority/CN=UK e-Science Root'
+ pos_rights     globus  CA:sign
+ cond_subjects  globus  '"/C=UK/O=eScienceCA/OU=Authority/CN=UK e-Science CA" "/C=UK/O=eScienceSLCSHierarchy/OU=Authority/CN=SLCS Top Level CA" "/C=UK/O=eScienceCA/OU=Authority/CN=UK e-Science CA 2A" "/C=UK/O=eScienceCA/OU=Authority/CN=UK e-Science CA 2B"'

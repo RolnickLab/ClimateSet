@@ -1,0 +1,13 @@
+# Signing policy for /C=NL/ST=Noord-Holland/L=Amsterdam/O=TERENA/CN=TERENA SSL CA 2
+#------------------------------------------------------------------------
+#  token type  | def.authority |                value              
+#--------------|---------------|-----------------------------------------
+# EACL entry #1|
+
+ access_id_CA      X509         '/C=NL/ST=Noord-Holland/L=Amsterdam/O=TERENA/CN=TERENA SSL CA 2'
+
+ pos_rights        globus        CA:sign
+
+ cond_subjects     globus       '"/OU=Domain Control Validated/CN=*"'
+
+# end of EACL
