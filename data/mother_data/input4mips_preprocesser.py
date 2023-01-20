@@ -89,7 +89,7 @@ class Input4mipsRawPreprocesser:
         self.full_scenarios = self._get_full_scenarios()
 
         # size of directories
-        self.raw_len = sum([len(files) for r, d, files in os.walk(self.raw_path)])
+        self.raw_len = self._count_files(self.raw_path)
         self.processed_len = None
 
         # afterwards:
@@ -101,6 +101,15 @@ class Input4mipsRawPreprocesser:
             # attention: CMIP6 might need a separate "checker"
 
         # TODO: create one input4mips processer with different subclasses?
+
+    def _count_files(self, path: Path) -> int:
+        """ Counts number of files in a directory recursively.
+        Args:
+            path (Path): Pathlib Path of a directory whose files should be counted.
+        Returns:
+            int: number of files
+        """
+        return sum([len(files) for r, d, files in os.walk(path)])
 
     # TODO (later) make this TWO running through file loops:
         # one loop (on raw data): sanity checks + copy
@@ -131,7 +140,8 @@ class Input4mipsRawPreprocesser:
             print("Starting to copy raw data to processed data directory ...")
             self.copy_raw_to_processed()
             print("...finished copying all raw files to the processed directory.")
-            self.processed_len = sum([len(files) for r, d, files in os.walk(self.processed_path)])
+
+        self.processed_len = self._count_files(self.processed_path)
 
         if sum_over_sectors:
             print("Starting to sum over sectors ...")
@@ -379,11 +389,7 @@ class Input4mipsRawPreprocesser:
         coords = list(ds[ds.attrs["variable_id"]].coords)
         return True if "sector" in coords else False
 
-    # TODO order (for preprocessing)
-    # 1. copy everything from raw to preprocessed
-    # 2. sum over all sectors
-    # 3. add new nominal resolution dirs to processed dir
-    # 4. add new temporal resolution dirs to processed dir
+    # TODO move this to res_processer
     def spat_aggregate_dir(
         self,
         directory: Path,
@@ -416,40 +422,47 @@ class Input4mipsRawPreprocesser:
         if not os.path.isdir(directory):
             raise ValueError("``directory`` must be a directory.")
 
-        # create output dir
-        output_directory = str(directory).replace("raw", "processed")
-        os.makedirs(output_directory, exist_ok=True)
+        # get output directory (should exist after the copy action raw2processed)
+        raw_path_str = str(self.raw_path)
+        processed_path_str = str(self.processed_path)
+        output_directory = str(directory).replace(raw_path_str, processed_path_str)
+        output_dir_len = self._count_files(Path(output_directory))
 
         # load role model & get its resolution
         role_model_ds = xr.open_dataset(role_model_file)
         new_res = self.underscore_name(role_model_ds.attrs["nominal_resolution"])
-        # sum over role model sectors
-        # TODO do this beforehand! (in raw preprocessing!)
-        if self.sectors_exist(role_model_ds):
-            self.sum_up_sectors_ds(role_model_ds)
+        # # sum over role model sectors
+        # # TODO do this beforehand! (in raw preprocessing!)
+        # if self.sectors_exist(role_model_ds):
+        #     self.sum_up_sectors_ds(role_model_ds)
 
         # run through directory
-        for root, dirs, files in os.walk(directory):
-            # create dirs for output regridder files
-            # TODO do this elegantly via self.raw_path and self.processed_path
-            output_root = root.replace("raw", "processed")
+        for root, dirs, files in tqdm(os.walk(directory), total=output_dir_len):
+            # get output root
+            output_root = root.replace(raw_path_str, processed_path_str)
 
             # skip all of this in case the new res already exists
             if not new_res in root:
                 for file in files:
                     # load dataset
-                    in_path = os.path.join(root, file)
+                    in_path = Path(root) / file
                     in_ds = xr.open_dataset(in_path)
 
                     # extract relevant information
                     old_res = self.underscore_name(in_ds.attrs["nominal_resolution"])
-                    #in_var = in_ds.attrs["variable_id"]
-                    #in_var_file_naming = '_'.join(file.split('_')[2:5])
 
                     # create regridder file path & dirs
-                    out_path = os.path.join(output_root, file)
-                    regridded_file_path = Path(out_path.replace(old_res, new_res))
-                     # TODO remove when file creation has been moved  somewhere else
+                    out_path = Path(output_root) / file
+                    regridded_file_path = Path(str(out_path).replace(old_res, new_res))
+                    exit(0)
+                    # CONTINUE HERE
+                        # rewrite this complete function
+                        # remove 50km folder and check if it is still created
+                        # remove sector exist part
+                        # spat_aggregat should return a file
+                        # save this file here
+
+                    # create resolution dirs & subdirs if they dont exist yet
                     os.makedirs(regridded_file_path.parent, exist_ok=True)
 
                     # sum over sectors
@@ -809,4 +822,4 @@ if __name__ == '__main__':
     # define role model and which dir should be processed
     role_model_file = Path(raw_preprocesser.raw_path / "historical"/ "BC_em_anthro" / "50_km" / "mon" / "1750" / "input4mips_historical_BC_em_anthro_50_km_mon_gn_1750.nc")
     directory = Path(raw_preprocesser.raw_path / "historical")
-    raw_preprocesser.spat_aggregate_dir(directory, role_model_file)
+    raw_preprocesser.spat_aggregate_dir(directory, role_model_file, overwrite=True)
