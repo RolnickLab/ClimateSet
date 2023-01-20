@@ -1,4 +1,4 @@
-#!/network/scratch/j/julia.kaltenborn/causalpaca/env39/bin/python3.9
+#!/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpaca/env39/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

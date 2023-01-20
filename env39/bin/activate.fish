@@ -29,7 +29,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/network/scratch/j/julia.kaltenborn/causalpaca/env39"
+set -gx VIRTUAL_ENV "/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpaca/env39"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH
