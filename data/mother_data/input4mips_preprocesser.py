@@ -461,6 +461,9 @@ class Input4mipsRawPreprocesser:
                         # remove sector exist part
                         # spat_aggregat should return a file
                         # save this file here
+                        # check if the variable_id handling is solved now
+                        # move to sector function and finish testing it
+                        # clean up this file
 
                     # create resolution dirs & subdirs if they dont exist yet
                     os.makedirs(regridded_file_path.parent, exist_ok=True)
