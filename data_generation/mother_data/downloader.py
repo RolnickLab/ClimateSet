@@ -138,7 +138,7 @@ class Downloader:
             vs=[str(v) for v in available_facets[k].keys()]
             print(vs)
         raise RuntimeError
-        
+
         """
 
         ctx = conn.new_context(
@@ -290,7 +290,7 @@ class Downloader:
                             print("writing file")
                             print(outfile)
                             ds_y.to_netcdf(outfile)
-                            
+
 
     def download_raw_input_single_var(
         self,
@@ -585,7 +585,7 @@ class Downloader:
 
 
 if __name__ == "__main__":
-  
+
     vars=VARS
     experiments=SCENARIOS
     model="CanESM5"
