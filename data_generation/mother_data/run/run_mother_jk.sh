@@ -2,20 +2,24 @@
 
 #SBATCH --cpus-per-task=1                               # specify cpu
 
-#SBATCH --gres=gpu:rtx8000:1                            # specify gpu
+#SBATCH --gres=gpu:rtx8000:1                             # specify gpu
 
 #SBATCH --mem=16G                                        # specify memory
 
 #SBATCH --time=00:40:00                                  # set runtime
 
-#SBATCH -o /home/mila/c/charlotte.lange/slurm-%j.out        # set log dir to home
+#SBATCH -o /home/mila/j/julia.kaltenborn/slurm-causalpaca/slurm-%j.out        # set log dir to home
 
-# Note running: sbatch --partition=unkillable data/mother_data/test_mother_cl.sh
+# Note running: sbatch --partition=unkillable data/mother_data/run_mother_jk.sh
+
+# just writing some stuff, so I look like I am coding...
+# and this is another comment line...and another line
 
 # 1. Load Python
 
-module load python/3.7
+#module load python/3.9
 
+module load python/3.9
 
 # 3. Create or Set Up Environment
 
@@ -42,7 +46,7 @@ fi
 # 5. Copy data and code from scratch to $SLURM_TMPDIR/
 echo "pwd before copying data"
 pwd
-cp -r /network/scratch/c/charlotte.lange/causalpaca/  $SLURM_TMPDIR/
+cp -r /network/scratch/j/julia.kaltenborn/causalpaca/  $SLURM_TMPDIR/
 echo "pwd after copying data"
 pwd
 #rm -r $SLURM_TMPDIR/caiclone/results/
@@ -69,7 +73,7 @@ echo "pwd after running downloader"
 pwd
 
 # 9. Copy output to scratch
-cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/c/charlotte.lange/causalpaca/data/mother_data/data/
+#cp -r $SLURM_TMPDIR/causalpaca/data/mother_data/data/* /network/scratch/c/charlotte.lange/causalpaca/data/data/
 
 # try and copy to julia's scratch
 cp -r $SLURM_TMPDIR/causalpaca/data/data/* /network/scratch/j/julia.kaltenborn/data/raw/

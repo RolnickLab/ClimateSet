@@ -10,7 +10,7 @@
 
 #SBATCH -o /home/mila/c/charlotte.lange/scratch/causalpaca/slurms/slurm_downloader-%j.out        # set log dir to home
 
-# Note running: sbatch --partition=unkillable data/mother_data/test_mother_esgf.sh
+# Note running: sbatch --partition=unkillable data/mother_data/run_mother_esgf.sh
 
 # script to stard downloader
 
@@ -22,7 +22,7 @@ module load python/3.7
 if [ -a env37/bin/activate ]; then
     echo "activating env37"
     source env37/bin/activate
-   
+
 
 else
     echo "env37 does not exist"
