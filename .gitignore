@@ -4,7 +4,8 @@ RAW_DATA
 PROCESSED_DATA
 
 # deprecated files
-deprecated/*
+deprecated/
+notes/
 
 # privacy files
 data_generation/parameters/credentials.txt
