@@ -6,6 +6,9 @@ PROCESSED_DATA
 # deprecated files
 deprecated/*
 
+# privacy files
+data_generation/parameters/credentials.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
