@@ -55,6 +55,7 @@ class Plotter:
                                       valid_loss=learner.valid_loss_list,
                                       valid_recons=learner.valid_recons_list,
                                       valid_kl=learner.valid_kl_list,
+                                      best_metrics=learner.best_metrics,
                                       iteration=learner.logging_iter,
                                       plot_through_time=learner.hp.plot_through_time,
                                       path=learner.hp.exp_path)
@@ -101,8 +102,6 @@ class Plotter:
                     self.mcc.append(1.)
                     self.assignments.append(np.arange(learner.gt_dag.shape[1]))
                 else:
-                    if learner.iteration % 10000 == 0:
-                        __import__('ipdb').set_trace()
                     score, cc_program_perm, assignments, z, z_hat = mcc_latent(learner.model, learner.data)
                     permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
                     permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
@@ -252,7 +251,7 @@ class Plotter:
 
     def plot_learning_curves(self, train_loss: list, train_recons: list = None, train_kl: list = None,
                              valid_loss: list = None, valid_recons: list = None,
-                             valid_kl: list = None, iteration: int = 0,
+                             valid_kl: list = None, best_metrics: dict = None, iteration: int = 0,
                              plot_through_time: bool = False, path: str = ""):
         """ Plot the training and validation loss through time
         Args:
@@ -277,22 +276,28 @@ class Plotter:
             # v_recons = moving_average(valid_recons[10:])
             # v_kl = moving_average(valid_kl[10:])
 
+
         ax = plt.gca()
         # ax.set_ylim([0, 5])
-        ax.set_yscale("log")
-        plt.plot(v_loss, label="valid")
+        # ax.set_yscale("log")
+        plt.plot(v_loss, label="valid ELBO", color="green")
         if train_recons is not None:
-            plt.plot(t_recons, label="tr recons")
-            plt.plot(t_kl, label="tr kl")
+            plt.plot(t_recons, label="tr recons", color="blue")
+            plt.axhline(y=best_metrics["recons"], color='blue', linestyle='dotted')
+            plt.plot(t_kl, label="tr kl", color="red")
+            plt.axhline(y=best_metrics["kl"], color='red', linestyle='dotted')
+            plt.plot(t_loss, label="tr ELBO", color="purple")
+            plt.axhline(y=best_metrics["elbo"], color='purple', linestyle='dotted')
             # plt.plot(v_recons, label="val recons")
             # plt.plot(v_kl, label="val kl")
         else:
-            plt.plot(t_loss, label="train")
+            plt.plot(t_loss, label="tr ELBO")
 
         if plot_through_time:
             fname = f"loss_{iteration}.png"
         else:
             fname = "loss.png"
+
 
         plt.title("Learning curves")
         plt.legend()

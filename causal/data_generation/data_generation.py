@@ -108,8 +108,7 @@ class StationaryMechanisms:
         output = output * self.coeff[-t-1:]
         output = np.sum(output, axis=(0, 2))
         output = output.reshape(self.d, self.d_z)
-        output += noise
-        return torch.from_numpy(output)
+        return torch.from_numpy(output), noise
 
 
 class DataGeneratorWithLatent:
@@ -148,10 +147,14 @@ class DataGeneratorWithLatent:
         """ Save all files to 'path' """
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)
+        with open(os.path.join(path, "best_metrics.json"), "w") as file:
+            json.dump(self.best_metrics, file, indent=4)
+
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
         np.save(os.path.join(path, 'graph_w'), self.w.detach().numpy())
+
 
         if self.func_type == "linear":
             np.save(os.path.join(path, 'linear_coeff'), self.f.coeff)
@@ -260,6 +263,7 @@ class DataGeneratorWithLatent:
         """
         # initialize Z for the first timesteps
         self.Z = torch.zeros((self.n, self.t, self.d, self.d_z))
+        self.Z_mu = torch.zeros((self.n, self.t, self.d, self.d_z))
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
         # sample graphs
@@ -311,16 +315,46 @@ class DataGeneratorWithLatent:
                                     dist = distr.normal.Normal(params[:, 0], std)
                                     self.Z[i_n, t, i_d, k] = dist.rsample()
                     elif self.func_type == "add_nonlinear" or self.func_type == "linear":
-                        self.Z[i_n, t] = self.f.apply(g, z, t)
+                        self.Z_mu[i_n, t], noise = self.f.apply(g, z, t)
+                        self.Z[i_n, t] = self.Z_mu[i_n, t] + noise
 
             # sample the data X (= WZ + noise)
-            mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
-            self.X = mu + torch.normal(0, self.noise_x_std, size=self.X.size())
+            self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
+            self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
 
         if torch.max(torch.abs(self.Z)) > 100000:
             raise ValueError("The generative process doesn't seem to be stationary")
 
+        self.compute_metrics()
+
         return self.X, self.Z
+
+
+    def compute_metrics(self):
+        metrics = {}
+        # get recons term
+        px_distr = distr.normal.Normal(self.X_mu, self.noise_x_std)
+        metrics["recons"] = torch.mean(px_distr.log_prob(self.X)).item()
+
+        # get KL term
+        # encode q(Zt | Xt)
+        q_mu = torch.einsum('dxz, ntdx -> ntdz', self.w, self.X)
+        q = distr.normal.Normal(q_mu, self.noise_z_std)
+
+        # get p(Zt | Z<t)
+        p = distr.normal.Normal(self.Z_mu, self.noise_z_std)
+
+        metrics["kl"] = distr.kl_divergence(q, p).mean().item()
+        metrics["kl2"] = distr.kl_divergence(p, q).mean().item()
+
+        # get MCC
+        mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
+                          self.Z.numpy().reshape(self.n, -1))
+        metrics["mcc"] = mcc[0, 1]
+
+        # ELBO with GT model
+        metrics["elbo"] = metrics["recons"] - metrics["kl"]
+        self.best_metrics = metrics
 
 
 class DataGeneratorWithoutLatent:

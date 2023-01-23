@@ -207,7 +207,7 @@ class LatentTSDCD(nn.Module):
         # __import__('ipdb').set_trace()
         # print(pz_mu.shape)
         # print(pz_mu.view(b, -1).shape)
-        kl = distr.kl_divergence(p, q).mean()
+        kl = distr.kl_divergence(q, p).mean()
         # print(kl)
         # __import__('ipdb').set_trace()
         # kl2 = self.get_kl(pz_mu, pz_std, q_mu_y, q_std_y)

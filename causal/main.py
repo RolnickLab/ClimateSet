@@ -115,11 +115,15 @@ def main(hp):
     with open(os.path.join(hp.exp_path, "params.json"), "w") as file:
         json.dump(vars(hp), file, indent=4)
 
+    # load the best metrics
+    with open(os.path.join(hp.data_path, "best_metrics.json"), 'r') as f:
+        best_metrics = json.load(f)
+
     # train
     if not hp.latent:
         trainer = Training(model, data_loader, hp)
     else:
-        trainer = TrainingLatent(model, data_loader, hp)
+        trainer = TrainingLatent(model, data_loader, hp, best_metrics)
     trainer.train_with_QPM()
 
     # save final results, (MSE)

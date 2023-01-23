@@ -9,10 +9,11 @@ from prox import monkey_patch_RMSprop
 
 
 class TrainingLatent:
-    def __init__(self, model, data, hp):
+    def __init__(self, model, data, hp, best_metrics):
         self.model = model
         self.data = data
         self.hp = hp
+        self.best_metrics = best_metrics
 
         self.latent = hp.latent
         self.no_gt = hp.no_gt
@@ -296,8 +297,8 @@ class TrainingLatent:
     def log_losses(self):
         """Append in lists values of the losses and more"""
         # train
-        self.train_loss_list.append(self.train_loss)
-        self.train_recons_list.append(-self.train_recons)
+        self.train_loss_list.append(-self.train_loss)
+        self.train_recons_list.append(self.train_recons)
         self.train_kl_list.append(self.train_kl)
 
         self.train_sparsity_reg_list.append(self.train_sparsity_reg)
@@ -306,8 +307,8 @@ class TrainingLatent:
         self.train_acyclic_cons_list.append(self.train_acyclic_cons)
 
         # valid
-        self.valid_loss_list.append(self.valid_loss)
-        self.valid_recons_list.append(-self.valid_recons)
+        self.valid_loss_list.append(-self.valid_loss)
+        self.valid_recons_list.append(self.valid_recons)
         self.valid_kl_list.append(self.valid_kl)
 
         self.valid_sparsity_reg_list.append(self.valid_sparsity_reg)
@@ -357,7 +358,7 @@ class TrainingLatent:
 
     def get_regularisation(self) -> float:
         # TODO: change configurable schedule!
-        if self.iteration > 50000:
+        if self.iteration > 60000:
             adj = self.model.get_adj()
             reg = self.hp.reg_coeff * torch.norm(adj, p=1)
             reg /= adj.shape[0] ** 2
@@ -367,7 +368,7 @@ class TrainingLatent:
         return reg
 
     def get_acyclicity_violation(self) -> torch.Tensor:
-        if self.iteration > 20000:
+        if self.iteration > 10000:
             adj = self.model.get_adj()[-1].view(self.d, self.d)
             # __import__('ipdb').set_trace()
             h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
@@ -377,7 +378,7 @@ class TrainingLatent:
         return h
 
     def get_ortho_violation(self, w: torch.Tensor) -> float:
-        if self.iteration > 20000:
+        if self.iteration > 1000:
             constraint = torch.tensor([0.])
             k = w.size(2)
             for i in range(w.size(0)):
@@ -385,7 +386,6 @@ class TrainingLatent:
             h = constraint / self.ortho_normalization
         else:
             h = torch.tensor([0.])
-
         return h
 
     def connectivity_reg_complete(self):
