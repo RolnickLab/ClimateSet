@@ -1,6 +1,6 @@
 # init script to establish first data basis
-from data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
-from mother_data.mother_params import MOTHER_PARAMS
+from parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
+from parameters.mother_params import MOTHER_PARAMS
 #from mother_data.downloader import Downloader
 
 from typing import List, Tuple, Dict
