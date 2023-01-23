@@ -45,8 +45,8 @@ import pandas as pd
 
 
 # TODO import this from data_paths.py
-DATA_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpaca/data/data/raw/input4mips/"
-PROCESSED_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/Code/causalpaca/data/data/processed/input4mips/"
+DATA_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/data/raw/input4mips/"
+PROCESSED_PATH = "/home/julia/Documents/Master/CausalSuperEmulator/data/processed/input4mips/"
 # TODO import this from mother_params
 VARS = ["BC", "CH4", "CO2", "SO2"]
 
