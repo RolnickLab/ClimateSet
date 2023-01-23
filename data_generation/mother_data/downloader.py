@@ -1,10 +1,10 @@
-from utils.constants import RES_TO_CHUNKSIZE
+from parameters.constants import RES_TO_CHUNKSIZE
 from pyesgf.search import SearchConnection
 from mother_params import VARS, SCENARIOS
 
 # from pyesgf.logon import LogonManager
 
-from utils.constants import (
+from parameters.constants import (
     MODEL_SOURCES,
     VAR_SOURCE_LOOKUP,
     OPENID,
@@ -48,7 +48,7 @@ class Downloader:
     ):
         """Init method for the Downloader
         params:
-            model (str): Id of the model from which output should be downloaded. A list of all supported model ids can be find in utils.constants.MODEL_SOURCES. Model data only.
+            model (str): Id of the model from which output should be downloaded. A list of all supported model ids can be find in parameters.constants.MODEL_SOURCES. Model data only.
             experiments ([str]):  List of simulations from which data should be downloaded. Model data only.
             experiments ([str]): List of variables for which data should be downloaded. Both model and raw data.
             data_dir: (str): Relative or absolute path to the directory where data should be stored. Will be created if not yet existent.

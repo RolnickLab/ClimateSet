@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 import h5netcdf
 
-from utils.constants import RES_TO_CHUNKSIZE
+from parameters.constants import RES_TO_CHUNKSIZE
 import pint
 
 overwrite = False

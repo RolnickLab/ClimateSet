@@ -7,7 +7,7 @@ Disclaimer: inspired by ClimART #TODO: insert github link
 import torch
 import numpy as np
 import os
-from mother_data.utils.constants import VAR_SOURCE_LOOKUP
+from parameters.constants import VAR_SOURCE_LOOKUP
 from data_paths import PROCESSED_DATA
 from mother_data.utils.helper_funcs import get_keys_from_value
 import h5py
@@ -34,7 +34,7 @@ class Causalpaca_HdF5_Dataset(
         experiments: List[str], # list of experiments to consider
         variables: List[str], # list of variables to consider
         name: str = "template",
-        data_dir: str = None, #if set to None, data dir as set in utils.constants will be assumed
+        data_dir: str = None, #if set to None, data dir as set in parameters.constants will be assumed
         load_h5_into_mem: bool = False, # if True, creating Fast Single H5 Datasets storet into memory
         models: List[str] = ["NorESM2-LM"], # list of models to consider
         ensemble_members: List[str] = ["r1i1p1f1", "r2i1p1f1", "r3i1p1f1"], # list of ensemble members to consider
@@ -149,7 +149,7 @@ class Causalpaca_HdF5_Dataset(
                         nom_res=forcing_nom_res,
                         aspect="forcing",
                         **dset_kwargs,
-                    )  
+                    )
                 except ValueError:
                     continue
 
@@ -826,7 +826,7 @@ class Causalpaca_HdF5_FastSingleDataset_Causal(
         """
         Returns the preprocessed preloaded Data. Only apply transform if the data was not yet saved with the transform already applied.
         Loads and returns a time window of size self.tau randomly selected from all years for the given combination or all years of the given combination given self.tau=None.
-        
+
         n=number of years * t_max
         d = number of vars
         d_x = number of grid cells
@@ -915,7 +915,7 @@ if __name__ == "__main__":
         tau=4,
         data_dir=f"{os.environ['SLURM_TMPDIR']}/data/PROCESSED_DATA/"
     )
-   
+
     # for x,y in ds:
     #    print(x.size, y.size)
 
@@ -935,7 +935,7 @@ if __name__ == "__main__":
             break
     """
     print("CHECKING data paths")
-    
+
     ds_loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
     print("got data loder")
     print(len(ds))
