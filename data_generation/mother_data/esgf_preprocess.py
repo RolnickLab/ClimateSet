@@ -6,14 +6,14 @@ import os
 import numpy as np
 import xarray as xr
 
-from utils.constants import RES_TO_CHUNKSIZE
+from parameters.constants import RES_TO_CHUNKSIZE
 
 
 #path to folder where data downloaded with a wget script is located
 esgf_path = "/home/charlie/Documents/MILA/causalpaca/data/mother_data/all_input4mips/"
 
 # path to where sorted raw data should be stored -> seperation for years and brought into desired hierachy for further preprocessing with our pipeline
-data_dir_parent = "/home/charlie/Documents/MILA/causalpaca/data/data/input4mips_all/" 
+data_dir_parent = "/home/charlie/Documents/MILA/causalpaca/data/data/input4mips_all/"
 
 # flag if existent data should be overwritten
 overwrite = False
