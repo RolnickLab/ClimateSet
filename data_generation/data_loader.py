@@ -6,7 +6,7 @@ import tables  # for handling the h5py files
 import numpy as np
 #from typing import Concatenate, Tuple
 import xarray as xr
-from mother_data.utils.helper_funcs import get_keys_from_value
+from utils.helper_funcs import get_keys_from_value
 from parameters.constants import VAR_SOURCE_LOOKUP, RES_TO_CHUNKSIZE
 
 # from geopy import distance

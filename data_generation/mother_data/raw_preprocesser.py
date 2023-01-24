@@ -1,6 +1,6 @@
 from email.policy import default
 from pathlib import Path
-from data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
+from parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
 import os
 import netCDF4 as nc
 import numpy as np

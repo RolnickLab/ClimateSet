@@ -1,6 +1,6 @@
 from parameters.constants import RES_TO_CHUNKSIZE
 from pyesgf.search import SearchConnection
-from mother_params import VARS, SCENARIOS
+from parameters.mother_params import VARS, SCENARIOS
 
 # from pyesgf.logon import LogonManager
 
