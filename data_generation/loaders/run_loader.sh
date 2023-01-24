@@ -10,7 +10,7 @@
 
 #SBATCH -o /home/mila/c/charlotte.lange/scratch/causalpaca/slurms/slurm_loader-%j.out        # set log dir to home
 
-# Note running: sbatch --partition=unkillable data/test_loader.sh
+# Note running: sbatch --partition=unkillable data/run_loader.sh
 
 
 module load python/3.7
@@ -61,8 +61,8 @@ pwd
 
 
 
-echo "Running data/datasets.py ..."
-python3.7 data/datasets.py
+echo "Running data_generation/loaders/datasets.py ..."
+python3.7 data_generation/loaders/datasets.py
 
 # 10. Experiment is finished
 
