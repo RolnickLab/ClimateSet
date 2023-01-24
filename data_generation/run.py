@@ -1,11 +1,20 @@
-# params vom user aus gelesen werden
+# This run file is intended to be used from the user
 
-# data loader losgeschickt wird
+# read out params from user
 
-# daten abgespeichert / weitergeleitet werden
+# check if mother creation has to be done (and do that if necessary)
 
-# Schmeißt alles los
+# check if user expansion is requested (and do that if necessary)
 
-    # interaction with user: check, let them decide and inform what needs to be preprocessed and downloaded
+# check if loading the data is requested (and do that if requested)
 
-    # loader wird losgeschickt [check intern im loader, muss hier nicht gemacht werden]
+# prints out regularly which files have been created or were loaded now
+
+# --> interaction with the user:
+    # many checks
+    # let them decide
+    # inform waht needs to be processed and downloaded for their request
+    # generators and loaders are started from here
+
+# NOTE
+# this is more of a tutorial - all generators and loaders can be created individually by user
