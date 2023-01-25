@@ -343,9 +343,7 @@ class DataGeneratorWithLatent:
 
         # get p(Zt | Z<t)
         p = distr.normal.Normal(self.Z_mu, self.noise_z_std)
-
         metrics["kl"] = distr.kl_divergence(q, p).mean().item()
-        metrics["kl2"] = distr.kl_divergence(p, q).mean().item()
 
         # get MCC
         mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),

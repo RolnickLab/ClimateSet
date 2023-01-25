@@ -139,11 +139,11 @@ class LatentTSDCD(nn.Module):
                 q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
 
                 # reparam trick
-                q_std = 0.5 * torch.exp(q_logvar)
+                q_std = torch.exp(0.5 * q_logvar)
                 z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
 
             q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
-            q_std = 0.5 * torch.exp(q_logvar)
+            q_std = torch.exp(0.5 * q_logvar)
             z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
             mu[:, i] = q_mu
             std[:, i] = q_std
@@ -163,7 +163,7 @@ class LatentTSDCD(nn.Module):
             # factor to ensure that doesnt output inf when training is starting
             # factor = 1e-10
             # std[:, i] = 0.5 * torch.exp(factor * pz_params[:, :, 1])
-            std[:, i] = 0.5 * torch.exp(pz_params[:, :, 1])
+            std[:, i] = torch.exp(0.5 * pz_params[:, :, 1])
 
         return mu, std
 
@@ -174,7 +174,7 @@ class LatentTSDCD(nn.Module):
         for i in range(self.d):
             px_mu, px_logvar = self.encoder_decoder(z[:, i], i, encoder=False)
             mu[:, i] = px_mu
-            std[:, i] = 0.5 * torch.exp(px_logvar)
+            std[:, i] = torch.exp(0.5 * px_logvar)
 
         return mu, std
 
@@ -183,9 +183,6 @@ class LatentTSDCD(nn.Module):
 
         # sample Zs (based on X)
         z, q_mu_y, q_std_y = self.encode(x, y)
-
-        if iteration > 500000:
-            __import__('ipdb').set_trace()
 
         if self.debug_gt_z:
             z = gt_z
@@ -207,9 +204,10 @@ class LatentTSDCD(nn.Module):
         # __import__('ipdb').set_trace()
         # print(pz_mu.shape)
         # print(pz_mu.view(b, -1).shape)
-        kl = distr.kl_divergence(q, p).mean()
-        # print(kl)
-        # __import__('ipdb').set_trace()
+        # kl = distr.kl_divergence(p, q).mean()
+        # kl = distr.kl_divergence(q, p).mean()
+        kl = torch.mean(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, 2).mean()
+
         # kl2 = self.get_kl(pz_mu, pz_std, q_mu_y, q_std_y)
         # print(kl2.mean())
         assert kl >= 0, f"KL={kl} has to be >= 0"
@@ -256,7 +254,7 @@ class EncoderDecoder(nn.Module):
         """
         super().__init__()
         self.use_grad_projection = True
-        self.tied_w = True
+        self.tied_w = False
 
         self.d = d
         self.d_x = d_x
@@ -277,8 +275,8 @@ class EncoderDecoder(nn.Module):
             unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
             self.w_q = nn.Parameter(unif / torch.tensor(self.d_z))
 
-        self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.1)
-        self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.1)
+        self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.01)
+        self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.01)
 
     def forward(self, x, i, encoder: bool):
         w = self.get_w(encoder)[i]
@@ -308,7 +306,10 @@ class EncoderDecoder(nn.Module):
             if encoder:
                 w = self.w_q
             else:
-                w = self.w
+                if self.debug_gt_w:
+                    w = self.gt_w
+                else:
+                    w = self.w
 
         return w
 

@@ -8,7 +8,7 @@
     "ratio_valid": 0.2,
     "latent": true,
     "tau_min": 1,
-    "tau": 2,
+    "tau": 1,
     "random_seed": 0,
     "pc_alpha": 0.2,
     "ci_test": "linear",
