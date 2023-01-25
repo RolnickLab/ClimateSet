@@ -106,7 +106,8 @@ def main(hp):
                             debug_gt_z=hp.debug_gt_z,
                             debug_gt_w=hp.debug_gt_w,
                             gt_w=data_loader.gt_w,
-                            gt_graph=data_loader.gt_graph)
+                            gt_graph=data_loader.gt_graph,
+                            tied_w=hp.tied_w)
 
     # create path to exp and save hyperparameters
     save_path = os.path.join(hp.exp_path, "train")
@@ -233,6 +234,7 @@ if __name__ == "__main__":
 
     # specific to model with latent variables
     parser.add_argument("--latent", action="store_true", help="Use the model that assumes latent variables")
+    parser.add_argument("--tied-w", action="store_true", help="Use the same matrix W, as the decoder, for the encoder")
     parser.add_argument("--coeff-kl", type=float, help="coefficient that is multiplied to the KL term ")
     parser.add_argument("--d-z", type=int, help="if latent, d_z is the number of cluster z")
     parser.add_argument("--d-x", type=int, help="if latent, d_x is the number of gridcells")
@@ -255,6 +257,10 @@ if __name__ == "__main__":
     parser.add_argument("--reg-coeff-connect", type=float, help="Coefficient for the connectivity regularisation term")
     parser.add_argument("--lr", type=float, help="learning rate for optim")
     parser.add_argument("--random-seed", type=int, help="Random seed for torch and numpy")
+    parser.add_argument("--schedule-reg", type=int,
+                        help="Start applying the sparsity regularization only after X number of steps")
+    parser.add_argument("--schedule-ortho", type=int,
+                        help="Start applying the orthogonality constraint only after X number of steps")
     parser.add_argument("--hard-gumbel", action="store_true",
                         help="If true, use the hard version when sampling the masks")
 

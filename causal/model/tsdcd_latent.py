@@ -28,7 +28,8 @@ class LatentTSDCD(nn.Module):
                  debug_gt_z: bool,
                  debug_gt_w: bool,
                  gt_graph: torch.tensor = None,
-                 gt_w: torch.tensor = None):
+                 gt_w: torch.tensor = None,
+                 tied_w: bool = False):
         """
         Args:
             num_layers: number of layers of each MLP
@@ -75,6 +76,7 @@ class LatentTSDCD(nn.Module):
         self.debug_gt_graph = debug_gt_graph
         self.debug_gt_z = debug_gt_z
         self.debug_gt_w = debug_gt_w
+        self.tied_w = tied_w
 
         if self.no_gt:
             self.gt_w = None
@@ -103,7 +105,7 @@ class LatentTSDCD(nn.Module):
         else:
             raise NotImplementedError("This distribution is not implemented yet.")
 
-        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.debug_gt_w, self.gt_w)
+        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.debug_gt_w, self.gt_w, self.tied_w)
         self.transition_model = TransitionModel(self.d, self.d_z, self.tau,
                                                 self.num_layers,
                                                 self.num_hidden,
@@ -243,7 +245,7 @@ class EncoderDecoder(nn.Module):
     """Combine an encoder and a decoder, particularly useful when W is a shared
     parameter."""
     def __init__(self, d: int, d_x: int, d_z: int, debug_gt_w: bool, gt_w:
-                 torch.tensor = None):
+                 torch.tensor = None, tied_w: bool = False):
         """
         Args:
             d: number of features
@@ -251,10 +253,12 @@ class EncoderDecoder(nn.Module):
             d_z: dimensionality of latent variables
             debug_gt_w: if True, set W as gt_w
             gt_w: ground-truth W
+            tied_w: if True, the encoder use the transposed
+            of the matrix W from the decoder
         """
         super().__init__()
         self.use_grad_projection = True
-        self.tied_w = False
+        self.tied_w = tied_w
 
         self.d = d
         self.d_x = d_x

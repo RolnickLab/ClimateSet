@@ -358,7 +358,7 @@ class TrainingLatent:
 
     def get_regularisation(self) -> float:
         # TODO: change configurable schedule!
-        if self.iteration > 40000:
+        if self.iteration > self.hp.schedule_reg:
             adj = self.model.get_adj()
             reg = self.hp.reg_coeff * torch.norm(adj, p=1)
             reg /= adj.shape[0] ** 2
@@ -378,11 +378,14 @@ class TrainingLatent:
         return h
 
     def get_ortho_violation(self, w: torch.Tensor) -> float:
-        constraint = torch.tensor([0.])
-        k = w.size(2)
-        for i in range(w.size(0)):
-            constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
-        h = constraint / self.ortho_normalization
+        if self.iteration > self.hp.schedule_ortho:
+            constraint = torch.tensor([0.])
+            k = w.size(2)
+            for i in range(w.size(0)):
+                constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
+            h = constraint / self.ortho_normalization
+        else:
+            h = torch.tensor([0.])
         return h
 
     def connectivity_reg_complete(self):
