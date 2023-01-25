@@ -95,6 +95,8 @@ class Plotter:
         if not learner.no_gt:
             if learner.latent:
                 # for latent models, find the right permutation of the latent
+                adj_w = learner.model.encoder_decoder.get_w().detach().numpy()
+                adj_w2 = learner.model.encoder_decoder.get_w(True).detach().numpy()
                 # variables using MCC
                 if learner.debug_gt_z:
                     gt_dag = learner.gt_dag
@@ -109,7 +111,9 @@ class Plotter:
                     self.assignments.append(assignments[1])
 
                     gt_dag = permutation.T @ learner.gt_dag @ permutation
-                    gt_w = learner.gt_w[:, :, assignments[1]]
+                    gt_w = learner.gt_w
+                    adj_w = adj_w[:, :, assignments[1]]
+                    adj_w2 = adj_w2[:, :, assignments[1]]
                 self.save_mcc_and_assignement(learner.hp.exp_path)
             else:
                 gt_dag = learner.gt_dag
@@ -129,11 +133,19 @@ class Plotter:
 
         # plot the weights W for latent models (between the latent Z and the X)
         if learner.latent:
-            adj_w = learner.model.encoder_decoder.get_w().detach().numpy()
+            # plot the decoder matrix W
             self.plot_adjacency_matrix_w(adj_w,
                                          gt_w,
                                          learner.hp.exp_path,
                                          'w',
+                                         learner.no_gt)
+            # plot the encoder matrix W_2
+            # gt_w2 = np.swapaxes(gt_w, 1, 2)
+            gt_w2 = gt_w
+            self.plot_adjacency_matrix_w(adj_w2,
+                                         gt_w2,
+                                         learner.hp.exp_path,
+                                         'encoder_w',
                                          learner.no_gt)
             if not learner.no_gt:
                 self.plot_adjacency_through_time_w(learner.adj_w_tt,
