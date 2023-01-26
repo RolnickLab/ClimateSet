@@ -1,12 +1,11 @@
 """
 Helper script to bring files downloaded via a esgf wget script rather than the causalpaca downloader into a desired form so it can be processed further with the causalpaca pipeline.
 """
-
 import os
 import numpy as np
 import xarray as xr
 
-from parameters.constants import RES_TO_CHUNKSIZE
+from data_generation.parameters.constants import RES_TO_CHUNKSIZE
 
 
 #path to folder where data downloaded with a wget script is located

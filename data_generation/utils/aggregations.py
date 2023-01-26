@@ -1,6 +1,7 @@
 # aggregation classes
-from abc import ABC, abstractmethod
 from pathlib import Path
+from abc import ABC, abstractmethod
+
 
 ### ABSTRACT CLASS #############################################################
 class Aggregation(ABC):

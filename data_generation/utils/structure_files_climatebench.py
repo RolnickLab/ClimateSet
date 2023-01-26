@@ -1,11 +1,10 @@
 # source of duncan input4mips data: https://gws-access.jasmin.ac.uk/public/impala/dwatsonparris/ClimateBench/climate_bench_inputs.tar.gz
 import os
-
+import argparse
 import numpy as np
 import xarray as xr
-import argparse
 
-from parameters.constants import RES_TO_CHUNKSIZE
+from data_generation.parameters.constants import RES_TO_CHUNKSIZE
 
 parser = argparse.ArgumentParser(description="Restructure Input4MIPs data from ClimateBench for our file structure.")
 parser.add_argument("-i", "--source", type=str, help="Where the downloaded Input4MIPs data can be found.", required=True)

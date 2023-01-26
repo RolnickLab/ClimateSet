@@ -1,9 +1,7 @@
 # interpolation classes
-from abc import ABC, abstractmethod
-from pathlib import Path
-
 import numpy as np
-
+from pathlib import Path
+from abc import ABC, abstractmethod
 
 # see data/mother_data/utils/aggregations.py
 # same thing, just other interpolation methods
