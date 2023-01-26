@@ -323,8 +323,8 @@ if __name__ == "__main__":
 
     # save a json containing some parameters of the dataset
     params = {"n": 1,
-              "num_timesteps": n,
-              "num_features": 1,
+              "t": n,
+              "d": 1,
               "d_x": df.shape[1]}
     json_path = os.path.join(args.output_path, "data_params.json")
     with open(json_path, "w") as file:

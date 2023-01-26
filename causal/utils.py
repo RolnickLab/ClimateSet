@@ -5,7 +5,7 @@ class ALM:
     """
     Augmented Lagrangian Method
     To use the quadratic penalty method (e.g. for the acyclicity constraint),
-    just ignore 'self.mu'
+    just ignore 'self.lambda'
     """
     def __init__(self,
                  mu_init: float,
@@ -62,8 +62,7 @@ class ALM:
 
                 # if we have found a stationary point of the augmented loss
                 if abs(self.delta_gamma) < self.omega_gamma or self.delta_gamma > 0:
-                    self.gamma = self.mu * h
-
+                    self.gamma += self.mu * h
                     self.constraint_violation.append(h)
 
                     # increase mu if the constraint has sufficiently decreased

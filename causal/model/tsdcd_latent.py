@@ -149,7 +149,8 @@ class LatentTSDCD(nn.Module):
                  debug_gt_z: bool,
                  debug_gt_w: bool,
                  gt_graph: torch.tensor = None,
-                 gt_w: torch.tensor = None):
+                 gt_w: torch.tensor = None,
+                 tied_w: bool = False):
         """
         Args:
             num_layers: number of layers of each MLP
@@ -196,6 +197,7 @@ class LatentTSDCD(nn.Module):
         self.debug_gt_graph = debug_gt_graph
         self.debug_gt_z = debug_gt_z
         self.debug_gt_w = debug_gt_w
+        self.tied_w = tied_w
 
         if self.no_gt:
             self.gt_w = None
@@ -224,8 +226,7 @@ class LatentTSDCD(nn.Module):
         else:
             raise NotImplementedError("This distribution is not implemented yet.")
 
-        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.debug_gt_w, self.gt_w)
-        # self.encoder = Encoder(self.d, self.d_x, self.d_z)  # self.decoder.w
+        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.debug_gt_w, self.gt_w, self.tied_w)
         self.transition_model = TransitionModel(self.d, self.d_z, self.tau,
                                                 self.num_layers,
                                                 self.num_hidden,
@@ -233,7 +234,10 @@ class LatentTSDCD(nn.Module):
 
         self.mask = Mask(d, d_z, tau, instantaneous=instantaneous, latent=True, drawhard=hard_gumbel)
         if self.debug_gt_graph:
-            self.mask.fix(self.gt_graph)
+            if self.instantaneous:
+                self.mask.fix(self.gt_graph)
+            else:
+                self.mask.fix(self.gt_graph[:-1])
 
     def get_adj(self):
         """
@@ -258,11 +262,11 @@ class LatentTSDCD(nn.Module):
                 q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
 
                 # reparam trick
-                q_std = 0.5 * torch.exp(q_logvar)
+                q_std = torch.exp(0.5 * q_logvar)
                 z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
 
             q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
-            q_std = 0.5 * torch.exp(q_logvar)
+            q_std = torch.exp(0.5 * q_logvar)
             z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
             mu[:, i] = q_mu
             std[:, i] = q_std
@@ -280,8 +284,9 @@ class LatentTSDCD(nn.Module):
                 pz_params[:, k] = self.transition_model(z, mask[:, :, i * self.d_z + k], i, k)
             mu[:, i] = pz_params[:, :, 0]
             # factor to ensure that doesnt output inf when training is starting
-            factor = 1e-10
-            std[:, i] = 0.5 * torch.exp(factor * pz_params[:, :, 1])
+            # factor = 1e-10
+            # std[:, i] = 0.5 * torch.exp(factor * pz_params[:, :, 1])
+            std[:, i] = torch.exp(0.5 * pz_params[:, :, 1])
 
         return mu, std
 
@@ -292,7 +297,7 @@ class LatentTSDCD(nn.Module):
         for i in range(self.d):
             px_mu, px_logvar = self.encoder_decoder(z[:, i], i, encoder=False)
             mu[:, i] = px_mu
-            std[:, i] = 0.5 * torch.exp(px_logvar)
+            std[:, i] = torch.exp(0.5 * px_logvar)
 
         return mu, std
 
@@ -300,50 +305,40 @@ class LatentTSDCD(nn.Module):
         b = x.size(0)
 
         # sample Zs (based on X)
-        is_timing = False
-        if is_timing:
-            st = time.time()
         z, q_mu_y, q_std_y = self.encode(x, y)
-        if is_timing:
-            print(f"encode time: {time.time() - st}")
 
         if self.debug_gt_z:
             z = gt_z
 
         # get params of the transition model p(z^t | z^{<t})
-        if is_timing:
-            st = time.time()
         mask = self.mask(b)
         pz_mu, pz_std = self.transition(z[:, :-1].clone(), mask)
-        if is_timing:
-            print(f"transition time: {time.time() - st}")
 
         # get params from decoder p(x^t | z^t)
-        if is_timing:
-            st = time.time()
         px_mu, px_std = self.decode(z[:, -1])
-        if is_timing:
-            print(f"decode time: {time.time() - st}")
 
         # set distribution with obtained parameters
-        if is_timing:
-            st = time.time()
         p = distr.Normal(pz_mu.view(b, -1), pz_std.view(b, -1))
         # test with fixed var: torch.ones_like(pz_mu.view(b, -1)) * 0.01)
         q = distr.Normal(q_mu_y.view(b, -1), q_std_y.view(b, -1))
         px_distr = self.distr_decoder(px_mu, px_std)
-        if is_timing:
-            print(f"sampling time: {time.time() - st}")
 
         # compute the KL, the reconstruction and the ELBO
-        if is_timing:
-            st = time.time()
-        kl = distr.kl_divergence(p, q).mean()
+        # __import__('ipdb').set_trace()
+        # print(pz_mu.shape)
+        # print(pz_mu.view(b, -1).shape)
+        # kl = distr.kl_divergence(p, q).mean()
+        # kl = distr.kl_divergence(q, p).mean()
+        kl = torch.mean(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, 2).mean()
+
+        # kl2 = self.get_kl(pz_mu, pz_std, q_mu_y, q_std_y)
+        # print(kl2.mean())
         assert kl >= 0, f"KL={kl} has to be >= 0"
         recons = torch.mean(px_distr.log_prob(y))
+
+        # __import__('ipdb').set_trace()
+        # print(torch.mean((px_mu - y)**2))
         elbo = recons - self.coeff_kl * kl
-        if is_timing:
-            print(f"kl time: {time.time() - st}")
 
         return elbo, recons, kl, px_mu
 
@@ -371,7 +366,7 @@ class EncoderDecoder(nn.Module):
     """Combine an encoder and a decoder, particularly useful when W is a shared
     parameter."""
     def __init__(self, d: int, d_x: int, d_z: int, debug_gt_w: bool, gt_w:
-                 torch.tensor = None):
+                 torch.tensor = None, tied_w: bool = False):
         """
         Args:
             d: number of features
@@ -379,9 +374,12 @@ class EncoderDecoder(nn.Module):
             d_z: dimensionality of latent variables
             debug_gt_w: if True, set W as gt_w
             gt_w: ground-truth W
+            tied_w: if True, the encoder use the transposed
+            of the matrix W from the decoder
         """
         super().__init__()
         self.use_grad_projection = True
+        self.tied_w = tied_w
 
         self.d = d
         self.d_x = d_x
@@ -389,42 +387,54 @@ class EncoderDecoder(nn.Module):
         self.debug_gt_w = debug_gt_w
         self.gt_w = gt_w
 
-        unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
+        unif = (1 - 0.4) * torch.rand(size=(d, d_x, d_z)) + 0.4
         if self.use_grad_projection:
             self.w = nn.Parameter(unif / torch.tensor(self.d_z))
         else:
             # otherwise, self.w is the log of W
             self.w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.d_z)))
-        self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.1)
-        self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.1)
-        # self.logvar_decoder = torch.log(torch.ones(d) * 0.1)
-        # self.logvar_encoder = torch.log(torch.ones(d) * 0.1)
+
+        if self.tied_w:
+            self.w_q = None
+        else:
+            unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
+            self.w_q = nn.Parameter(unif / torch.tensor(self.d_z))
+
+        self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.01)
+        self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.01)
 
     def forward(self, x, i, encoder: bool):
-        # if self.debug_gt_w:
-        #     w = self.gt_w[i]
-        # elif self.use_grad_projection:
-        #     w = self.w[i]
-        # else:
-        #     w = torch.exp(self.w[i])
-        w = self.get_w()[i]
+        w = self.get_w(encoder)[i]
 
         if encoder:
+            # encoder q(z | x)
             mu = torch.matmul(x, w)
             logvar = self.logvar_encoder[i]
         else:
             # here x is in fact z
-            mu = torch.matmul(x, w.T)
+            # decoder p(x | z)
+            # if self.tied_w:
+            w = w.T
+            mu = torch.matmul(x, w)
             logvar = self.logvar_decoder[i]
         return mu, logvar
 
-    def get_w(self) -> torch.tensor:
-        if self.debug_gt_w:
-            w = self.gt_w
-        elif self.use_grad_projection:
-            w = self.w
+    def get_w(self, encoder: bool = False) -> torch.tensor:
+        if self.tied_w:
+            if self.debug_gt_w:
+                w = self.gt_w
+            elif self.use_grad_projection:
+                w = self.w
+            else:
+                w = torch.exp(self.w)
         else:
-            w = torch.exp(self.w)
+            if encoder:
+                w = self.w_q
+            else:
+                if self.debug_gt_w:
+                    w = self.gt_w
+                else:
+                    w = self.w
 
         return w
 
@@ -433,67 +443,6 @@ class EncoderDecoder(nn.Module):
         with torch.no_grad():
             self.w.clamp_(min=0.)
         assert torch.min(self.w) >= 0.
-
-
-class Decoder(nn.Module):
-    """ Decode the latent variables Z into the estimation of observable data X
-    using a linear model parametrized by W^T """
-    def __init__(self, d: int, d_x: int, d_z: int):
-        """
-        Args:
-            d: number of features
-            d_x: number of grid locations
-            d_z: number of latent variables
-        """
-        # TODO: might want to remove this class and Encoder if we only use EncoderDecoder
-        # TODO: make it more general for NN ?
-        # TODO: might want to consider alternative initialization for W and var
-        super().__init__()
-        self.d = d
-        self.d_x = d_x
-        self.d_z = d_z
-        self.w = nn.Parameter(torch.rand(size=(d, d_x, d_z)) - 0.5)
-        self.var = torch.rand(d)
-
-    def forward(self, z, i):
-        """
-        Args:
-            z: the latent variables Z
-            i: a specific feature
-        Returns:
-            mu, var: the parameter of a Gaussian from which X can be sampled
-        """
-        # mu = nn.functional.linear(x, self.w[i])
-        mu = torch.matmul(z, self.w[i].T)
-        return mu, self.var[i]
-
-
-class Encoder(nn.Module):
-    """ Encode the observable data X into latent variables Z using a linear model parametrized by W """
-    def __init__(self, d: int, d_x: int, d_z: int):
-        """
-        Args:
-            d: number of features
-            d_x: number of grid locations
-            d_z: number of latent variables
-        """
-        super().__init__()
-        self.d = d
-        self.d_x = d_x
-        self.d_z = d_z
-        self.w = nn.Parameter(torch.rand(size=(d, d_x, d_z)))
-        self.var = torch.rand(self.d)
-
-    def forward(self, x, i):
-        """
-        Args:
-            x: the observable data X
-            i: a specific feature
-        Returns:
-            mu, var: the parameter of a Gaussian from which Z can be sampled
-        """
-        mu = torch.matmul(x, self.w[i])
-        return mu, self.var[i]
 
 
 class TransitionModel(nn.Module):
@@ -523,7 +472,7 @@ class TransitionModel(nn.Module):
 
     def forward(self, z, mask, i, k):
         """Returns the params of N(z_t | z_{<t}) for a specific feature i and latent variable k
-        NN(G_{t-k} * z_{t-1}, ..., G_{t-k} * z_{t-k})
+        NN(G_{tau-1} * z_{t-1}, ..., G_{tau-k} * z_{t-k})
         """
         # t_total = torch.max(self.tau, z_past.size(1))  # TODO: find right dim
         # param_z = torch.zeros(z_past.size(0), 2)

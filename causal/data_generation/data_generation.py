@@ -1,6 +1,9 @@
 import os
 import torch
 import json
+import scipy
+import scipy.sparse as sparse
+import scipy.sparse.linalg as linalg
 import torch.nn as nn
 import torch.distributions as distr
 import numpy as np
@@ -8,57 +11,177 @@ from collections import OrderedDict
 from typing import Tuple
 
 
+def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.ndarray:
+    """
+    Sample linear coefficients such that the spectrum associated
+    to this AR is equal to 1. This is a necessary condition in order
+    to have a stationary process.
+    Returns:
+        coeff: (tau, d*d_z, d*d_z) an array of coefficients that should lead
+        to a stationary process
+    """
+    # sample coefficients from Unif([-1, -0.2]U[0.2, 1])
+    coeff = np.random.rand(tau, d * d_z, d * d_z) * 0.8 + 0.2
+    sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 -1
+    coeff = coeff * sign * graph
+
+    # set the spectrum of the coeff to 1
+    radius = get_spectrum(coeff)
+    print(radius)
+    for t in range(tau):
+        coeff[t] = coeff[t] / (radius ** (tau - t) + 1e-1)
+    radius = get_spectrum(coeff)
+    assert radius < 1 + eps
+    print(radius)
+
+    min_val = np.min(np.abs(coeff[coeff != 0.]))
+    print(f"Min value: {min_val}")
+    if min_val < 0.01:
+        print("Warning, the magnitude of some coefficients are lower than 0.01")
+
+    return coeff
+
+def get_spectrum(coeff) -> float:
+    """
+    Return the spectrum of the linear coefficients corresponding to
+    an autoregressive process.
+    """
+    tau = coeff.shape[0]
+    d = coeff.shape[1]
+
+    # create a matrix A of dimension d x tau*d 
+    A = sparse.hstack([sparse.lil_matrix(coeff[tau - t - 1]) for t in range(tau)])
+    # get a square matrix A of dimension tau*d x tau*d
+    A = sparse.vstack([A, sparse.eye((tau - 1) * d, tau * d)])
+
+    A = A.todense()
+    eigen_val, _ = scipy.linalg.eig(A)
+    radius = np.max(np.abs(eigen_val))
+
+    return radius
+
+
+class StationaryMechanisms:
+    """
+    Additive nonlinear mechanisms that lead a stationary process.
+    The trick is to use nonlinear functions that are almost linear when x is
+    large, and have coefficients with a spectrum <= 1.
+    """
+    def __init__(self, graph, tau, d, d_z, linear=False, noise_z_std=0.1):
+        self.tau = tau
+        self.d = d
+        self.d_z = d_z
+        self.noise_z_std = noise_z_std
+        self.G = graph
+
+        if linear:
+            self.fct = [lambda x: x]
+        else:
+            self.fct = [lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
+                        lambda x: x * (1 + 4 * x ** 3 * np.exp(-x ** 2 / 2))]
+        self.n_mech = len(self.fct)
+        self.prob_mech = [1/self.n_mech] * self.n_mech
+
+        self.sample_mech()
+        self.apply_vectorized = np.vectorize(self.apply_f)
+
+    def sample_mech(self):
+        self.mech = np.random.choice(self.n_mech,
+                                     size=(self.tau + 1, self.d * self.d_z, self.d * self.d_z),
+                                     p=self.prob_mech)
+        self.coeff = sample_stationary_coeff(self.G, self.tau + 1, self.d, self.d_z)
+
+    def apply_f(self, i, x):
+        return self.fct[i](x)
+
+    def apply(self, g, z, t):
+        """Apply the mechanisms to z and some noise"""
+        if t >= self.tau + 1:
+            t = self.tau
+
+        noise = np.random.normal(scale=self.noise_z_std, size=(self.d, self.d_z))
+
+        z = z.reshape(z.shape[0], 1, -1)
+        z = z.repeat(1, z.shape[-1], 1)
+
+        output = self.apply_vectorized(self.mech[-t-1:], z)
+        output = output * self.coeff[-t-1:]
+        output = np.sum(output, axis=(0, 2))
+        output = output.reshape(self.d, self.d_z)
+        return torch.from_numpy(output), noise
+
+
 class DataGeneratorWithLatent:
     """
-    Code use to generate synthetic data with latent variables
+    Code use to generate synthetic data with latent variables.
+    Sample a DAG between latents and generate (X, Z).
     """
-    # TODO: add instantenous relations
+    # TODO: add instantaneous relations
     def __init__(self, hp):
-        if hp.instantaneous:
-            raise NotImplementedError("Instantaneous connections not implemented yet")
         self.hp = hp
         self.n = hp.n
-        self.d = hp.num_features
+        self.d = hp.d
         self.d_x = hp.d_x
         self.tau = hp.tau
+        self.func_type = hp.func_type
+
+        self.noise_x_std = hp.noise_x_std
+        self.noise_z_std = hp.noise_z_std
 
         if self.n > 1:
             self.t = self.tau + 1
         else:
-            self.t = hp.num_timesteps
+            self.t = hp.t
 
         self.d_z = hp.d_z
         self.prob = hp.prob
-        self.noise_coeff = hp.noise_coeff
 
+        # hp for MLP model
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
         self.non_linearity = hp.non_linearity
-        self.same_cluster_assign = False
 
-        assert self.d_x > self.d_z, f"dx={self.d_x} should be larger than dz={self.d_z}"
+        assert self.d_x >= self.d_z, f"dx={self.d_x} should be larger or equal than dz={self.d_z}"
 
     def save_data(self, path: str):
         """ Save all files to 'path' """
         with open(os.path.join(path, "data_params.json"), "w") as file:
             json.dump(vars(self.hp), file, indent=4)
+        with open(os.path.join(path, "best_metrics.json"), "w") as file:
+            json.dump(self.best_metrics, file, indent=4)
+
         np.save(os.path.join(path, 'data_x'), self.X.detach().numpy())
         np.save(os.path.join(path, 'data_z'), self.Z.detach().numpy())
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
         np.save(os.path.join(path, 'graph_w'), self.w.detach().numpy())
 
-    def sample_graph(self) -> torch.Tensor:
+
+        if self.func_type == "linear":
+            np.save(os.path.join(path, 'linear_coeff'), self.f.coeff)
+
+    def sample_graph(self, instantaneous: bool) -> torch.Tensor:
         """
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
+        Args:
+            instantaneous: if True, sample a DAG for G[0]
         Returns:
-            A Tensor of tau graphs between the Z (shape: tau x (d x k) x (d x k))
+            A Tensor of tau graphs between the Z (shape: tau x (d x d_z) x (d x d_z))
         """
-        prob_tensor = torch.ones((self.tau, self.d * self.d_z, self.d * self.d_z)) * self.prob
-        # set diagonal to 1
-        # prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        prob_tensor = torch.ones((self.tau + 1, self.d * self.d_z, self.d * self.d_z)) * self.prob
+
+        # set diagonal to 1 of the graph G_{t-1}
+        prob_tensor[-2, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
+
+        if instantaneous:
+            # for G_t sample a DAG
+            # G[-1] = self.sample_dag(G[0].shape)
+            raise ValueError("This is not implemented yet")
+        else:
+            # no instantaneous links, so set G_t to 0
+            G[-1] = 0
 
         return G
 
@@ -110,14 +233,11 @@ class DataGeneratorWithLatent:
 
         return mlps
 
-    def sample_lstm(self):
-        pass
-
     def sample_w(self) -> torch.Tensor:
         """Sample matrices that are non-negative and orthogonal.
         They are the links between Z and X.
         Returns:
-            A tensor w (shape: d, d_x, k)
+            A tensor w (shape: d, d_x, d_z)
         """
         mask = torch.zeros((self.d, self.d_x, self.d_z))
         for i in range(self.d):
@@ -127,7 +247,7 @@ class DataGeneratorWithLatent:
             np.random.shuffle(cluster_assign)
             mask[i, np.arange(self.d_x), cluster_assign] = 1
 
-        w = torch.empty((self.d, self.d_x, self.d_z)).uniform_(0.5, 2)
+        w = torch.empty((self.d, self.d_x, self.d_z)).uniform_(0.2, 1)
         w = w * mask
 
         # normalize to make w orthonormal
@@ -143,56 +263,96 @@ class DataGeneratorWithLatent:
         """
         # initialize Z for the first timesteps
         self.Z = torch.zeros((self.n, self.t, self.d, self.d_z))
+        self.Z_mu = torch.zeros((self.n, self.t, self.d, self.d_z))
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
-        # sample graphs and NNs
-        self.G = self.sample_graph()
-        self.f = [None]
+        # sample graphs
+        self.G = self.sample_graph(self.hp.instantaneous)
+
+        # sample mechanisms
+        if self.func_type == "mlp":
+            self.f = [None]
+            for t in range(1, self.tau + 1):
+                self.f.append(self.sample_mlp(t))
+        elif self.func_type == "add_nonlinear":
+            self.f = StationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
+                                          linear=False,
+                                          noise_z_std=self.noise_z_std)
+        elif self.func_type == "linear":
+            self.f = StationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
+                                          linear=True,
+                                          noise_z_std=self.noise_z_std)
+        else:
+            raise NotImplementedError("the only fct types are NN and stationary")
 
         # sample observational model
         self.w = self.sample_w()
 
-        for n_timesteps in range(1, self.tau + 1):
-            self.f.append(self.sample_mlp(n_timesteps))
-
         for i_n in range(self.n):
+
             # sample the latent Z
             for t in range(self.t):
                 if t == 0:
-                    self.Z[i_n, t].normal_(0, 1)  # test with mu=2
+                    self.Z[i_n, t].normal_(0, 1)
                 else:
-                    if t < self.tau:
-                        nn_idx = t
-                        g = self.G[:t]
-                        z = self.Z[i_n, :t]
+                    if t < self.tau + 1:
+                        idx = t
+                        g = self.G[-t-1:]
+                        z = self.Z[i_n, :t+1]
                     else:
-                        nn_idx = -1
+                        idx = -1
                         g = self.G
-                        z = self.Z[i_n, t - self.tau:t]
+                        z = self.Z[i_n, t - self.tau:t + 1]
 
                     # nn_input = (g * z).view(-1)
-                    for i_d in range(self.d):
-                        for k in range(self.d_z):
-                            nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.d_z]).view(1, -1)
-                            params = self.f[nn_idx][k + i_d * self.d_z](nn_input)
+                    if self.func_type == "mlp":
+                        for i_d in range(self.d):
+                            for k in range(self.d_z):
+                                    nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.d_z]).view(1, -1)
+                                    params = self.f[idx][k + i_d * self.d_z](nn_input)
 
-                            # TODO: change back, only a test, smaller variance
-                            # params[:, 1] = 0.5 * torch.exp(params[:, 1]) * 0.01
-                            std = torch.ones_like(params[:, 1]) * 0.0001
-                            dist = distr.normal.Normal(params[:, 0], std)
-                            self.Z[i_n, t, i_d, k] = dist.rsample()
+                                    std = torch.ones_like(params[:, 1]) * 0.0001
+                                    dist = distr.normal.Normal(params[:, 0], std)
+                                    self.Z[i_n, t, i_d, k] = dist.rsample()
+                    elif self.func_type == "add_nonlinear" or self.func_type == "linear":
+                        self.Z_mu[i_n, t], noise = self.f.apply(g, z, t)
+                        self.Z[i_n, t] = self.Z_mu[i_n, t] + noise
 
-            # sample the data X
-            for t in range(self.t):
-                # TODO: probably error here:
-                for i_d in range(self.d):
-                    mu = torch.matmul(self.Z[i_n, t, i_d], self.w[i_d].T)
-                # mean = torch.einsum("xdk,dk->dx", self.w, self.Z[i_n, t])
-                # TODO: could sample sigma
-                    dist = distr.normal.Normal(mu, 0.0001)
-                    self.X[i_n, t, i_d] = dist.rsample()
+            # sample the data X (= WZ + noise)
+            self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
+            self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
+
+        if torch.max(torch.abs(self.Z)) > 100000:
+            raise ValueError("The generative process doesn't seem to be stationary")
+
+        self.compute_metrics()
 
         return self.X, self.Z
+
+
+    def compute_metrics(self):
+        metrics = {}
+        # get recons term
+        px_distr = distr.normal.Normal(self.X_mu, self.noise_x_std)
+        metrics["recons"] = torch.mean(px_distr.log_prob(self.X)).item()
+
+        # get KL term
+        # encode q(Zt | Xt)
+        q_mu = torch.einsum('dxz, ntdx -> ntdz', self.w, self.X)
+        q = distr.normal.Normal(q_mu, self.noise_z_std)
+
+        # get p(Zt | Z<t)
+        p = distr.normal.Normal(self.Z_mu, self.noise_z_std)
+        metrics["kl"] = distr.kl_divergence(q, p).mean().item()
+
+        # get MCC
+        mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
+                          self.Z.numpy().reshape(self.n, -1))
+        metrics["mcc"] = mcc[0, 1]
+
+        # ELBO with GT model
+        metrics["elbo"] = metrics["recons"] - metrics["kl"]
+        self.best_metrics = metrics
 
 
 class DataGeneratorWithoutLatent:
@@ -202,7 +362,7 @@ class DataGeneratorWithoutLatent:
     def __init__(self, hp):
         self.hp = hp
         self.n = hp.n
-        self.d = hp.num_features
+        self.d = hp.d
         self.d_x = hp.d_x
         self.world_dim = hp.world_dim
         self.tau = hp.tau
@@ -217,7 +377,7 @@ class DataGeneratorWithoutLatent:
         if self.n > 1:
             self.t = self.tau + 1
         else:
-            self.t = hp.num_timesteps
+            self.t = hp.t
 
         self.num_layers = hp.num_layers
         self.num_hidden = hp.num_hidden
@@ -244,6 +404,7 @@ class DataGeneratorWithoutLatent:
             A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
         """
         # TODO: allow data with any number of dimension (1D, 2D, ...)
+        # prob_tensor = torch.ones((self.tau, self.d, self.num_neigh * self.d)) * self.prob
         prob_tensor = torch.ones((self.tau, self.d, self.num_neigh * self.d)) * self.prob
 
         if diagonal:
@@ -573,3 +734,6 @@ def is_acyclic(adjacency: np.ndarray) -> bool:
         if np.trace(prod) != 0:
             return False
     return True
+
+if __name__ == "__main__":
+    sample_stationary_coeff(2, 3, 2)

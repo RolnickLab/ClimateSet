@@ -3,16 +3,17 @@ import numpy as np
 
 from geopy import distance
 from dag_optim import compute_dag_constraint
-from plot import plot, plot_compare_prediction
+from plot import Plotter
 from utils import ALM
 from prox import monkey_patch_RMSprop
 
 
 class TrainingLatent:
-    def __init__(self, model, data, hp):
+    def __init__(self, model, data, hp, best_metrics):
         self.model = model
         self.data = data
         self.hp = hp
+        self.best_metrics = best_metrics
 
         self.latent = hp.latent
         self.no_gt = hp.no_gt
@@ -44,6 +45,8 @@ class TrainingLatent:
         self.train_connect_reg_list = []
         self.train_ortho_cons_list = []
         self.train_acyclic_cons_list = []
+        self.mu_ortho_list = []
+        self.h_ortho_list = []
 
         self.valid_loss_list = []
         self.valid_elbo_list = []
@@ -54,15 +57,19 @@ class TrainingLatent:
         self.valid_ortho_cons_list = []
         self.valid_acyclic_cons_list = []
 
+        self.plotter = Plotter()
+
         if self.instantaneous:
             raise NotImplementedError("Soon")
-            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau + 1,
+            self.adj_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.tau + 1,
                                     self.d * self.d_z, self.d * self.d_z))
         else:
-            self.adj_tt = np.zeros((self.hp.max_iteration, self.tau, self.d *
+            self.adj_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.tau, self.d *
                                     self.d_z, self.d * self.d_z))
         if not self.no_gt:
-            self.adj_w_tt = np.zeros((self.hp.max_iteration, self.d, self.d_x, self.d_z))
+            self.adj_w_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.d, self.d_x, self.d_z))
+        self.logvar_encoder_tt = []
+        self.logvar_decoder_tt = []
 
         # self.model.mask.fix(self.gt_dag)
 
@@ -123,14 +130,14 @@ class TrainingLatent:
                 if self.iteration % (self.hp.valid_freq * self.hp.print_freq) == 0:
                     self.print_results()
                 if self.logging_iter > 10 and self.iteration % (self.hp.valid_freq * self.hp.plot_freq) == 0:
-                    plot(self)
+                    self.plotter.plot(self)
 
-                    if self.no_gt:
-                        plot_compare_prediction(x[0, -1].detach().numpy(),
-                                                y[0].detach().numpy(),
-                                                y_pred[0].detach().numpy(),
-                                                self.data.coordinates,
-                                                self.hp.exp_path)
+                    # if self.no_gt:
+                    #     plot_compare_prediction(x[0, -1].detach().numpy(),
+                    #                             y[0].detach().numpy(),
+                    #                             y_pred[0].detach().numpy(),
+                    #                             self.data.coordinates,
+                    #                             self.hp.exp_path)
 
             if not self.converged:
                 # train with penalty method
@@ -138,7 +145,11 @@ class TrainingLatent:
                     self.ALM_ortho.update(self.iteration,
                                           self.valid_ortho_cons_list,
                                           self.valid_loss_list)
-                    self.converged = self.ALM_ortho.has_converged
+                    if self.iteration > 20000:
+                        self.converged = self.ALM_ortho.has_converged
+                        # self.converged = False
+                    else:
+                        self.converged = False
 
                     if self.ALM_ortho.has_increased_mu:
                         if self.hp.optimizer == "sgd":
@@ -168,7 +179,7 @@ class TrainingLatent:
             self.iteration += 1
 
         # final plotting and printing
-        plot(self)
+        self.plotter.plot(self)
         self.print_results()
 
         # save tensor W
@@ -180,7 +191,7 @@ class TrainingLatent:
 
         # sample data
         x, y, z = self.data.sample(self.batch_size, valid=False)
-        nll, recons, kl, pred = self.get_nll(x, y, z)
+        nll, recons, kl, y_pred = self.get_nll(x, y, z)
 
         # compute regularisations (sparsity and connectivity)
         sparsity_reg = self.get_regularisation()
@@ -220,7 +231,7 @@ class TrainingLatent:
         self.train_ortho_cons = h_ortho.item()
         self.train_acyclic_cons = h_acyclic.item()
 
-        return pred
+        return x, y, y_pred
 
     def valid_step(self):
         self.model.eval()
@@ -244,8 +255,8 @@ class TrainingLatent:
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
-        loss = loss + self.ALM_ortho.gamma * h_ortho + \
-            0.5 * self.ALM_ortho.mu * h_ortho ** 2
+        # loss = loss + self.ALM_ortho.gamma * h_ortho + \
+        #     0.5 * self.ALM_ortho.mu * h_ortho ** 2
         if self.instantaneous:
             loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
@@ -288,8 +299,8 @@ class TrainingLatent:
     def log_losses(self):
         """Append in lists values of the losses and more"""
         # train
-        self.train_loss_list.append(self.train_loss)
-        self.train_recons_list.append(-self.train_recons)
+        self.train_loss_list.append(-self.train_loss)
+        self.train_recons_list.append(self.train_recons)
         self.train_kl_list.append(self.train_kl)
 
         self.train_sparsity_reg_list.append(self.train_sparsity_reg)
@@ -298,8 +309,8 @@ class TrainingLatent:
         self.train_acyclic_cons_list.append(self.train_acyclic_cons)
 
         # valid
-        self.valid_loss_list.append(self.valid_loss)
-        self.valid_recons_list.append(-self.valid_recons)
+        self.valid_loss_list.append(-self.valid_loss)
+        self.valid_recons_list.append(self.valid_recons)
         self.valid_kl_list.append(self.valid_kl)
 
         self.valid_sparsity_reg_list.append(self.valid_sparsity_reg)
@@ -307,11 +318,14 @@ class TrainingLatent:
         self.valid_ortho_cons_list.append(self.valid_ortho_cons)
         self.valid_acyclic_cons_list.append(self.valid_acyclic_cons)
 
-        # self.mu_ortho_list.append(self.mu_ortho)
-        self.adj_tt[self.iteration] = self.model.get_adj().detach().numpy()
+        self.mu_ortho_list.append(self.ALM_ortho.mu)
+
+        self.adj_tt[int(self.iteration / self.hp.valid_freq)] = self.model.get_adj().detach().numpy()
         w = self.model.encoder_decoder.get_w().detach().numpy()
         if not self.no_gt:
-            self.adj_w_tt[self.iteration] = w
+            self.adj_w_tt[int(self.iteration / self.hp.valid_freq)] = w
+        self.logvar_decoder_tt.append(self.model.encoder_decoder.logvar_decoder[0].item())
+        self.logvar_encoder_tt.append(self.model.encoder_decoder.logvar_encoder[0].item())
 
     def print_results(self):
         """Print values of many variable: losses, constraint violation, etc.
@@ -320,16 +334,16 @@ class TrainingLatent:
         print(f"Iteration #{self.iteration}")
         print(f"Converged: {self.converged}")
 
-        print(f"train_nll: {self.train_nll:.4f}")
-        print(f"train_recons: {self.train_recons:.4f}")
-        print(f"train_kl: {self.train_kl:.4f}")
+        print(f"ELBO: {self.train_nll:.4f}")
+        print(f"Recons: {self.train_recons:.4f}")
+        print(f"KL: {self.train_kl:.4f}")
 
-        print(f"train_sparsity_reg: {self.train_sparsity_reg:.1e}")
-        print(f"train_connect_reg: {self.train_connect_reg:.1e}")
+        print(f"Sparsity_reg: {self.train_sparsity_reg:.1e}")
+        # print(f"Connect_reg: {self.train_connect_reg:.1e}")
 
         print(f"ortho cons: {self.train_ortho_cons:.1e}")
-        print(f"ortho delta_gamma: {self.ALM_ortho.delta_gamma}")
-        print(f"ortho gamma: {self.ALM_ortho.gamma}")
+        # print(f"ortho delta_gamma: {self.ALM_ortho.delta_gamma}")
+        # print(f"ortho gamma: {self.ALM_ortho.gamma}")
         print(f"ortho mu: {self.ALM_ortho.mu}")
 
         if self.instantaneous:
@@ -337,7 +351,7 @@ class TrainingLatent:
             print(f"acyclic gamma: {self.QPM_ortho.mu}")
         print("-------------------------------")
 
-        print(f"valid_nll: {self.valid_nll:.4f}")
+        print(f"valid_ELBO: {self.valid_nll:.4f}")
         # print(f"valid_recons: {self.valid_recons:.4f}")
         # print(f"valid_kl: {self.valid_kl:.4f}")
         print(f"patience: {self.patience}")
@@ -347,26 +361,36 @@ class TrainingLatent:
         return -elbo, recons, kl, pred
 
     def get_regularisation(self) -> float:
-        adj = self.model.get_adj()
-        reg = self.hp.reg_coeff * torch.norm(adj, p=1)
-        reg /= adj.shape[0] ** 2
+        # TODO: change configurable schedule!
+        if self.iteration > self.hp.schedule_reg:
+            adj = self.model.get_adj()
+            reg = self.hp.reg_coeff * torch.norm(adj, p=1)
+            reg /= adj.shape[0] ** 2
+        else:
+            reg = torch.tensor([0.])
 
         return reg
 
     def get_acyclicity_violation(self) -> torch.Tensor:
-        adj = self.model.get_adj()[-1].view(self.d, self.d)
-        # __import__('ipdb').set_trace()
-        h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
+        if self.iteration > 10000:
+            adj = self.model.get_adj()[-1].view(self.d, self.d)
+            # __import__('ipdb').set_trace()
+            h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
+        else:
+            h = torch.tensor([0.])
 
         return h
 
     def get_ortho_violation(self, w: torch.Tensor) -> float:
-        constraint = torch.tensor([0.])
-        k = w.size(2)
-        for i in range(w.size(0)):
-            constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
-
-        return constraint / self.ortho_normalization
+        if self.iteration > self.hp.schedule_ortho:
+            constraint = torch.tensor([0.])
+            k = w.size(2)
+            for i in range(w.size(0)):
+                constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
+            h = constraint / self.ortho_normalization
+        else:
+            h = torch.tensor([0.])
+        return h
 
     def connectivity_reg_complete(self):
         """

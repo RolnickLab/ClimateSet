@@ -82,7 +82,7 @@ class DataLoader:
             self.n_train = int(t_max * self.ratio_train)
             self.n_valid = int(t_max * self.ratio_valid)
             self.idx_train = np.arange(self.tau, self.n_train)
-            self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
+            self.idx_valid = np.arange(self.n_train, self.n_train + self.n_valid)
         else:
             self.n_train = int(self.n * self.ratio_train)
             self.n_valid = int(self.n * self.ratio_valid)
