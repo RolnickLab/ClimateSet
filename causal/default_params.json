@@ -19,7 +19,7 @@
     "optimizer": "rmsprop",
     "reg_coeff": 1e-2,
     "reg_coeff_connect": 0,
-    "schedule_reg": 20000,
+    "schedule_reg": 25000,
     "schedule_ortho": 0,
     "lr": 0.005,
     "random_seed": 1,

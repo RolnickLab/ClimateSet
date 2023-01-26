@@ -68,6 +68,8 @@ class TrainingLatent:
                                     self.d_z, self.d * self.d_z))
         if not self.no_gt:
             self.adj_w_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.d, self.d_x, self.d_z))
+        self.logvar_encoder_tt = []
+        self.logvar_decoder_tt = []
 
         # self.model.mask.fix(self.gt_dag)
 
@@ -322,6 +324,8 @@ class TrainingLatent:
         w = self.model.encoder_decoder.get_w().detach().numpy()
         if not self.no_gt:
             self.adj_w_tt[int(self.iteration / self.hp.valid_freq)] = w
+        self.logvar_decoder_tt.append(self.model.encoder_decoder.logvar_decoder[0].item())
+        self.logvar_encoder_tt.append(self.model.encoder_decoder.logvar_encoder[0].item())
 
     def print_results(self):
         """Print values of many variable: losses, constraint violation, etc.

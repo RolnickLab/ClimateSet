@@ -1,9 +1,11 @@
 import os
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from mpl_toolkits.basemap import Basemap
 from metrics import mcc_latent
+from data_loader import DataLoader
 
 
 def moving_average(a: np.ndarray, n: int = 10):
@@ -20,8 +22,73 @@ class Plotter:
         self.mcc = []
         self.assignments = []
 
-    def save(self):
-        pass
+    def save(self, learner):
+        """
+        Save all the different metrics. Can then reload them to plot them.
+        """
+        if learner.latent:
+            # save matrix W of the decoder and encoder
+            w_decoder = learner.model.encoder_decoder.get_w().detach(False).numpy()
+            np.save(os.path.join(learner.hp.exp_path, "w_decoder"), w_decoder)
+            w_encoder = learner.model.encoder_decoder.get_w(True).detach().numpy()
+            np.save(os.path.join(learner.hp.exp_path, "w_encoder"), w_encoder)
+
+            # save variance of encoder and decoder
+            np.save(os.path.join(learner.hp.exp_path, "logvar_encoder_tt"), learner.logvar_encoder_tt)
+            np.save(os.path.join(learner.hp.exp_path, "logvar_decoder_tt"), learner.logvar_decoder_tt)
+
+            # save adj_tt and adj_w_tt, adjacencies through time
+            np.save(os.path.join(learner.hp.exp_path, "adj_tt"), learner.adj_tt)
+            np.save(os.path.join(learner.hp.exp_path, "adj_w_tt"), learner.adj_w_tt)
+
+            # save losses and penalties
+            penalties = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
+                      {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
+                      {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
+                      ]
+            for p in penalties:
+                np.save(os.path.join(learner.hp.exp_path, p["name"]), np.array(p["data"]))
+
+            losses = [{"name": "tr ELBO", "data": learner.train_loss_list, "s": "-."},
+                      {"name": "Recons", "data": learner.train_recons_list, "s": "-"},
+                      {"name": "KL", "data": learner.train_kl_list, "s": "-"},
+                      {"name": "val ELBO", "data": learner.valid_loss_list, "s": "-."},
+                      ]
+            for l in losses:
+                np.save(os.path.join(learner.hp.exp_path, l["name"]), np.array(l["data"]))
+
+    def load(self, exp_path: str, data_loader):
+        # load matrix W of the decoder and encoder
+        self.w = np.load(os.path.join(exp_path, "w_decoder.npy"))
+        self.w_encoder = np.load(os.path.join(exp_path, "w_encoder.npy"))
+
+        # load adj_tt and adj_w_tt, adjacencies through time
+        self.adj_tt = np.load(os.path.join(exp_path, "adj_tt"))
+        self.adj_w_tt = np.load(os.path.join(exp_path, "adj_w_tt"))
+
+        # load log-variance of encoder and decoder
+        self.logvar_encoder_tt = np.load(os.path.join(exp_path, "logvar_encoder_tt"))
+        self.logvar_decoder_tt = np.load(os.path.join(exp_path, "logvar_decoder_tt"))
+
+        # load losses and penalties
+        self.penalties = {}
+        penalties = [{"name": "sparsity", "data": "train_sparsity_reg"},
+                  {"name": "tr ortho", "data": "train_ortho_cons"},
+                  {"name": "mu ortho", "data": "mu_ortho"}]
+        for p in penalties:
+            self.penalties[p["data"]] = np.load(os.path.join(exp_path, p["name"]))
+
+        losses = [{"name": "tr ELBO", "data": "train_loss"},
+                  {"name": "Recons", "data": "train_recons"},
+                  {"name": "KL", "data": "train_kl"},
+                  {"name": "val ELBO", "data": "valid_loss"}]
+        for l in losses:
+            self.losses[l["data"]] = np.load(os.path.join(exp_path, l["name"]))
+
+        # load GT W and graph
+        self.gt_w = data_loader.gt_w
+        self.gt_graph = data_loader.gt_dag
+
 
     def plot(self, learner):
         """
@@ -30,35 +97,26 @@ class Plotter:
         if the ground-truth is known the adjacency and adjacency through time.
         """
         # plot learning curves
-        # (for latent models, there is a finer decomposition of the loss)
         if learner.latent:
-            # ============================
-            # TODO: temporary, remove
-            # save matrix W
-
-            w = learner.model.encoder_decoder.get_w().detach().numpy()
-            np.save(os.path.join(learner.hp.exp_path, "w_tensor"), w)
-
             # plot distribution of weights
-            if learner.hp.plot_through_time:
-                fname = f"w_distr_{learner.iteration}.png"
-            else:
-                fname = "w_distr.png"
-            plt.hist(w.flatten(), bins=50)
-            plt.savefig(os.path.join(learner.hp.exp_path, fname))
-            plt.close()
-            # ============================
+            # if learner.hp.plot_through_time:
+            #     fname = f"w_distr_{learner.iteration}.png"
+            # else:
+            #     fname = "w_distr.png"
+            # plt.hist(w.flatten(), bins=50)
+            # plt.savefig(os.path.join(learner.hp.exp_path, fname))
+            # plt.close()
 
-            self.plot_learning_curves(train_loss=learner.train_loss_list,
-                                      train_recons=learner.train_recons_list,
-                                      train_kl=learner.train_kl_list,
-                                      valid_loss=learner.valid_loss_list,
-                                      valid_recons=learner.valid_recons_list,
-                                      valid_kl=learner.valid_kl_list,
-                                      best_metrics=learner.best_metrics,
-                                      iteration=learner.logging_iter,
-                                      plot_through_time=learner.hp.plot_through_time,
-                                      path=learner.hp.exp_path)
+            # self.plot_learning_curves(train_loss=learner.train_loss_list,
+            #                           train_recons=learner.train_recons_list,
+            #                           train_kl=learner.train_kl_list,
+            #                           valid_loss=learner.valid_loss_list,
+            #                           valid_recons=learner.valid_recons_list,
+            #                           valid_kl=learner.valid_kl_list,
+            #                           best_metrics=learner.best_metrics,
+            #                           iteration=learner.logging_iter,
+            #                           plot_through_time=learner.hp.plot_through_time,
+            #                           path=learner.hp.exp_path)
             losses = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
                       {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
                       {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
@@ -69,7 +127,8 @@ class Plotter:
                                        iteration=learner.logging_iter,
                                        plot_through_time=learner.hp.plot_through_time,
                                        path=learner.hp.exp_path,
-                                       fname="penalties")
+                                       fname="penalties",
+                                       yaxis_log=True)
             losses = [{"name": "tr ELBO", "data": learner.train_loss_list, "s": "-."},
                       {"name": "Recons", "data": learner.train_recons_list, "s": "-"},
                       {"name": "KL", "data": learner.train_kl_list, "s": "-"},
@@ -80,6 +139,13 @@ class Plotter:
                                        plot_through_time=learner.hp.plot_through_time,
                                        path=learner.hp.exp_path,
                                        fname="losses")
+            logvar = [{"name": "logvar encoder", "data": learner.logvar_encoder_tt, "s": "-"},
+                      {"name": "logvar decoder", "data": learner.logvar_decoder_tt, "s": "-"}]
+            self.plot_learning_curves2(losses=logvar,
+                                       iteration=learner.logging_iter,
+                                       plot_through_time=learner.hp.plot_through_time,
+                                       path=learner.hp.exp_path,
+                                       fname="logvar")
         else:
             self.plot_learning_curves(train_loss=learner.train_loss_list,
                                       valid_loss=learner.valid_loss_list,
@@ -318,7 +384,7 @@ class Plotter:
 
 
     def plot_learning_curves2(self, losses: list, iteration: int = 0, plot_through_time:
-                              bool = False, path: str = "", fname = "loss_detailed"):
+                              bool = False, path: str = "", fname = "loss_detailed", yaxis_log: bool = False):
         """
         Plot all list present in 'losses'.
         Args:
@@ -328,7 +394,8 @@ class Plotter:
             path: path where to save the plot
         """
         ax = plt.gca()
-        if fname != "losses":
+        # if fname != "losses":
+        if yaxis_log:
             ax.set_yscale("log")
 
         # compute moving_averages and
@@ -348,7 +415,6 @@ class Plotter:
         plt.close()
 
 
-    # TODO: add no_gt
     def plot_adjacency_matrix(self, mat1: np.ndarray, mat2: np.ndarray, path: str,
                               name_suffix: str, no_gt: bool = False):
         """ Plot the adjacency matrices learned and compare it to the ground truth,
@@ -559,3 +625,26 @@ class Plotter:
             plt.title("MCC score through time")
             fig.savefig(os.path.join(exp_path, f'mcc.png'))
             fig.clf()
+
+if __name__ == "__main__":
+    # Load saved data and plot it
+    plotter = Plotter()
+    # load hp of the model
+    with open(os.path.join("causal_climate_exp/exp0", "params.json"), 'r') as f:
+        hp = json.load(f)
+
+    # load GT graph and W
+    data_loader = DataLoader(ratio_train=hp["ratio_train"],
+                             ratio_valid=hp["ratio_valid"],
+                             data_path=hp["data_path"],
+                             data_format=hp["data_format"],
+                             latent=hp["latent"],
+                             no_gt=hp["no_gt"],
+                             debug_gt_w=hp["debug_gt_w"],
+                             instantaneous=hp["instantaneous"],
+                             tau=hp["tau"])
+
+    __import__('ipdb').set_trace()
+
+    plotter.load(hp["exp_path"], data_loader)
+    plotter.plot(data)
