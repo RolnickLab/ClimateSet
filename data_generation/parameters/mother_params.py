@@ -24,13 +24,16 @@ VARS = ["nan"]
 # Julia: Birth has three steps: downloading, preprocessing, creating the different resolutions
 # and we already need to distinct between in_vars and out_vars for that
 """
-#IN_VARS = ["nan"]
-#OUT_VARS = ["nan"]
+
 CO2=["CO2", "CO2_em_anthro", "CO2_em_openburning", "CO2_em_AIR_anthro"]
 BC=["BC", "BC_em_anthro", "BC_em_openburning", "BC_em_AIR_anthro"]
 CH4=["CH4", "CH4_em_anthro", "CH4_em_openburning", "CH4_em_AIR_anthro"]
 SO2=["SO2", "SO2_em_anthro", "SO2_em_openburning", "SO2_em_AIR_anthro"]
-VARS=["pr", "tas"]+CO2+BC+CH4+SO2
+
+IN_VARS = CO2 + BC + CH4 + SO2
+OUT_VARS = ["pr", "tas"]
+
+VARS=IN_VARS + OUT_VARS
 
 # scenarios
 SCENARIOS = ["historical", "ssp126", "ssp245", "ssp370", "ssp585"]
@@ -63,6 +66,8 @@ MOTHER_PARAMS = {
     "models": MODELS,
     "scenarios": SCENARIOS,
     "years": YEARS,
+    "in_vars": IN_VARS,
+    "out_vars": OUT_VARS,
     "vars": VARS,
     "resolutions": RESOLUTION,
     "grid": GRID,

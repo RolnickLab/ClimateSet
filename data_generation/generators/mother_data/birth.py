@@ -1,6 +1,6 @@
 # init script to establish first data basis
-from parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
-from parameters.mother_params import MOTHER_PARAMS
+from data_generation.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
+from data_generation.parameters.mother_params import MOTHER_PARAMS
 #from mother_data.downloader import Downloader
 
 from typing import List, Tuple, Dict
@@ -20,7 +20,7 @@ from pathlib import Path
 def birth(models: List[str], scenarios: List[str], years: List[int],
         in_vars: List[str], out_vars: List[str], resolutions: Tuple[int, int, int, int],
         grid: str, aggregations: Dict[str, str], interpolations: Dict[str, str],
-        raw_path: Path, res_path: Path, load_path: Path):
+        raw_path: Path, res_path: Path, load_path: Path, **kwargs):
     """ Creates the initial climate data that is needed. Starts downloader,
     makes initial preprocessing and default resolution processing. Data can
     afterwards be loaded via Loader() or run.py. Prints if process was successful.
