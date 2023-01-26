@@ -1,4 +1,15 @@
-from data_generation.parameters.mother_params import VARS, SCENARIOS
+import os
+# import h5py
+import os.path
+import netCDF4
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+from typing import List
+# from pyesgf.logon import LogonManager
+from pyesgf.search import SearchConnection
+
 from data_generation.parameters.constants import (
     RES_TO_CHUNKSIZE,
     MODEL_SOURCES,
@@ -7,18 +18,9 @@ from data_generation.parameters.constants import (
     PASSWORD,
     SUPPORTED_EXPERIMENTS,
 )
+from data_generation.parameters.mother_params import VARS, SCENARIOS
 from data_generation.utils.helper_funcs import get_keys_from_value, get_MIP
 
-import os
-# import h5py
-import os.path
-import netCDF4
-import numpy as np
-import pandas as pd
-import xarray as xr
-from typing import List
-# from pyesgf.logon import LogonManager
-from pyesgf.search import SearchConnection
 
 overwrite = False  # flag if files should be overwritten
 
