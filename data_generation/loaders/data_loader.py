@@ -1,13 +1,12 @@
 # phillipe's code
-
 import os
 import torch
 import tables  # for handling the h5py files
 import numpy as np
 #from typing import Concatenate, Tuple
 import xarray as xr
-from utils.helper_funcs import get_keys_from_value
-from parameters.constants import VAR_SOURCE_LOOKUP, RES_TO_CHUNKSIZE
+from data_generation.utils.helper_funcs import get_keys_from_value
+from data_generation.parameters.constants import VAR_SOURCE_LOOKUP, RES_TO_CHUNKSIZE
 
 # from geopy import distance
 
