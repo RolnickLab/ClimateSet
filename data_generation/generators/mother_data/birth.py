@@ -1,11 +1,10 @@
 # init script to establish first data basis
 from data_generation.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
 from data_generation.parameters.mother_params import MOTHER_PARAMS
-#from mother_data.downloader import Downloader
+#from data_generation.generators.mother_data import *
 
-from typing import List, Tuple, Dict
 from pathlib import Path
-
+from typing import List, Tuple, Dict
 # interacts with:
 # mother_params,
 # inits and executes downloader --> stored in raw
