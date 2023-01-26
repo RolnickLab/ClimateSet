@@ -1,15 +1,14 @@
 """
-Collection of Different Transforms to be applied in Data Loading. 
+Collection of Different Transforms to be applied in Data Loading.
 Disclaimer: inspired by ClimART #TODO: insert link to github
 """
+import torch
+import numpy as np
 
 from abc import ABC
-from typing import Dict, Any, Tuple, Union, Optional, Callable
-from collections import OrderedDict
-
-import numpy as np
-import torch
 from torch import Tensor, nn
+from collections import OrderedDict
+from typing import Dict, Any, Tuple, Union, Optional, Callable
 
 
 class AbstractTransform(ABC):

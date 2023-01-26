@@ -3,13 +3,13 @@ Collectinos of Normalizations to be applied in Data Loader.
 Disclaimer: Adapted from ClimART #TODO: insert link
 # TODO: still missing adjustments
 """
-
-import logging # Not yet used
-from abc import ABC
-from typing import Optional, Union, Dict, Iterable, Sequence, List, Callable
-import numpy as np
 import torch
+import logging # Not yet used
+import numpy as np
+
+from abc import ABC
 from torch import Tensor, nn
+from typing import Optional, Union, Dict, Iterable, Sequence, List, Callable
 
 NP_ARRAY_MAPPING = Callable[[np.ndarray], np.ndarray]
 
@@ -208,7 +208,7 @@ class Normalizer:
         """
         input_normalization (str): "z" for z-scaling (zero mean and unit standard deviation)
         """
-        
+
         print(f"INFO: Initializing Normalizer.")
         print(f"WARNING: Normalizer not yet implemented")
 

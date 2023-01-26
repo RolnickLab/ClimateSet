@@ -3,24 +3,24 @@ Dataset classes for efficiently data handling to be passed on to a torch.data.Da
 
 Disclaimer: inspired by ClimART #TODO: insert github link
 """
-
-import torch
-import numpy as np
 import os
-from parameters.constants import VAR_SOURCE_LOOKUP
-from data_paths import PROCESSED_DATA
-from mother_data.utils.helper_funcs import get_keys_from_value
 import h5py
-from torch.utils.data import DataLoader
-from torch import Tensor
+import torch
 import random
-from typing import Dict, Optional, List, Callable, Tuple, Union
+import pickle
 import shutil
 import zipfile
+import numpy as np
+
+from torch import Tensor
+from torch.utils.data import DataLoader
+from typing import Dict, Optional, List, Callable, Tuple, Union
+
 from data_transform import AbstractTransform
-from data_normalization import Normalizer
-from data_normalization import NormalizationMethod
-import pickle
+from data_normalization import Normalizer, NormalizationMethod
+from data_generation.parameters.data_paths import PROCESSED_DATA
+from data_generation.parameters.constants import VAR_SOURCE_LOOKUP
+from data_generation.mother_data.utils.helper_funcs import get_keys_from_value
 
 
 class Causalpaca_HdF5_Dataset(
