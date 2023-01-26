@@ -1,26 +1,24 @@
-from parameters.constants import RES_TO_CHUNKSIZE
-from pyesgf.search import SearchConnection
-from parameters.mother_params import VARS, SCENARIOS
-
-# from pyesgf.logon import LogonManager
-
-from parameters.constants import (
+from data_generation.parameters.mother_params import VARS, SCENARIOS
+from data_generation.parameters.constants import (
+    RES_TO_CHUNKSIZE,
     MODEL_SOURCES,
     VAR_SOURCE_LOOKUP,
     OPENID,
     PASSWORD,
     SUPPORTED_EXPERIMENTS,
 )
-from utils.helper_funcs import get_keys_from_value, get_MIP
-import netCDF4
+from data_generation.utils.helper_funcs import get_keys_from_value, get_MIP
 
+import os
 # import h5py
+import os.path
+import netCDF4
+import numpy as np
 import pandas as pd
 import xarray as xr
-import os
-import os.path
-import numpy as np
 from typing import List
+# from pyesgf.logon import LogonManager
+from pyesgf.search import SearchConnection
 
 overwrite = False  # flag if files should be overwritten
 
@@ -597,7 +595,6 @@ if __name__ == "__main__":
     max_ensemble_members=1
     ensemble_members=["r1i1p1f1"]
     data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
-
     downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemlble_members=ensemble_members)
     downloader.download_from_model()
     #downloader.download_raw_input()
