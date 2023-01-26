@@ -1,16 +1,19 @@
-from email.policy import default
-from pathlib import Path
-from parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
 import os
-import netCDF4 as nc
+import pint
+import h5netcdf
 import numpy as np
 import xarray as xr
-import h5netcdf
+import netCDF4 as nc
 
-from parameters.constants import RES_TO_CHUNKSIZE
-import pint
+from pathlib import Path
+from email.policy import default
+
+from data_generation.parameters.constants import RES_TO_CHUNKSIZE
+from data_generation.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
+
 
 overwrite = False
+
 ureg = pint.UnitRegistry()
 
 # mother preprocesser: only used once (by us), never used by user, basic preprocessing steps
