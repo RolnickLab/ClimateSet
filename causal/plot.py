@@ -107,16 +107,16 @@ class Plotter:
             # plt.savefig(os.path.join(learner.hp.exp_path, fname))
             # plt.close()
 
-            # self.plot_learning_curves(train_loss=learner.train_loss_list,
-            #                           train_recons=learner.train_recons_list,
-            #                           train_kl=learner.train_kl_list,
-            #                           valid_loss=learner.valid_loss_list,
-            #                           valid_recons=learner.valid_recons_list,
-            #                           valid_kl=learner.valid_kl_list,
-            #                           best_metrics=learner.best_metrics,
-            #                           iteration=learner.logging_iter,
-            #                           plot_through_time=learner.hp.plot_through_time,
-            #                           path=learner.hp.exp_path)
+            self.plot_learning_curves(train_loss=learner.train_loss_list,
+                                      train_recons=learner.train_recons_list,
+                                      train_kl=learner.train_kl_list,
+                                      valid_loss=learner.valid_loss_list,
+                                      valid_recons=learner.valid_recons_list,
+                                      valid_kl=learner.valid_kl_list,
+                                      best_metrics=learner.best_metrics,
+                                      iteration=learner.logging_iter,
+                                      plot_through_time=learner.hp.plot_through_time,
+                                      path=learner.hp.exp_path)
             losses = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
                       {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
                       {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
@@ -519,8 +519,12 @@ class Plotter:
                 else:
                     mat = mat1[0] - mat2[0]
 
+                if mat1[0].size < 100:
+                    annotation = True
+                else:
+                    annotation = False
                 sns.heatmap(mat, ax=ax, cbar=False, vmin=-1, vmax=1,
-                            annot=True, fmt=".5f", cmap="Blues",
+                            annot=annotation, fmt=".5f", cmap="Blues",
                             xticklabels=False, yticklabels=False)
 
                 # if the matrix is small enough, print also the value of each
