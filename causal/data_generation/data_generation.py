@@ -127,6 +127,7 @@ class DataGeneratorWithLatent:
 
         self.noise_x_std = hp.noise_x_std
         self.noise_z_std = hp.noise_z_std
+        self.fixed_diagonal = hp.fixed_diagonal
 
         if self.n > 1:
             self.t = self.tau + 1
@@ -171,7 +172,8 @@ class DataGeneratorWithLatent:
         prob_tensor = torch.ones((self.tau + 1, self.d * self.d_z, self.d * self.d_z)) * self.prob
 
         # set diagonal to 1 of the graph G_{t-1}
-        prob_tensor[-2, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        if self.fixed_diagonal:
+            prob_tensor[-2, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
@@ -409,7 +411,8 @@ class DataGeneratorWithoutLatent:
 
         if diagonal:
             # set diagonal to 1
-            prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+            if self.fixed_diagonal:
+                prob_tensor[:, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
         G = torch.bernoulli(prob_tensor)
 
