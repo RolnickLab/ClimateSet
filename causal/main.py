@@ -4,7 +4,7 @@ import os
 import json
 import torch
 import numpy as np
-from metrics import mcc_latent, shd, precision_recall
+from metrics import mcc_latent, shd, precision_recall, edge_errors
 from model.tsdcd import TSDCD
 from model.tsdcd_latent import LatentTSDCD
 from data_loader import DataLoader
@@ -147,6 +147,13 @@ def main(hp):
         metrics['mcc'] = score
         metrics['shd'] = shd(learned_graph, gt_graph)
         metrics['precision'], metrics['recall'] = precision_recall(learned_graph, gt_graph)
+        errors = edge_errors(learned_graph, gt_graph)
+        metrics['tp'] = errors['tp']
+        metrics['fp'] = errors['fp']
+        metrics['tn'] = errors['tn']
+        metrics['fn'] = errors['fn']
+        metrics['n_edge_gt_graph'] = np.sum(gt_graph)
+        metrics['n_edge_learned_graph'] = np.sum(learned_graph)
 
     metrics['train_mse'] = prediction(trainer, False)
     metrics['val_mse'] = prediction(trainer, True)
