@@ -334,7 +334,7 @@ class LatentTSDCD(nn.Module):
         # kl2 = self.get_kl(pz_mu, pz_std, q_mu_y, q_std_y)
         # print(kl2.mean())
         assert kl >= 0, f"KL={kl} has to be >= 0"
-        recons = torch.mean(px_distr.log_prob(y))
+        recons = torch.mean(torch.sum(px_distr.log_prob(y), dim=2))
 
         # __import__('ipdb').set_trace()
         # print(torch.mean((px_mu - y)**2))
