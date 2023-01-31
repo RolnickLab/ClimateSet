@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import sklearn
-from metrics import shd, mean_corr_coef, precision_recall
+from metrics import shd, mean_corr_coef, precision_recall, edge_errors
 
 from typing import Tuple
 from tigramite import data_processing as pp
@@ -155,7 +155,13 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             metrics['mcc'] = score
             metrics['shd'] = shd(graph, gt_graph)
             metrics['precision'], metrics['recall'] = precision_recall(graph, gt_graph)
-            __import__('ipdb').set_trace()
+            errors = edge_errors(graph, gt_graph)
+            metrics['tp'] = errors['tp']
+            metrics['fp'] = errors['fp']
+            metrics['tn'] = errors['tn']
+            metrics['fn'] = errors['fn']
+            metrics['n_edge_gt_graph'] = np.sum(gt_graph)
+            metrics['n_edge_learned_graph'] = np.sum(graph)
             print(metrics)
 
     return graph, W, metrics
