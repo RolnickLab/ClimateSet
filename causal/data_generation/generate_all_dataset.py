@@ -15,7 +15,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
     """
     i = 0
     func_type_list = ["linear", "add_nonlinear"]
-    fixed_diagonal_list = [False, True]
+    fixed_diagonal_list = [True]
 
     for key_param, val_param in varying_params.items():
         for p in val_param:
@@ -57,22 +57,19 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
 if __name__ == "__main__":
     varying_params = {
         "prob": [0.2, 0.35],
+        "tau": [2, 3, 5, 10],
+        "d_z": [5, 10, 20, 50]
     }
-    # varying_params = {
-    #     "tau": [2, 3, 5, 10],
-    #     "prob": [0.15, 0.3],
-    #     "d_z": [5, 10, 20, 50]
-    # }
 
     # d_z: 10, tau: 2
     default_params = {
         "latent": True,
-        "tau": 1,
+        "tau": 2,
         "prob": 0.15,
-        "d_z": 5,
+        "d_z": 10,
         "d_x": 100,
         "d": 1,
-        "t": 10000,
+        "t": 5000,
         "n": 1,
         "noise_type": "gaussian",
         "instantaneous": False,
