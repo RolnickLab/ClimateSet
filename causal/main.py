@@ -125,7 +125,7 @@ def main(hp):
         trainer = Training(model, data_loader, hp)
     else:
         trainer = TrainingLatent(model, data_loader, hp, best_metrics)
-    trainer.train_with_QPM()
+    valid_loss = trainer.train_with_QPM()
 
     # save final results, (MSE)
     metrics = {"shd": 0., "precision": 0., "recall": 0., "train_mse": 0., "val_mse": 0., "mcc": 0.}
@@ -154,6 +154,7 @@ def main(hp):
         metrics['fn'] = errors['fn']
         metrics['n_edge_gt_graph'] = np.sum(gt_graph)
         metrics['n_edge_learned_graph'] = np.sum(learned_graph)
+        metrics['valid_loss'] = valid_loss
 
     metrics['train_mse'] = prediction(trainer, False)
     metrics['val_mse'] = prediction(trainer, True)
