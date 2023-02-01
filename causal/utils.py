@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 
 class ALM:
@@ -13,8 +14,9 @@ class ALM:
                  omega_gamma: float,
                  omega_mu: float,
                  h_threshold: float,
-                 min_iter_convergence: int):
-        self.gamma = 0
+                 min_iter_convergence: int,
+                 dim_gamma: int = 1):
+        self.gamma = torch.zeros(dim_gamma)
         self.delta_gamma = -np.inf
         self.mu = mu_init
         self.min_iter_convergence = min_iter_convergence
@@ -54,7 +56,7 @@ class ALM:
             h = h_list[-1]
 
             # check if QPM has converged
-            if iteration > self.min_iter_convergence and h <= self.h_threshold:
+            if iteration > self.min_iter_convergence and torch.sum(h) <= self.h_threshold:
                 self.has_converged = True
             else:
                 # update delta_gamma
@@ -63,11 +65,11 @@ class ALM:
                 # if we have found a stationary point of the augmented loss
                 if abs(self.delta_gamma) < self.omega_gamma or self.delta_gamma > 0:
                     self.gamma += self.mu * h
-                    self.constraint_violation.append(h)
+                    self.constraint_violation.append(torch.sum(h))
 
                     # increase mu if the constraint has sufficiently decreased
                     # since the last subproblem
                     if len(self.constraint_violation) >= 2:
-                        if h > self.omega_mu * self.constraint_violation[-2]:
+                        if torch.sum(h) > self.omega_mu * self.constraint_violation[-2]:
                             self.mu *= self.mu_mult_factor
                             self.has_increased_mu = True

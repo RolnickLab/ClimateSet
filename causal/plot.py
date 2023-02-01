@@ -469,13 +469,13 @@ class Plotter:
                 for i in range(tau):
                     axes[i].set_title(f"t - {i+1}")
                     if row == 0:
-                        sns.heatmap(mat1[i], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                        sns.heatmap(mat1[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
                                     cmap="Blues", xticklabels=False, yticklabels=False)
                     elif row == 1:
                         sns.heatmap(mat2[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
                                     cmap="Blues", xticklabels=False, yticklabels=False)
                     elif row == 2:
-                        sns.heatmap(mat1[i] - mat2[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
+                        sns.heatmap(mat1[tau - i - 1] - mat2[tau - i - 1], ax=axes[i], cbar=False, vmin=-1, vmax=1,
                                     cmap="Blues", xticklabels=False, yticklabels=False)
 
         plt.savefig(os.path.join(path, f'adjacency_{name_suffix}.png'))

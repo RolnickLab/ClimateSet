@@ -319,25 +319,15 @@ class LatentTSDCD(nn.Module):
 
         # set distribution with obtained parameters
         p = distr.Normal(pz_mu.view(b, -1), pz_std.view(b, -1))
-        # test with fixed var: torch.ones_like(pz_mu.view(b, -1)) * 0.01)
         q = distr.Normal(q_mu_y.view(b, -1), q_std_y.view(b, -1))
         px_distr = self.distr_decoder(px_mu, px_std)
 
         # compute the KL, the reconstruction and the ELBO
-        # __import__('ipdb').set_trace()
-        # print(pz_mu.shape)
-        # print(pz_mu.view(b, -1).shape)
-        # kl = distr.kl_divergence(p, q).mean()
         # kl = distr.kl_divergence(q, p).mean()
-        kl = torch.mean(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, 2).mean()
-
-        # kl2 = self.get_kl(pz_mu, pz_std, q_mu_y, q_std_y)
-        # print(kl2.mean())
+        kl = torch.sum(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, 2).mean()
         assert kl >= 0, f"KL={kl} has to be >= 0"
-        recons = torch.mean(torch.sum(px_distr.log_prob(y), dim=2))
 
-        # __import__('ipdb').set_trace()
-        # print(torch.mean((px_mu - y)**2))
+        recons = torch.mean(torch.sum(px_distr.log_prob(y), dim=2))
         elbo = recons - self.coeff_kl * kl
 
         return elbo, recons, kl, px_mu

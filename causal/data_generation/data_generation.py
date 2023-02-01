@@ -336,7 +336,7 @@ class DataGeneratorWithLatent:
         metrics = {}
         # get recons term
         px_distr = distr.normal.Normal(self.X_mu, self.noise_x_std)
-        metrics["recons"] = torch.mean(px_distr.log_prob(self.X)).item()
+        metrics["recons"] = torch.mean(torch.sum(px_distr.log_prob(self.X), dim=3)).item()
 
         # get KL term
         # encode q(Zt | Xt)
@@ -345,7 +345,8 @@ class DataGeneratorWithLatent:
 
         # get p(Zt | Z<t)
         p = distr.normal.Normal(self.Z_mu, self.noise_z_std)
-        metrics["kl"] = distr.kl_divergence(q, p).mean().item()
+        kl = torch.sum(distr.kl_divergence(q, p), 3).mean().item()
+        metrics["kl"] = kl
 
         # get MCC
         mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
@@ -354,6 +355,7 @@ class DataGeneratorWithLatent:
 
         # ELBO with GT model
         metrics["elbo"] = metrics["recons"] - metrics["kl"]
+        print(metrics)
         self.best_metrics = metrics
 
 

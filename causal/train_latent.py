@@ -44,6 +44,7 @@ class TrainingLatent:
         self.train_sparsity_reg_list = []
         self.train_connect_reg_list = []
         self.train_ortho_cons_list = []
+        self.train_ortho_vector_cons_list = []
         self.train_acyclic_cons_list = []
         self.mu_ortho_list = []
         self.h_ortho_list = []
@@ -55,6 +56,7 @@ class TrainingLatent:
         self.valid_sparsity_reg_list = []
         self.valid_connect_reg_list = []
         self.valid_ortho_cons_list = []
+        self.valid_ortho_vector_cons_list = []
         self.valid_acyclic_cons_list = []
 
         self.plotter = Plotter()
@@ -108,7 +110,8 @@ class TrainingLatent:
                              self.hp.ortho_omega_gamma,
                              self.hp.ortho_omega_mu,
                              self.hp.ortho_h_threshold,
-                             self.hp.ortho_min_iter_convergence)
+                             self.hp.ortho_min_iter_convergence,
+                             dim_gamma=self.d_z)
         if self.instantaneous:
             self.QPM_acyclic = ALM(self.hp.acyclic_mu_init,
                                    self.hp.acyclic_mu_mult_factor,
@@ -129,7 +132,7 @@ class TrainingLatent:
                 # print and plot losses
                 if self.iteration % (self.hp.valid_freq * self.hp.print_freq) == 0:
                     self.print_results()
-                if self.logging_iter > 10 and self.iteration % (self.hp.valid_freq * self.hp.plot_freq) == 0:
+                if self.logging_iter > 0 and self.iteration % (self.hp.valid_freq * self.hp.plot_freq) == 0:
                     self.plotter.plot(self)
 
                     # if self.no_gt:
@@ -143,9 +146,9 @@ class TrainingLatent:
                 # train with penalty method
                 if self.iteration % self.hp.valid_freq == 0:
                     self.ALM_ortho.update(self.iteration,
-                                          self.valid_ortho_cons_list,
+                                          self.valid_ortho_vector_cons_list,
                                           self.valid_loss_list)
-                    if self.iteration > 20000:
+                    if self.iteration > 10000:
                         self.converged = self.ALM_ortho.has_converged
                         # self.converged = False
                     else:
@@ -181,10 +184,7 @@ class TrainingLatent:
         # final plotting and printing
         self.plotter.plot(self)
         self.print_results()
-
-        # save tensor W
-        w = self.model.encoder_decoder.get_w().detach().numpy()
-        np.save("w_tensor", w)
+        return self.valid_loss
 
     def train_step(self):
         self.model.train()
@@ -201,7 +201,6 @@ class TrainingLatent:
 
         # compute constraints (acyclicity and orthogonality)
         h_acyclic = torch.tensor([0.])
-        h_ortho = torch.tensor([0.])
         if self.instantaneous and not self.converged:
             h_acyclic = self.get_acyclicity_violation()
         # if self.hp.reg_coeff_connect:
@@ -209,8 +208,8 @@ class TrainingLatent:
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
-        loss = loss + self.ALM_ortho.gamma * h_ortho + \
-            0.5 * self.ALM_ortho.mu * h_ortho ** 2
+        loss = loss + (self.ALM_ortho.gamma @ h_ortho) + \
+            0.5 * self.ALM_ortho.mu * (h_ortho @ h_ortho)
         if self.instantaneous:
             loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
@@ -228,7 +227,7 @@ class TrainingLatent:
         self.train_kl = kl.item()
         self.train_sparsity_reg = sparsity_reg.item()
         self.train_connect_reg = connect_reg.item()
-        self.train_ortho_cons = h_ortho.item()
+        self.train_ortho_cons = h_ortho.detach()
         self.train_acyclic_cons = h_acyclic.item()
 
         return x, y, y_pred
@@ -248,10 +247,11 @@ class TrainingLatent:
 
         # compute constraints (acyclicity and orthogonality)
         h_acyclic = torch.tensor([0.])
-        h_ortho = torch.tensor([0.])
+        # h_ortho = torch.tensor([0.])
         if self.instantaneous and not self.converged:
             h_acyclic = self.get_acyclicity_violation()
         h_ortho = self.get_ortho_violation(self.model.encoder_decoder.get_w())
+
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
@@ -266,7 +266,7 @@ class TrainingLatent:
         self.valid_kl = kl.item()
         self.valid_sparsity_reg = sparsity_reg.item()
         self.valid_connect_reg = connect_reg.item()
-        self.valid_ortho_cons = h_ortho.item()
+        self.valid_ortho_cons = h_ortho.detach()
         self.valid_acyclic_cons = h_acyclic.item()
 
         return x, y, y_pred
@@ -305,7 +305,8 @@ class TrainingLatent:
 
         self.train_sparsity_reg_list.append(self.train_sparsity_reg)
         self.train_connect_reg_list.append(self.train_connect_reg)
-        self.train_ortho_cons_list.append(self.train_ortho_cons)
+        self.train_ortho_cons_list.append(torch.sum(self.train_ortho_cons))
+        self.train_ortho_vector_cons_list.append(self.train_ortho_cons)
         self.train_acyclic_cons_list.append(self.train_acyclic_cons)
 
         # valid
@@ -315,7 +316,8 @@ class TrainingLatent:
 
         self.valid_sparsity_reg_list.append(self.valid_sparsity_reg)
         self.valid_connect_reg_list.append(self.valid_connect_reg)
-        self.valid_ortho_cons_list.append(self.valid_ortho_cons)
+        self.valid_ortho_cons_list.append(torch.sum(self.valid_ortho_cons))
+        self.valid_ortho_vector_cons_list.append(self.valid_ortho_cons)
         self.valid_acyclic_cons_list.append(self.valid_acyclic_cons)
 
         self.mu_ortho_list.append(self.ALM_ortho.mu)
@@ -341,7 +343,7 @@ class TrainingLatent:
         print(f"Sparsity_reg: {self.train_sparsity_reg:.1e}")
         # print(f"Connect_reg: {self.train_connect_reg:.1e}")
 
-        print(f"ortho cons: {self.train_ortho_cons:.1e}")
+        print(f"ortho cons: {self.train_ortho_cons_list[-1]:.1e}")
         # print(f"ortho delta_gamma: {self.ALM_ortho.delta_gamma}")
         # print(f"ortho gamma: {self.ALM_ortho.gamma}")
         print(f"ortho mu: {self.ALM_ortho.mu}")
@@ -383,10 +385,12 @@ class TrainingLatent:
 
     def get_ortho_violation(self, w: torch.Tensor) -> float:
         if self.iteration > self.hp.schedule_ortho:
-            constraint = torch.tensor([0.])
+            # constraint = torch.tensor([0.])
             k = w.size(2)
-            for i in range(w.size(0)):
-                constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
+            # for i in range(w.size(0)):
+            #     constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
+            i = 0
+            constraint = torch.norm(w[i].T @ w[i] - torch.eye(k), p=2, dim=1)
             h = constraint / self.ortho_normalization
         else:
             h = torch.tensor([0.])
