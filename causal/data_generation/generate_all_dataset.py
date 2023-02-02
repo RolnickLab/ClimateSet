@@ -56,15 +56,17 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
 
 if __name__ == "__main__":
     varying_params = {
-        "prob": [0.2, 0.35],
-        "tau": [2, 3, 5, 10],
-        "d_z": [5, 10, 20, 50]
+        "prob": [0.15, 0.3],
+        "tau": [1, 2, 3, 5],
+        "d_z": [5, 10, 20]
     }
+    # dz could add 50
+    # tau could add 10
 
     # d_z: 10, tau: 2
     default_params = {
         "latent": True,
-        "tau": 2,
+        "tau": 1,
         "prob": 0.15,
         "d_z": 10,
         "d_x": 100,
