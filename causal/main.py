@@ -154,7 +154,9 @@ def main(hp):
         metrics['fn'] = errors['fn']
         metrics['n_edge_gt_graph'] = np.sum(gt_graph)
         metrics['n_edge_learned_graph'] = np.sum(learned_graph)
-        metrics['valid_loss'] = valid_loss
+
+        for key, val in valid_loss.items():
+            metrics[key] = val
 
     metrics['train_mse'] = prediction(trainer, False)
     metrics['val_mse'] = prediction(trainer, True)

@@ -324,11 +324,6 @@ class DataGeneratorWithLatent:
             self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
             self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
 
-        if torch.max(torch.abs(self.Z)) > 100000:
-            raise ValueError("The generative process doesn't seem to be stationary")
-
-        self.compute_metrics()
-
         return self.X, self.Z
 
 

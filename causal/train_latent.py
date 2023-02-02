@@ -181,10 +181,21 @@ class TrainingLatent:
 
             self.iteration += 1
 
+        if self.iteration >= self.hp.max_iteration:
+            self.threshold()
+
         # final plotting and printing
         self.plotter.plot(self)
         self.print_results()
-        return self.valid_loss
+
+        valid_loss = {"valid_loss": self.valid_loss,
+                      "valid_neg_elbo": self.valid_nll,
+                      "valid_recons": self.valid_recons,
+                      "valid_kl": self.valid_kl,
+                      "valid_sparsity_reg": self.valid_sparsity_reg,
+                      "valid_ortho_cons": torch.sum(self.valid_ortho_cons).item()}
+
+        return valid_loss
 
     def train_step(self):
         self.model.train()
@@ -265,8 +276,8 @@ class TrainingLatent:
         self.valid_recons = recons.item()
         self.valid_kl = kl.item()
         self.valid_sparsity_reg = sparsity_reg.item()
-        self.valid_connect_reg = connect_reg.item()
         self.valid_ortho_cons = h_ortho.detach()
+        self.valid_connect_reg = connect_reg.item()
         self.valid_acyclic_cons = h_acyclic.item()
 
         return x, y, y_pred
@@ -367,7 +378,7 @@ class TrainingLatent:
         if self.iteration > self.hp.schedule_reg:
             adj = self.model.get_adj()
             reg = self.hp.reg_coeff * torch.norm(adj, p=1)
-            reg /= adj.shape[0] ** 2
+            reg /= adj.numel()
         else:
             reg = torch.tensor([0.])
 

@@ -54,7 +54,17 @@ def main(hp, func_types: list, noise_types: list):
         raise NotImplementedError(f"Types of noise that are presently implemented: {noise_types}")
 
     # Generate, save and plot data
-    data = generator.generate()
+    for i in range(10):
+        data = generator.generate()
+
+        if torch.max(torch.abs(generator.Z)) > 100000:
+            print("Values of Z over 100000. The generative process doesn't seem to be stationary")
+        elif torch.isnan(generator.Z).any():
+            print("Some values of Z are Nan. The generative process doesn't seem to be stationary")
+        else:
+            generator.compute_metrics()
+            break
+
     print(f"Saving data at {hp.exp_path}...")
     generator.save_data(hp.exp_path)
     print("Plotting data...")
