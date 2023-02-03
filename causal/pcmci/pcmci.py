@@ -98,7 +98,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     graph = pcmci(df_z_hat, ind_test, tau_min, tau_max, pc_alpha)
 
     # 3 - Fit a linear model on training set
-    method = "torch_other"
+    method = "torch_linear"
 
     # Metrics: SHD, Pr/Re, MSE of pred, MCC
     metrics = {"shd": 0.,
@@ -125,7 +125,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
         predicted = pred.predict(list(range(d_z)))
         print(predicted)
 
-    elif method == "torch":
+    elif method == "torch_linear":
         train_mse, val_mse, flag_max_iter = train(graph,
                                                   z_hat,
                                                   idx_train,
