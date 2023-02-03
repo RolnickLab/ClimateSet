@@ -1,5 +1,6 @@
 {
     "exp_path": "causal_climate_exp",
+    "exp_id": 0,
     "use_data_config": true,
     "data_path": "../dataset/data0",
     "no_gt": false,
