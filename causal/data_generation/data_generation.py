@@ -170,7 +170,6 @@ class DataGeneratorWithLatent:
             A Tensor of tau graphs between the Z (shape: tau x (d x d_z) x (d x d_z))
         """
         prob_tensor = torch.ones((self.tau + 1, self.d * self.d_z, self.d * self.d_z)) * self.prob
-
         # set diagonal to 1 of the graph G_{t-1}
         if self.fixed_diagonal:
             prob_tensor[-2, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
@@ -179,13 +178,52 @@ class DataGeneratorWithLatent:
 
         if instantaneous:
             # for G_t sample a DAG
-            # G[-1] = self.sample_dag(G[0].shape)
-            raise ValueError("This is not implemented yet")
+            G[-1] = self.sample_dag(G[-1].shape)
         else:
             # no instantaneous links, so set G_t to 0
             G[-1] = 0
 
         return G
+
+
+    def sample_dag(self) -> Tuple[torch.Tensor, list]:
+        """
+        Sample a random DAG that will be used as an adjacency matrix
+        for instantaneous connections
+        Returns:
+            A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
+            and a list containing the causal order of the variables
+        """
+        prob_tensor = torch.ones((1, self.d, self.num_neigh * self.d)) * self.prob
+        # set all elements on and above the diagonal as 0
+        prob_tensor = torch.tril(prob_tensor, diagonal=-1)
+
+        G = torch.bernoulli(prob_tensor)
+
+        # G = torch.tensor([[[0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 0., 0., 0., 0.],
+        #                    [0., 0., 1., 1., 0., 0.],
+        #                    [0., 1., 0., 1., 0., 0.]]])
+        # causal_order = torch.tensor([0, 5, 2, 1, 4, 3])
+        # print(G)
+
+        # permutation
+        causal_order = torch.randperm(self.d)
+
+        # p_G = G[0, :, :]
+        # P = torch.zeros(self.d, self.d)
+        # P[torch.arange(self.d), causal_order] = 1
+        # p_G = torch.matmul(P, torch.matmul(p_G, P.T))
+
+        G = G[:, causal_order]
+        causal_order_dag = torch.arange(self.num_neigh * self.d)
+        causal_order_dag[self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d] = causal_order
+        G = G[:, :, causal_order_dag]
+        assert is_acyclic(G[0, :, self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d])
+
+        return G, causal_order
 
     def init_mlp_weight(self, model):
         """Function to initialize MLP's weight from a normal.

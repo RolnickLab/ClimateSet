@@ -17,7 +17,6 @@ class LinearMasked(nn.Module):
         y = x[:, :, -1]
 
         # TODO: make sure it is column that are parents
-        __import__('ipdb').set_trace()
         y_hat = torch.einsum("ndt,cdt->nc", x, w)
         return torch.mean(torch.sum(0.5 * ((y - y_hat))**2, dim=1))
 

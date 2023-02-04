@@ -98,7 +98,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     graph = pcmci(df_z_hat, ind_test, tau_min, tau_max, pc_alpha)
 
     # 3 - Fit a linear model on training set
-    method = "torch_linear"
+    method = "other"
 
     # Metrics: SHD, Pr/Re, MSE of pred, MCC
     metrics = {"shd": 0.,
