@@ -67,12 +67,14 @@ class StationaryMechanisms:
     The trick is to use nonlinear functions that are almost linear when x is
     large, and have coefficients with a spectrum <= 1.
     """
-    def __init__(self, graph, tau, d, d_z, linear=False, noise_z_std=0.1):
+    def __init__(self, graph, tau, d, d_z, causal_order, instantaneous, linear=False, noise_z_std=0.1):
         self.tau = tau
         self.d = d
         self.d_z = d_z
         self.noise_z_std = noise_z_std
         self.G = graph
+        self.causal_order = causal_order
+        self.instantaneous = instantaneous
 
         if linear:
             self.fct = [lambda x: x]
@@ -99,15 +101,25 @@ class StationaryMechanisms:
         if t >= self.tau + 1:
             t = self.tau
 
-        noise = np.random.normal(scale=self.noise_z_std, size=(self.d, self.d_z))
-
         z = z.reshape(z.shape[0], 1, -1)
         z = z.repeat(1, z.shape[-1], 1)
+        noise = np.random.normal(scale=self.noise_z_std, size=(self.d, self.d_z))
 
-        output = self.apply_vectorized(self.mech[-t-1:], z)
-        output = output * self.coeff[-t-1:]
-        output = np.sum(output, axis=(0, 2))
-        output = output.reshape(self.d, self.d_z)
+        if self.instantaneous:
+            output = self.apply_vectorized(self.mech[-t-1:-1], z[:-1])
+            output = output * self.coeff[-t-1:-1]
+            output = np.sum(output, axis=(0, 2))
+            output = output.reshape(self.d, self.d_z)
+            output += noise
+
+            for i in self.causal_order:
+                output[:, i] += self.coeff[-1, i] @ self.apply_vectorized(self.mech[-1, i], output[0])
+        else:
+            output = self.apply_vectorized(self.mech[-t-1:], z)
+            output = output * self.coeff[-t-1:]
+            output = np.sum(output, axis=(0, 2))
+            output = output.reshape(self.d, self.d_z)
+
         return torch.from_numpy(output), noise
 
 
@@ -116,7 +128,6 @@ class DataGeneratorWithLatent:
     Code use to generate synthetic data with latent variables.
     Sample a DAG between latents and generate (X, Z).
     """
-    # TODO: add instantaneous relations
     def __init__(self, hp):
         self.hp = hp
         self.n = hp.n
@@ -124,6 +135,7 @@ class DataGeneratorWithLatent:
         self.d_x = hp.d_x
         self.tau = hp.tau
         self.func_type = hp.func_type
+        self.instantaneous = hp.instantaneous
 
         self.noise_x_std = hp.noise_x_std
         self.noise_z_std = hp.noise_z_std
@@ -178,10 +190,11 @@ class DataGeneratorWithLatent:
 
         if instantaneous:
             # for G_t sample a DAG
-            G[-1] = self.sample_dag(G[-1].shape)
+            G[-1], self.causal_order = self.sample_dag()
         else:
             # no instantaneous links, so set G_t to 0
             G[-1] = 0
+            self.causal_order = None
 
         return G
 
@@ -194,34 +207,17 @@ class DataGeneratorWithLatent:
             A Tensor of tau graphs, size: (tau, d, num_neighbor x d)
             and a list containing the causal order of the variables
         """
-        prob_tensor = torch.ones((1, self.d, self.num_neigh * self.d)) * self.prob
+        prob_tensor = torch.ones((1, self.d_z, self.d_z)) * self.prob
         # set all elements on and above the diagonal as 0
         prob_tensor = torch.tril(prob_tensor, diagonal=-1)
 
         G = torch.bernoulli(prob_tensor)
 
-        # G = torch.tensor([[[0., 0., 0., 0., 0., 0.],
-        #                    [0., 0., 0., 0., 0., 0.],
-        #                    [0., 0., 0., 0., 0., 0.],
-        #                    [0., 0., 0., 0., 0., 0.],
-        #                    [0., 0., 1., 1., 0., 0.],
-        #                    [0., 1., 0., 1., 0., 0.]]])
-        # causal_order = torch.tensor([0, 5, 2, 1, 4, 3])
-        # print(G)
-
         # permutation
-        causal_order = torch.randperm(self.d)
-
-        # p_G = G[0, :, :]
-        # P = torch.zeros(self.d, self.d)
-        # P[torch.arange(self.d), causal_order] = 1
-        # p_G = torch.matmul(P, torch.matmul(p_G, P.T))
-
+        causal_order = torch.randperm(self.d_z)
         G = G[:, causal_order]
-        causal_order_dag = torch.arange(self.num_neigh * self.d)
-        causal_order_dag[self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d] = causal_order
-        G = G[:, :, causal_order_dag]
-        assert is_acyclic(G[0, :, self.num_neigh//2 * self.d: (self.num_neigh//2 + 1) * self.d])
+        G = G[:, :, causal_order]
+        assert is_acyclic(G[0])
 
         return G, causal_order
 
@@ -316,10 +312,14 @@ class DataGeneratorWithLatent:
                 self.f.append(self.sample_mlp(t))
         elif self.func_type == "add_nonlinear":
             self.f = StationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
+                                          self.causal_order,
+                                          instantaneous=self.instantaneous,
                                           linear=False,
                                           noise_z_std=self.noise_z_std)
         elif self.func_type == "linear":
             self.f = StationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
+                                          self.causal_order,
+                                          instantaneous=self.instantaneous,
                                           linear=True,
                                           noise_z_std=self.noise_z_std)
         else:
@@ -333,8 +333,11 @@ class DataGeneratorWithLatent:
             # sample the latent Z
             for t in range(self.t):
                 if t == 0:
+                    # for the first, sample from N(0, 1)
                     self.Z[i_n, t].normal_(0, 1)
                 else:
+                    # for the x first steps (< tau), apply the x first
+                    # mechanisms
                     if t < self.tau + 1:
                         idx = t
                         g = self.G[-t-1:]
@@ -367,6 +370,8 @@ class DataGeneratorWithLatent:
 
     def compute_metrics(self):
         metrics = {}
+        # WARNING: these metrics are not all valid when graph contains
+        # instantaneous connections!
         # get recons term
         px_distr = distr.normal.Normal(self.X_mu, self.noise_x_std)
         metrics["recons"] = torch.mean(torch.sum(px_distr.log_prob(self.X), dim=3)).item()
@@ -661,12 +666,10 @@ class DataGeneratorWithoutLatent:
                     # if self.instantaneous:
                     # TODO: sample in causal order (also when applying # permutation)
                     for i_d in self.causal_order:  # feature
-                        # __import__('ipdb').set_trace()
                         if self.d_x == 1:
                             # print(self.G.size())
                             # print(self.X.size())
                             # print(self.X[i_n, t - self.tau:t + t1, :, :self.d].size())
-                            # __import__('ipdb').set_trace()
                             x = self.X[i_n, t - self.tau:t + t1, :, :self.d]
                             # x = x.reshape(self.G.size(0), -1)
                         else:
