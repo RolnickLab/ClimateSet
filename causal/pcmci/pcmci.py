@@ -60,6 +60,10 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
         raise NotImplementedError("The case with contemporaneous relations is not implemented.")
 
     # Options: ind_test, tau_max, pc_alpha
+    # train_data = data[idx_train]
+    train_data = data[idx_train]
+    valid_data = data[idx_valid]
+
     tau_min = hp.tau_min
     tau_max = hp.tau
     # d_x = hp.d_x
@@ -84,9 +88,9 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     # 1 - Apply varimax+ to the data in order to find W
     # (the relations from the grid locations to the modes)
     if not hp.debug_gt_z:
-        z_hat, W = dim_reduc(data, d_z)
+        z_hat, W = dim_reduc(train_data, d_z)
+        z_hat_valid = valid_data @ W
     else:
-        # TODO: put more general
         W = gt_w
         z_hat = gt_z.squeeze(0)
         z_hat = z_hat.squeeze(1)
@@ -142,11 +146,13 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             gt_graph = gt_graph[:-1]
             gt_graph = gt_graph[::1]
             assert graph.shape == gt_graph.shape, f"{graph.shape} != {gt_graph.shape}"
+
             gt_z = gt_z.reshape(gt_z.shape[0] * gt_z.shape[1], gt_z.shape[2] * gt_z.shape[3])
+            gt_z = gt_z[idx_valid]
             # z_hat = z_hat.reshape(z_hat.shape[0] * z_hat.shape[1], z_hat.shape[2] * z_hat.shape[3])
 
             # find the permutation of Z
-            score, cc_program_perm, assignments = mean_corr_coef(gt_z, z_hat, 'pearson')
+            score, cc_program_perm, assignments = mean_corr_coef(gt_z, z_hat_valid, 'pearson')
 
             permutation = np.zeros((gt_graph.shape[1], gt_graph.shape[1]))
             permutation[np.arange(gt_graph.shape[1]), assignments[1]] = 1

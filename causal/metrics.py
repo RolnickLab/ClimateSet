@@ -61,9 +61,9 @@ def mcc_latent(model, data_loader, num_samples=int(1e5), method='pearson', indic
         # Load data
         while sample_counter < num_samples:
             x, y, z = data_loader.sample(64, valid=False)
-            z_hat, _, _ = model.encode(x, y)
+            _, z_hat, _ = model.encode(x, y)
 
-            z_list.append(z)
+            z_list.append(z[:, -1])
             z_hat_list.append(z_hat)
 
             sample_counter += x.shape[0]
@@ -72,8 +72,8 @@ def mcc_latent(model, data_loader, num_samples=int(1e5), method='pearson', indic
         z_hat = torch.cat(z_hat_list, 0)[:int(num_samples)]
         z, z_hat = z.cpu().numpy(), z_hat.cpu().numpy()
 
-        z = z.reshape(z.shape[0] * z.shape[1], z.shape[2] * z.shape[3])
-        z_hat = z_hat.reshape(z_hat.shape[0] * z_hat.shape[1], z_hat.shape[2] * z_hat.shape[3])
+        z = z.reshape(z.shape[0], z.shape[1] * z.shape[2])
+        z_hat = z_hat.reshape(z_hat.shape[0], z_hat.shape[1] * z_hat.shape[2])
 
         score, cc_program_perm, assignments = mean_corr_coef(z, z_hat, method, indices)
         return score, cc_program_perm, assignments, z, z_hat

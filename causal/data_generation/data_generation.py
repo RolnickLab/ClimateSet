@@ -389,6 +389,10 @@ class DataGeneratorWithLatent:
         # get MCC
         mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
                           self.Z.numpy().reshape(self.n, -1))
+        metrics["mcc_stoch"] = mcc[0, 1]
+
+        mcc = np.corrcoef(self.Z_mu.reshape(self.n, -1),
+                          self.Z.numpy().reshape(self.n, -1))
         metrics["mcc"] = mcc[0, 1]
 
         # ELBO with GT model
