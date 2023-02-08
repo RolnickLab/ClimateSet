@@ -11,7 +11,7 @@
     "tau_min": 1,
     "tau": 1,
     "random_seed": 0,
-    "pc_alpha": 0.2,
+    "pc_alpha": 0.001,
     "ci_test": "linear",
     "fct_type": "linear",
     "debug_gt_z": false

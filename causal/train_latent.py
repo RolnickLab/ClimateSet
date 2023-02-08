@@ -185,7 +185,7 @@ class TrainingLatent:
             self.threshold()
 
         # final plotting and printing
-        self.plotter.plot(self)
+        self.plotter.plot(self, save=True)
         self.print_results()
 
         valid_loss = {"valid_loss": self.valid_loss,
@@ -378,7 +378,7 @@ class TrainingLatent:
         if self.iteration > self.hp.schedule_reg:
             adj = self.model.get_adj()
             reg = self.hp.reg_coeff * torch.norm(adj, p=1)
-            reg /= adj.numel()
+            # reg /= adj.numel()
         else:
             reg = torch.tensor([0.])
 
@@ -387,7 +387,6 @@ class TrainingLatent:
     def get_acyclicity_violation(self) -> torch.Tensor:
         if self.iteration > 10000:
             adj = self.model.get_adj()[-1].view(self.d, self.d)
-            # __import__('ipdb').set_trace()
             h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
         else:
             h = torch.tensor([0.])
