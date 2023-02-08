@@ -29,6 +29,9 @@ def dim_reduc(data, d_z, method='varimax'):
 def pcmci(z_hat, ind_test, tau_min, tau_max, pc_alpha, alpha=0.05):
     pcmci = PCMCI(dataframe=z_hat, cond_ind_test=ind_test)
 
+    if pc_alpha == 0.:
+        pc_alpha = None
+
     results = pcmci.run_pcmciplus(tau_min=tau_min, tau_max=tau_max, pc_alpha=pc_alpha)
     graph = np.zeros_like(results['p_matrix'])
     graph[results['p_matrix'] < alpha] = 1
@@ -70,6 +73,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     # d_x = hp.d_x
     d_z = hp.d_z * hp.d
     pc_alpha = hp.pc_alpha
+    alpha = hp.alpha
 
     if hp.ci_test == "linear":
         ind_test = ParCorr()
@@ -100,7 +104,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
 
     # 2 - Apply PCMCI to the latent variables (modes)
     df_z_hat = pp.DataFrame(z_hat)
-    graph = pcmci(df_z_hat, ind_test, tau_min, tau_max, pc_alpha)
+    graph = pcmci(df_z_hat, ind_test, tau_min, tau_max, pc_alpha, alpha)
 
     # 3 - Fit a linear model on training set
     method = "other"
@@ -115,7 +119,9 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
 
     # TODO: check original method
     if method == "original":
-        pred = Prediction(dataframe=df_z_hat,
+        z = data @ W
+        df_z = pp.DataFrame(z)
+        pred = Prediction(dataframe=df_z,
                           cond_ind_test=ind_test,
                           prediction_model=prediction_model,
                           data_transform=sklearn.preprocessing.StandardScaler(),
@@ -128,7 +134,6 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
 
         pred.fit(target_predictors=all_predictors, tau_max=tau_max)
         predicted = pred.predict(list(range(d_z)))
-        print(predicted)
 
     elif method == "torch_linear":
         train_mse, val_mse, flag_max_iter = train(graph,
@@ -142,7 +147,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
 
     if not hp.no_gt:
         with torch.no_grad():
-            graph = np.transpose(graph, (2, 0, 1))
+            graph = np.transpose(graph, (2, 1, 0))
             graph = graph[1:]
             gt_graph = gt_graph[:-1]
             gt_graph = gt_graph[::1]
@@ -158,9 +163,10 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             permutation = np.zeros((gt_graph.shape[1], gt_graph.shape[1]))
             permutation[np.arange(gt_graph.shape[1]), assignments[1]] = 1
             gt_graph = permutation.T @ gt_graph @ permutation
+            # gt_graph = np.swapaxes(gt_graph, 1, 2)
 
             metrics['mcc'] = score
-            metrics['shd'] = shd(graph, gt_graph)
+            metrics['shd'] = shd(graph, gt_graph, True)
             metrics['precision'], metrics['recall'] = precision_recall(graph, gt_graph)
             errors = edge_errors(graph, gt_graph)
             metrics['tp'] = errors['tp']
@@ -169,8 +175,6 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             metrics['fn'] = errors['fn']
             metrics['n_edge_gt_graph'] = np.sum(gt_graph)
             metrics['n_edge_learned_graph'] = np.sum(graph)
-            print(metrics)
-            __import__('ipdb').set_trace()
             print(metrics)
 
     return graph, W, metrics
