@@ -18,6 +18,7 @@ def dim_reduc(data, d_z, method='varimax'):
 
         # Get matrix W, apply it to grid-level
         W = modes['weights']
+        # W = modes['unrotated_weights']
         z_hat = data @ W
     else:
         raise ValueError("only varimax is implemented")
@@ -168,6 +169,8 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             metrics['fn'] = errors['fn']
             metrics['n_edge_gt_graph'] = np.sum(gt_graph)
             metrics['n_edge_learned_graph'] = np.sum(graph)
+            print(metrics)
+            __import__('ipdb').set_trace()
             print(metrics)
 
     return graph, W, metrics

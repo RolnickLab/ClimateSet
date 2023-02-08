@@ -28,7 +28,7 @@ class Plotter:
         """
         if learner.latent:
             # save matrix W of the decoder and encoder
-            w_decoder = learner.model.encoder_decoder.get_w().detach(False).numpy()
+            w_decoder = learner.model.encoder_decoder.get_w(False).detach().numpy()
             np.save(os.path.join(learner.hp.exp_path, "w_decoder"), w_decoder)
             w_encoder = learner.model.encoder_decoder.get_w(True).detach().numpy()
             np.save(os.path.join(learner.hp.exp_path, "w_encoder"), w_encoder)
@@ -90,12 +90,15 @@ class Plotter:
         self.gt_graph = data_loader.gt_dag
 
 
-    def plot(self, learner):
+    def plot(self, learner, save=False):
         """
         Main plotting function.
         Plot the learning curves and
         if the ground-truth is known the adjacency and adjacency through time.
         """
+        if save:
+            self.save(learner)
+
         # plot learning curves
         if learner.latent:
             # plot distribution of weights
