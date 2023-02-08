@@ -146,6 +146,8 @@ if __name__ == "__main__":
     # Specific to PCMCI
     parser.add_argument("--pc-alpha", type=float,
                         help="Significance level (alpha) used by PCMCI")
+    parser.add_argument("--alpha", type=float,
+                        help="Significance level (alpha) used by PCMCI")
     parser.add_argument("--ci-test", type=str,
                         help="Type of conditional independence test used by PCMCI")
     parser.add_argument("--fct-type", type=str,
