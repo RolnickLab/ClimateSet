@@ -5,7 +5,7 @@ import os
 import numpy as np
 import xarray as xr
 
-from data_generation.parameters.constants import RES_TO_CHUNKSIZE
+from data_building.parameters.esgf_server_constants import RES_TO_CHUNKSIZE
 
 
 #path to folder where data downloaded with a wget script is located
