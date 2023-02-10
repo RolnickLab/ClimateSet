@@ -8,8 +8,8 @@ import netCDF4 as nc
 from pathlib import Path
 from email.policy import default
 
-from data_generation.parameters.constants import RES_TO_CHUNKSIZE
-from data_generation.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
+from data_building.parameters.esgf_server_constants import RES_TO_CHUNKSIZE
+from data_building.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
 
 
 overwrite = False
