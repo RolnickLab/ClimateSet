@@ -18,9 +18,9 @@ from typing import Dict, Optional, List, Callable, Tuple, Union
 
 from data_transform import AbstractTransform
 from data_normalization import Normalizer, NormalizationMethod
-from data_generation.parameters.data_paths import PROCESSED_DATA
-from data_generation.parameters.constants import VAR_SOURCE_LOOKUP
-from data_generation.mother_data.utils.helper_funcs import get_keys_from_value
+from data_building.parameters.data_paths import PROCESSED_DATA
+from data_building.parameters.esgf_server_constants import VAR_SOURCE_LOOKUP
+from data_building.utils.helper_funcs import get_keys_from_value
 
 
 class Causalpaca_HdF5_Dataset(
