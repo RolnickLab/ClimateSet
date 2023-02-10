@@ -55,7 +55,7 @@ export CUDA_VISIBLE_DEVICES=0
 
 # 7. Change working directory to $SLURM_TMPDIR
 
-cd $SLURM_TMPDIR/causalpaca/data_generation/
+cd $SLURM_TMPDIR/causalpaca/data_building/
 echo "pwd after changing to TMP/causalpaca/data_generation/"
 pwd
 
@@ -64,7 +64,7 @@ pwd
 #python3.7 testing/test_downloader.py
 
 echo "Running generators/mother_data/run/downloader.py ..."
-python3.7 generators/mother_data/run/downloader.py
+python3.7 builders/downloader.py
 echo "pwd after running downloader"
 pwd
 

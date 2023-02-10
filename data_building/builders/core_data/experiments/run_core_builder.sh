@@ -51,12 +51,12 @@ export CUDA_VISIBLE_DEVICES=0
 
 # 7. Change working directory to $SLURM_TMPDIR
 
-cd $SLURM_TMPDIR/causalpaca/data_generation/
+cd $SLURM_TMPDIR/causalpaca/data_building/
 
 # 8. Run Python
 
-echo "Running /mother_data/birth.py ..."
-python3.7 mother_data/birth.py
+echo "Running builders/core_data/build_core_dataset.py ..."
+python3.7 builders/core_data/build_core_dataset.py
 
 
 # 9. Copy output to scratch
