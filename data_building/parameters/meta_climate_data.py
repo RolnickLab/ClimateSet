@@ -62,7 +62,7 @@ CHOSEN_INTERPOLATIONS = {"nan"}
 # TODO create a fixed list for all vars: which aggregation and interpolation
 
 ### ALL PARAMS IN DICT #########################################################
-MOTHER_PARAMS = {
+CORE_PARAMS = {
     "models": MODELS,
     "scenarios": SCENARIOS,
     "years": YEARS,
@@ -73,4 +73,9 @@ MOTHER_PARAMS = {
     "grid": GRID,
     "aggregations": CHOSEN_AGGREGATIONS,
     "interpolations": CHOSEN_INTERPOLATIONS,
+}
+
+USER_PARAMS = {
+ #TODO
+
 }
