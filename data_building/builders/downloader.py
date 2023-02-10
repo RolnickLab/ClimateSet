@@ -18,9 +18,12 @@ from data_generation.parameters.constants import (
     PASSWORD,
     SUPPORTED_EXPERIMENTS,
 )
-from data_generation.parameters.mother_params import VARS, SCENARIOS
-from data_generation.utils.helper_funcs import get_keys_from_value, get_MIP
+from data_building.parameters.esm_params import VARS, SCENARIOS
+from data_building.utils.helper_funcs import get_keys_from_value, get_MIP
 
+# Question @Charlie (by Julia): Why are we not doing the downloading process
+# as it is done here? https://github.com/aditya-grover/climate-learn/blob/main/src/climate_learn/data/download.py
+# we could use subprocess.check_call() with the parameter "--no-check-certificate" to circumvent the cookie situation
 
 overwrite = False  # flag if files should be overwritten
 
