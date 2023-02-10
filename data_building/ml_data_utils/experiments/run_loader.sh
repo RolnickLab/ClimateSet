@@ -62,7 +62,7 @@ pwd
 
 
 echo "Running data_generation/loaders/datasets.py ..."
-python3.7 data_generation/loaders/datasets.py
+python3.7 data_building/ml_data_utils/datasets.py
 
 # 10. Experiment is finished
 
