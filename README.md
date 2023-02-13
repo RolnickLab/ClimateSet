@@ -25,10 +25,11 @@ So, right now the installation is:
 
 Question: Can I somehow move the xesmf package into the venv?
 
-TODO: python3.7 instead of 3.9, Charlie fixed this to make 3.7 possible
+TODO: use python3.9 everywhere (and test if that works!) -> update bashscripts for cluster etc.
+TODO: how to handle ESMPy==8.2.0
 TODO: use cdo command line tool, installation option a) https://github.com/koldunovn/nk_public_notebooks/blob/master/Install%20climate%20data%20operators%20%28cdo%29%20on%20Ubuntu%20with%20netCDF4%20and%20hdf5%20support.ipynb
   option b) https://www.studytrails.com/2012/12/28/install-climate-data-operator-cdo-with-netcdf-grib2-and-hdf5-support/
-  
+
 Beforehand, the installation was like that:
 
 python -m venv env
