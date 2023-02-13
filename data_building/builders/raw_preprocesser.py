@@ -6,7 +6,7 @@ import xarray as xr
 import netCDF4 as nc
 
 from pathlib import Path
-from email.policy import default
+from email.policy import default # TODO are we using this???
 
 from data_building.parameters.esgf_server_constants import RES_TO_CHUNKSIZE
 from data_building.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
