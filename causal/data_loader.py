@@ -42,7 +42,16 @@ class DataLoader:
 
         # Load and split the data
         self._load_data()
+        standardize = False
+        if standardize:
+            self._standardize()
         self._split_data()
+
+    def _standardize(self):
+        mean = np.mean(self.x)
+        # __import__('ipdb').set_trace()
+        std = np.std(self.x)
+        self.x = (self.x - mean) / std
 
     def _load_data(self):
         """
@@ -81,8 +90,18 @@ class DataLoader:
         if self.n == 1:
             self.n_train = int(t_max * self.ratio_train)
             self.n_valid = int(t_max * self.ratio_valid)
-            self.idx_train = np.arange(self.tau, self.n_train)
-            self.idx_valid = np.arange(self.n_train, self.n_train + self.n_valid)
+            idx_train = []
+            idx_valid = []
+            for i in range(t_max // 100):
+                start = i * 100
+                idx_train.extend(range(start + self.tau, start + int(100 * self.ratio_train)))
+                idx_valid.extend(range(start + int(100 * self.ratio_train), start + 100))
+            self.idx_train = np.array(idx_train)
+            self.idx_valid = np.array(idx_valid)
+
+            # train = X first, valid = 1 - X last examples
+            # self.idx_train = np.arange(self.tau, self.n_train)
+            # self.idx_valid = np.arange(self.n_train, self.n_train + self.n_valid)
         else:
             self.n_train = int(self.n * self.ratio_train)
             self.n_valid = int(self.n * self.ratio_valid)

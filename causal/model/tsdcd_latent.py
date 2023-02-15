@@ -278,15 +278,20 @@ class LatentTSDCD(nn.Module):
         mu = torch.zeros(b, self.d, self.d_z)
         std = torch.zeros(b, self.d, self.d_z)
 
+        # learning conditional variance
+        # for i in range(self.d):
+        #     pz_params = torch.zeros(b, self.d_z, 2)
+        #     for k in range(self.d_z):
+        #         pz_params[:, k] = self.transition_model(z, mask[:, :, i * self.d_z + k], i, k)
+        #     mu[:, i] = pz_params[:, :, 0]
+        #     std[:, i] = torch.exp(0.5 * pz_params[:, :, 1])
+
         for i in range(self.d):
-            pz_params = torch.zeros(b, self.d_z, 2)
+            pz_params = torch.zeros(b, self.d_z, 1)
             for k in range(self.d_z):
                 pz_params[:, k] = self.transition_model(z, mask[:, :, i * self.d_z + k], i, k)
             mu[:, i] = pz_params[:, :, 0]
-            # factor to ensure that doesnt output inf when training is starting
-            # factor = 1e-10
-            # std[:, i] = 0.5 * torch.exp(factor * pz_params[:, :, 1])
-            std[:, i] = torch.exp(0.5 * pz_params[:, :, 1])
+            std[:, i] = torch.exp(0.5 * self.transition_model.logvar[i])
 
         return mu, std
 
@@ -324,7 +329,9 @@ class LatentTSDCD(nn.Module):
 
         # compute the KL, the reconstruction and the ELBO
         # kl = distr.kl_divergence(q, p).mean()
-        kl = torch.sum(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, dim=[1, 2]).mean()
+        kl_raw = 0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5
+        kl = torch.sum(kl_raw, dim=[2]).mean()
+        # kl = torch.sum(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, dim=[1, 2]).mean()
         assert kl >= 0, f"KL={kl} has to be >= 0"
 
         recons = torch.mean(torch.sum(px_distr.log_prob(y), dim=[1, 2]))
@@ -390,8 +397,8 @@ class EncoderDecoder(nn.Module):
             unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
             self.w_q = nn.Parameter(unif / torch.tensor(self.d_z))
 
-        self.logvar_encoder = nn.Parameter(torch.ones(d) * 0.01)
-        self.logvar_decoder = nn.Parameter(torch.ones(d) * 0.01)
+        self.logvar_encoder = nn.Parameter(torch.ones(d) * -4)
+        self.logvar_decoder = nn.Parameter(torch.ones(d) * -4)
 
     def forward(self, x, i, encoder: bool):
         w = self.get_w(encoder)[i]
@@ -452,11 +459,19 @@ class TransitionModel(nn.Module):
         self.d = d
         self.d_z = d_z
         self.tau = tau
+        output_var = False
 
         # initialize NNs
         self.num_layers = num_layers
         self.num_hidden = num_hidden
-        self.num_output = num_output
+        if output_var:
+            self.num_output = num_output
+        else:
+            self.num_output = 1
+            # self.logvar = torch.ones(1)  * 0. # nn.Parameter(torch.ones(d) * 0.1)
+            # self.logvar = nn.Parameter(torch.ones(d) * -4)
+            self.logvar = nn.Parameter(torch.ones(d, d_z) * -4)
+
         self.nn = nn.ModuleList(MLP(num_layers, num_hidden, d * d_z * tau, self.num_output) for i in range(d * d_z))
         # self.nn = MLP(num_layers, num_hidden, d * k * k, self.num_output)
 

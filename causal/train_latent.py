@@ -72,6 +72,7 @@ class TrainingLatent:
             self.adj_w_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.d, self.d_x, self.d_z))
         self.logvar_encoder_tt = []
         self.logvar_decoder_tt = []
+        self.logvar_transition_tt = []
 
         # self.model.mask.fix(self.gt_dag)
 
@@ -339,6 +340,7 @@ class TrainingLatent:
             self.adj_w_tt[int(self.iteration / self.hp.valid_freq)] = w
         self.logvar_decoder_tt.append(self.model.encoder_decoder.logvar_decoder[0].item())
         self.logvar_encoder_tt.append(self.model.encoder_decoder.logvar_encoder[0].item())
+        self.logvar_transition_tt.append(self.model.transition_model.logvar[0, 0].item())
 
     def print_results(self):
         """Print values of many variable: losses, constraint violation, etc.
@@ -347,7 +349,7 @@ class TrainingLatent:
         print(f"Iteration #{self.iteration}")
         print(f"Converged: {self.converged}")
 
-        print(f"ELBO: {self.train_nll:.4f}")
+        print(f"ELBO: {-self.train_nll:.4f}")
         print(f"Recons: {self.train_recons:.4f}")
         print(f"KL: {self.train_kl:.4f}")
 
@@ -364,7 +366,7 @@ class TrainingLatent:
             print(f"acyclic gamma: {self.QPM_ortho.mu}")
         print("-------------------------------")
 
-        print(f"valid_ELBO: {self.valid_nll:.4f}")
+        print(f"valid_ELBO: {-self.valid_nll:.4f}")
         # print(f"valid_recons: {self.valid_recons:.4f}")
         # print(f"valid_kl: {self.valid_kl:.4f}")
         print(f"patience: {self.patience}")

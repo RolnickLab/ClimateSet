@@ -36,6 +36,7 @@ class Plotter:
             # save variance of encoder and decoder
             np.save(os.path.join(learner.hp.exp_path, "logvar_encoder_tt"), learner.logvar_encoder_tt)
             np.save(os.path.join(learner.hp.exp_path, "logvar_decoder_tt"), learner.logvar_decoder_tt)
+            np.save(os.path.join(learner.hp.exp_path, "logvar_transition_tt"), learner.logvar_transition_tt)
 
             # save adj_tt and adj_w_tt, adjacencies through time
             np.save(os.path.join(learner.hp.exp_path, "adj_tt"), learner.adj_tt)
@@ -69,6 +70,7 @@ class Plotter:
         # load log-variance of encoder and decoder
         self.logvar_encoder_tt = np.load(os.path.join(exp_path, "logvar_encoder_tt"))
         self.logvar_decoder_tt = np.load(os.path.join(exp_path, "logvar_decoder_tt"))
+        self.logvar_transition_tt = np.load(os.path.join(exp_path, "logvar_transition_tt"))
 
         # load losses and penalties
         self.penalties = {}
@@ -143,7 +145,8 @@ class Plotter:
                                        path=learner.hp.exp_path,
                                        fname="losses")
             logvar = [{"name": "logvar encoder", "data": learner.logvar_encoder_tt, "s": "-"},
-                      {"name": "logvar decoder", "data": learner.logvar_decoder_tt, "s": "-"}]
+                      {"name": "logvar decoder", "data": learner.logvar_decoder_tt, "s": "-"},
+                      {"name": "logvar transition", "data": learner.logvar_transition_tt, "s": "-"}]
             self.plot_learning_curves2(losses=logvar,
                                        iteration=learner.logging_iter,
                                        plot_through_time=learner.hp.plot_through_time,

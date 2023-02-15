@@ -150,7 +150,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             graph = np.transpose(graph, (2, 1, 0))
             graph = graph[1:]
             gt_graph = gt_graph[:-1]
-            gt_graph = gt_graph[::1]
+            gt_graph = gt_graph[::-1]
             assert graph.shape == gt_graph.shape, f"{graph.shape} != {gt_graph.shape}"
 
             gt_z = gt_z.reshape(gt_z.shape[0] * gt_z.shape[1], gt_z.shape[2] * gt_z.shape[3])
@@ -175,6 +175,8 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             metrics['fn'] = errors['fn']
             metrics['n_edge_gt_graph'] = np.sum(gt_graph)
             metrics['n_edge_learned_graph'] = np.sum(graph)
+            print(metrics)
+            __import__('ipdb').set_trace()
             print(metrics)
 
     return graph, W, metrics

@@ -71,15 +71,15 @@ def main(hp, func_types: list, noise_types: list):
     plot_adjacency_graphs(generator.G, hp.exp_path)
 
     plot_x(generator.X.detach().numpy(), hp.exp_path)
-    # if hp.latent:
-    #     plot_z(generator.Z.detach().numpy(), hp.exp_path)
+    if hp.latent:
+        plot_z(generator.Z.detach().numpy(), hp.exp_path)
     #     plot_adjacency_w(generator.w, hp.exp_path)
 
     return data
 
 
 if __name__ == "__main__":
-    func_types = ["linear", "mlp", "add_nonlinear"]
+    func_types = ["linear", "nonlinear", "add_nonlinear"]
     noise_types = ["gaussian", "laplacian", "uniform"]
 
     parser = argparse.ArgumentParser(description="Code use to generate synthetic data to \
@@ -137,6 +137,8 @@ if __name__ == "__main__":
                         help="'Radius' of neighboring gridcells that have an influence")
     parser.add_argument("--eta", type=int, default=1.0,
                         help="Weight decay applied to linear coefficients")
+    parser.add_argument("--radius-correct", type=float, default=1e-1,
+                        help="Divide radius by this value")
 
     # Neural network (NN) architecture
     parser.add_argument("--num-layers", type=int, default=1,

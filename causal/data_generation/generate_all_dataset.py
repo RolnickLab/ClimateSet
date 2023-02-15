@@ -29,6 +29,10 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
                         params[key_param] = p
 
                         params["func_type"] = func_type
+                        if func_type == "linear":
+                            params["radius_correct"] = 1e-2
+                        elif func_type == "add_nonlinear":
+                            params["radius_correct"] = 1e0
                         params["fixed_diagonal"] = fixed_diag
                         params["exp_id"] = i_exp
                         params["random_seed"] = seed + i_exp
@@ -76,7 +80,8 @@ if __name__ == "__main__":
         "noise_type": "gaussian",
         "instantaneous": False,
         "noise_x_std": 1,
-        "noise_z_std": 1
+        "noise_z_std": 1,
+        "radius_correct": 1e-1
     }
 
     generate_all_dataset("data", varying_params, default_params)

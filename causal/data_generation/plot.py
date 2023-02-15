@@ -49,7 +49,7 @@ def plot_adjacency_w(w: np.ndarray, path: str):
     plt.close()
 
 
-def plot_x(x: np.ndarray, path: str, t: int = 500, d_max: int = 5, dx_max: int = 8):
+def plot_x(x: np.ndarray, path: str, t: int = 200, d_max: int = 5, dx_max: int = 8):
     """Plot the timeseries data X from T - t to T.
     (where T is the total number of timesteps)
     Generate a figure for each feature.
@@ -79,15 +79,25 @@ def plot_x(x: np.ndarray, path: str, t: int = 500, d_max: int = 5, dx_max: int =
         _, axes = plt.subplots(nrows=d_x, ncols=1)
         if d_x == 1:
             # specific case when there is only one gridcell
+            axes.plot(x[i_n, :t, i, 0])
+        else:
+            for i_x in range(d_x):
+                axes[i_x].plot(x[i_n, :t, i, i_x])
+        plt.savefig(os.path.join(path, f'x_first_{i}.png'))
+        plt.close()
+
+        _, axes = plt.subplots(nrows=d_x, ncols=1)
+        if d_x == 1:
+            # specific case when there is only one gridcell
             axes.plot(x[i_n, -t:, i, 0])
         else:
             for i_x in range(d_x):
                 axes[i_x].plot(x[i_n, -t:, i, i_x])
-        plt.savefig(os.path.join(path, f'x_{i}.png'))
+        plt.savefig(os.path.join(path, f'x_last_{i}.png'))
         plt.close()
 
 
-def plot_z(z: np.ndarray, path: str, t: int = 500):
+def plot_z(z: np.ndarray, path: str, t: int = 200):
     """Plot the timeseries data Z (which are latent) from 0 to t.
     Generate a figure for each feature.
 
@@ -108,5 +118,18 @@ def plot_z(z: np.ndarray, path: str, t: int = 500):
         _, axes = plt.subplots(nrows=k, ncols=1)
         for i_k in range(k):
             axes[i_k].plot(z[i_n, :t, i, i_k])
-        plt.savefig(os.path.join(path, f'z_{i}.png'))
+        plt.savefig(os.path.join(path, f'z_first_{i}.png'))
         plt.close()
+        print(f"z0_first_mean: {np.mean(z[0, 100:t, i, 0])}, std: {np.std(z[0, :t, i, 0])}")
+        print(f"z1_first_mean: {np.mean(z[0, 100:t, i, 1])}, std: {np.std(z[0, :t, i, 1])}")
+        print(f"z2_first_mean: {np.mean(z[0, 100:t, i, 2])}, std: {np.std(z[0, :t, i, 2])}")
+
+    for i in range(d):
+        _, axes = plt.subplots(nrows=k, ncols=1)
+        for i_k in range(k):
+            axes[i_k].plot(z[i_n, -t:, i, i_k])
+        plt.savefig(os.path.join(path, f'z_last_{i}.png'))
+        plt.close()
+        print(f"z0_last_mean: {np.mean(z[0, -t:, i, 0])}, std: {np.std(z[0, -t:, i, 0])}")
+        print(f"z1_last_mean: {np.mean(z[0, -t:, i, 1])}, std: {np.std(z[0, -t:, i, 2])}")
+        print(f"z2_last_mean: {np.mean(z[0, -t:, i, 1])}, std: {np.std(z[0, -t:, i, 2])}")

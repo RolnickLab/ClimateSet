@@ -336,7 +336,7 @@ if __name__ == "__main__":
             params = json.load(f)
 
         for key, val in params.items():
-            if default_params[key] is None or not default_params[key]:
+            if default_params[key] is None:  # or not default_params[key]:
                 default_params[key] = val
         args = Bunch(**default_params)
 
