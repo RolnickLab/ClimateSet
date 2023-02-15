@@ -190,6 +190,12 @@ class TrainingLatent:
         self.print_results()
 
         valid_loss = {"valid_loss": self.valid_loss,
+                      "best_valid_loss": self.best_valid_loss,
+                      "valid_loss1": -self.valid_loss_list[-1],
+                      "valid_loss2": -self.valid_loss_list[-2],
+                      "valid_loss3": -self.valid_loss_list[-3],
+                      "valid_loss4": -self.valid_loss_list[-4],
+                      "valid_loss5": -self.valid_loss_list[-5],
                       "valid_neg_elbo": self.valid_nll,
                       "valid_recons": self.valid_recons,
                       "valid_kl": self.valid_kl,
