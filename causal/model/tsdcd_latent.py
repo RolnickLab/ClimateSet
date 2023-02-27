@@ -10,25 +10,25 @@ class Mask(nn.Module):
         super().__init__()
 
         self.d = d
-        self.instantaneous = instantaneous
-        if self.instantaneous:
-            self.tau = tau + 1
-        else:
-            self.tau = tau
         self.d_x = d_x
+        self.tau = tau
         self.latent = latent
+        self.instantaneous = instantaneous
         self.drawhard = drawhard
         self.fixed = False
         self.fixed_output = None
         self.uniform = distr.uniform.Uniform(0, 1)
 
         if self.latent:
-            self.param = nn.Parameter(torch.ones((tau, d * d_x, d * d_x)) * 5)
+            self.param = nn.Parameter(torch.ones((self.tau, d * d_x, d * d_x)) * 5)
             self.fixed_mask = torch.ones_like(self.param)
+            if self.instantaneous:
+                # TODO: G[0] or G[-1]
+                self.fixed_mask[-1, torch.arange(self.fixed_mask.size(1)), torch.arange(self.fixed_mask.size(2))] = 0
         else:
             if self.instantaneous:
                 # initialize mask as log(mask_ij) = 1
-                self.param = nn.Parameter(torch.ones((tau + 1, d, d, d_x)) * 5)
+                self.param = nn.Parameter(torch.ones((self.tau, d, d, d_x)) * 5)
                 self.fixed_mask = torch.ones_like(self.param)
                 # set diagonal 0 for G_t0
                 self.fixed_mask[-1, torch.arange(self.fixed_mask.size(1)), torch.arange(self.fixed_mask.size(2))] = 0
@@ -199,6 +199,11 @@ class LatentTSDCD(nn.Module):
         self.debug_gt_w = debug_gt_w
         self.tied_w = tied_w
 
+        if self.instantaneous:
+            self.total_tau = tau + 1
+        else:
+            self.total_tau = tau
+
         if self.no_gt:
             self.gt_w = None
             self.gt_graph = None
@@ -227,12 +232,12 @@ class LatentTSDCD(nn.Module):
             raise NotImplementedError("This distribution is not implemented yet.")
 
         self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.debug_gt_w, self.gt_w, self.tied_w)
-        self.transition_model = TransitionModel(self.d, self.d_z, self.tau,
+        self.transition_model = TransitionModel(self.d, self.d_z, self.total_tau,
                                                 self.num_layers,
                                                 self.num_hidden,
                                                 self.num_output)
 
-        self.mask = Mask(d, d_z, tau, instantaneous=instantaneous, latent=True, drawhard=hard_gumbel)
+        self.mask = Mask(d, d_z, self.total_tau, instantaneous=instantaneous, latent=True, drawhard=hard_gumbel)
         if self.debug_gt_graph:
             if self.instantaneous:
                 self.mask.fix(self.gt_graph)
@@ -317,7 +322,10 @@ class LatentTSDCD(nn.Module):
 
         # get params of the transition model p(z^t | z^{<t})
         mask = self.mask(b)
-        pz_mu, pz_std = self.transition(z[:, :-1].clone(), mask)
+        if self.instantaneous:
+            pz_mu, pz_std = self.transition(z.clone(), mask)
+        else:
+            pz_mu, pz_std = self.transition(z[:, :-1].clone(), mask)
 
         # get params from decoder p(x^t | z^t)
         px_mu, px_std = self.decode(z[:, -1])

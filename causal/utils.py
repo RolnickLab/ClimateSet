@@ -27,6 +27,7 @@ class ALM:
         self.stop_crit_window = 100
         self.constraint_violation = []
         self.has_converged = False
+        self.dim_gamma = dim_gamma
 
     def _compute_delta_gamma(self, iteration: int, val_loss: list):
         # compute delta for gamma
@@ -54,9 +55,13 @@ class ALM:
 
         if len(val_loss) >= 3:
             h = h_list[-1]
+            if self.dim_gamma > 1:
+                h_scalar = torch.sum(h)
+            else:
+                h_scalar = h
 
             # check if QPM has converged
-            if iteration > self.min_iter_convergence and torch.sum(h) <= self.h_threshold:
+            if iteration > self.min_iter_convergence and h_scalar <= self.h_threshold:
                 self.has_converged = True
             else:
                 # update delta_gamma
@@ -65,11 +70,11 @@ class ALM:
                 # if we have found a stationary point of the augmented loss
                 if abs(self.delta_gamma) < self.omega_gamma or self.delta_gamma > 0:
                     self.gamma += self.mu * h
-                    self.constraint_violation.append(torch.sum(h))
+                    self.constraint_violation.append(h_scalar)
 
                     # increase mu if the constraint has sufficiently decreased
                     # since the last subproblem
                     if len(self.constraint_violation) >= 2:
-                        if torch.sum(h) > self.omega_mu * self.constraint_violation[-2]:
+                        if h_scalar > self.omega_mu * self.constraint_violation[-2]:
                             self.mu *= self.mu_mult_factor
                             self.has_increased_mu = True

@@ -32,7 +32,7 @@
     "ortho_min_iter_convergence": 100,
     "acyclic_omega_gamma": 0.01,
     "acyclic_omega_mu": 0.9,
-    "acyclic_mu_init": 1e-6,
+    "acyclic_mu_init": 1e1,
     "acyclic_mu_mult_factor": 2,
     "acyclic_h_threshold": 1e-8,
     "acyclic_min_iter_convergence": 1000,

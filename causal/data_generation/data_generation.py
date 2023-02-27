@@ -400,7 +400,8 @@ class DataGeneratorWithLatent:
         """
         # add a 'buffer' of 100 steps to make sure we get the stationary
         # distribution
-        self.t += 100
+        mixing_time = 10
+        self.t += mixing_time
 
         # initialize Z for the first timesteps
         self.Z = torch.zeros((self.n, self.t, self.d, self.d_z))
@@ -481,9 +482,14 @@ class DataGeneratorWithLatent:
             self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
             self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
 
-        self.t -= 100
+        self.t -= mixing_time
 
-        return self.X[100:], self.Z[100:]
+        self.X = self.X[:, mixing_time:]
+        print(self.X.shape)
+        self.X_mu = self.X_mu[:, mixing_time:]
+        self.Z = self.Z[:, mixing_time:]
+        self.Z_mu = self.Z_mu[:, mixing_time:]
+        return self.X, self.Z
 
 
     def compute_metrics(self):
@@ -505,13 +511,13 @@ class DataGeneratorWithLatent:
         metrics["kl"] = kl
 
         # get MCC
-        mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
-                          self.Z.numpy().reshape(self.n, -1))
-        metrics["mcc_stoch"] = mcc[0, 1]
+        # mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
+        #                   self.Z.numpy().reshape(self.n, -1))
+        # metrics["mcc_stoch"] = mcc[0, 1]
 
-        mcc = np.corrcoef(self.Z_mu.reshape(self.n, -1),
-                          self.Z.numpy().reshape(self.n, -1))
-        metrics["mcc"] = mcc[0, 1]
+        # mcc = np.corrcoef(self.Z_mu.reshape(self.n, -1),
+        #                   self.Z.numpy().reshape(self.n, -1))
+        # metrics["mcc"] = mcc[0, 1]
 
         # ELBO with GT model
         metrics["elbo"] = metrics["recons"] - metrics["kl"]
