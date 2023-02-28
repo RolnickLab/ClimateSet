@@ -120,20 +120,20 @@ class DataLoader:
         """
 
         # initiliaze empty arrays
-        if self.instantaneous:
-            x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
-            if not self.no_gt and self.latent:
-                z = np.zeros((batch_size, self.tau + 2, self.d, self.d_z))
-            else:
-                z = None
-            t1 = 1
+        # if self.instantaneous:
+        #     x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
+        #     if not self.no_gt and self.latent:
+        #         z = np.zeros((batch_size, self.tau + 2, self.d, self.d_z))
+        #     else:
+        #         z = None
+        #     t1 = 1
+        # else:
+        x = np.zeros((batch_size, self.tau, self.d, self.d_x))
+        if not self.no_gt and self.latent:
+            z = np.zeros((batch_size, self.tau + 1, self.d, self.d_z))
         else:
-            x = np.zeros((batch_size, self.tau, self.d, self.d_x))
-            if not self.no_gt and self.latent:
-                z = np.zeros((batch_size, self.tau + 1, self.d, self.d_z))
-            else:
-                z = None
-            t1 = 0
+            z = None
+        t1 = 0
         y = np.zeros((batch_size, self.d, self.d_x))
 
         if valid:

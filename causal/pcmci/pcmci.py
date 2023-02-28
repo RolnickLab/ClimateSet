@@ -6,7 +6,7 @@ from metrics import shd, mean_corr_coef, precision_recall, edge_errors
 from typing import Tuple
 from tigramite import data_processing as pp
 from tigramite.pcmci import PCMCI
-from tigramite.independence_tests import ParCorr, CMIknn
+from tigramite.independence_tests import ParCorr, CMIknn, GPDC
 from tigramite.models import Prediction
 from savar.dim_methods import get_varimax_loadings_standard as varimax
 from linear_model import train
@@ -77,10 +77,12 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
 
     if hp.ci_test == "linear":
         ind_test = ParCorr()
-    elif hp.ci_test == "nonlinear":
+    elif hp.ci_test == "knn":
         ind_test = CMIknn()
+    elif hp.ci_test == "gpdc":
+        ind_test = GPDC()
     else:
-        raise ValueError(f"{hp.ci_test} is not valid as a CI test. It should be either 'linear' or 'nonlinear'")
+        raise ValueError(f"{hp.ci_test} is not valid as a CI test. It should be either 'linear', 'knn' or 'gpdc'")
 
     if hp.fct_type == "linear":
         prediction_model = sklearn.linear_model.LinearRegression()
@@ -175,8 +177,6 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             metrics['fn'] = errors['fn']
             metrics['n_edge_gt_graph'] = np.sum(gt_graph)
             metrics['n_edge_learned_graph'] = np.sum(graph)
-            print(metrics)
-            __import__('ipdb').set_trace()
             print(metrics)
 
     return graph, W, metrics

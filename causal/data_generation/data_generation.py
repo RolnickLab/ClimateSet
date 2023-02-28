@@ -12,6 +12,20 @@ from typing import Tuple
 from scipy.special import expit
 
 
+def sample_logistic_coeff(graph: np.ndarray, tau: int, d: int, d_z: int,
+                          low: float, high: float) -> np.ndarray:
+    """
+    Sample coefficients in the range [low, high]
+    Returns:
+        coeff: (tau, d*d_z, d*d_z) an array of coefficients
+    """
+    # sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 -1
+    coeff = np.random.rand(tau, d * d_z, d * d_z) * (high - low) + low
+    coeff = coeff * graph
+
+    return coeff
+
+
 def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.ndarray:
     """
     Sample linear coefficients such that the spectrum associated
@@ -149,13 +163,83 @@ class NonAdditiveStationaryMechanisms:
 
         return torch.from_numpy(output), noise
 
+class LogisticMechanisms:
+    """
+    Additive nonlinear mechanisms that lead a stationary process.
+    The trick is to use nonlinear functions that are almost linear when x is
+    large, and have coefficients with a spectrum <= 1.
+    """
+    def __init__(self, graph, tau, d, d_z, causal_order, instantaneous, radius_correct, func_type, noise_z_std=0.1):
+        self.tau = tau
+        self.d = d
+        self.d_z = d_z
+        self.noise_z_std = noise_z_std
+        self.G = graph
+        self.causal_order = causal_order
+        self.instantaneous = instantaneous
+        self.radius_correct = radius_correct
+        self.r = 4
+        self.noise_coeff = 0.1
+
+        self.fct = [lambda x: x]
+        self.n_mech = len(self.fct)
+        self.prob_mech = [1/self.n_mech] * self.n_mech
+
+        self.sample_mech()
+        self.apply_vectorized = np.vectorize(self.apply_f)
+
+    def sample_mech(self):
+        self.mech = np.random.choice(self.n_mech,
+                                     size=(self.tau + 1, self.d * self.d_z, self.d * self.d_z),
+                                     p=self.prob_mech)
+        # TODO: change sampling process (c should be fixed or in narrow range)
+        # self.coeff = sample_stationary_coeff(self.G, self.tau + 1, self.d, self.d_z, self.radius_correct)
+        self.coeff = sample_logistic_coeff(self.G, self.tau + 1, self.d, self.d_z, low=1, high=2)
+
+    def apply_f(self, i, x):
+        return self.fct[i](x)
+
+    def apply(self, g, z, t):
+        """Apply the mechanisms to z and add noise"""
+        if t >= self.tau + 1:
+            t = self.tau
+
+        z = z.reshape(z.shape[0], 1, -1)
+        z = z.repeat(1, z.shape[-1], 1)
+        noise = np.random.uniform(size=(self.d, self.d_z))
+
+        if self.instantaneous:
+            raise NotImplementedError("not clear yet")
+            # output = self.apply_vectorized(self.mech[-t-1:-1], z[:-1])
+            # output = output * self.coeff[-t-1:-1]
+            # output = np.sum(output, axis=(0, 2))
+            # output = output.reshape(self.d, self.d_z)
+            # output += noise
+
+            # for i in self.causal_order:
+            #     output[:, i] += self.coeff[-1, i] @ self.apply_vectorized(self.mech[-1, i], output[0])
+        else:
+            output = self.apply_vectorized(self.mech[-t-1:], z)
+            output = output * self.coeff[-t-1:]
+            output = np.sum(output, axis=(0, 2))
+            output = output.reshape(self.d, self.d_z)
+            output += self.noise_coeff * (noise - 0.5)
+
+            # r - rX^t-1 - output
+            # z[-2, 0] corresponds to z^{t-1}
+            output = self.r - self.r * z[-2, 0] - output
+            # (X (output)) mod 1
+            output = (z[-2, 0] * output) % 1
+
+        return output, noise
+
 class StationaryMechanisms:
     """
     Additive nonlinear mechanisms that lead a stationary process.
     The trick is to use nonlinear functions that are almost linear when x is
     large, and have coefficients with a spectrum <= 1.
     """
-    def __init__(self, graph, tau, d, d_z, causal_order, instantaneous, radius_correct, linear=False, noise_z_std=0.1):
+    def __init__(self, graph, tau, d, d_z, causal_order, instantaneous, radius_correct, func_type, noise_z_std=0.1):
         self.tau = tau
         self.d = d
         self.d_z = d_z
@@ -165,9 +249,9 @@ class StationaryMechanisms:
         self.instantaneous = instantaneous
         self.radius_correct = radius_correct
 
-        if linear:
+        if func_type == "linear":
             self.fct = [lambda x: x]
-        else:
+        elif func_type == "add_nonlinear":
             # self.fct = [lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
             #             lambda x: x * (1 + 4 * x ** 3 * np.exp(-x ** 2 / 2))]
             self.fct = [lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
@@ -400,7 +484,8 @@ class DataGeneratorWithLatent:
         """
         # add a 'buffer' of 100 steps to make sure we get the stationary
         # distribution
-        self.t += 100
+        mixing_time = 10
+        self.t += mixing_time
 
         # initialize Z for the first timesteps
         self.Z = torch.zeros((self.n, self.t, self.d, self.d_z))
@@ -420,15 +505,26 @@ class DataGeneratorWithLatent:
                                           self.causal_order,
                                           instantaneous=self.instantaneous,
                                           radius_correct=self.radius_correct,
-                                          linear=False,
+                                          func_type=self.func_type,
                                           noise_z_std=self.noise_z_std)
         elif self.func_type == "linear":
             self.f = StationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
                                           self.causal_order,
                                           instantaneous=self.instantaneous,
                                           radius_correct=self.radius_correct,
-                                          linear=True,
+                                          func_type=self.func_type,
                                           noise_z_std=self.noise_z_std)
+        elif self.func_type == "logistic_map":
+            if self.tau > 1:
+                raise ValueError("tau should equal 1 when using logistic maps")
+            if not self.fixed_diagonal:
+                raise ValueError("fixed_diagonal should equal True when using logistic maps")
+            self.f = LogisticMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
+                                        self.causal_order,
+                                        instantaneous=self.instantaneous,
+                                        radius_correct=self.radius_correct,
+                                        func_type=self.func_type,
+                                        noise_z_std=self.noise_z_std)
         elif self.func_type == "nonlinear":
             self.f = NonAdditiveStationaryMechanisms(self.G.numpy(), self.tau, self.d, self.d_z,
                                                      self.causal_order,
@@ -476,14 +572,22 @@ class DataGeneratorWithLatent:
                     elif self.func_type == "nonlinear":
                         self.Z_mu[i_n, t], noise = self.f.apply(g, z, t)
                         self.Z[i_n, t] = self.Z_mu[i_n, t] + noise
+                    elif self.func_type == "logistic_map":
+                        self.Z_mu[i_n, t], noise = self.f.apply(g, z, t)
+                        self.Z[i_n, t] = self.Z_mu[i_n, t]
 
             # sample the data X (= WZ + noise)
             self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
             self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
 
-        self.t -= 100
+        self.t -= mixing_time
 
-        return self.X[100:], self.Z[100:]
+        self.X = self.X[:, mixing_time:]
+        print(self.X.shape)
+        self.X_mu = self.X_mu[:, mixing_time:]
+        self.Z = self.Z[:, mixing_time:]
+        self.Z_mu = self.Z_mu[:, mixing_time:]
+        return self.X, self.Z
 
 
     def compute_metrics(self):

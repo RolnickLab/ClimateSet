@@ -55,7 +55,7 @@ def main(hp, func_types: list, noise_types: list):
 
     # Generate, save and plot data
     for i in range(10):
-        data = generator.generate()
+        X, Z = generator.generate()
 
         if torch.max(torch.abs(generator.Z)) > 100000:
             print("Values of Z over 100000. The generative process doesn't seem to be stationary")
@@ -70,16 +70,14 @@ def main(hp, func_types: list, noise_types: list):
     print("Plotting data...")
     plot_adjacency_graphs(generator.G, hp.exp_path)
 
-    plot_x(generator.X.detach().numpy(), hp.exp_path)
+    plot_x(X.detach().numpy(), hp.exp_path)
     if hp.latent:
-        plot_z(generator.Z.detach().numpy(), hp.exp_path)
+        plot_z(Z.detach().numpy(), hp.exp_path)
     #     plot_adjacency_w(generator.w, hp.exp_path)
-
-    return data
 
 
 if __name__ == "__main__":
-    func_types = ["linear", "nonlinear", "add_nonlinear"]
+    func_types = ["linear", "nonlinear", "add_nonlinear", "logistic_map"]
     noise_types = ["gaussian", "laplacian", "uniform"]
 
     parser = argparse.ArgumentParser(description="Code use to generate synthetic data to \

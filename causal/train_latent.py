@@ -62,7 +62,6 @@ class TrainingLatent:
         self.plotter = Plotter()
 
         if self.instantaneous:
-            raise NotImplementedError("Soon")
             self.adj_tt = np.zeros((int(self.hp.max_iteration / self.hp.valid_freq), self.tau + 1,
                                     self.d * self.d_z, self.d * self.d_z))
         else:
@@ -88,7 +87,8 @@ class TrainingLatent:
 
         # compute constraint normalization
         with torch.no_grad():
-            full_adjacency = torch.ones((model.d, model.d)) - torch.eye(model.d)
+            d = model.d * model.d_z
+            full_adjacency = torch.ones((d, d)) - torch.eye(d)
             self.acyclic_constraint_normalization = compute_dag_constraint(full_adjacency).item()
 
             if self.latent:
@@ -114,6 +114,8 @@ class TrainingLatent:
                              self.hp.ortho_min_iter_convergence,
                              dim_gamma=self.d_z)
         if self.instantaneous:
+            # add the acyclicity constraint if the instantaneous connections
+            # are considered
             self.QPM_acyclic = ALM(self.hp.acyclic_mu_init,
                                    self.hp.acyclic_mu_mult_factor,
                                    self.hp.acyclic_omega_gamma,
@@ -150,10 +152,10 @@ class TrainingLatent:
                                           self.valid_ortho_vector_cons_list,
                                           self.valid_loss_list)
                     if self.iteration > 10000:
-                        self.converged = self.ALM_ortho.has_converged
+                        ortho_converged = self.ALM_ortho.has_converged
                         # self.converged = False
                     else:
-                        self.converged = False
+                        ortho_converged = False
 
                     if self.ALM_ortho.has_increased_mu:
                         if self.hp.optimizer == "sgd":
@@ -165,8 +167,16 @@ class TrainingLatent:
                         self.QPM_acyclic.update(self.iteration,
                                                 self.valid_acyclic_cons_list,
                                                 self.valid_loss_list)
-                        self.converged = self.converged & self.QPM_acyclic.has_converged
+                        acyclic_converged = self.QPM_acyclic.has_converged
                         # TODO: add optimizer reinit
+                        if self.QPM_acyclic.has_increased_mu:
+                            if self.hp.optimizer == "sgd":
+                                self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.hp.lr)
+                            elif self.hp.optimizer == "rmsprop":
+                                self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=self.hp.lr)
+                        self.converged = ortho_converged & acyclic_converged
+                    else:
+                        self.converged = ortho_converged
             else:
                 # continue training without penalty method
                 if not self.thresholded and self.iteration % self.patience_freq == 0:
@@ -369,7 +379,7 @@ class TrainingLatent:
 
         if self.instantaneous:
             print(f"acyclic cons: {self.train_acyclic_cons:.4f}")
-            print(f"acyclic gamma: {self.QPM_ortho.mu}")
+            print(f"acyclic mu: {self.QPM_acyclic.mu}")
         print("-------------------------------")
 
         print(f"valid_ELBO: {-self.valid_nll:.4f}")
@@ -382,7 +392,6 @@ class TrainingLatent:
         return -elbo, recons, kl, pred
 
     def get_regularisation(self) -> float:
-        # TODO: change configurable schedule!
         if self.iteration > self.hp.schedule_reg:
             adj = self.model.get_adj()
             reg = self.hp.reg_coeff * torch.norm(adj, p=1)
@@ -393,8 +402,8 @@ class TrainingLatent:
         return reg
 
     def get_acyclicity_violation(self) -> torch.Tensor:
-        if self.iteration > 10000:
-            adj = self.model.get_adj()[-1].view(self.d, self.d)
+        if self.iteration > 0:
+            adj = self.model.get_adj()[-1].view(self.d * self.d_z, self.d * self.d_z)
             h = compute_dag_constraint(adj) / self.acyclic_constraint_normalization
         else:
             h = torch.tensor([0.])
