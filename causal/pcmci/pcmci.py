@@ -82,7 +82,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     elif hp.ci_test == "gpdc":
         ind_test = GPDC()
     else:
-        raise ValueError(f"{hp.ci_test} is not valid as a CI test. It should be either 'linear' or 'nonlinear'")
+        raise ValueError(f"{hp.ci_test} is not valid as a CI test. It should be either 'linear', 'knn' or 'gpdc'")
 
     if hp.fct_type == "linear":
         prediction_model = sklearn.linear_model.LinearRegression()
@@ -177,8 +177,6 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             metrics['fn'] = errors['fn']
             metrics['n_edge_gt_graph'] = np.sum(gt_graph)
             metrics['n_edge_learned_graph'] = np.sum(graph)
-            print(metrics)
-            __import__('ipdb').set_trace()
             print(metrics)
 
     return graph, W, metrics
