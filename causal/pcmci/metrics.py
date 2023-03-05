@@ -16,7 +16,6 @@ def w_mse(w: np.ndarray, gt_w: np.ndarray):
     w_mse = np.linalg.norm(w - gt_w) / w.size
     return w_mse
 
-
 def mean_corr_coef(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
                    indices: list = None) -> float:
     """
