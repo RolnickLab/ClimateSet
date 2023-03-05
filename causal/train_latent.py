@@ -151,7 +151,7 @@ class TrainingLatent:
                     self.ALM_ortho.update(self.iteration,
                                           self.valid_ortho_vector_cons_list,
                                           self.valid_loss_list)
-                    if self.iteration > 10000:
+                    if self.iteration > 1000:
                         ortho_converged = self.ALM_ortho.has_converged
                         # self.converged = False
                     else:
