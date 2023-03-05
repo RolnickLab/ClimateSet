@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import sklearn
-from metrics import shd, mean_corr_coef, precision_recall, edge_errors
+from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mse
 
 from typing import Tuple
 from tigramite import data_processing as pp
@@ -98,7 +98,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
         z_hat, W = dim_reduc(train_data, d_z)
         z_hat_valid = valid_data @ W
     else:
-        W = gt_w
+        W = gt_w[0]
         z_hat = gt_z.squeeze(0)
         z_hat = z_hat.squeeze(1)
 
@@ -168,6 +168,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             # gt_graph = np.swapaxes(gt_graph, 1, 2)
 
             metrics['mcc'] = score
+            metrics['w_mse'] = w_mse(W, gt_w[0])
             metrics['shd'] = shd(graph, gt_graph, True)
             metrics['precision'], metrics['recall'] = precision_recall(graph, gt_graph)
             errors = edge_errors(graph, gt_graph)

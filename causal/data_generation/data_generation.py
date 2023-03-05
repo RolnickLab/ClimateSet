@@ -173,7 +173,6 @@ class LogisticMechanisms:
         self.tau = tau
         self.d = d
         self.d_z = d_z
-        self.noise_z_std = noise_z_std
         self.G = graph
         self.causal_order = causal_order
         self.instantaneous = instantaneous
@@ -194,7 +193,7 @@ class LogisticMechanisms:
                                      p=self.prob_mech)
         # TODO: change sampling process (c should be fixed or in narrow range)
         # self.coeff = sample_stationary_coeff(self.G, self.tau + 1, self.d, self.d_z, self.radius_correct)
-        self.coeff = sample_logistic_coeff(self.G, self.tau + 1, self.d, self.d_z, low=1, high=2)
+        self.coeff = sample_logistic_coeff(self.G, self.tau + 1, self.d, self.d_z, low=2, high=3)
 
     def apply_f(self, i, x):
         return self.fct[i](x)
