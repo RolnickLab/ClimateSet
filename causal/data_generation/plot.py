@@ -1,7 +1,46 @@
 import os
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import gaussian_kde
+
+def plot_mixing_function(f: dict, x, z, path: str, plot_x: bool = True):
+    d_x_max = 10
+    n_row = 5
+    n = 1000
+
+    z = z.reshape(z.shape[1], z.shape[-1])
+    z = z[:n]
+
+    fig, axs = plt.subplots(d_x_max // n_row, n_row)
+    if plot_x:
+        x = x.reshape(x.shape[1], x.shape[-1])
+        x = x[:n]
+        for i in range(d_x_max):
+            for j in range(f.d_z):
+                if f.mask[i, j]:
+                    xy = np.vstack([z[:, j], x[:, i]])
+                    c = gaussian_kde(xy)(xy)
+                    axs[i // n_row, i % n_row].scatter(z[:, j], x[:, i], c=c, s=1)
+        plt.savefig(os.path.join(path, 'x.png'))
+        plt.close()
+
+    fig, axs = plt.subplots(d_x_max // n_row, n_row)
+    # z_min = np.min(z, axis=0)
+    # z_max = np.max(z, axis=0)
+    # z_range = np.random.rand(n, z_min.shape[0]) * (z_max - z_min) + z_min
+    x = np.zeros((z.shape[0], f.d_x))
+    for i in range(d_x_max):
+        for j in range(f.d_z):
+            if f.mask[i, j]:
+                x[:, i] = f.fct_dict[(i, j)](torch.tensor(z[:, j]))
+                xy = np.vstack([z[:, j], x[:, i]])
+                c = gaussian_kde(xy)(xy)
+                axs[i // n_row, i % n_row].scatter(z[:, j], x[:, i], c=c, s=1)
+
+    plt.savefig(os.path.join(path, 'fct_x.png'))
+    plt.close()
 
 
 def plot_adjacency_graphs(g: np.ndarray, path: str):
