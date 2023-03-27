@@ -12,6 +12,79 @@ from typing import Tuple
 from scipy.special import expit
 
 
+class MixingFunctions:
+    def __init__(self, mask, d_x, d_z):
+        self.mask = mask
+        self.d_x = d_x
+        self.d_z = d_z
+        self._sample_all_functions()
+
+    class LeakySoftplus:
+        def __init__(self):
+            self.sign = np.random.randint(0, 2) * 2 - 1
+            self.a = np.random.rand() * 0.15 + 0.05
+
+            # self.bias = np.random.rand() * 10 - 5
+            # self.b = np.random.rand() * 10 - 5
+            # self.slope = np.random.rand() * 5 + 1
+            self.bias = np.random.rand() * 0.1 - 0.05
+            self.b = np.random.rand() * 0.1 - 0.05
+            self.slope = np.random.rand() * 1 + 1
+            self.first = True
+
+        def __call__(self, x):
+            if self.first:
+                self.adj = x.max()
+                self.b = x.mean()
+                self.first = False
+            x = x / self.adj * 5
+            out = self.a * (x - self.b)
+            out += (1 - self.a) * np.log(1 + np.exp(self.slope * (x - self.b)))
+            return self.sign * out + self.bias
+
+    def _sample_all_functions(self):
+        self.fct_dict = {}
+        for i in range(self.d_x):
+            for j in range(self.d_z):
+                if self.mask[i, j]:
+                    self.fct_dict[(i, j)] = self.LeakySoftplus()
+
+    def __call__(self, z):
+        x = torch.zeros((z.shape[0], self.d_x))
+        for j in range(self.d_z):
+            first = True
+
+            for i in range(self.d_x):
+                if self.mask[i, j]:
+                    z_ = z[:, i, j] / z[:, i, j].max() * 2
+
+                    if first:
+                        x[:, i] = z_
+                        first = False
+                    # x[:, i] = (torch.sigmoid(20 * z_))
+                    # x[:, i] = (z_ + 10 * z_ ** 3)
+                    # x[:, i] = self.fct_dict[(i, j)](z[:, i, j])
+
+                    # cubic - good range
+                    # i1 = np.random.rand() * 6 - 3
+                    # i2 = np.random.rand() * 4 - 2
+                    # i3 = np.random.rand() * 2 - 1
+                    sign = np.random.rand()
+                    if sign < 0.5:
+                        sign = -1
+                    else:
+                        sign = 1
+
+                    if sign == 1:
+                        # x[:, i] = sign * ((z_ - i1) ** 3 + 0.8 * (z_ - i2) ** 3 + 0.6 * (z_ - i3) ** 3)
+                        i1 = np.random.rand() * 6 + 1
+
+                        x[:, i] = sign * np.sin(i1 * z_)
+                    else:
+                        x[:, i] = z_
+        return x
+
+
 def sample_logistic_coeff(graph: np.ndarray, tau: int, d: int, d_z: int,
                           low: float, high: float) -> np.ndarray:
     """
@@ -320,6 +393,7 @@ class DataGeneratorWithLatent:
         self.func_type = hp.func_type
         self.instantaneous = hp.instantaneous
         self.radius_correct = hp.radius_correct
+        self.nonlinear_mixing = hp.nonlinear_mixing
 
         self.noise_x_std = hp.noise_x_std
         self.noise_z_std = hp.noise_z_std
@@ -535,6 +609,10 @@ class DataGeneratorWithLatent:
 
         # sample observational model
         self.w = self.sample_w()
+        if self.nonlinear_mixing:
+            self.mask = (self.w != 0)[0] * 1.
+            self.mixing_f = MixingFunctions(self.mask, self.d_x, self.d_z)
+            self.mask = self.mask / np.linalg.norm(self.mask, axis=0)
 
         for i_n in range(self.n):
 
@@ -576,7 +654,14 @@ class DataGeneratorWithLatent:
                         self.Z[i_n, t] = self.Z_mu[i_n, t]
 
             # sample the data X (= WZ + noise)
-            self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
+            if self.nonlinear_mixing:
+                z = self.Z.reshape(1, self.Z.shape[1], 1, self.Z.shape[-1])
+                z = z.repeat(1, 1, self.w.shape[1], 1)
+                self.X_masked = self.mask * z[0]
+                self.X_mu = self.mixing_f(self.X_masked)
+                self.X_mu = self.X_mu.reshape(1, self.X_mu.shape[0], 1, self.X_mu.shape[1])
+            else:
+                self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
             self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
 
         self.t -= mixing_time
@@ -608,9 +693,9 @@ class DataGeneratorWithLatent:
         metrics["kl"] = kl
 
         # get MCC
-        mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
-                          self.Z.numpy().reshape(self.n, -1))
-        metrics["mcc_stoch"] = mcc[0, 1]
+        # mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
+        #                   self.Z.numpy().reshape(self.n, -1))
+        # metrics["mcc_stoch"] = mcc[0, 1]
 
         mcc = np.corrcoef(self.Z_mu.reshape(self.n, -1),
                           self.Z.numpy().reshape(self.n, -1))

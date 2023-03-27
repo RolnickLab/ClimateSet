@@ -4,7 +4,7 @@ import os
 import json
 import torch
 import numpy as np
-from metrics import mcc_latent, shd, precision_recall, edge_errors, w_mse
+from metrics import mcc_latent, shd, precision_recall, edge_errors, w_mae
 from model.tsdcd import TSDCD
 from model.tsdcd_latent import LatentTSDCD
 from data_loader import DataLoader
@@ -145,7 +145,7 @@ def main(hp):
         gt_graph = permutation.T @ gt_graph @ permutation
 
         metrics['mcc'] = score
-        metrics['w_mse'] = w_mse(trainer.model.encoder_decoder.get_w(False).detach().numpy()[:, :, assignments[1]], data_loader.gt_w)
+        metrics['w_mse'] = w_mae(trainer.model.encoder_decoder.get_w(False).detach().numpy()[:, :, assignments[1]], data_loader.gt_w)
         metrics['shd'] = shd(learned_graph, gt_graph)
         metrics['precision'], metrics['recall'] = precision_recall(learned_graph, gt_graph)
         errors = edge_errors(learned_graph, gt_graph)
