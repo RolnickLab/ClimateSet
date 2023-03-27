@@ -1,14 +1,15 @@
 import numpy as np
 import torch
 import sklearn
-from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mse
+from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mae
 
 from typing import Tuple
 from tigramite import data_processing as pp
 from tigramite.pcmci import PCMCI
 from tigramite.independence_tests import ParCorr, CMIknn, GPDC
 from tigramite.models import Prediction
-from savar.dim_methods import get_varimax_loadings_standard as varimax
+# from savar.dim_methods import get_varimax_loadings_standard as varimax
+from varimax import get_varimax_loadings_standard as varimax
 from linear_model import train
 
 
@@ -168,7 +169,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             # gt_graph = np.swapaxes(gt_graph, 1, 2)
 
             metrics['mcc'] = score
-            metrics['w_mse'] = w_mse(W[:, assignments[1]], gt_w[0])
+            metrics['w_mse'] = w_mae(W[:, assignments[1]], gt_w[0])
             metrics['shd'] = shd(graph, gt_graph, True)
             metrics['precision'], metrics['recall'] = precision_recall(graph, gt_graph)
             errors = edge_errors(graph, gt_graph)

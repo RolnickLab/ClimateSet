@@ -6,7 +6,7 @@ import json
 import numpy as np
 from pathlib import Path
 from data_generation import DataGeneratorWithLatent, DataGeneratorWithoutLatent
-from plot import plot_adjacency_graphs, plot_adjacency_w, plot_x, plot_z
+from plot import plot_adjacency_graphs, plot_adjacency_w, plot_x, plot_z, plot_mixing_function
 
 
 class Bunch:
@@ -73,6 +73,8 @@ def main(hp, func_types: list, noise_types: list):
     plot_x(X.detach().numpy(), hp.exp_path)
     if hp.latent:
         plot_z(Z.detach().numpy(), hp.exp_path)
+        if hp.nonlinear_mixing:
+            plot_mixing_function(generator.mixing_f, X.detach().numpy(), Z.detach().numpy(), hp.exp_path)
     #     plot_adjacency_w(generator.w, hp.exp_path)
 
 
@@ -99,6 +101,8 @@ if __name__ == "__main__":
                         help="Use generative model with latents")
     parser.add_argument("--func-type", type=str, default="linear",
                         help=f"Type of function for the generating process {func_types}")
+    parser.add_argument("--nonlinear-mixing", action="store_true",
+                        help="If true, use nonlinear mixing function")
     parser.add_argument("--noise-type", type=str, default="gaussian",
                         help=f"Type of noise for the generating process {noise_types}")
     parser.add_argument("--instantaneous", action="store_true",

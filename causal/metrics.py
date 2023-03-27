@@ -6,16 +6,16 @@ from scipy.stats import spearmanr
 from typing import Tuple
 
 
-def w_mse(w: np.ndarray, gt_w: np.ndarray):
+def w_mae(w: np.ndarray, gt_w: np.ndarray):
     """
-    Compute the MSE between the learned matrix W
-    and the ground-truth matrix W
+    Compute the mean absolute error (MAE) between
+    the learned matrix W and the ground-truth matrix W
     Args:
         w: learned matrix W
         w_gt: ground-truth matrix W
     """
-    w_mse = np.linalg.norm(w - gt_w) / w.size
-    return w_mse
+    w_mae = np.sum(np.abs(w - gt_w)) / w.size
+    return w_mae
 
 def mean_corr_coef(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
                    indices: list = None) -> float:
