@@ -1,0 +1,37 @@
+,source_id,nominal_resolution_km,scenarios,num_ensemble_members,data_node_available
+0,ACCESS-CM2,250,ssp126 ssp245 ssp370 ssp534-over ssp585,5 5 5 1 5,True
+1,ACCESS-ESM1-5,250,ssp126 ssp245 ssp370 ssp534-over ssp585,40 40 40 12 40,True
+2,AWI-CM-1-1-MR,100,ssp126 ssp245 ssp370 ssp585,1 1 5 1,True
+3,BCC-CSM2-MR,100,ssp126 ssp245 ssp370 ssp585,1 1 1 1,True
+4,CAMS-CSM1-0,100,ssp119 ssp126 ssp245 ssp370 ssp585,2 2 2 2 2,True
+7,CAS-ESM2-0,100,ssp126 ssp245 ssp370 ssp585,2 2 2 2,True
+8,CESM2,100,ssp126 ssp245 ssp370 ssp585,3 3 3 3,True
+9,CESM2-WACCM,100,ssp126 ssp245 ssp370 ssp534-over ssp585,1 5 3 3 5,True
+11,CMCC-CM2-SR5,100,ssp126 ssp245 ssp370 ssp585,1 1 1 1,True
+12,CMCC-ESM2,100,ssp126 ssp245 ssp370 ssp534-over ssp585,1 1 1 1 1,True
+13,CNRM-CM6-1,250,ssp126 ssp245 ssp370 ssp585,6 10 6 6,True
+14,CNRM-CM6-1-HR,100,ssp126 ssp245 ssp370 ssp585,1 1 1 1,True
+15,CNRM-ESM2-1,250,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,5 5 10 5 5 5 5 5,True
+19,EC-Earth3,100,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,52 57 97 57 50 50 50 58,False
+22,EC-Earth3-Veg,100,ssp119 ssp126 ssp245 ssp370 ssp585,3 7 8 6 8,False
+23,EC-Earth3-Veg-LR,250,ssp119 ssp126 ssp245 ssp370 ssp585,3 3 3 3 3,True
+24,FGOALS-f3-L,100,ssp126 ssp245 ssp370 ssp585,1 1 1 1,True
+25,FGOALS-g3,250,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,1 4 4 5 1 1 1 4,True
+27,GFDL-ESM4,100,ssp119 ssp126 ssp245 ssp370 ssp585,1 1 3 1 1,True
+28,GISS-E2-1-G,250,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,7 16 36 27 7 8 11 15,True
+29,GISS-E2-1-H,250,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,2 10 10 6 2 2 6 10,True
+30,GISS-E2-2-G,250,ssp126 ssp245 ssp370 ssp534-over ssp585,5 5 5 5 5,True
+31,IITM-ESM,250,ssp126 ssp245 ssp370 ssp585,1 1 1 1,True
+32,INM-CM4-8,100,ssp126 ssp245 ssp370 ssp585,1 1 1 1,True
+33,INM-CM5-0,100,ssp126 ssp245 ssp370 ssp585,1 1 5 1,True
+35,IPSL-CM6A-LR,250,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,6 6 11 11 2 7 1 7,True
+36,KACE-1-0-G,250,ssp126 ssp245 ssp370 ssp585,3 3 3 3,True
+38,MCM-UA-1-0,250,ssp126 ssp245 ssp370 ssp585,1 1 1 1,True
+40,MIROC6,250,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,50 50 50 50 1 1 1 50,True
+42,MPI-ESM1-2-HR,100,ssp126 ssp245 ssp370 ssp585,2 2 10 2,True
+43,MPI-ESM1-2-LR,250,ssp119 ssp126 ssp245 ssp370 ssp585,30 30 30 30 30,True
+44,MRI-ESM2-0,100,ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585,5 5 10 5 1 1 1 6,True
+46,NorESM2-LM,250,ssp126 ssp245 ssp370 ssp534-over ssp585,1 13 3 1 1,True
+47,NorESM2-MM,100,ssp126 ssp245 ssp370 ssp585,1 2 1 1,True
+48,TaiESM1,100,ssp126 ssp245 ssp370 ssp585,1 1 1 1,False
+51,UKESM1-0-LL,250,ssp119 ssp126 ssp245 ssp370 ssp434 ssp534-over ssp585,5 16 17 16 5 5 5,True
