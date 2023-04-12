@@ -8,8 +8,8 @@ from tigramite import data_processing as pp
 from tigramite.pcmci import PCMCI
 from tigramite.independence_tests import ParCorr, CMIknn, GPDC
 from tigramite.models import Prediction
-# from savar.dim_methods import get_varimax_loadings_standard as varimax
-from varimax import get_varimax_loadings_standard as varimax
+from savar.dim_methods import get_varimax_loadings_standard as varimax
+# from varimax import get_varimax_loadings_standard as varimax
 from linear_model import train
 
 
@@ -170,6 +170,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
 
             metrics['mcc'] = score
             metrics['w_mse'] = w_mae(W[:, assignments[1]], gt_w[0])
+            metrics['w_shd'] = w_shd(W[:, assignments[1]], gt_w[0])
             metrics['shd'] = shd(graph, gt_graph, True)
             metrics['precision'], metrics['recall'] = precision_recall(graph, gt_graph)
             errors = edge_errors(graph, gt_graph)
