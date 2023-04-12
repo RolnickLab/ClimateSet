@@ -28,9 +28,9 @@ class Plotter:
         """
         if learner.latent:
             # save matrix W of the decoder and encoder
-            w_decoder = learner.model.encoder_decoder.get_w(False).detach().numpy()
+            w_decoder = learner.model.autoencoder.get_w_decoder().detach().numpy()
             np.save(os.path.join(learner.hp.exp_path, "w_decoder"), w_decoder)
-            w_encoder = learner.model.encoder_decoder.get_w(True).detach().numpy()
+            w_encoder = learner.model.autoencoder.get_w_encoder().detach().numpy()
             np.save(os.path.join(learner.hp.exp_path, "w_encoder"), w_encoder)
 
             # save variance of encoder and decoder
@@ -167,8 +167,8 @@ class Plotter:
         if not learner.no_gt:
             if learner.latent:
                 # for latent models, find the right permutation of the latent
-                adj_w = learner.model.encoder_decoder.get_w().detach().numpy()
-                adj_w2 = learner.model.encoder_decoder.get_w(True).detach().numpy()
+                adj_w = learner.model.autoencoder.get_w_decoder().detach().numpy()
+                adj_w2 = learner.model.autoencoder.get_w_encoder().detach().numpy()
                 # variables using MCC
                 if learner.debug_gt_z:
                     gt_dag = learner.gt_dag
@@ -176,7 +176,7 @@ class Plotter:
                     self.mcc.append(1.)
                     self.assignments.append(np.arange(learner.gt_dag.shape[1]))
                 else:
-                    score, cc_program_perm, assignments, z, z_hat = mcc_latent(learner.model, learner.data)
+                    score, cc_program_perm, assignments, z, z_hat, x = mcc_latent(learner.model, learner.data)
                     permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
                     permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
                     self.mcc.append(score.item())
@@ -184,9 +184,15 @@ class Plotter:
 
                     gt_dag = permutation.T @ learner.gt_dag @ permutation
                     gt_w = learner.gt_w
-                    adj_w = adj_w[:, :, assignments[1]]
-                    adj_w2 = adj_w2[:, :, assignments[1]]
+                    # TODO: put back
+                    # adj_w = adj_w[:, :, assignments[1]]
+                    # adj_w2 = adj_w2[:, assignments[1], :]
+                    adj_w2 = np.swapaxes(adj_w2, 1, 2)
                 self.save_mcc_and_assignement(learner.hp.exp_path)
+
+                # draw learned mixing fct vs GT
+                self.plot_learned_mixing(z, z_hat, adj_w, gt_w, x, learner.hp.exp_path)
+
             else:
                 gt_dag = learner.gt_dag
 
@@ -231,6 +237,28 @@ class Plotter:
                                       learner.logging_iter,
                                       learner.hp.plot_through_time,
                                       path=learner.hp.exp_path)
+
+    def plot_learned_mixing(self, z, z_hat, w, gt_w, x, path):
+        n_first = 100
+
+        for i in range(n_first):
+            # plot z_hat vs x
+            # find parent of x_i
+            j = np.argmax(w[0, i])
+            fig = plt.figure()
+            fig.suptitle("Mixing Learned vs Ground-truth")
+            axes = fig.subplots(nrows=1, ncols=2)
+
+            axes[0].scatter(z_hat[:, j], x[:, 0, i], s=2)
+            axes[0].set_title(f"Learned mixing. j={j}, val={w[0, i, j]:.2f}")
+
+            # plot z vs x
+            j = np.argmax(gt_w[0, i])
+            axes[1].scatter(z[:, j], x[:, 0, i], s=2)
+            axes[1].set_title(f"GT mixing. j={j}, val={gt_w[0, i, j]:.2f}")
+
+            plt.savefig(os.path.join(path, f'learned_mixing_x{i}.png'))
+            plt.close()
 
 
     def plot_compare_prediction(self, x, x_past, x_hat, coordinates: np.ndarray, path: str):
