@@ -44,9 +44,9 @@ class Plotter:
 
             # save losses and penalties
             penalties = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
-                      {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
-                      {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
-                      ]
+                         {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
+                         {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
+                        ]
             for p in penalties:
                 np.save(os.path.join(learner.hp.exp_path, p["name"]), np.array(p["data"]))
 
@@ -55,8 +55,8 @@ class Plotter:
                       {"name": "KL", "data": learner.train_kl_list, "s": "-"},
                       {"name": "val ELBO", "data": learner.valid_loss_list, "s": "-."},
                       ]
-            for l in losses:
-                np.save(os.path.join(learner.hp.exp_path, l["name"]), np.array(l["data"]))
+            for loss in losses:
+                np.save(os.path.join(learner.hp.exp_path, loss["name"]), np.array(loss["data"]))
 
     def load(self, exp_path: str, data_loader):
         # load matrix W of the decoder and encoder
@@ -75,8 +75,8 @@ class Plotter:
         # load losses and penalties
         self.penalties = {}
         penalties = [{"name": "sparsity", "data": "train_sparsity_reg"},
-                  {"name": "tr ortho", "data": "train_ortho_cons"},
-                  {"name": "mu ortho", "data": "mu_ortho"}]
+                     {"name": "tr ortho", "data": "train_ortho_cons"},
+                     {"name": "mu ortho", "data": "mu_ortho"}]
         for p in penalties:
             self.penalties[p["data"]] = np.load(os.path.join(exp_path, p["name"]))
 
@@ -84,8 +84,8 @@ class Plotter:
                   {"name": "Recons", "data": "train_recons"},
                   {"name": "KL", "data": "train_kl"},
                   {"name": "val ELBO", "data": "valid_loss"}]
-        for l in losses:
-            self.losses[l["data"]] = np.load(os.path.join(exp_path, l["name"]))
+        for loss in losses:
+            self.losses[loss["data"]] = np.load(os.path.join(exp_path, loss["name"]))
 
         # load GT W and graph
         self.gt_w = data_loader.gt_w
@@ -383,7 +383,6 @@ class Plotter:
             # v_recons = moving_average(valid_recons[10:])
             # v_kl = moving_average(valid_kl[10:])
 
-
         ax = plt.gca()
         # ax.set_ylim([0, 5])
         # ax.set_yscale("log")
@@ -405,14 +404,13 @@ class Plotter:
         else:
             fname = "loss.png"
 
-
         plt.title("Learning curves")
         plt.legend()
         plt.savefig(os.path.join(path, fname))
         plt.close()
 
-    def plot_learning_curves2(self, losses: list, iteration: int = 0, plot_through_time:
-                              bool = False, path: str = "", fname = "loss_detailed", yaxis_log: bool = False):
+    def plot_learning_curves2(self, losses: list, iteration: int = 0, plot_through_time: bool = False,
+                              path: str = "", fname="loss_detailed", yaxis_log: bool = False):
         """
         Plot all list present in 'losses'.
         Args:
@@ -560,7 +558,6 @@ class Plotter:
                 #         for j in range(mat.shape[1]):
                 #             text = ax.text(j, i, f"{mat[i, j]:.1f}",
                 #                            ha="center", va="center", color="w")
-
 
         else:
             subfigs = fig.subfigures(nrows=nrows, ncols=1)

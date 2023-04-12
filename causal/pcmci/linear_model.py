@@ -54,8 +54,9 @@ def train(adj, data, idx_train, idx_valid, max_iter, batch_size):
             patience -= 1
 
         if iter % 100 == 0:
-            print("Iteration: {iter}, score_train: {train_score:.5f} , score_valid : {valid_score:.5f}, best_train_score \
-                  : {best_train_score:.5f}. best_valid_score {best_valid_score:.5f}, patience: {patience}"
+            print("Iteration: {iter}, score_train: {train_score:.5f} , score_valid : {valid_score:.5f}, \
+                  best_train_score : {best_train_score:.5f}, best_valid_score {best_valid_score:.5f}, \
+                  patience: {patience}"
         if patience == 0:
             flag_max_iter = False
             break

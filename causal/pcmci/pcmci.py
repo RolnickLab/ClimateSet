@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import sklearn
-from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mae, w_mse
+from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mae, w_shd
 
 from typing import Tuple
 from tigramite import data_processing as pp

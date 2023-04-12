@@ -99,7 +99,7 @@ def sample_logistic_coeff(graph: np.ndarray, tau: int, d: int, d_z: int,
     return coeff
 
 
-def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.ndarray:
+def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps: float = 1e-4) -> np.ndarray:
     """
     Sample linear coefficients such that the spectrum associated
     to this AR is equal to 1. This is a necessary condition in order
