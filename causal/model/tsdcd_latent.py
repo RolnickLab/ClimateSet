@@ -1,5 +1,4 @@
 import torch
-import time
 import torch.nn as nn
 import torch.distributions as distr
 from collections import OrderedDict
@@ -260,7 +259,7 @@ class LatentTSDCD(nn.Module):
             # self.encoder = NonlinearEncoder(d, d_x, d_z, num_hidden_mixing, num_layer_mixing, True)
             # self.decoder = NonlinearEncoder(d, d_z, d_x, num_hidden_mixing, num_layer_mixing, True)
         else:
-            self.autoencoder = Autoencoder(d, d_x, d_z, tied=False)
+            self.autoencoder = LinearAutoEncoder(d, d_x, d_z, tied=False)
             # self.encoder = LinearEncoder(d, d_x, d_z)
             # self.decoder = LinearEncoder(d, d_z, d_x)
 
@@ -378,7 +377,8 @@ class LatentTSDCD(nn.Module):
         # kl = distr.kl_divergence(q, p).mean()
         kl_raw = 0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5
         kl = torch.sum(kl_raw, dim=[2]).mean()
-        # kl = torch.sum(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 * (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, dim=[1, 2]).mean()
+        # kl = torch.sum(0.5 * (torch.log(pz_std**2) - torch.log(q_std_y**2)) + 0.5 *
+        # (q_std_y**2 + (q_mu_y - pz_mu) ** 2) / pz_std**2 - 0.5, dim=[1, 2]).mean()
         assert kl >= 0, f"KL={kl} has to be >= 0"
 
         recons = torch.mean(torch.sum(px_distr.log_prob(y), dim=[1, 2]))
@@ -404,6 +404,7 @@ class LatentTSDCD(nn.Module):
             # print(torch.sum(torch.einsum('bd, bd -> b', (mu2 - mu1) * (1 / s_p), mu2 - mu1)))
 
         return torch.sum(kl)
+
 
 class LinearAutoEncoder(nn.Module):
     def __init__(self, d, d_x, d_z, tied):
@@ -448,6 +449,7 @@ class LinearAutoEncoder(nn.Module):
             return self.encode(x, i)
         else:
             return self.decode(x, i)
+
 
 class LinearEncoder(nn.Module):
     def __init__(self, d, num_input, num_output):
@@ -542,7 +544,6 @@ class NonLinearAutoEncoder(nn.Module):
             mu[:, j] = self.decoder[j](mask * z).squeeze()
         return mu, self.logvar_decoder
 
-
     def forward(self, x, i, encode: bool = False):
         if encode:
             return self.encode(x, i)
@@ -604,36 +605,36 @@ class NonlinearEncoder(nn.Module):
 #         self.use_grad_projection = True
 #         self.tied_w = tied_w
 #         self.nonlinear = nonlinear
-# 
+
 #         self.d = d
 #         self.d_x = d_x
 #         self.d_z = d_z
 #         self.debug_gt_w = debug_gt_w
 #         self.gt_w = gt_w
-# 
+
 #         unif = (1 - 0.4) * torch.rand(size=(d, d_x, d_z)) + 0.4
 #         if self.use_grad_projection:
 #             self.w = nn.Parameter(unif / torch.tensor(self.d_z))
 #         else:
 #             # otherwise, self.w is the log of W
 #             self.w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.d_z)))
-# 
+
 #         if self.tied_w:
 #             self.w_q = None
 #         else:
 #             unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
 #             self.w_q = nn.Parameter(unif / torch.tensor(self.d_z))
-# 
+
 #         self.logvar_encoder = nn.Parameter(torch.ones(d) * -4)
 #         self.logvar_decoder = nn.Parameter(torch.ones(d) * -4)
-# 
+
 #         if self.nonlinear:
 #             self.nonlinear_encoder = nn.ModuleList(MLP(num_layers, num_hidden, d_x, 1) for i in range(d_z))
 #             self.nonlinear_decoder = nn.ModuleList(MLP(num_layers, num_hidden, d_z, 1) for i in range(d_x))
 #         else:
 #             self.nonlinear_encoder = None
 #             self.nonlinear_decoder = None
-# 
+
 #     def get_w(self, encoder: bool = False) -> torch.tensor:
 #         if self.tied_w:
 #             if self.debug_gt_w:
@@ -650,12 +651,12 @@ class NonlinearEncoder(nn.Module):
 #                     w = self.gt_w
 #                 else:
 #                     w = self.w
-# 
+
 #         return w
-# 
+
 #     def forward(self, x, i, encoder: bool):
 #         w = self.get_w(encoder)[i]  # dim: (d_x, d_z)
-# 
+
 #         if encoder:
 #             # encoder q(z | x)
 #             mu = torch.zeros((x.shape[0], self.d_z))
@@ -678,7 +679,7 @@ class NonlinearEncoder(nn.Module):
 #                 mu = torch.matmul(z, w)
 #             logvar = self.logvar_decoder[i]
 #         return mu, logvar
-# 
+
 #     def project_gradient(self):
 #         assert self.use_grad_projection
 #         with torch.no_grad():

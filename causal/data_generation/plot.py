@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import gaussian_kde
 
+
 def plot_mixing_function(f: dict, x, z, path: str, plot_x: bool = True):
     d_x_max = 10
     n_row = 5

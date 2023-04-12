@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import sklearn
-from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mae
+from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mae, w_mse
 
 from typing import Tuple
 from tigramite import data_processing as pp
@@ -136,7 +136,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
                                              pc_alpha=None)
 
         pred.fit(target_predictors=all_predictors, tau_max=tau_max)
-        predicted = pred.predict(list(range(d_z)))
+        # predicted = pred.predict(list(range(d_z)))
 
     elif method == "torch_linear":
         train_mse, val_mse, flag_max_iter = train(graph,

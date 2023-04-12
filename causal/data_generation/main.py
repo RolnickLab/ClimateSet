@@ -6,7 +6,7 @@ import json
 import numpy as np
 from pathlib import Path
 from data_generation import DataGeneratorWithLatent, DataGeneratorWithoutLatent
-from plot import plot_adjacency_graphs, plot_adjacency_w, plot_x, plot_z, plot_mixing_function
+from plot import plot_adjacency_graphs, plot_x, plot_z, plot_mixing_function
 
 
 class Bunch:

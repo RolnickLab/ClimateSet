@@ -17,6 +17,7 @@ def w_mae(w: np.ndarray, gt_w: np.ndarray):
     w_mae = np.sum(np.abs(w - gt_w)) / w.size
     return w_mae
 
+
 def mean_corr_coef(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
                    indices: list = None) -> float:
     """

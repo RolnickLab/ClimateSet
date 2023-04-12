@@ -3,7 +3,6 @@ import torch
 import json
 import scipy
 import scipy.sparse as sparse
-import scipy.sparse.linalg as linalg
 import torch.nn as nn
 import torch.distributions as distr
 import numpy as np
@@ -111,7 +110,7 @@ def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:f
     """
     # sample coefficients from Unif([-1, -0.2]U[0.2, 1])
     coeff = np.random.rand(tau, d * d_z, d * d_z) * 0.8 + 0.2
-    sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 -1
+    sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 - 1
     coeff = coeff * sign * graph
 
     # set the spectrum of the coeff to 1
@@ -130,6 +129,7 @@ def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:f
 
     return coeff
 
+
 def get_spectrum(coeff) -> float:
     """
     Return the spectrum of the linear coefficients corresponding to
@@ -138,7 +138,7 @@ def get_spectrum(coeff) -> float:
     tau = coeff.shape[0]
     d = coeff.shape[1]
 
-    # create a matrix A of dimension d x tau*d 
+    # create a matrix A of dimension d x tau*d
     A = sparse.hstack([sparse.lil_matrix(coeff[tau - t - 1]) for t in range(tau)])
     # get a square matrix A of dimension tau*d x tau*d
     A = sparse.vstack([A, sparse.eye((tau - 1) * d, tau * d)])
@@ -201,6 +201,7 @@ class NonadditiveNonlinear:
 
         return output
 
+
 class NonAdditiveStationaryMechanisms:
     def __init__(self, graph, tau, d, d_z, causal_order, instantaneous, radius_correct, noise_z_std=0.1):
         self.tau = tau
@@ -236,6 +237,7 @@ class NonAdditiveStationaryMechanisms:
                 output[i] = self.mechs[i](input_)
 
         return torch.from_numpy(output), noise
+
 
 class LogisticMechanisms:
     """
@@ -306,6 +308,7 @@ class LogisticMechanisms:
 
         return output, noise
 
+
 class StationaryMechanisms:
     """
     Additive nonlinear mechanisms that lead a stationary process.
@@ -330,7 +333,6 @@ class StationaryMechanisms:
             self.fct = [lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
                         lambda x: x * (1 + 10 * (np.exp(-x ** 2 / 2 * (np.abs(np.sin(x)) + 1.1)))),
                         lambda x: x * (1 + 5 * (np.exp(-x ** 2 / 4 * (np.abs(np.cos(x)) + 1.1)))),
-                        lambda x: x * (1 + 5 * (np.exp(-x ** 2 / 2 * (np.abs(np.cos(x)) + 1.1)) * (np.abs(np.sin(x+ 0.2)) + 1.1))),
                         lambda x: x * (1 + 10 * (expit(-x ** 2 / 5 * (np.abs(np.cos(x)) + 1.1)))),
                         lambda x: x * (1 + 5 * (expit(-x ** 2 / 5)) + 5 * (expit(-(x + 2) ** 2 / 5))),
                         lambda x: x * (1 + 5 * (expit(-x ** 2 / 5)) - 5 * (expit(-(x + 1.5) ** 2 / 5))),
@@ -427,7 +429,6 @@ class DataGeneratorWithLatent:
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
         np.save(os.path.join(path, 'graph_w'), self.w.detach().numpy())
 
-
         if self.func_type == "linear":
             np.save(os.path.join(path, 'linear_coeff'), self.f.coeff)
 
@@ -456,7 +457,6 @@ class DataGeneratorWithLatent:
             self.causal_order = None
 
         return G
-
 
     def sample_dag(self) -> Tuple[torch.Tensor, list]:
         """
@@ -638,12 +638,12 @@ class DataGeneratorWithLatent:
                     if self.func_type == "mlp":
                         for i_d in range(self.d):
                             for k in range(self.d_z):
-                                    nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.d_z]).view(1, -1)
-                                    params = self.f[idx][k + i_d * self.d_z](nn_input)
+                                nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.d_z]).view(1, -1)
+                                params = self.f[idx][k + i_d * self.d_z](nn_input)
 
-                                    std = torch.ones_like(params[:, 1]) * 0.0001
-                                    dist = distr.normal.Normal(params[:, 0], std)
-                                    self.Z[i_n, t, i_d, k] = dist.rsample()
+                                std = torch.ones_like(params[:, 1]) * 0.0001
+                                dist = distr.normal.Normal(params[:, 0], std)
+                                self.Z[i_n, t, i_d, k] = dist.rsample()
                     elif self.func_type == "add_nonlinear" or self.func_type == "linear":
                         self.Z_mu[i_n, t], noise = self.f.apply(g, z, t)
                         self.Z[i_n, t] = self.Z_mu[i_n, t] + noise
@@ -673,7 +673,6 @@ class DataGeneratorWithLatent:
         self.Z = self.Z[:, mixing_time:]
         self.Z_mu = self.Z_mu[:, mixing_time:]
         return self.X, self.Z
-
 
     def compute_metrics(self):
         metrics = {}
@@ -1086,6 +1085,7 @@ def is_acyclic(adjacency: np.ndarray) -> bool:
         if np.trace(prod) != 0:
             return False
     return True
+
 
 if __name__ == "__main__":
     sample_stationary_coeff(2, 3, 2)

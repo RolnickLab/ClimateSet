@@ -91,7 +91,6 @@ class Plotter:
         self.gt_w = data_loader.gt_w
         self.gt_graph = data_loader.gt_dag
 
-
     def plot(self, learner, save=False):
         """
         Main plotting function.
@@ -260,7 +259,6 @@ class Plotter:
             plt.savefig(os.path.join(path, f'learned_mixing_x{i}.png'))
             plt.close()
 
-
     def plot_compare_prediction(self, x, x_past, x_hat, coordinates: np.ndarray, path: str):
         """
         Plot the predicted x_hat compared to the ground-truth x
@@ -306,10 +304,8 @@ class Plotter:
         plt.savefig(os.path.join(path, "prediction.png"), format="png")
         plt.close()
 
-
     def plot_compare_regions():
         pass
-
 
     def plot_regions_map(self, w_adj, coordinates: np.ndarray, iteration: int,
                          plot_through_time: bool, path: str):
@@ -359,7 +355,6 @@ class Plotter:
         plt.title("Learned regions")
         plt.savefig(os.path.join(path, fname))
         plt.close()
-
 
     def plot_learning_curves(self, train_loss: list, train_recons: list = None, train_kl: list = None,
                              valid_loss: list = None, valid_recons: list = None,
@@ -416,7 +411,6 @@ class Plotter:
         plt.savefig(os.path.join(path, fname))
         plt.close()
 
-
     def plot_learning_curves2(self, losses: list, iteration: int = 0, plot_through_time:
                               bool = False, path: str = "", fname = "loss_detailed", yaxis_log: bool = False):
         """
@@ -447,7 +441,6 @@ class Plotter:
         plt.legend()
         plt.savefig(os.path.join(path, fname))
         plt.close()
-
 
     def plot_adjacency_matrix(self, mat1: np.ndarray, mat2: np.ndarray, path: str,
                               name_suffix: str, no_gt: bool = False):
@@ -514,7 +507,6 @@ class Plotter:
 
         plt.savefig(os.path.join(path, f'adjacency_{name_suffix}.png'))
         plt.close()
-
 
     def plot_adjacency_matrix_w(self, mat1: np.ndarray, mat2: np.ndarray, path: str,
                                 name_suffix: str, no_gt: bool = False):
@@ -596,7 +588,6 @@ class Plotter:
         plt.savefig(os.path.join(path, f'adjacency_{name_suffix}.png'))
         plt.close()
 
-
     def plot_adjacency_through_time(self, w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
                                     path: str, name_suffix: str):
         """ Plot the probability of each edges through time up to timestep t
@@ -628,7 +619,6 @@ class Plotter:
         fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
         fig.clf()
 
-
     def plot_adjacency_through_time_w(self, w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
                                       path: str, name_suffix: str):
         """ Plot the probability of each edges through time up to timestep t
@@ -653,7 +643,6 @@ class Plotter:
         fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
         fig.clf()
 
-
     def save_mcc_and_assignement(self, exp_path):
         np.save(os.path.join(exp_path, "mcc"), np.array(self.mcc))
         np.save(os.path.join(exp_path, "assignments"), np.array(self.assignments))
@@ -661,8 +650,9 @@ class Plotter:
             fig = plt.figure()
             plt.plot(self.mcc)
             plt.title("MCC score through time")
-            fig.savefig(os.path.join(exp_path, f'mcc.png'))
+            fig.savefig(os.path.join(exp_path, 'mcc.png'))
             fig.clf()
+
 
 if __name__ == "__main__":
     # Load saved data and plot it
@@ -685,4 +675,4 @@ if __name__ == "__main__":
     __import__('ipdb').set_trace()
 
     plotter.load(hp["exp_path"], data_loader)
-    plotter.plot(data)
+    # plotter.plot(data)

@@ -4,6 +4,7 @@ import copy
 import numpy as np
 from pathlib import Path
 
+
 def generate_all_dataset(root_path: str, varying_params: dict, default_params: dict, n_dataset: int = 10):
     """
     This code generate all the datasets used in the main text.
@@ -40,7 +41,8 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
                             diag = 1
                         else:
                             diag = 0
-                        directory = f"data_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}_dx{params['d_x']}_d{params['d']}_{func_type}_diagonal{diag}"
+                        directory = f"data_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}_dx{params['d_x']} \
+                                _d{params['d']}_{func_type}_diagonal{diag}"
                         params["exp_path"] = os.path.join(root_path, parent_directory, directory, f"data_{i_exp}")
                         print(i)
                         print(params["exp_path"])
