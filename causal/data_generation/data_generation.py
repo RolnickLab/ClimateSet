@@ -70,18 +70,19 @@ class MixingFunctions:
                     # i2 = np.random.rand() * 4 - 2
                     # i3 = np.random.rand() * 2 - 1
                     sign = np.random.rand()
+                    fct_type = np.random.rand()
                     if sign < 0.5:
                         sign = -1
                     else:
                         sign = 1
 
-                    if sign == 1:
+                    i1 = np.random.rand() * 5 + 3
+                    if fct_type < 0.5:
                         # x[:, i] = sign * ((z_ - i1) ** 3 + 0.8 * (z_ - i2) ** 3 + 0.6 * (z_ - i3) ** 3)
-                        i1 = np.random.rand() * 6 + 1
-
-                        x[:, i] = sign * np.sin(i1 * z_)
+                        # x[:, i] = sign * np.sin(i1 * z_)
+                        x[:, i] = i1 * z_ ** 2  # sign
                     else:
-                        x[:, i] = z_
+                        x[:, i] = (i1 - 2) * z_
         return x
 
 

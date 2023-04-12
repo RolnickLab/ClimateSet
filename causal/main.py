@@ -100,6 +100,7 @@ def main(hp):
                             d_z=hp.d_z,
                             tau=hp.tau,
                             instantaneous=hp.instantaneous,
+                            nonlinear_mixing=hp.nonlinear_mixing,
                             hard_gumbel=hp.hard_gumbel,
                             no_gt=hp.no_gt,
                             debug_gt_graph=hp.debug_gt_graph,
@@ -145,7 +146,7 @@ def main(hp):
         gt_graph = permutation.T @ gt_graph @ permutation
 
         metrics['mcc'] = score
-        metrics['w_mse'] = w_mae(trainer.model.encoder_decoder.get_w(False).detach().numpy()[:, :, assignments[1]], data_loader.gt_w)
+        metrics['w_mse'] = w_mae(trainer.model.encoder.w.detach().numpy()[:, :, assignments[1]], data_loader.gt_w)
         metrics['shd'] = shd(learned_graph, gt_graph)
         metrics['precision'], metrics['recall'] = precision_recall(learned_graph, gt_graph)
         errors = edge_errors(learned_graph, gt_graph)
@@ -246,6 +247,7 @@ if __name__ == "__main__":
     # specific to model with latent variables
     parser.add_argument("--latent", action="store_true", help="Use the model that assumes latent variables")
     parser.add_argument("--tied-w", action="store_true", help="Use the same matrix W, as the decoder, for the encoder")
+    parser.add_argument("--nonlinear-mixing", action="store_true", help="The encoder/decoder use NN")
     parser.add_argument("--coeff-kl", type=float, help="coefficient that is multiplied to the KL term ")
     parser.add_argument("--d-z", type=int, help="if latent, d_z is the number of cluster z")
     parser.add_argument("--d-x", type=int, help="if latent, d_x is the number of gridcells")

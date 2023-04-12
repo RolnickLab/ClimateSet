@@ -63,6 +63,20 @@ class Mask(nn.Module):
         self.fixed = True
 
 
+class MixingMask(nn.Module):
+    def __init__(self, d: int, d_x: int, d_z: int, gt_mask=None):
+        super().__init__()
+        if gt_mask is not None:
+            self.param = (gt_mask > 0) * 10.
+        else:
+            self.param = nn.Parameter(torch.ones(d, d_x, d_z) * 5)
+
+    def forward(self, batch_size):
+        param = self.param.unsqueeze(0).repeat(batch_size, 1, 1, 1)
+        mask = nn.functional.gumbel_softmax(param, tau=1, hard=False)
+        return mask
+
+
 def sample_logistic(shape, uniform):
     u = uniform.sample(shape)
     return torch.log(u) - torch.log(1 - u)
@@ -117,7 +131,7 @@ class MLP(nn.Module):
             if layer == num_layers - 1:
                 out_features = num_output
 
-            module_dict[f'nonlin{layer}'] = nn.ReLU()
+            module_dict[f'nonlin{layer}'] = nn.LeakyReLU()
             module_dict[f'lin{layer+1}'] = nn.Linear(in_features, out_features)
 
         self.model = nn.Sequential(module_dict)
@@ -143,6 +157,7 @@ class LatentTSDCD(nn.Module):
                  d_z: int,
                  tau: int,
                  instantaneous: bool,
+                 nonlinear_mixing: bool,
                  hard_gumbel: bool,
                  no_gt: bool,
                  debug_gt_graph: bool,
@@ -192,6 +207,7 @@ class LatentTSDCD(nn.Module):
         self.d_z = d_z
         self.tau = tau
         self.instantaneous = instantaneous
+        self.nonlinear_mixing = nonlinear_mixing
         self.hard_gumbel = hard_gumbel
         self.no_gt = no_gt
         self.debug_gt_graph = debug_gt_graph
@@ -231,7 +247,26 @@ class LatentTSDCD(nn.Module):
         else:
             raise NotImplementedError("This distribution is not implemented yet.")
 
-        self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.debug_gt_w, self.gt_w, self.tied_w)
+        # self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.nonlinear_mixing, 4, 1, self.debug_gt_w, self.gt_w, self.tied_w)
+        if self.nonlinear_mixing:
+            num_hidden_mixing = 8
+            num_layer_mixing = 2
+            self.autoencoder = NonLinearAutoEncoder(d, d_x, d_z,
+                                                    num_hidden_mixing,
+                                                    num_layer_mixing,
+                                                    use_gumbel_mask=True,
+                                                    tied=True,
+                                                    gt_w=self.gt_w)
+            # self.encoder = NonlinearEncoder(d, d_x, d_z, num_hidden_mixing, num_layer_mixing, True)
+            # self.decoder = NonlinearEncoder(d, d_z, d_x, num_hidden_mixing, num_layer_mixing, True)
+        else:
+            self.autoencoder = Autoencoder(d, d_x, d_z, tied=False)
+            # self.encoder = LinearEncoder(d, d_x, d_z)
+            # self.decoder = LinearEncoder(d, d_z, d_x)
+
+        if debug_gt_w:
+            self.decoder.w = gt_w
+
         self.transition_model = TransitionModel(self.d, self.d_z, self.total_tau,
                                                 self.num_layers,
                                                 self.num_hidden,
@@ -264,13 +299,16 @@ class LatentTSDCD(nn.Module):
         for i in range(self.d):
             # get params from the encoder q(z^t | x^t)
             for t in range(self.tau):
-                q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
+                # q_mu, q_logvar = self.encoder_decoder(x[:, t, i], i, encoder=True)  # torch.matmul(self.W, x)
+                q_mu, q_logvar = self.autoencoder(x[:, t, i], i, encode=True)
 
                 # reparam trick
                 q_std = torch.exp(0.5 * q_logvar)
                 z[:, t, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
 
-            q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
+            # q_mu, q_logvar = self.encoder_decoder(y[:, i], i, encoder=True)  # torch.matmul(self.W, x)
+            q_mu, q_logvar = self.autoencoder(y[:, i], i, encode=True)
+
             q_std = torch.exp(0.5 * q_logvar)
             z[:, -1, i] = q_mu + q_std * self.distr_encoder(0, 1, size=q_mu.size())
             mu[:, i] = q_mu
@@ -305,7 +343,8 @@ class LatentTSDCD(nn.Module):
         std = torch.zeros(z.size(0), self.d, self.d_x)
 
         for i in range(self.d):
-            px_mu, px_logvar = self.encoder_decoder(z[:, i], i, encoder=False)
+            # px_mu, px_logvar = self.encoder_decoder(z[:, i], i, encoder=False)
+            px_mu, px_logvar = self.autoencoder(z[:, i], i, encode=False)
             mu[:, i] = px_mu
             std[:, i] = torch.exp(0.5 * px_logvar)
 
@@ -366,88 +405,285 @@ class LatentTSDCD(nn.Module):
 
         return torch.sum(kl)
 
-
-class EncoderDecoder(nn.Module):
-    """Combine an encoder and a decoder, particularly useful when W is a shared
-    parameter."""
-    def __init__(self, d: int, d_x: int, d_z: int, debug_gt_w: bool, gt_w:
-                 torch.tensor = None, tied_w: bool = False):
-        """
-        Args:
-            d: number of features
-            d_x: dimensionality of grid locations
-            d_z: dimensionality of latent variables
-            debug_gt_w: if True, set W as gt_w
-            gt_w: ground-truth W
-            tied_w: if True, the encoder use the transposed
-            of the matrix W from the decoder
-        """
+class LinearAutoEncoder(nn.Module):
+    def __init__(self, d, d_x, d_z, tied):
         super().__init__()
-        self.use_grad_projection = True
-        self.tied_w = tied_w
-
-        self.d = d
         self.d_x = d_x
         self.d_z = d_z
-        self.debug_gt_w = debug_gt_w
-        self.gt_w = gt_w
+        self.tied = tied
+        unif = (1 - 0.1) * torch.rand(size=(d, d_z, d_x)) + 0.1
+        self.w = nn.Parameter(unif / torch.tensor(d_x))
+        if not tied:
+            unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
+            self.w_encoder = nn.Parameter(unif / torch.tensor(d_z))
 
-        unif = (1 - 0.4) * torch.rand(size=(d, d_x, d_z)) + 0.4
-        if self.use_grad_projection:
-            self.w = nn.Parameter(unif / torch.tensor(self.d_z))
+        self.logvar_encoder = nn.Parameter(torch.ones(d) * -1)
+        self.logvar_decoder = nn.Parameter(torch.ones(d) * -1)
+
+    def get_w_encoder(self):
+        if self.tied:
+            return self.w_encoder
         else:
-            # otherwise, self.w is the log of W
-            self.w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.d_z)))
+            # TODO: swapaxes?
+            return self.w
 
-        if self.tied_w:
-            self.w_q = None
+    def get_w_decoder(self):
+        return self.w
+
+    def encode(self, x, i):
+        if self.tied:
+            w = self.w[i].T
+        else:
+            w = self.w_encoder[i]
+        mu = torch.matmul(x, w)
+        return mu, self.logvar_encoder
+
+    def decode(self, z, i):
+        w = self.w[i]
+        mu = torch.matmul(z, w)
+        return mu, self.logvar_decoder
+
+    def forward(self, x, i, encode: bool = False):
+        if encode:
+            return self.encode(x, i)
+        else:
+            return self.decode(x, i)
+
+class LinearEncoder(nn.Module):
+    def __init__(self, d, num_input, num_output):
+        super().__init__()
+        unif = (1 - 0.1) * torch.rand(size=(d, num_output, num_input)) + 0.1
+        self.w = nn.Parameter(unif / torch.tensor(num_input))
+        self.logvar = nn.Parameter(torch.ones(d) * -4)
+        # self.logvar = torch.tensor([1.])
+
+    def forward(self, x, i):
+        w = self.w[i]
+        mu = torch.matmul(x, w)
+        return mu, self.logvar
+
+
+class NonLinearAutoEncoder(nn.Module):
+    def __init__(self, d, d_x, d_z, num_hidden, num_layer, use_gumbel_mask, tied, gt_w=None):
+        super().__init__()
+        if use_gumbel_mask:
+            self.use_grad_project = False
+        else:
+            self.use_grad_project = True
+        self.d_x = d_x
+        self.d_z = d_z
+        self.tied = tied
+        self.use_gumbel_mask = use_gumbel_mask
+
+        if self.use_gumbel_mask:
+            self.mask = MixingMask(d, d_x, d_z, gt_w)
+            if not tied:
+                self.mask_encoder = MixingMask(d, d_x, d_z, gt_w)
         else:
             unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
-            self.w_q = nn.Parameter(unif / torch.tensor(self.d_z))
+            self.w = nn.Parameter(unif / torch.tensor(d_z))
+            if not tied:
+                unif = (1 - 0.1) * torch.rand(size=(d, d_z, d_x)) + 0.1
+                self.w_encoder = nn.Parameter(unif / torch.tensor(d_x))
 
-        self.logvar_encoder = nn.Parameter(torch.ones(d) * -4)
-        self.logvar_decoder = nn.Parameter(torch.ones(d) * -4)
+        self.encoder = nn.ModuleList(MLP(num_layer, num_hidden, d_x, 1) for i in range(d_z))
+        self.decoder = nn.ModuleList(MLP(num_layer, num_hidden, d_z, 1) for i in range(d_x))
+        self.logvar_encoder = nn.Parameter(torch.ones(d) * -1)
+        self.logvar_decoder = nn.Parameter(torch.ones(d) * -1)
 
-    def forward(self, x, i, encoder: bool):
-        w = self.get_w(encoder)[i]
-
-        if encoder:
-            # encoder q(z | x)
-            mu = torch.matmul(x, w)
-            logvar = self.logvar_encoder[i]
-        else:
-            # here x is in fact z
-            # decoder p(x | z)
-            # if self.tied_w:
-            w = w.T
-            mu = torch.matmul(x, w)
-            logvar = self.logvar_decoder[i]
-        return mu, logvar
-
-    def get_w(self, encoder: bool = False) -> torch.tensor:
-        if self.tied_w:
-            if self.debug_gt_w:
-                w = self.gt_w
-            elif self.use_grad_projection:
-                w = self.w
+    def get_w_encoder(self):
+        if self.use_gumbel_mask:
+            if self.tied:
+                return torch.transpose(self.mask.param, 1, 2)
             else:
-                w = torch.exp(self.w)
+                return torch.transpose(self.mask_encoder.param, 1, 2)
         else:
-            if encoder:
-                w = self.w_q
+            if self.tied:
+                return self.w
             else:
-                if self.debug_gt_w:
-                    w = self.gt_w
+                return self.w_encoder
+
+    def get_w_decoder(self):
+        if self.use_gumbel_mask:
+            return self.mask.param
+        else:
+            return self.w
+
+    def encode(self, x, i):
+        mu = torch.zeros((x.shape[0], self.d_z))
+        if self.use_gumbel_mask:
+            if self.tied:
+                sampled_mask = self.mask(x.shape[0])
+                # TODO: swap axes
+            else:
+                sampled_mask = self.mask_encoder(x.shape[0])
+
+        for j in range(self.d_z):
+            if self.use_gumbel_mask:
+                mask = sampled_mask[:, i, :, j]
+            else:
+                if self.tied:
+                    mask = self.w[i, j]
                 else:
-                    w = self.w
+                    mask = self.w_encoder[i, j]
+            mu[:, j] = self.encoder[j](mask * x).squeeze()
+        return mu, self.logvar_encoder
 
-        return w
+    def decode(self, z, i):
+        mu = torch.zeros((z.shape[0], self.d_x))
+        if self.use_gumbel_mask:
+            sampled_mask = self.mask(z.shape[0])
 
-    def project_gradient(self):
-        assert self.use_grad_projection
-        with torch.no_grad():
-            self.w.clamp_(min=0.)
-        assert torch.min(self.w) >= 0.
+        for j in range(self.d_x):
+            if self.use_gumbel_mask:
+                mask = sampled_mask[:, i, j]
+            else:
+                mask = self.w[i, j]
+            mu[:, j] = self.decoder[j](mask * z).squeeze()
+        return mu, self.logvar_decoder
+
+
+    def forward(self, x, i, encode: bool = False):
+        if encode:
+            return self.encode(x, i)
+        else:
+            return self.decode(x, i)
+
+
+class NonlinearEncoder(nn.Module):
+    def __init__(self, d, num_input, num_output, num_hidden, num_layers, use_gumbel_mask):
+        super().__init__()
+        self.num_output = num_output
+        self.use_gumbel_mask = use_gumbel_mask
+
+        if self.use_gumbel_mask:
+            self.mask = MixingMask(d, num_output, num_input)
+        else:
+            unif = (1 - 0.1) * torch.rand(size=(d, num_output, num_input)) + 0.1
+            self.w = nn.Parameter(unif / torch.tensor(num_input))
+        unif = (1 - 0.1) * torch.rand(size=(d, num_output, num_input)) + 0.1
+        self.w = nn.Parameter(unif / torch.tensor(num_input))
+
+        self.nonlinear_encoder = nn.ModuleList(MLP(num_layers, num_hidden, num_input, 1) for i in range(num_output))
+        self.logvar = nn.Parameter(torch.ones(d) * -4)
+        # self.logvar = torch.tensor([1.])
+
+    def forward(self, x, i):
+        mu = torch.zeros((x.shape[0], self.num_output))
+        if self.use_gumbel_mask:
+            sampled_mask = self.mask(x.shape[0])
+
+        for j in range(self.num_output):
+            if self.use_gumbel_mask:
+                mask = sampled_mask[:, i, j]
+            else:
+                mask = self.w[i, j]
+            mu[:, j] = self.nonlinear_encoder[j](mask * x).squeeze()
+        return mu, self.logvar
+
+
+# class EncoderDecoder(nn.Module):
+#     """Combine an encoder and a decoder, particularly useful when W is a shared
+#     parameter."""
+#     def __init__(self, d: int, d_x: int, d_z: int, nonlinear: bool = False,
+#                  num_hidden: int = 4, num_layers: int = 1, debug_gt_w: bool = False, gt_w:
+#                  torch.tensor = None, tied_w: bool = False):
+#         """
+#         Args:
+#             d: number of features
+#             d_x: dimensionality of grid locations
+#             d_z: dimensionality of latent variables
+#             nonlinear: if True, use nonlinear function in addition
+#                to the matrix W
+#             debug_gt_w: if True, set W as gt_w
+#             gt_w: ground-truth W
+#             tied_w: if True, the encoder use the transposed
+#             of the matrix W from the decoder
+#         """
+#         super().__init__()
+#         self.use_grad_projection = True
+#         self.tied_w = tied_w
+#         self.nonlinear = nonlinear
+# 
+#         self.d = d
+#         self.d_x = d_x
+#         self.d_z = d_z
+#         self.debug_gt_w = debug_gt_w
+#         self.gt_w = gt_w
+# 
+#         unif = (1 - 0.4) * torch.rand(size=(d, d_x, d_z)) + 0.4
+#         if self.use_grad_projection:
+#             self.w = nn.Parameter(unif / torch.tensor(self.d_z))
+#         else:
+#             # otherwise, self.w is the log of W
+#             self.w = nn.Parameter(torch.log(unif) - torch.log(torch.tensor(self.d_z)))
+# 
+#         if self.tied_w:
+#             self.w_q = None
+#         else:
+#             unif = (1 - 0.1) * torch.rand(size=(d, d_x, d_z)) + 0.1
+#             self.w_q = nn.Parameter(unif / torch.tensor(self.d_z))
+# 
+#         self.logvar_encoder = nn.Parameter(torch.ones(d) * -4)
+#         self.logvar_decoder = nn.Parameter(torch.ones(d) * -4)
+# 
+#         if self.nonlinear:
+#             self.nonlinear_encoder = nn.ModuleList(MLP(num_layers, num_hidden, d_x, 1) for i in range(d_z))
+#             self.nonlinear_decoder = nn.ModuleList(MLP(num_layers, num_hidden, d_z, 1) for i in range(d_x))
+#         else:
+#             self.nonlinear_encoder = None
+#             self.nonlinear_decoder = None
+# 
+#     def get_w(self, encoder: bool = False) -> torch.tensor:
+#         if self.tied_w:
+#             if self.debug_gt_w:
+#                 w = self.gt_w
+#             elif self.use_grad_projection:
+#                 w = self.w
+#             else:
+#                 w = torch.exp(self.w)
+#         else:
+#             if encoder:
+#                 w = self.w_q
+#             else:
+#                 if self.debug_gt_w:
+#                     w = self.gt_w
+#                 else:
+#                     w = self.w
+# 
+#         return w
+# 
+#     def forward(self, x, i, encoder: bool):
+#         w = self.get_w(encoder)[i]  # dim: (d_x, d_z)
+# 
+#         if encoder:
+#             # encoder q(z | x)
+#             mu = torch.zeros((x.shape[0], self.d_z))
+#             if self.nonlinear:
+#                 for j in range(self.d_z):
+#                     mu[:, j] = self.nonlinear_encoder[j](w[:, j] * x).squeeze()
+#             else:
+#                 mu = torch.matmul(x, w)
+#             logvar = self.logvar_encoder[i]
+#         else:
+#             z = x
+#             mu = torch.zeros((x.shape[0], self.d_x))
+#             # decoder p(x | z)
+#             # if self.tied_w:
+#             if self.nonlinear:
+#                 for j in range(self.d_x):
+#                     mu[:, j] = self.nonlinear_decoder[j](w[j] * z).squeeze()
+#             else:
+#                 w = w.T
+#                 mu = torch.matmul(z, w)
+#             logvar = self.logvar_decoder[i]
+#         return mu, logvar
+# 
+#     def project_gradient(self):
+#         assert self.use_grad_projection
+#         with torch.no_grad():
+#             self.w.clamp_(min=0.)
+#         assert torch.min(self.w) >= 0.
 
 
 class TransitionModel(nn.Module):
