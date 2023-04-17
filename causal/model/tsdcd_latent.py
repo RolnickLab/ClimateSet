@@ -248,20 +248,18 @@ class LatentTSDCD(nn.Module):
 
         # self.encoder_decoder = EncoderDecoder(self.d, self.d_x, self.d_z, self.nonlinear_mixing, 4, 1, self.debug_gt_w, self.gt_w, self.tied_w)
         if self.nonlinear_mixing:
-            num_hidden_mixing = 8
+            num_hidden_mixing = 32
+            # num_hidden_mixing = 8
             num_layer_mixing = 2
-            self.autoencoder = NonLinearAutoEncoder(d, d_x, d_z,
-                                                    num_hidden_mixing,
-                                                    num_layer_mixing,
-                                                    use_gumbel_mask=True,
-                                                    tied=True,
-                                                    gt_w=self.gt_w)
-            # self.encoder = NonlinearEncoder(d, d_x, d_z, num_hidden_mixing, num_layer_mixing, True)
-            # self.decoder = NonlinearEncoder(d, d_z, d_x, num_hidden_mixing, num_layer_mixing, True)
+            self.autoencoder = NonLinearAutoEncoderUniqueMLP(d, d_x, d_z,
+                                                             num_hidden_mixing,
+                                                             num_layer_mixing,
+                                                             use_gumbel_mask=False,
+                                                             tied=False,
+                                                             embedding_dim=10,
+                                                             gt_w=None)
         else:
             self.autoencoder = LinearAutoEncoder(d, d_x, d_z, tied=False)
-            # self.encoder = LinearEncoder(d, d_x, d_z)
-            # self.decoder = LinearEncoder(d, d_z, d_x)
 
         if debug_gt_w:
             self.decoder.w = gt_w
@@ -451,20 +449,6 @@ class LinearAutoEncoder(nn.Module):
             return self.decode(x, i)
 
 
-class LinearEncoder(nn.Module):
-    def __init__(self, d, num_input, num_output):
-        super().__init__()
-        unif = (1 - 0.1) * torch.rand(size=(d, num_output, num_input)) + 0.1
-        self.w = nn.Parameter(unif / torch.tensor(num_input))
-        self.logvar = nn.Parameter(torch.ones(d) * -4)
-        # self.logvar = torch.tensor([1.])
-
-    def forward(self, x, i):
-        w = self.w[i]
-        mu = torch.matmul(x, w)
-        return mu, self.logvar
-
-
 class NonLinearAutoEncoder(nn.Module):
     def __init__(self, d, d_x, d_z, num_hidden, num_layer, use_gumbel_mask, tied, gt_w=None):
         super().__init__()
@@ -488,8 +472,6 @@ class NonLinearAutoEncoder(nn.Module):
                 unif = (1 - 0.1) * torch.rand(size=(d, d_z, d_x)) + 0.1
                 self.w_encoder = nn.Parameter(unif / torch.tensor(d_x))
 
-        self.encoder = nn.ModuleList(MLP(num_layer, num_hidden, d_x, 1) for i in range(d_z))
-        self.decoder = nn.ModuleList(MLP(num_layer, num_hidden, d_z, 1) for i in range(d_x))
         self.logvar_encoder = nn.Parameter(torch.ones(d) * -1)
         self.logvar_decoder = nn.Parameter(torch.ones(d) * -1)
 
@@ -511,37 +493,66 @@ class NonLinearAutoEncoder(nn.Module):
         else:
             return self.w
 
-    def encode(self, x, i):
-        mu = torch.zeros((x.shape[0], self.d_z))
+    def get_encode_mask(self, bs_size: int):
         if self.use_gumbel_mask:
             if self.tied:
-                sampled_mask = self.mask(x.shape[0])
-                # TODO: swap axes
+                sampled_mask = self.mask(bs_size)
             else:
                 sampled_mask = self.mask_encoder(x.shape[0])
+        else:
+            if self.tied:
+                return torch.transpose(self.w, 1, 2)
+            else:
+                return self.w_encoder
+        return sampled_mask
+
+    def select_encoder_mask(self, mask, i, j):
+        if self.use_gumbel_mask:
+            mask = mask[:, i, :, j]
+        else:
+            mask = mask[i, j]
+        return mask
+
+    def get_decode_mask(self, bs_size: int):
+        if self.use_gumbel_mask:
+            sampled_mask = self.mask(bs_size)
+            # size: bs, dx, dz, 1
+        else:
+            sampled_mask = self.w
+            # size: dx, dz, 1
+
+        return sampled_mask
+
+    def select_decoder_mask(self, mask, i, j):
+        if self.use_gumbel_mask:
+            mask = mask[:, i, j]
+        else:
+            mask = mask[i, j]
+        return mask
+
+
+class NonLinearAutoEncoderMLPs(NonLinearAutoEncoder):
+    def __init__(self, d, d_x, d_z, num_hidden, num_layer, use_gumbel_mask, tied, gt_w=None):
+        super().__init__(d, d_x, d_z, num_hidden, num_layer, use_gumbel_mask, tied, gt_w)
+        self.encoder = nn.ModuleList(MLP(num_layer, num_hidden, d_x, 1) for i in range(d_z))
+        self.decoder = nn.ModuleList(MLP(num_layer, num_hidden, d_z, 1) for i in range(d_x))
+
+    def encode(self, x, i):
+        mask = super().get_encode_mask(x.shape[0])
+        mu = torch.zeros((x.shape[0], self.d_z))
 
         for j in range(self.d_z):
-            if self.use_gumbel_mask:
-                mask = sampled_mask[:, i, :, j]
-            else:
-                if self.tied:
-                    mask = self.w[i, j]
-                else:
-                    mask = self.w_encoder[i, j]
-            mu[:, j] = self.encoder[j](mask * x).squeeze()
+            mask_ = super().select_encoder_mask(mask, i, j)
+            mu[:, j] = self.encoder[j](mask_ * x).squeeze()
         return mu, self.logvar_encoder
 
     def decode(self, z, i):
+        mask = super().get_decode_mask(z.shape[0])
         mu = torch.zeros((z.shape[0], self.d_x))
-        if self.use_gumbel_mask:
-            sampled_mask = self.mask(z.shape[0])
 
         for j in range(self.d_x):
-            if self.use_gumbel_mask:
-                mask = sampled_mask[:, i, j]
-            else:
-                mask = self.w[i, j]
-            mu[:, j] = self.decoder[j](mask * z).squeeze()
+            mask_ = super().select_decoder_mask(mask, i, j)
+            mu[:, j] = self.decoder[j](mask_ * z).squeeze()
         return mu, self.logvar_decoder
 
     def forward(self, x, i, encode: bool = False):
@@ -551,36 +562,45 @@ class NonLinearAutoEncoder(nn.Module):
             return self.decode(x, i)
 
 
-class NonlinearEncoder(nn.Module):
-    def __init__(self, d, num_input, num_output, num_hidden, num_layers, use_gumbel_mask):
-        super().__init__()
-        self.num_output = num_output
-        self.use_gumbel_mask = use_gumbel_mask
+class NonLinearAutoEncoderUniqueMLP(NonLinearAutoEncoder):
+    def __init__(self, d, d_x, d_z, num_hidden, num_layer, use_gumbel_mask,
+                 tied, embedding_dim, gt_w=None):
+        super().__init__(d, d_x, d_z, num_hidden, num_layer, use_gumbel_mask, tied, gt_w)
+        self.encoder = MLP(num_layer, num_hidden, d_x + embedding_dim, 1)
+        self.embedding_encoder = nn.Embedding(d_x, embedding_dim)
 
-        if self.use_gumbel_mask:
-            self.mask = MixingMask(d, num_output, num_input)
+        self.decoder = MLP(num_layer, num_hidden, d_z + embedding_dim, 1)
+        self.embedding_decoder = nn.Embedding(d_z, embedding_dim)
+
+    def encode(self, x, i):
+        mask = super().get_encode_mask(x.shape[0])
+        mu = torch.zeros((x.shape[0], self.d_z))
+
+        for j in range(self.d_z):
+            mask_ = super().select_encoder_mask(mask, i, j)
+            embedded_x = self.embedding_encoder(torch.tensor([j])).repeat(x.shape[0], 1)
+            x_ = torch.cat((mask_ * x, embedded_x), dim=1)
+            mu[:, j] = self.encoder(x_).squeeze()
+
+        return mu, self.logvar_encoder
+
+    def decode(self, z, i):
+        mask = super().get_decode_mask(z.shape[0])
+        mu = torch.zeros((z.shape[0], self.d_x))
+
+        for j in range(self.d_x):
+            mask_ = super().select_decoder_mask(mask, i, j)
+            embedded_z = self.embedding_encoder(torch.tensor([j])).repeat(z.shape[0], 1)
+            z_ = torch.cat((mask_ * z, embedded_z), dim=1)
+            mu[:, j] = self.decoder(z_).squeeze()
+
+        return mu, self.logvar_decoder
+
+    def forward(self, x, i, encode: bool = False):
+        if encode:
+            return self.encode(x, i)
         else:
-            unif = (1 - 0.1) * torch.rand(size=(d, num_output, num_input)) + 0.1
-            self.w = nn.Parameter(unif / torch.tensor(num_input))
-        unif = (1 - 0.1) * torch.rand(size=(d, num_output, num_input)) + 0.1
-        self.w = nn.Parameter(unif / torch.tensor(num_input))
-
-        self.nonlinear_encoder = nn.ModuleList(MLP(num_layers, num_hidden, num_input, 1) for i in range(num_output))
-        self.logvar = nn.Parameter(torch.ones(d) * -4)
-        # self.logvar = torch.tensor([1.])
-
-    def forward(self, x, i):
-        mu = torch.zeros((x.shape[0], self.num_output))
-        if self.use_gumbel_mask:
-            sampled_mask = self.mask(x.shape[0])
-
-        for j in range(self.num_output):
-            if self.use_gumbel_mask:
-                mask = sampled_mask[:, i, j]
-            else:
-                mask = self.w[i, j]
-            mu[:, j] = self.nonlinear_encoder[j](mask * x).squeeze()
-        return mu, self.logvar
+            return self.decode(x, i)
 
 
 # class EncoderDecoder(nn.Module):
