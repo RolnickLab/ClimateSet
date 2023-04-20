@@ -90,6 +90,8 @@ def main(hp):
                             num_hidden=hp.num_hidden,
                             num_input=num_input,
                             num_output=2,
+                            num_layers_mixing=hp.num_layers_mixing,
+                            num_hidden_mixing=hp.num_hidden_mixing,
                             coeff_kl=hp.coeff_kl,
                             d=d,
                             distr_z0="gaussian",
@@ -263,6 +265,11 @@ if __name__ == "__main__":
     parser.add_argument("--num-hidden", type=int, help="Number of hidden units")
     parser.add_argument("--num-layers", type=int, help="Number of hidden layers")
     parser.add_argument("--num-output", type=int, help="Number of output units")
+
+    parser.add_argument("--num-hidden-mixing", type=int, help="Number of hidden \
+                        units for the encoder/decoder learning the mixing function")
+    parser.add_argument("--num-layers-mixing", type=int, help="Number of hidden \
+                        layers for the encoder/decoder learning the mixing function")
 
     # Model hyperparameters: optimization
     parser.add_argument("--optimizer", type=str, help="sgd|rmsprop")

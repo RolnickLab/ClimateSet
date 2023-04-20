@@ -63,28 +63,13 @@ class MixingFunctions:
                     if first:
                         x[:, i] = z_
                         first = False
-                    # x[:, i] = (torch.sigmoid(20 * z_))
-                    # x[:, i] = (z_ + 10 * z_ ** 3)
-                    # x[:, i] = self.fct_dict[(i, j)](z[:, i, j])
-
-                    # cubic - good range
-                    # i1 = np.random.rand() * 6 - 3
-                    # i2 = np.random.rand() * 4 - 2
-                    # i3 = np.random.rand() * 2 - 1
-                    sign = np.random.rand()
                     fct_type = np.random.rand()
-                    if sign < 0.5:
-                        sign = -1
-                    else:
-                        sign = 1
 
-                    i1 = np.random.rand() * 0.5  + 0.2
+                    a1 = np.random.rand() * 0.5  + 0.2
                     if fct_type < 0.5:
-                        # x[:, i] = sign * ((z_ - i1) ** 3 + 0.8 * (z_ - i2) ** 3 + 0.6 * (z_ - i3) ** 3)
-                        # x[:, i] = sign * np.sin(i1 * z_)
-                        x[:, i] = i1 * torch.abs(z_)  # ** 2
+                        x[:, i] = a1 * torch.abs(z_)  # ** 2
                     else:
-                        x[:, i] = i1 * z_
+                        x[:, i] = a1 * z_
                     x[:, i] = x[:, i] / torch.max(x[:, i])
         return x
 
