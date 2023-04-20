@@ -151,7 +151,7 @@ class TrainingLatent:
                     self.ALM_ortho.update(self.iteration,
                                           self.valid_ortho_vector_cons_list,
                                           self.valid_loss_list)
-                    if self.iteration > 10000:
+                    if self.iteration > 1000:
                         ortho_converged = self.ALM_ortho.has_converged
                         # self.converged = False
                     else:
@@ -232,7 +232,7 @@ class TrainingLatent:
         if self.instantaneous and not self.converged:
             h_acyclic = self.get_acyclicity_violation()
         # if self.hp.reg_coeff_connect:
-        h_ortho = self.get_ortho_violation(self.model.encoder_decoder.get_w())
+        h_ortho = self.get_ortho_violation(self.model.autoencoder.get_w_decoder())
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
@@ -247,7 +247,10 @@ class TrainingLatent:
         _, _ = self.optimizer.step() if self.hp.optimizer == "rmsprop" else self.optimizer.step(), self.hp.lr
 
         # projection of the gradient for w
-        self.model.encoder_decoder.project_gradient()
+        if self.model.autoencoder.use_grad_project:
+            with torch.no_grad():
+                self.model.autoencoder.get_w_decoder().clamp_(min=0.)
+            assert torch.min(self.model.autoencoder.get_w_decoder()) >= 0.
 
         self.train_loss = loss.item()
         self.train_nll = nll.item()
@@ -278,8 +281,7 @@ class TrainingLatent:
         # h_ortho = torch.tensor([0.])
         if self.instantaneous and not self.converged:
             h_acyclic = self.get_acyclicity_violation()
-        h_ortho = self.get_ortho_violation(self.model.encoder_decoder.get_w())
-
+        h_ortho = self.get_ortho_violation(self.model.autoencoder.get_w_decoder())
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
@@ -351,11 +353,11 @@ class TrainingLatent:
         self.mu_ortho_list.append(self.ALM_ortho.mu)
 
         self.adj_tt[int(self.iteration / self.hp.valid_freq)] = self.model.get_adj().detach().numpy()
-        w = self.model.encoder_decoder.get_w().detach().numpy()
+        w = self.model.autoencoder.get_w_decoder().detach().numpy()
         if not self.no_gt:
             self.adj_w_tt[int(self.iteration / self.hp.valid_freq)] = w
-        self.logvar_decoder_tt.append(self.model.encoder_decoder.logvar_decoder[0].item())
-        self.logvar_encoder_tt.append(self.model.encoder_decoder.logvar_encoder[0].item())
+        self.logvar_decoder_tt.append(self.model.autoencoder.logvar_decoder[0].item())
+        self.logvar_encoder_tt.append(self.model.autoencoder.logvar_encoder[0].item())
         self.logvar_transition_tt.append(self.model.transition_model.logvar[0, 0].item())
 
     def print_results(self):
@@ -429,7 +431,7 @@ class TrainingLatent:
         inside each clusters.
         """
         c = torch.tensor([0.])
-        w = self.model.encoder_decoder.get_w()
+        w = self.model.autoencoder.get_w_encoder()
         d = self.data.distances
         for i in self.d:
             for k in self.d_z:
@@ -442,7 +444,7 @@ class TrainingLatent:
         complete data.
         """
         c = torch.tensor([0.])
-        w = self.model.encoder_decoder.get_w()
+        w = self.model.autoencoder.get_w_encoder()
         n = int(self.d_x * ratio)
         points = np.random.choice(np.arange(self.d_x), n)
 

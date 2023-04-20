@@ -129,7 +129,7 @@ class Training:
                 pass
 
         # final plotting and printing
-        plot(self)
+        self.plotter.plot(self)
         self.print_results()
 
     def QPM(self, iteration: int, valid_loss: float, h: float):

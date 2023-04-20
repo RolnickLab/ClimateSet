@@ -3,13 +3,75 @@ import torch
 import json
 import scipy
 import scipy.sparse as sparse
-import scipy.sparse.linalg as linalg
 import torch.nn as nn
 import torch.distributions as distr
 import numpy as np
 from collections import OrderedDict
 from typing import Tuple
 from scipy.special import expit
+
+
+class MixingFunctions:
+    def __init__(self, mask, d_x, d_z):
+        self.mask = mask
+        self.d_x = d_x
+        self.d_z = d_z
+        self._sample_all_functions()
+
+    class LeakySoftplus:
+        def __init__(self):
+            self.sign = np.random.randint(0, 2) * 2 - 1
+            self.a = np.random.rand() * 0.15 + 0.05
+
+            # self.bias = np.random.rand() * 10 - 5
+            # self.b = np.random.rand() * 10 - 5
+            # self.slope = np.random.rand() * 5 + 1
+            self.bias = np.random.rand() * 0.1 - 0.05
+            self.b = np.random.rand() * 0.1 - 0.05
+            self.slope = np.random.rand() * 1 + 1
+            self.first = True
+
+        def __call__(self, x):
+            if self.first:
+                self.adj = x.max()
+                self.b = x.mean()
+                self.first = False
+            x = x / self.adj * 5
+            out = self.a * (x - self.b)
+            out += (1 - self.a) * np.log(1 + np.exp(self.slope * (x - self.b)))
+            return self.sign * out + self.bias
+
+    def _sample_all_functions(self):
+        self.fct_dict = {}
+        for i in range(self.d_x):
+            for j in range(self.d_z):
+                if self.mask[i, j]:
+                    self.fct_dict[(i, j)] = self.LeakySoftplus()
+
+    def __call__(self, z):
+        x = torch.zeros((z.shape[0], self.d_x))
+        for j in range(self.d_z):
+            first = True
+
+            for i in range(self.d_x):
+                if self.mask[i, j]:
+                    # z_ = z[:, i, j] / z[:, i, j].max() * 2
+                    z_centered = z[:, i, j] - z[:, i, j].mean()
+                    z_ = z_centered / torch.quantile(z_centered, 0.6)
+                    # z_ = z_centered / z[:, i, j].std()
+
+                    if first:
+                        x[:, i] = z_
+                        first = False
+                    fct_type = np.random.rand()
+
+                    a1 = np.random.rand() * 0.5  + 0.2
+                    if fct_type < 0.5:
+                        x[:, i] = a1 * torch.abs(z_)  # ** 2
+                    else:
+                        x[:, i] = a1 * z_
+                    x[:, i] = x[:, i] / torch.max(x[:, i])
+        return x
 
 
 def sample_logistic_coeff(graph: np.ndarray, tau: int, d: int, d_z: int,
@@ -26,7 +88,7 @@ def sample_logistic_coeff(graph: np.ndarray, tau: int, d: int, d_z: int,
     return coeff
 
 
-def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:float = 1e-4) -> np.ndarray:
+def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps: float = 1e-4) -> np.ndarray:
     """
     Sample linear coefficients such that the spectrum associated
     to this AR is equal to 1. This is a necessary condition in order
@@ -37,7 +99,7 @@ def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:f
     """
     # sample coefficients from Unif([-1, -0.2]U[0.2, 1])
     coeff = np.random.rand(tau, d * d_z, d * d_z) * 0.8 + 0.2
-    sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 -1
+    sign = np.random.binomial(1, 0.5, size=(tau, d * d_z, d * d_z)) * 2 - 1
     coeff = coeff * sign * graph
 
     # set the spectrum of the coeff to 1
@@ -56,6 +118,7 @@ def sample_stationary_coeff(graph: np.ndarray, tau: int, d: int, d_z: int, eps:f
 
     return coeff
 
+
 def get_spectrum(coeff) -> float:
     """
     Return the spectrum of the linear coefficients corresponding to
@@ -64,7 +127,7 @@ def get_spectrum(coeff) -> float:
     tau = coeff.shape[0]
     d = coeff.shape[1]
 
-    # create a matrix A of dimension d x tau*d 
+    # create a matrix A of dimension d x tau*d
     A = sparse.hstack([sparse.lil_matrix(coeff[tau - t - 1]) for t in range(tau)])
     # get a square matrix A of dimension tau*d x tau*d
     A = sparse.vstack([A, sparse.eye((tau - 1) * d, tau * d)])
@@ -127,6 +190,7 @@ class NonadditiveNonlinear:
 
         return output
 
+
 class NonAdditiveStationaryMechanisms:
     def __init__(self, graph, tau, d, d_z, causal_order, instantaneous, radius_correct, noise_z_std=0.1):
         self.tau = tau
@@ -163,6 +227,7 @@ class NonAdditiveStationaryMechanisms:
 
         return torch.from_numpy(output), noise
 
+
 class LogisticMechanisms:
     """
     Additive nonlinear mechanisms that lead a stationary process.
@@ -173,7 +238,6 @@ class LogisticMechanisms:
         self.tau = tau
         self.d = d
         self.d_z = d_z
-        self.noise_z_std = noise_z_std
         self.G = graph
         self.causal_order = causal_order
         self.instantaneous = instantaneous
@@ -194,7 +258,7 @@ class LogisticMechanisms:
                                      p=self.prob_mech)
         # TODO: change sampling process (c should be fixed or in narrow range)
         # self.coeff = sample_stationary_coeff(self.G, self.tau + 1, self.d, self.d_z, self.radius_correct)
-        self.coeff = sample_logistic_coeff(self.G, self.tau + 1, self.d, self.d_z, low=1, high=2)
+        self.coeff = sample_logistic_coeff(self.G, self.tau + 1, self.d, self.d_z, low=2, high=3)
 
     def apply_f(self, i, x):
         return self.fct[i](x)
@@ -233,6 +297,7 @@ class LogisticMechanisms:
 
         return output, noise
 
+
 class StationaryMechanisms:
     """
     Additive nonlinear mechanisms that lead a stationary process.
@@ -257,7 +322,6 @@ class StationaryMechanisms:
             self.fct = [lambda x: x * (1 + 4 * np.exp(-x ** 2 / 2)),
                         lambda x: x * (1 + 10 * (np.exp(-x ** 2 / 2 * (np.abs(np.sin(x)) + 1.1)))),
                         lambda x: x * (1 + 5 * (np.exp(-x ** 2 / 4 * (np.abs(np.cos(x)) + 1.1)))),
-                        lambda x: x * (1 + 5 * (np.exp(-x ** 2 / 2 * (np.abs(np.cos(x)) + 1.1)) * (np.abs(np.sin(x+ 0.2)) + 1.1))),
                         lambda x: x * (1 + 10 * (expit(-x ** 2 / 5 * (np.abs(np.cos(x)) + 1.1)))),
                         lambda x: x * (1 + 5 * (expit(-x ** 2 / 5)) + 5 * (expit(-(x + 2) ** 2 / 5))),
                         lambda x: x * (1 + 5 * (expit(-x ** 2 / 5)) - 5 * (expit(-(x + 1.5) ** 2 / 5))),
@@ -321,6 +385,7 @@ class DataGeneratorWithLatent:
         self.func_type = hp.func_type
         self.instantaneous = hp.instantaneous
         self.radius_correct = hp.radius_correct
+        self.nonlinear_mixing = hp.nonlinear_mixing
 
         self.noise_x_std = hp.noise_x_std
         self.noise_z_std = hp.noise_z_std
@@ -353,7 +418,6 @@ class DataGeneratorWithLatent:
         np.save(os.path.join(path, 'graph'), self.G.detach().numpy())
         np.save(os.path.join(path, 'graph_w'), self.w.detach().numpy())
 
-
         if self.func_type == "linear":
             np.save(os.path.join(path, 'linear_coeff'), self.f.coeff)
 
@@ -382,7 +446,6 @@ class DataGeneratorWithLatent:
             self.causal_order = None
 
         return G
-
 
     def sample_dag(self) -> Tuple[torch.Tensor, list]:
         """
@@ -536,6 +599,10 @@ class DataGeneratorWithLatent:
 
         # sample observational model
         self.w = self.sample_w()
+        if self.nonlinear_mixing:
+            self.mask = (self.w != 0)[0] * 1.
+            self.mixing_f = MixingFunctions(self.mask, self.d_x, self.d_z)
+            self.mask = self.mask / np.linalg.norm(self.mask, axis=0)
 
         for i_n in range(self.n):
 
@@ -560,12 +627,12 @@ class DataGeneratorWithLatent:
                     if self.func_type == "mlp":
                         for i_d in range(self.d):
                             for k in range(self.d_z):
-                                    nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.d_z]).view(1, -1)
-                                    params = self.f[idx][k + i_d * self.d_z](nn_input)
+                                nn_input = (z.view(z.shape[0], -1) * g[:, k + i_d * self.d_z]).view(1, -1)
+                                params = self.f[idx][k + i_d * self.d_z](nn_input)
 
-                                    std = torch.ones_like(params[:, 1]) * 0.0001
-                                    dist = distr.normal.Normal(params[:, 0], std)
-                                    self.Z[i_n, t, i_d, k] = dist.rsample()
+                                std = torch.ones_like(params[:, 1]) * 0.0001
+                                dist = distr.normal.Normal(params[:, 0], std)
+                                self.Z[i_n, t, i_d, k] = dist.rsample()
                     elif self.func_type == "add_nonlinear" or self.func_type == "linear":
                         self.Z_mu[i_n, t], noise = self.f.apply(g, z, t)
                         self.Z[i_n, t] = self.Z_mu[i_n, t] + noise
@@ -577,7 +644,14 @@ class DataGeneratorWithLatent:
                         self.Z[i_n, t] = self.Z_mu[i_n, t]
 
             # sample the data X (= WZ + noise)
-            self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
+            if self.nonlinear_mixing:
+                z = self.Z.reshape(1, self.Z.shape[1], 1, self.Z.shape[-1])
+                z = z.repeat(1, 1, self.w.shape[1], 1)
+                self.X_masked = self.mask * z[0]
+                self.X_mu = self.mixing_f(self.X_masked)
+                self.X_mu = self.X_mu.reshape(1, self.X_mu.shape[0], 1, self.X_mu.shape[1])
+            else:
+                self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
             self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
 
         self.t -= mixing_time
@@ -588,7 +662,6 @@ class DataGeneratorWithLatent:
         self.Z = self.Z[:, mixing_time:]
         self.Z_mu = self.Z_mu[:, mixing_time:]
         return self.X, self.Z
-
 
     def compute_metrics(self):
         metrics = {}
@@ -609,9 +682,9 @@ class DataGeneratorWithLatent:
         metrics["kl"] = kl
 
         # get MCC
-        mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
-                          self.Z.numpy().reshape(self.n, -1))
-        metrics["mcc_stoch"] = mcc[0, 1]
+        # mcc = np.corrcoef(p.sample().numpy().reshape(self.n, -1),
+        #                   self.Z.numpy().reshape(self.n, -1))
+        # metrics["mcc_stoch"] = mcc[0, 1]
 
         mcc = np.corrcoef(self.Z_mu.reshape(self.n, -1),
                           self.Z.numpy().reshape(self.n, -1))
@@ -1001,6 +1074,7 @@ def is_acyclic(adjacency: np.ndarray) -> bool:
         if np.trace(prod) != 0:
             return False
     return True
+
 
 if __name__ == "__main__":
     sample_stationary_coeff(2, 3, 2)

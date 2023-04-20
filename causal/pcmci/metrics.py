@@ -5,6 +5,32 @@ from scipy.stats import spearmanr
 from typing import Tuple
 
 
+def w_mae(w: np.ndarray, gt_w: np.ndarray):
+    """
+    Compute the MAE between the learned matrix W
+    and the ground-truth matrix W
+    Args:
+        w: learned matrix W
+        w_gt: ground-truth matrix W
+    """
+    w_mae = np.sum(np.abs(w - gt_w)) / w.size
+    return w_mae
+
+
+def w_shd(w: np.ndarray, gt_w: np.ndarray, threshold: float = 1e-4):
+    """
+    Compute the SHD between the learned matrix W
+    and the ground-truth matrix W
+    Args:
+        w: learned matrix W
+        w_gt: ground-truth matrix W
+    """
+    w_binary = (w > threshold) * 1.
+    gt_w_binary = (gt_w > 0) * 1.
+    w_mae = np.sum(np.abs(w_binary - gt_w_binary))  # / w.size
+    return w_mae
+
+
 def mean_corr_coef(x: np.ndarray, y: np.ndarray, method: str = 'pearson',
                    indices: list = None) -> float:
     """

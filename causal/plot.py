@@ -28,9 +28,9 @@ class Plotter:
         """
         if learner.latent:
             # save matrix W of the decoder and encoder
-            w_decoder = learner.model.encoder_decoder.get_w(False).detach().numpy()
+            w_decoder = learner.model.autoencoder.get_w_decoder().detach().numpy()
             np.save(os.path.join(learner.hp.exp_path, "w_decoder"), w_decoder)
-            w_encoder = learner.model.encoder_decoder.get_w(True).detach().numpy()
+            w_encoder = learner.model.autoencoder.get_w_encoder().detach().numpy()
             np.save(os.path.join(learner.hp.exp_path, "w_encoder"), w_encoder)
 
             # save variance of encoder and decoder
@@ -44,9 +44,9 @@ class Plotter:
 
             # save losses and penalties
             penalties = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
-                      {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
-                      {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
-                      ]
+                         {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
+                         {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
+                        ]
             for p in penalties:
                 np.save(os.path.join(learner.hp.exp_path, p["name"]), np.array(p["data"]))
 
@@ -55,8 +55,8 @@ class Plotter:
                       {"name": "KL", "data": learner.train_kl_list, "s": "-"},
                       {"name": "val ELBO", "data": learner.valid_loss_list, "s": "-."},
                       ]
-            for l in losses:
-                np.save(os.path.join(learner.hp.exp_path, l["name"]), np.array(l["data"]))
+            for loss in losses:
+                np.save(os.path.join(learner.hp.exp_path, loss["name"]), np.array(loss["data"]))
 
     def load(self, exp_path: str, data_loader):
         # load matrix W of the decoder and encoder
@@ -75,8 +75,8 @@ class Plotter:
         # load losses and penalties
         self.penalties = {}
         penalties = [{"name": "sparsity", "data": "train_sparsity_reg"},
-                  {"name": "tr ortho", "data": "train_ortho_cons"},
-                  {"name": "mu ortho", "data": "mu_ortho"}]
+                     {"name": "tr ortho", "data": "train_ortho_cons"},
+                     {"name": "mu ortho", "data": "mu_ortho"}]
         for p in penalties:
             self.penalties[p["data"]] = np.load(os.path.join(exp_path, p["name"]))
 
@@ -84,13 +84,12 @@ class Plotter:
                   {"name": "Recons", "data": "train_recons"},
                   {"name": "KL", "data": "train_kl"},
                   {"name": "val ELBO", "data": "valid_loss"}]
-        for l in losses:
-            self.losses[l["data"]] = np.load(os.path.join(exp_path, l["name"]))
+        for loss in losses:
+            self.losses[loss["data"]] = np.load(os.path.join(exp_path, loss["name"]))
 
         # load GT W and graph
         self.gt_w = data_loader.gt_w
         self.gt_graph = data_loader.gt_dag
-
 
     def plot(self, learner, save=False):
         """
@@ -167,8 +166,8 @@ class Plotter:
         if not learner.no_gt:
             if learner.latent:
                 # for latent models, find the right permutation of the latent
-                adj_w = learner.model.encoder_decoder.get_w().detach().numpy()
-                adj_w2 = learner.model.encoder_decoder.get_w(True).detach().numpy()
+                adj_w = learner.model.autoencoder.get_w_decoder().detach().numpy()
+                adj_w2 = learner.model.autoencoder.get_w_encoder().detach().numpy()
                 # variables using MCC
                 if learner.debug_gt_z:
                     gt_dag = learner.gt_dag
@@ -176,7 +175,7 @@ class Plotter:
                     self.mcc.append(1.)
                     self.assignments.append(np.arange(learner.gt_dag.shape[1]))
                 else:
-                    score, cc_program_perm, assignments, z, z_hat = mcc_latent(learner.model, learner.data)
+                    score, cc_program_perm, assignments, z, z_hat, x = mcc_latent(learner.model, learner.data)
                     permutation = np.zeros((learner.gt_dag.shape[1], learner.gt_dag.shape[1]))
                     permutation[np.arange(learner.gt_dag.shape[1]), assignments[1]] = 1
                     self.mcc.append(score.item())
@@ -184,9 +183,15 @@ class Plotter:
 
                     gt_dag = permutation.T @ learner.gt_dag @ permutation
                     gt_w = learner.gt_w
-                    adj_w = adj_w[:, :, assignments[1]]
-                    adj_w2 = adj_w2[:, :, assignments[1]]
+                    # TODO: put back
+                    # adj_w = adj_w[:, :, assignments[1]]
+                    # adj_w2 = adj_w2[:, assignments[1], :]
+                    adj_w2 = np.swapaxes(adj_w2, 1, 2)
                 self.save_mcc_and_assignement(learner.hp.exp_path)
+
+                # draw learned mixing fct vs GT
+                self.plot_learned_mixing(z, z_hat, adj_w, gt_w, x, learner.hp.exp_path)
+
             else:
                 gt_dag = learner.gt_dag
 
@@ -232,6 +237,27 @@ class Plotter:
                                       learner.hp.plot_through_time,
                                       path=learner.hp.exp_path)
 
+    def plot_learned_mixing(self, z, z_hat, w, gt_w, x, path):
+        n_first = 100
+
+        for i in range(n_first):
+            # plot z_hat vs x
+            # find parent of x_i
+            j = np.argmax(w[0, i])
+            fig = plt.figure()
+            fig.suptitle("Mixing Learned vs Ground-truth")
+            axes = fig.subplots(nrows=1, ncols=2)
+
+            axes[0].scatter(z_hat[:, j], x[:, 0, i], s=2)
+            axes[0].set_title(f"Learned mixing. j={j}, val={w[0, i, j]:.2f}")
+
+            # plot z vs x
+            j = np.argmax(gt_w[0, i])
+            axes[1].scatter(z[:, j], x[:, 0, i], s=2)
+            axes[1].set_title(f"GT mixing. j={j}, val={gt_w[0, i, j]:.2f}")
+
+            plt.savefig(os.path.join(path, f'learned_mixing_x{i}.png'))
+            plt.close()
 
     def plot_compare_prediction(self, x, x_past, x_hat, coordinates: np.ndarray, path: str):
         """
@@ -278,10 +304,8 @@ class Plotter:
         plt.savefig(os.path.join(path, "prediction.png"), format="png")
         plt.close()
 
-
     def plot_compare_regions():
         pass
-
 
     def plot_regions_map(self, w_adj, coordinates: np.ndarray, iteration: int,
                          plot_through_time: bool, path: str):
@@ -332,7 +356,6 @@ class Plotter:
         plt.savefig(os.path.join(path, fname))
         plt.close()
 
-
     def plot_learning_curves(self, train_loss: list, train_recons: list = None, train_kl: list = None,
                              valid_loss: list = None, valid_recons: list = None,
                              valid_kl: list = None, best_metrics: dict = None, iteration: int = 0,
@@ -360,7 +383,6 @@ class Plotter:
             # v_recons = moving_average(valid_recons[10:])
             # v_kl = moving_average(valid_kl[10:])
 
-
         ax = plt.gca()
         # ax.set_ylim([0, 5])
         # ax.set_yscale("log")
@@ -382,15 +404,13 @@ class Plotter:
         else:
             fname = "loss.png"
 
-
         plt.title("Learning curves")
         plt.legend()
         plt.savefig(os.path.join(path, fname))
         plt.close()
 
-
-    def plot_learning_curves2(self, losses: list, iteration: int = 0, plot_through_time:
-                              bool = False, path: str = "", fname = "loss_detailed", yaxis_log: bool = False):
+    def plot_learning_curves2(self, losses: list, iteration: int = 0, plot_through_time: bool = False,
+                              path: str = "", fname="loss_detailed", yaxis_log: bool = False):
         """
         Plot all list present in 'losses'.
         Args:
@@ -419,7 +439,6 @@ class Plotter:
         plt.legend()
         plt.savefig(os.path.join(path, fname))
         plt.close()
-
 
     def plot_adjacency_matrix(self, mat1: np.ndarray, mat2: np.ndarray, path: str,
                               name_suffix: str, no_gt: bool = False):
@@ -487,7 +506,6 @@ class Plotter:
         plt.savefig(os.path.join(path, f'adjacency_{name_suffix}.png'))
         plt.close()
 
-
     def plot_adjacency_matrix_w(self, mat1: np.ndarray, mat2: np.ndarray, path: str,
                                 name_suffix: str, no_gt: bool = False):
         """ Plot the adjacency matrices learned and compare it to the ground truth,
@@ -541,7 +559,6 @@ class Plotter:
                 #             text = ax.text(j, i, f"{mat[i, j]:.1f}",
                 #                            ha="center", va="center", color="w")
 
-
         else:
             subfigs = fig.subfigures(nrows=nrows, ncols=1)
 
@@ -567,7 +584,6 @@ class Plotter:
 
         plt.savefig(os.path.join(path, f'adjacency_{name_suffix}.png'))
         plt.close()
-
 
     def plot_adjacency_through_time(self, w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
                                     path: str, name_suffix: str):
@@ -600,7 +616,6 @@ class Plotter:
         fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
         fig.clf()
 
-
     def plot_adjacency_through_time_w(self, w_adj: np.ndarray, gt_dag: np.ndarray, t: int,
                                       path: str, name_suffix: str):
         """ Plot the probability of each edges through time up to timestep t
@@ -625,7 +640,6 @@ class Plotter:
         fig.savefig(os.path.join(path, f'adjacency_time_{name_suffix}.png'))
         fig.clf()
 
-
     def save_mcc_and_assignement(self, exp_path):
         np.save(os.path.join(exp_path, "mcc"), np.array(self.mcc))
         np.save(os.path.join(exp_path, "assignments"), np.array(self.assignments))
@@ -633,8 +647,9 @@ class Plotter:
             fig = plt.figure()
             plt.plot(self.mcc)
             plt.title("MCC score through time")
-            fig.savefig(os.path.join(exp_path, f'mcc.png'))
+            fig.savefig(os.path.join(exp_path, 'mcc.png'))
             fig.clf()
+
 
 if __name__ == "__main__":
     # Load saved data and plot it
@@ -657,4 +672,4 @@ if __name__ == "__main__":
     __import__('ipdb').set_trace()
 
     plotter.load(hp["exp_path"], data_loader)
-    plotter.plot(data)
+    # plotter.plot(data)
