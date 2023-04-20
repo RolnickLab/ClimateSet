@@ -17,7 +17,7 @@ def w_mae(w: np.ndarray, gt_w: np.ndarray):
     return w_mae
 
 
-def w_shd(w: np.ndarray, gt_w: np.ndarray, threshold: float = 1e-2):
+def w_shd(w: np.ndarray, gt_w: np.ndarray, threshold: float = 1e-4):
     """
     Compute the SHD between the learned matrix W
     and the ground-truth matrix W
@@ -25,9 +25,9 @@ def w_shd(w: np.ndarray, gt_w: np.ndarray, threshold: float = 1e-2):
         w: learned matrix W
         w_gt: ground-truth matrix W
     """
-    w_binary = (w > threshold)
-    gt_w_binary = (gt_w > 0)
-    w_mae = np.sum(np.abs(w_binary - gt_w_binary)) / w.size
+    w_binary = (w > threshold) * 1.
+    gt_w_binary = (gt_w > 0) * 1.
+    w_mae = np.sum(np.abs(w_binary - gt_w_binary))  # / w.size
     return w_mae
 
 
