@@ -55,7 +55,10 @@ class MixingFunctions:
 
             for i in range(self.d_x):
                 if self.mask[i, j]:
-                    z_ = z[:, i, j] / z[:, i, j].max() * 2
+                    # z_ = z[:, i, j] / z[:, i, j].max() * 2
+                    z_centered = z[:, i, j] - z[:, i, j].mean()
+                    z_ = z_centered / torch.quantile(z_centered, 0.6)
+                    # z_ = z_centered / z[:, i, j].std()
 
                     if first:
                         x[:, i] = z_
@@ -75,13 +78,14 @@ class MixingFunctions:
                     else:
                         sign = 1
 
-                    i1 = np.random.rand() * 5 + 3
+                    i1 = np.random.rand() * 0.5  + 0.2
                     if fct_type < 0.5:
                         # x[:, i] = sign * ((z_ - i1) ** 3 + 0.8 * (z_ - i2) ** 3 + 0.6 * (z_ - i3) ** 3)
                         # x[:, i] = sign * np.sin(i1 * z_)
-                        x[:, i] = i1 * z_ ** 2  # sign
+                        x[:, i] = i1 * torch.abs(z_)  # ** 2
                     else:
-                        x[:, i] = (i1 - 2) * z_
+                        x[:, i] = i1 * z_
+                    x[:, i] = x[:, i] / torch.max(x[:, i])
         return x
 
 
