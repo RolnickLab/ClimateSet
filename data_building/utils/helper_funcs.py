@@ -1,6 +1,11 @@
 import subprocess
 import numpy as np
 
+from pathlib import Path
+
+def get_project_root() -> Path:
+    return Path(__file__).parent.parent.parent
+
 
 def get_keys_from_value(d, val):
     keys = [k for k, v in d.items() if val in v]
