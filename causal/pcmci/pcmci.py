@@ -8,18 +8,21 @@ from tigramite import data_processing as pp
 from tigramite.pcmci import PCMCI
 from tigramite.independence_tests import ParCorr, CMIknn, GPDC
 from tigramite.models import Prediction
-from savar.dim_methods import get_varimax_loadings_standard as varimax
-# from varimax import get_varimax_loadings_standard as varimax
+# from savar.dim_methods import get_varimax_loadings_standard as varimax
+from varimax import get_varimax_loadings_standard as varimax
 from linear_model import train
 
 
-def dim_reduc(data, d_z, method='varimax'):
+def dim_reduc(data, d_z: int, unrotated: bool = False, no_sign_flip: bool =
+              False, method: str = 'varimax'):
     if method == "varimax":
-        modes = varimax(data, max_comps=d_z)
+        modes = varimax(data, max_comps=d_z, no_sign_flip=no_sign_flip)
 
         # Get matrix W, apply it to grid-level
-        W = modes['weights']
-        # W = modes['unrotated_weights']
+        if unrotated:
+            W = modes['unrotated_weights']
+        else:
+            W = modes['weights']
         z_hat = data @ W
     else:
         raise ValueError("only varimax is implemented")
@@ -96,7 +99,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     # 1 - Apply varimax+ to the data in order to find W
     # (the relations from the grid locations to the modes)
     if not hp.debug_gt_z:
-        z_hat, W = dim_reduc(train_data, d_z)
+        z_hat, W = dim_reduc(train_data, d_z, hp.unrotated, hp.no_sign_flip)
         z_hat_valid = valid_data @ W
     else:
         W = gt_w[0]
