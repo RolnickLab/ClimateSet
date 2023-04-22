@@ -689,6 +689,8 @@ class DataGeneratorWithLatent:
         mcc = np.corrcoef(self.Z_mu.reshape(self.n, -1),
                           self.Z.numpy().reshape(self.n, -1))
         metrics["mcc"] = mcc[0, 1]
+        if metrics["mcc"] < 0.75:
+            raise ValueError("The MCC is quite low, the signal-to-noise ratio is also probably low")
 
         # ELBO with GT model
         metrics["elbo"] = metrics["recons"] - metrics["kl"]
