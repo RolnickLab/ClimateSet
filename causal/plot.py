@@ -190,7 +190,8 @@ class Plotter:
                 self.save_mcc_and_assignement(learner.hp.exp_path)
 
                 # draw learned mixing fct vs GT
-                self.plot_learned_mixing(z, z_hat, adj_w, gt_w, x, learner.hp.exp_path)
+                if learner.hp.nonlinear_mixing:
+                    self.plot_learned_mixing(z, z_hat, adj_w, gt_w, x, learner.hp.exp_path)
 
             else:
                 gt_dag = learner.gt_dag
