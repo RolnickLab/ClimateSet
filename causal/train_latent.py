@@ -92,10 +92,7 @@ class TrainingLatent:
             self.acyclic_constraint_normalization = compute_dag_constraint(full_adjacency).item()
 
             if self.latent:
-                # expected frobenius norm of A^TA where A_ij \sim U([0, 1])
-                self.ortho_normalization = (self.d_x * self.d_z) ** 2 / 10000
-                # 1./16 * self.d_x ** 2 * self.d_z ** 2
-                # + 7./144 * self.d_x * self.d_z
+                self.ortho_normalization = self.d_x * self.d_z
 
     def train_with_QPM(self):
         """

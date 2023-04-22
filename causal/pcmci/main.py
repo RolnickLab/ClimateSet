@@ -125,6 +125,11 @@ if __name__ == "__main__":
     parser.add_argument("--debug-gt-graph", action="store_true",
                         help="If true, use the ground truth graph (use only to debug)")
 
+    parser.add_argument("--unrotated", action="store_true",
+                        help="If true, does not use the Varimax rotation on W")
+    parser.add_argument("--no-sign-flip", action="store_true",
+                        help="If true, does not perform the positive sign flip on W")
+
     # Dataset properties
     parser.add_argument("--data-path", type=str, help="Path to the dataset")
     parser.add_argument("--data-format", type=str, help="numpy|hdf5")
