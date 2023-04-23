@@ -142,13 +142,13 @@ def main(hp):
         # TODO: doublecheck that
         learned_graph = trainer.model.get_adj().detach().numpy().reshape(gt_graph.shape[0], gt_graph.shape[1], -1)
 
-        score, cc_program_perm, assignments, z, z_hat = mcc_latent(trainer.model, trainer.data)
+        score, cc_program_perm, assignments, z, z_hat, _ = mcc_latent(trainer.model, trainer.data)
         permutation = np.zeros((gt_graph.shape[1], gt_graph.shape[1]))
         permutation[np.arange(gt_graph.shape[1]), assignments[1]] = 1
         gt_graph = permutation.T @ gt_graph @ permutation
 
         metrics['mcc'] = score
-        metrics['w_mse'] = w_mae(trainer.model.encoder.w.detach().numpy()[:, :, assignments[1]], data_loader.gt_w)
+        metrics['w_mse'] = w_mae(trainer.model.autoencoder.get_w_decoder().detach().numpy()[:, :, assignments[1]], data_loader.gt_w)
         metrics['shd'] = shd(learned_graph, gt_graph)
         metrics['precision'], metrics['recall'] = precision_recall(learned_graph, gt_graph)
         errors = edge_errors(learned_graph, gt_graph)
