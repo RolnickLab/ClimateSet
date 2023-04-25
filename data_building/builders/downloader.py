@@ -14,8 +14,8 @@ from data_building.parameters.esgf_server_constants import (
     RES_TO_CHUNKSIZE,
     MODEL_SOURCES,
     VAR_SOURCE_LOOKUP,
-    OPENID,
-    PASSWORD,
+    #OPENID,
+    #PASSWORD,
     SUPPORTED_EXPERIMENTS,
 )
 
