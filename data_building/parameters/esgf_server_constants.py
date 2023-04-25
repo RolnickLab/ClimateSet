@@ -6,8 +6,8 @@ MODEL_SOURCES = {
 }
 
 
-OPENID = "https://esgf-node.llnl.gov/esgf-idp/openid/causalpaca" #https://esgf-data.dkrz.de/esgf-idp/openid/causalpaca"
-PASSWORD = "Causalpaca.42"
+#OPENID = "https://esgf-node.llnl.gov/esgf-idp/openid/causalpaca" #https://esgf-data.dkrz.de/esgf-idp/openid/causalpaca"
+#PASSWORD = "Causalpaca.42"
 
 
 VAR_SOURCE_LOOKUP = {
