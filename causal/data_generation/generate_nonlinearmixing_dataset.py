@@ -42,7 +42,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
                             diag = 1
                         else:
                             diag = 0
-                        directory = f"data_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}"
+                        directory = f"data_nonlinearmixing_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}"
                         directory += f"_dx{params['d_x']}_d{params['d']}_{func_type}_diagonal{diag}"
 
                         params["exp_path"] = os.path.join(root_path, parent_directory, directory, f"data_{i_exp}")
