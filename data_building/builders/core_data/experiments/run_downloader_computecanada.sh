@@ -2,12 +2,12 @@
 
 # TODO choose CPUs and make specs for compute canada
 # TODO debug downloader after that
+#SBATCH --account=def-drolnick
 #SBATCH --cpus-per-task=1     # specify cpu
-#SBATCH --gres=gpu:rtx8000:1  # specify gpu
 #SBATCH --mem=150G            # specify memory
 #SBATCH --time=50:00:00       # set runtime
 #SBATCH --partition=long
-#SBATCH -o /home/mila/c/charlotte.lange/scratch/causalpaca/slurms/slurm_downloader-%j.out        # set log dir to home
+#SBATCH -o /home/jkalt/scratch/out/causalpaca/slurm_downloader-%j.out        # set log dir to home
 
 # Note running: sbatch data_building/builders/core_data/experiments/run_downloader_computecanada.sh
 
