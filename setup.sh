@@ -34,14 +34,14 @@ if $venv; then
 
   else
       echo "env_data is created now"
-      python3.9 -m venv env_data
+      python -m venv env_data
       source env_data/bin/activate
-      python3.9 -m pip install --upgrade pip
-      pip3.9 install wheel setuptools
+      python -m pip install --upgrade pip
+      pip install wheel setuptools
 
       # Install requirements.txt if it exists
       if [ -a requirements_data.txt ]; then
-          pip3.9 install -r requirements_data.txt
+          pip install -r requirements_data.txt
       else
           echo "Requirements file missing"
       fi
