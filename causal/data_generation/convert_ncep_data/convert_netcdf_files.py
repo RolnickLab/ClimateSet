@@ -23,7 +23,9 @@ def convert_netcdf_to_pandas(filename: str, features_name: list, frequency:
         longitude, the NetCDF metadata and the features_name used
     """
     # open dataset with xarray and convert it to a pandas DataFrame
-    ds = xr.open_dataset(filename)
+    # ds = xr.open_dataset(filename)
+    ds = xr.load_dataset(filename, engine="cfgrib")
+
     df = ds.to_dataframe()
     ds.close()
     df = df.reset_index()
@@ -112,20 +114,20 @@ def detrending():
     pass
 
 
-def find_all_nc_files(directory: str) -> list:
+def find_all_files(directory: str, extension: str = "nc") -> list:
     """
-    Find all NetCDF files in 'directory'
+    Find all NetCDF or grib files in 'directory'
     Returns: a list of the files name
     """
     if directory[-1] == "/":
-        pattern = f"{directory}*.nc"
+        pattern = f"{directory}*.{extension}"
     else:
-        pattern = f"{directory}/*.nc"
+        pattern = f"{directory}/*.{extension}"
     filenames = sorted([x for x in glob.glob(pattern)])
     return filenames
 
 
-def main_numpy(netcdf_directory: str, output_path: str, features_name: list, frequency: str, verbose: bool):
+def main_numpy(netcdf_directory: str, extension: str,  output_path: str, features_name: list, frequency: str, verbose: bool):
     """
     Convert netCDF4 files from the NCEP-NCAR Reanalysis project to a numpy file.
     All the files are expected to be in the directory `netcdf_directory`
@@ -137,7 +139,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     df = None
 
     # find all the netCDF4 in the directory `netcdf_directory`
-    filenames = find_all_nc_files(netcdf_directory)
+    filenames = find_all_files(netcdf_directory, extension)
     if verbose:
         print(f"NetCDF Files found: {filenames}")
 
@@ -174,7 +176,7 @@ def main_numpy(netcdf_directory: str, output_path: str, features_name: list, fre
     return df, df.shape[0], coordinates, features_name
 
 
-def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
+def main_hdf5(netcdf_directory: str, extension: str, output_path: str, features_name: list,
               frequency: str, verbose: bool, remove_season: bool = True,
               lat_reweight: bool = False, remove_poles: bool = True):
     """
@@ -190,9 +192,10 @@ def main_hdf5(netcdf_directory: str, output_path: str, features_name: list,
     n = 0
 
     # find all the netCDF4 in the directory `netcdf_directory`
-    filenames = find_all_nc_files(netcdf_directory)
+    filenames = find_all_files(netcdf_directory, extension)
     if verbose:
         print(f"NetCDF Files found: {filenames}")
+    __import__('ipdb').set_trace()
 
     # arr_total = None
 
@@ -288,6 +291,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert NetCDF files to numpy or hdf5. Can also plot visualizations.")
     parser.add_argument("--data-path", type=str, default="data/sea_level_pressure",
                         help="Path to the directory containing the NetCDF files")
+    parser.add_argument("--extension", type=str, default="nc",
+                        help="Extensions of the files (nc or grib)")
     parser.add_argument("--output-path", type=str, default="sea_level_results",
                         help="Path where to save the results.")
     parser.add_argument("--features-name", nargs="+",
@@ -310,12 +315,14 @@ if __name__ == "__main__":
 
     if args.hdf5:
         df, n, coordinates, features_name = main_hdf5(args.data_path,
+                                                      args.extension,
                                                       args.output_path,
                                                       args.features_name,
                                                       args.frequency,
                                                       args.verbose)
     else:
         df, n, coordinates, features_name = main_numpy(args.data_path,
+                                                       args.extension,
                                                        args.output_path,
                                                        args.features_name,
                                                        args.frequency,
