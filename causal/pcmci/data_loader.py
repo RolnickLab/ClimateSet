@@ -74,7 +74,25 @@ class DataLoader:
         """
         t_max = self.x.shape[1]
 
-        self.n_train = int(t_max * self.ratio_train)
-        self.n_valid = int(t_max * self.ratio_valid)
-        self.idx_train = np.arange(self.tau, self.n_train)
-        self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
+        if self.n == 1:
+            idx_train = []
+            idx_valid = []
+            for i in range(t_max // 100):
+                start = i * 100
+                idx_train.extend(range(start + self.tau, start + int(100 * self.ratio_train)))
+                idx_valid.extend(range(start + int(100 * self.ratio_train), start + 100))
+            self.idx_train = np.array(idx_train)
+            self.idx_valid = np.array(idx_valid)
+            self.n_train = self.idx_train.shape[0]  #int(t_max * self.ratio_train)
+            self.n_valid = self.idx_valid.shape[0]  #int(t_max * self.ratio_valid)
+
+            # train = X first, valid = 1 - X last examples
+            # self.idx_train = np.arange(self.tau, self.n_train)
+            # self.idx_valid = np.arange(self.n_train, self.n_train + self.n_valid)
+        else:
+            self.n_train = int(self.n * self.ratio_train)
+            self.n_valid = int(self.n * self.ratio_valid)
+            self.idx_train = np.arange(self.tau, self.n_train)
+            self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
+            np.random.shuffle(self.idx_train)
+            np.random.shuffle(self.idx_valid)

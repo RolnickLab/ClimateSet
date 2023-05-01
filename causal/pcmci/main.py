@@ -57,7 +57,9 @@ def main(hp):
                                                     data_loader.idx_valid, hp,
                                                     data_loader.z,
                                                     data_loader.gt_w,
-                                                    data_loader.gt_graph)
+                                                    data_loader.gt_graph,
+                                                    hp.do_prediction,
+                                                    hp.likelihood_model)
 
     # create path to exp and save hyperparameters
     save_path = os.path.join(hp.exp_path, "train")
@@ -157,6 +159,10 @@ if __name__ == "__main__":
                         help="Type of conditional independence test used by PCMCI")
     parser.add_argument("--fct-type", type=str,
                         help="Function used when ftiting the data [linear, gaussian_process]")
+    parser.add_argument("--likelihood-model", type=str,
+                        help="Type of likelihood model to use for prediction")
+    parser.add_argument("--do-prediction", action="store_true",
+                        help="If True, fit a likelihood model to predict x_{t+1}")
 
     args = parser.parse_args()
 

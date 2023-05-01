@@ -10,7 +10,7 @@ from tigramite.independence_tests import ParCorr, CMIknn, GPDC
 from tigramite.models import Prediction
 # from savar.dim_methods import get_varimax_loadings_standard as varimax
 from varimax import get_varimax_loadings_standard as varimax
-from linear_model import train
+from likelihood_models import train
 
 
 def dim_reduc(data, d_z: int, unrotated: bool = False, no_sign_flip: bool =
@@ -48,7 +48,7 @@ def pcmci(z_hat, ind_test, tau_min, tau_max, pc_alpha, alpha=0.05):
 
 
 def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
-                  gt_graph) -> Tuple[np.ndarray, np.ndarray, dict]:
+                  gt_graph, do_prediction, likelihood_model) -> Tuple[np.ndarray, np.ndarray, dict]:
     """
     Apply Varimax+ to find modes and then PCMCI to recover the causal graph
     relating the different modes.
@@ -112,44 +112,55 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     df_z_hat = pp.DataFrame(z_hat)
     graph = pcmci(df_z_hat, ind_test, tau_min, tau_max, pc_alpha, alpha)
 
-    # 3 - Fit a linear model on training set
-    method = "other"
 
+    # if method == "original":
+    #     z = data @ W
+    #     df_z = pp.DataFrame(z)
+    #     pred = Prediction(dataframe=df_z,
+    #                       cond_ind_test=ind_test,
+    #                       prediction_model=prediction_model,
+    #                       data_transform=sklearn.preprocessing.StandardScaler(),
+    #                       train_indices=idx_train,
+    #                       test_indices=idx_valid)
+    #     all_predictors = pred.get_predictors(selected_targets=range(d_z),
+    #                                          steps_ahead=1,
+    #                                          tau_max=tau_max,
+    #                                          pc_alpha=None)
+
+    #     pred.fit(target_predictors=all_predictors, tau_max=tau_max)
+
+    # 3 - Fit a model   #on training set
     # Metrics: SHD, Pr/Re, MSE of pred, MCC
-    metrics = {"shd": 0.,
-               "precision": 0.,
-               "recall": 0.,
-               "train_mse": 0.,
-               "val_mse": 0.,
-               "mcc": 0.}
+    metrics = {}
+    if do_prediction:
+        if likelihood_model == "linear":
+            train_mse, val_mse, flag_max_iter = train(graph,
+                                                      data,
+                                                      W,
+                                                      idx_train,
+                                                      idx_valid,
+                                                      max_iter=10000,
+                                                      batch_size=64,
+                                                      linear=True)
+            metrics['train_mse'] = train_mse
+            metrics['val_mse'] = val_mse
 
-    # TODO: check original method
-    if method == "original":
-        z = data @ W
-        df_z = pp.DataFrame(z)
-        pred = Prediction(dataframe=df_z,
-                          cond_ind_test=ind_test,
-                          prediction_model=prediction_model,
-                          data_transform=sklearn.preprocessing.StandardScaler(),
-                          train_indices=idx_train,
-                          test_indices=idx_valid)
-        all_predictors = pred.get_predictors(selected_targets=range(d_z),
-                                             steps_ahead=1,
-                                             tau_max=tau_max,
-                                             pc_alpha=None)
+        elif likelihood_model == "MLPs":
+            train_mse, val_mse, flag_max_iter = train(graph,
+                                                      data,
+                                                      W,
+                                                      idx_train,
+                                                      idx_valid,
+                                                      max_iter=100000,
+                                                      batch_size=64,
+                                                      linear=False,
+                                                      num_hidden=8,
+                                                      num_layers=2)
+            metrics['train_mse'] = train_mse
+            metrics['val_mse'] = val_mse
+        else:
+            raise NotImplementedError("Linear and MLPs are the only likelihood models")
 
-        pred.fit(target_predictors=all_predictors, tau_max=tau_max)
-        # predicted = pred.predict(list(range(d_z)))
-
-    elif method == "torch_linear":
-        train_mse, val_mse, flag_max_iter = train(graph,
-                                                  z_hat,
-                                                  idx_train,
-                                                  idx_valid,
-                                                  max_iter=10000,
-                                                  batch_size=30)
-        metrics['train_mse'] = train_mse
-        metrics['val_mse'] = val_mse
 
     if not hp.no_gt:
         with torch.no_grad():
