@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 
 from data_building.builders.preprocesser import SpatResPreprocesser, TempResPreprocesser
+from data_building.utils.helper_funcs import get_single_example
 
 # args: which directory should be processed which way?
 parser = argparse.ArgumentParser(description="Processing module")
@@ -33,24 +34,20 @@ def run_res_preprocesser(task, input_dir, example_dir):
     elif task == "temp_aggregate":
         res_processer = TempResPreprocesser(example_ds, task="aggregate")
 
+    # TODO write a script that decides which dirs have to be processed in which way
+    # TODO write a config where you store which models have to be processed in which way??
+
     # run through directory
         # get a whole sub-directory
         # make a copy in a temporary directory?? (or apply directly)
         # apply processer to that (CDO can handle large data chunks!)
-        ds = res_processer.apply(directory)
+        res_processer.apply_dir(sub_directory, store_dir)
             # TODO in processer: rename params in the dataset because of new resolution
-            # TODO add to processed param what has been done (task + resolutions)
-        # store dataset (somewhere else in preprocessed under different resolution)
+            # TODO add to processed param what has been done (task + resolutions) [flag!]
+            # store dataset (somewhere else in preprocessed under different resolution)
 
 
-def get_single_example(dir):
-    """ Gets an example file of a directory
-    Parameters:
-        dir (Path):
-    Return:
-        xarray: the file that can be used as example
-    """
-    pass
+
 
 if __name__ == "__main__":
     # run preprocesser with args
