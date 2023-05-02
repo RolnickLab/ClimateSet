@@ -1,4 +1,6 @@
 import argparse
+import time
+import sys
 import warnings
 import os
 import json
@@ -23,17 +25,19 @@ class Bunch:
     def to_dict(self):
         return self.__dict__
 
-    def fancy_print(self, prefix=''):
-        str_list = []
-        for key, val in self.__dict__.items():
-            str_list.append(prefix + f"{key} = {val}")
-        return '\n'.join(str_list)
+    # def fancy_print(self, prefix=''):
+    #     str_list = []
+    #     for key, val in self.__dict__.items():
+    #         str_list.append(prefix + f"{key} = {val}")
+    #     return '\n'.join(str_list)
 
 
 def main(hp):
     """
     :param hp: object containing hyperparameter values
     """
+    t0 = time.time()
+
     # Control as much randomness as possible
     torch.manual_seed(hp.random_seed)
     np.random.seed(hp.random_seed)
@@ -51,9 +55,9 @@ def main(hp):
             torch.set_default_tensor_type("torch.DoubleTensor")
 
     # Create folder
-    args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")
-    if not os.path.exists(args.exp_path):
-        os.makedirs(args.exp_path)
+    # args.exp_path = os.path.join(args.exp_path, f"exp{args.exp_id}")
+    # if not os.path.exists(args.exp_path):
+    #     os.makedirs(args.exp_path)
 
     # generate data and split train/test
     data_loader = DataLoader(ratio_train=hp.ratio_train,
@@ -158,6 +162,7 @@ def main(hp):
         metrics['fn'] = errors['fn']
         metrics['n_edge_gt_graph'] = np.sum(gt_graph)
         metrics['n_edge_learned_graph'] = np.sum(learned_graph)
+        metrics['execution_time'] = time.time() - t0
 
         for key, val in valid_loss.items():
             metrics[key] = val

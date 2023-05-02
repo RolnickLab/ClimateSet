@@ -5,7 +5,7 @@ import numpy as np
 from pathlib import Path
 
 
-def generate_all_dataset(root_path: str, varying_params: dict, default_params: dict, n_dataset: int = 10):
+def generate_all_dataset(root_path: str, varying_params: dict, default_params: dict, n_dataset: int = 110):
     """
     This code generate all the datasets used in the main text.
     Args:
@@ -23,7 +23,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
             for func_type in func_type_list:
                 for fixed_diag in fixed_diagonal_list:
                     seed = np.random.randint(1, 1000)
-                    parent_directory = f"exp_nonlinearmixing"
+                    parent_directory = f"exp_lownoise_nonlinearmixing"
 
                     for i_exp in range(n_dataset):
                         params = copy.deepcopy(default_params)
@@ -37,6 +37,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
                         params["fixed_diagonal"] = fixed_diag
                         params["nonlinear_mixing"] = True
                         params["exp_id"] = i_exp
+                        params["nb_edges"] = 15
                         params["random_seed"] = seed + i_exp
                         if fixed_diag:
                             diag = 1
@@ -78,7 +79,7 @@ if __name__ == "__main__":
         "n": 1,
         "noise_type": "gaussian",
         "instantaneous": False,
-        "noise_x_std": 0.1,
+        "noise_x_std": 0.32,
         "noise_z_std": 1,
         "radius_correct": 1e-1
     }

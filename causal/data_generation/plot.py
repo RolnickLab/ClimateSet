@@ -31,17 +31,18 @@ def plot_mixing_function(f: dict, x, z, path: str, plot_x: bool = True):
     # z_min = np.min(z, axis=0)
     # z_max = np.max(z, axis=0)
     # z_range = np.random.rand(n, z_min.shape[0]) * (z_max - z_min) + z_min
-    x = np.zeros((z.shape[0], f.d_x))
-    for i in range(d_x_max):
-        for j in range(f.d_z):
-            if f.mask[i, j]:
-                x[:, i] = f.fct_dict[(i, j)](torch.tensor(z[:, j]))
-                xy = np.vstack([z[:, j], x[:, i]])
-                c = gaussian_kde(xy)(xy)
-                axs[i // n_row, i % n_row].scatter(z[:, j], x[:, i], c=c, s=1)
 
-    plt.savefig(os.path.join(path, 'fct_x.png'))
-    plt.close()
+    # x = np.zeros((z.shape[0], f.d_x))
+    # for i in range(d_x_max):
+    #     for j in range(f.d_z):
+    #         if f.mask[i, j]:
+    #             x[:, i] = f.fct_dict[(i, j)](torch.tensor(z[:, j]))
+    #             xy = np.vstack([z[:, j], x[:, i]])
+    #             c = gaussian_kde(xy)(xy)
+    #             axs[i // n_row, i % n_row].scatter(z[:, j], x[:, i], c=c, s=1)
+
+    # plt.savefig(os.path.join(path, 'fct_x.png'))
+    # plt.close()
 
 
 def plot_adjacency_graphs(g: np.ndarray, path: str):

@@ -67,10 +67,11 @@ class MixingFunctions:
 
                     a1 = np.random.rand() * 0.5  + 0.2
                     if fct_type < 0.5:
-                        x[:, i] = a1 * torch.abs(z_)  # ** 2
+                        # x[:, i] = a1 * torch.abs(z_)
+                        x[:, i] = (a1) * (2 * torch.sigmoid(10 * z_) - 1) * z_
                     else:
                         x[:, i] = a1 * z_
-                    x[:, i] = x[:, i] / torch.max(x[:, i])
+                    # x[:, i] = x[:, i] / torch.max(x[:, i])
         return x
 
 
@@ -386,6 +387,10 @@ class DataGeneratorWithLatent:
         self.instantaneous = hp.instantaneous
         self.radius_correct = hp.radius_correct
         self.nonlinear_mixing = hp.nonlinear_mixing
+        if hp.nb_edges > 0:
+            self.nb_edges = hp.nb_edges
+        else:
+            self.nb_edges = None
 
         self.noise_x_std = hp.noise_x_std
         self.noise_z_std = hp.noise_z_std
@@ -421,28 +426,47 @@ class DataGeneratorWithLatent:
         if self.func_type == "linear":
             np.save(os.path.join(path, 'linear_coeff'), self.f.coeff)
 
-    def sample_graph(self, instantaneous: bool) -> torch.Tensor:
+    def sample_graph(self, instantaneous: bool, nb_edges: int = None) -> torch.Tensor:
         """
         Sample a random matrix that will be used as an adjacency matrix
         The diagonal is set to 1.
         Args:
             instantaneous: if True, sample a DAG for G[0]
+            nb_edges: number of edges in the graph besides the diagonal
         Returns:
             A Tensor of tau graphs between the Z (shape: tau x (d x d_z) x (d x d_z))
         """
-        prob_tensor = torch.ones((self.tau + 1, self.d * self.d_z, self.d * self.d_z)) * self.prob
-        # set diagonal to 1 of the graph G_{t-1}
-        if self.fixed_diagonal:
-            prob_tensor[-2, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
+        if nb_edges is None:
+            prob_tensor = torch.ones((self.tau + 1, self.d * self.d_z, self.d * self.d_z)) * self.prob
+            # set diagonal to 1 of the graph G_{t-1}
+            if self.fixed_diagonal:
+                prob_tensor[-2, torch.arange(prob_tensor.size(1)), torch.arange(prob_tensor.size(2))] = 1
 
-        G = torch.bernoulli(prob_tensor)
+            G = torch.bernoulli(prob_tensor)
 
-        if instantaneous:
-            # for G_t sample a DAG
-            G[-1], self.causal_order = self.sample_dag()
+            if instantaneous:
+                # for G_t sample a DAG
+                G[-1], self.causal_order = self.sample_dag()
+            else:
+                # no instantaneous links, so set G_t to 0
+                G[-1] = 0
+                self.causal_order = None
         else:
-            # no instantaneous links, so set G_t to 0
-            G[-1] = 0
+            G = torch.zeros((self.tau + 1, self.d * self.d_z, self.d * self.d_z))
+            if self.fixed_diagonal:
+                G[-2, torch.arange(G.size(1)), torch.arange(G.size(2))] = 1
+            nb_edges_per_tau = [nb_edges // self.tau + (1 if i < nb_edges % self.tau else 0) for i in range(self.tau)]
+
+            if instantaneous:
+                raise NotImplementedError
+            else:
+                for i in range(self.tau):
+                    candidate_edges = np.arange(G.size(1) * G.size(1))
+                    if i == G.size(0) - 2:
+                        candidate_edges = np.setdiff1d(candidate_edges, np.arange(0, G.size(1)**2, G.size(1) + 1))
+                    idx_edges = np.random.choice(candidate_edges, size=nb_edges_per_tau[i], replace=False)
+                    indices = np.array(np.unravel_index(idx_edges, (G.size(1), G.size(1))))
+                    G[i, indices[0], indices[1]] = 1
             self.causal_order = None
 
         return G
@@ -556,7 +580,7 @@ class DataGeneratorWithLatent:
         self.X = torch.zeros((self.n, self.t, self.d, self.d_x))
 
         # sample graphs
-        self.G = self.sample_graph(self.hp.instantaneous)
+        self.G = self.sample_graph(self.hp.instantaneous, self.nb_edges)
 
         # sample mechanisms
         if self.func_type == "mlp":
@@ -653,6 +677,8 @@ class DataGeneratorWithLatent:
             else:
                 self.X_mu = torch.einsum('dxz, ntdz -> ntdx', self.w, self.Z)
             self.X = self.X_mu + torch.normal(0, self.noise_x_std, size=self.X.size())
+            if self.nonlinear_mixing:
+                self.X = self.X / torch.amax(self.X, dim=(0, 1, 2))
 
         self.t -= mixing_time
 

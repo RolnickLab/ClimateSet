@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import sklearn
+import time
 from metrics import shd, mean_corr_coef, precision_recall, edge_errors, w_mae, w_shd
 
 from typing import Tuple
@@ -62,6 +63,8 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
         2) the matrix linking the obs to the latents,
         3) the linear model fitted to the data
     """
+    t0 = time.time()
+
     if not hp.latent:
         raise NotImplementedError("The case without is not implemented.")
     if hp.instantaneous:
@@ -194,6 +197,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
             metrics['fn'] = errors['fn']
             metrics['n_edge_gt_graph'] = np.sum(gt_graph)
             metrics['n_edge_learned_graph'] = np.sum(graph)
+            metrics['execution_time'] = time.time() - t0
             print(metrics)
 
     return graph, W, metrics

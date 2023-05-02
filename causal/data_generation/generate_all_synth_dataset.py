@@ -5,7 +5,7 @@ import numpy as np
 from pathlib import Path
 
 
-def generate_all_dataset(root_path: str, varying_params: dict, default_params: dict, n_dataset: int = 10):
+def generate_all_dataset(root_path: str, varying_params: dict, default_params: dict, n_dataset: int = 110):
     """
     This code generate all the datasets used in the main text.
     Args:
@@ -23,7 +23,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
             for func_type in func_type_list:
                 for fixed_diag in fixed_diagonal_list:
                     seed = np.random.randint(1, 1000)
-                    parent_directory = f"exp_{key_param}"
+                    parent_directory = f"exp_lownoise_{key_param}"
 
                     for i_exp in range(n_dataset):
                         params = copy.deepcopy(default_params)
@@ -37,6 +37,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
                         params["fixed_diagonal"] = fixed_diag
                         params["exp_id"] = i_exp
                         params["random_seed"] = seed + i_exp
+                        params["nb_edges"] = round(params['prob'] * params['d_z'] ** 2)
                         if fixed_diag:
                             diag = 1
                         else:
@@ -63,12 +64,14 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
 
 if __name__ == "__main__":
     varying_params = {
-        "prob": [0.15, 0.3],
-        "tau": [1, 2, 3, 5],
-        "d_z": [5, 10, 20]
+        "prob": [0.3],
+        "d_z": [5, 10, 20],
+        "tau": [2, 3],
     }
     # dz could add 50
     # tau could add 10
+    # "prob": [0.15, 0.3],
+    # "d_z": [5, 10, 20]
 
     # d_z: 10, tau: 2
     default_params = {
@@ -82,7 +85,7 @@ if __name__ == "__main__":
         "n": 1,
         "noise_type": "gaussian",
         "instantaneous": False,
-        "noise_x_std": 0.1,
+        "noise_x_std": 0.32,
         "noise_z_std": 1,
         "radius_correct": 1e-1
     }

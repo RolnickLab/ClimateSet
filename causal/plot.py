@@ -203,6 +203,11 @@ class Plotter:
                                              'transition')
         else:
             gt_dag = None
+            gt_w = None
+            # for latent models, find the right permutation of the latent
+            adj_w = learner.model.autoencoder.get_w_decoder().detach().numpy()
+            adj_w2 = learner.model.autoencoder.get_w_encoder().detach().numpy()
+
         self.plot_adjacency_matrix(adj,
                                    gt_dag,
                                    learner.hp.exp_path,
@@ -231,12 +236,12 @@ class Plotter:
                                                    learner.logging_iter,
                                                    learner.hp.exp_path,
                                                    'w')
-            else:
-                self.plot_regions_map(adj_w,
-                                      learner.data.coordinates,
-                                      learner.logging_iter,
-                                      learner.hp.plot_through_time,
-                                      path=learner.hp.exp_path)
+            # else:
+            #     self.plot_regions_map(adj_w,
+            #                           learner.data.coordinates,
+            #                           learner.logging_iter,
+            #                           learner.hp.plot_through_time,
+            #                           path=learner.hp.exp_path)
 
     def plot_learned_mixing(self, z, z_hat, w, gt_w, x, path):
         n_first = 100

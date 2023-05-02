@@ -121,6 +121,8 @@ if __name__ == "__main__":
                         help="Number of clusters")
     parser.add_argument("-p", "--prob", type=float,
                         help="Probability of an edge in the causal graphs")
+    parser.add_argument("--nb-edges", type=int, default=-1,
+                        help="If > 0, fix the number of edges in the sample graph")
     parser.add_argument("--tau", type=int,
                         help="Number of previous timestep that interacts with a timestep t")
     parser.add_argument("--noise-coeff", type=float,

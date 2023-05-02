@@ -88,8 +88,6 @@ class DataLoader:
 
         # TODO: be more general, n > 1 with different t
         if self.n == 1:
-            self.n_train = int(t_max * self.ratio_train)
-            self.n_valid = int(t_max * self.ratio_valid)
             idx_train = []
             idx_valid = []
             for i in range(t_max // 100):
@@ -98,6 +96,8 @@ class DataLoader:
                 idx_valid.extend(range(start + int(100 * self.ratio_train), start + 100))
             self.idx_train = np.array(idx_train)
             self.idx_valid = np.array(idx_valid)
+            self.n_train = self.idx_train.shape[0]  #int(t_max * self.ratio_train)
+            self.n_valid = self.idx_valid.shape[0]  #int(t_max * self.ratio_valid)
 
             # train = X first, valid = 1 - X last examples
             # self.idx_train = np.arange(self.tau, self.n_train)
