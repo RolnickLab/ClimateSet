@@ -1,6 +1,25 @@
+import os
 import subprocess
 import numpy as np
 
+from pathlib import Path
+
+def print_dataset(ds: xr.Dataset):
+    """ Prints a dataset
+    """
+    pass
+
+def get_single_example(dir):
+    """ Gets an example file of a directory
+    Parameters:
+        dir (Path): Path to the larger directory that contains the right shapes
+    Return:
+        Path: Path to the nc file that can be used as example
+    """
+    for path, subdirs, files in os.walk(dir):
+        if len(files) > 0:
+            first_file = Path(path, files[0])
+            return first_file
 
 def get_keys_from_value(d, val):
     keys = [k for k, v in d.items() if val in v]
