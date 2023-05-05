@@ -11,3 +11,6 @@ PROCESSED_DATA = Path("/network/scratch/j/julia.kaltenborn/data/processed/") # n
 LOAD_DATA = Path("/network/scratch/j/julia.kaltenborn/data/load/") # deleted if necessary, can be recreated from processed_data
 
 TEST_CASES = Path("/home/julia/Documents/Master/CausalSuperEmulator/data/test_cases/")
+
+# root of the project directory
+ROOT = Path("/home/julia/Documents/Master/CausalSuperEmulator/causalpaca/")
