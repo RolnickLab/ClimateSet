@@ -1,10 +1,13 @@
-from abc import ABC, abstractmethod
+import json
+
 import xarray as xr
 
 from pathlib import Path
+from abc import ABC, abstractmethod
 
 from data_building.parameters.cdo_constants import SPAT_INTERPOLATION_ALGS, TEMP_INTERPOLATION_ALGS, SPAT_AGGREGATION_ALGS, TEMP_AGGREGATION_ALGS
-
+from data_building.utils.helper_funcs import get_single_example
+from data_building.parameters.data_paths import ROOT
 
 class ResProcesser(ABC):
     """ Abstract class for resolution processing
@@ -47,6 +50,66 @@ class ResProcesser(ABC):
         # CDO command!
         raise NotImplementedError()
 
+    def choose_alg(self, task: str, climate_var: str, json_path: Path) -> str:
+        """ Returns which algorithm should be used to interpolate / aggregate
+        the climate data variable provided.
+        Params:
+            task (str): Can be 'interpolation' or 'aggregation'.
+            climate_var (str): Can be any variable if stored in the respective
+                json file. Includes also ghg variables and others.
+            json_path (Path): where the jason file is stored that contains
+                the variable - aggregation/interpolation algorithm mapping
+        Returns:
+            str: name of the chosen algorithm
+        """
+        # read this out the json file
+        with open(json_path) as file:
+            res_dict = json.load(file)
+
+        try:
+            alg = res_dict[task][climate_var]
+        except KeyError:
+            raise KeyError("The config_res_processing.json does not contain the task {} or the variable {}".format(task, climate_var))
+
+        if alg == "null":
+            raise ValueError("Preferred algorithm for interpolation / aggregation has not been set yet.")
+
+        return alg
+
+    def read_var(self, sub_dir: Path, test: bool = False) -> str:
+        """ Returns a string that symbolizes the climate variable or ghg variable
+        present in the sub_dir.
+        Params:
+            sub_dir (Path): Sub directory that contains the data
+            test (bool): If true, the file is opened and the climate variable
+                is read out from the file. If false (default), the variable
+                is read out from the file name.
+        Returns:
+            str: type of climate / ghg variable
+        """
+        # run through files, grap the first file, read out the climate variable
+        path_file = get_single_example(sub_dir)
+
+        # we rely on the file being stored with the right naming convention used here
+        namings = str(path_file.name).split('_')
+        dataset = namings[0]
+        if dataset == "input4mips":
+            # what names: BC_em_anthro, BC_em_biomassburning, BC_em_AIR-anthro
+            var = ('_').join(namings[2:5])
+        elif dataset == "CMIP6":
+            var = namings[4]
+        else:
+            raise ValueError("The type of data passed is not known. File name should start with 'input4mips' or 'CMIP6'.")
+
+        # in case we want to be 100% sure we are using the right variable
+        # (drop this for efficency)
+        if test:
+            ds = xr.open_dataset(path_file)
+            if not (var in list(ds.keys())):
+                raise ValueError("Dataset does not contain the expected climate or ghg variable.")
+
+        return var
+
     @abstractmethod
     def apply_subdir(self, sub_dir: Path, output_dir: Path):
         """ Abstract method used to apply resolution processers to a subdirectory.
@@ -85,29 +148,7 @@ class ResProcesser(ABC):
 class SpatResProcesser(ResProcesser):
     """ Can be called to aggregate or interpolate files on the spatial axis.
     """
-    # TODO consider moving this into the parent class
-    def read_var(self, sub_dir: Path) -> str:
-        """ Returns a string that symbolizes the climate variable present in the
-        sub_dir.
-        Params:
-            sub_dir (Path): Sub directory that contains the data
-        Returns:
-            str: type of climate variable
-        """
-        # run through files, grap the first file, read out the climate variable
-        # and return it
-        # CONTINUE HERE
-        raise NotImplementedError()
-
-    # TODO consider moving thsi into the parent class
-    def choose_alg(self, task: str, climate_var: str) -> str:
-        """ Returns which algorithm should be used to spatially interpolate
-        the climate data variable provided.
-        """
-        # read this out the jason file
-        # CONTINUE HERE
-        raise NotImplementedError()
-
+    # TODO test
     def apply_subdir(self, sub_dir: Path, output_dir: Path):
         """ Used to apply spatial resolution processer on a directory given an
         example dataset file. Please make sure that the subdirectory provided
@@ -117,9 +158,10 @@ class SpatResProcesser(ResProcesser):
         super().apply_subdir(sub_dir, output_dir)
 
         # read out variable that we are interpolating
-        climate_var = self.read_var(sub_dir)
+        climate_var = super().read_var(sub_dir)
         # read out from jason file how we should interpolate that
-        alg = self.choose_alg(task, climate_var)
+        json_res_file = ROOT / "data_building" / "parameters" / "config_res_processing.json"
+        alg = super().choose_alg(task, climate_var, json_res_file)
 
         if self.task == "interpolate":
             self.interpolate(alg, input, output)
@@ -132,7 +174,7 @@ class SpatResProcesser(ResProcesser):
 
     def interpolate(self, alg: str, input: Path, output: Path):
         """
-        Note: The remapping functions from cdo  are here run with an "example file",
+        Note: The remapping functions from cdo are here run with an "example file",
         but could also be run with external weights that can be custom-made.
         Params:
             alg (str): which method should be used for interpolation.
@@ -144,6 +186,19 @@ class SpatResProcesser(ResProcesser):
         if not alg in SPAT_INTERPOLATION_ALGS:
             raise ValueError("""The requested spatial interpolation method does not exist.
                 Must be one of the followings: {}""".format(SPAT_INTERPOLATION_ALGS))
+        # TODO
+        # CONTINUE HERE
+        # maybe move this in a separate bash script??
+        # should I add this one here??: #!/bin/bash
+        # first line: looping through all files in sub_dir
+        bash_script = """
+        find . -type f -print0 | while IFS= read -r -d $'\0' file;
+            do echo "$file" ;
+        done
+        """
+
+        os.system("bash -c %s" % bash_script)
+
 
         # BASH CODE STARTS HERE
         # ________________________
@@ -153,12 +208,10 @@ class SpatResProcesser(ResProcesser):
             # 4. if no: output warning, write out all files that were skipped in temp
         # BASH CODE ENDS HERE
 
-
-
         # for the beginning: choose a file from the operating director
 
         # TODO run cdo command on this file
-        # cdo -remapycon,other_data.nc infile outfile
+        # cdo -remapcon,other_data.nc infile outfile
         # remapycon -> the alg
         # other_data.nc -> the example file
         # infile -> selected file
