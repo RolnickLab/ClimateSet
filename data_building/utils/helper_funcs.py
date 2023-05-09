@@ -5,10 +5,6 @@ import xarray as xr
 
 from pathlib import Path
 
-def print_dataset(ds: xr.Dataset):
-    """ Prints a dataset
-    """
-    pass
 
 def get_single_example(dir):
     """ Gets an example file of a directory
