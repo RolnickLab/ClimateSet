@@ -6,6 +6,22 @@ import xarray as xr
 from pathlib import Path
 
 
+def read_gridfile(grid_file) -> dict:
+    """ Read out a gridfile.txt from cdo or manually created one.
+    Params:
+        grid_file (Path): Path to grid file
+    Returns:
+        dict: Python dictionary containing the relevant grid information
+    """
+    grid_attrs = {}
+    with open(grid_file, 'r') as f:
+        lines = f.read().splitlines()
+        lines = [line.replace(' ', '') for line in lines]
+        for line in lines:
+            dict_pair = line.split('=')
+            grid_attrs[dict_pair[0]] = dict_pair[1]
+    return grid_attrs
+
 def get_single_example(dir):
     """ Gets an example file of a directory
     Parameters:
