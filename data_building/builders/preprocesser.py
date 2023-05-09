@@ -198,7 +198,6 @@ class SpatResProcesser(ResProcesser):
         self.old_res = None
         # grid file, new_res and example stays fixed
 
-    # todo test
     def create_grid_from_example(self, example: Path) -> Path:
         """ Creates a grid file that can be used by cdo from a given example file.
         The file is stored in a tmp under 'grid_files' and the path is returned.
@@ -414,6 +413,15 @@ class SpatResProcesser(ResProcesser):
 class TempResProcesser(ResProcesser):
     """ Can be called to aggregate or interpolate files on the temporal axis.
     """
+    # CONTINUE HERE
+    # consider moving apply_subdir into the abstract class
+    # here apply_subdir is just called + handover of a remapping function that
+    # is defined within this class here
+
+    # ATTENTION: apply_subdir is needed by every class - consider making it a util?
+    # another idea: move apply_dir to an even higher class "Processer".
+        # implement it in a way that it can be stacked, i.e. we can run
+        # apply_subdir with a set of of different processers
     def apply_subdir(self, sub_dir: Path, output_dir: Path):
         """ Used to apply temporal resolution processer on a directory given an
         example dataset file.
@@ -421,6 +429,8 @@ class TempResProcesser(ResProcesser):
         super().apply_subdir(sub_dir, output_dir)
         raise NotImplementedError()
 
+
+# TODO think about the right order!!
 
 class EmissionProcesser():
     """ Can be called to summarize emission over sectors.
