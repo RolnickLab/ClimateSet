@@ -1,5 +1,5 @@
 {
-  "interpolate": {
+  "remap": {
       "tas": "remapbil",
       "pr": "remapcon",
       "BC_em_anthro": "null",
@@ -14,10 +14,6 @@
       "CO2_em_anthro": "null",
       "CO2_em_AIR-anthro": "null",
       "CO2_em_biomassburning": "null"
-  },
-  "aggregate": {
-      "tas": "null",
-      "pr": "null"
   }
 
 }
