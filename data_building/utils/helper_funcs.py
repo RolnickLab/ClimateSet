@@ -1,11 +1,40 @@
+import os
 import subprocess
 import numpy as np
+import xarray as xr
 
 from pathlib import Path
 
+def read_gridfile(grid_file) -> dict:
+    """ Read out a gridfile.txt from cdo or manually created one.
+    Params:
+        grid_file (Path): Path to grid file
+    Returns:
+        dict: Python dictionary containing the relevant grid information
+    """
+    grid_attrs = {}
+    with open(grid_file, 'r') as f:
+        lines = f.read().splitlines()
+        lines = [line.replace(' ', '') for line in lines]
+        for line in lines:
+            dict_pair = line.split('=')
+            grid_attrs[dict_pair[0]] = dict_pair[1]
+    return grid_attrs
+
+def get_single_example(dir):
+    """ Gets an example file of a directory
+    Parameters:
+        dir (Path): Path to the larger directory that contains the right shapes
+    Return:
+        Path: Path to the nc file that can be used as example
+    """
+    for path, subdirs, files in os.walk(dir):
+        if len(files) > 0:
+            first_file = Path(path, files[0])
+            return first_file
+          
 def get_project_root() -> Path:
     return Path(__file__).parent.parent.parent
-
 
 def get_keys_from_value(d, val):
     keys = [k for k, v in d.items() if val in v]

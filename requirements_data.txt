@@ -58,4 +58,5 @@ url-normalize==1.4.3
 urllib3==1.26.12
 WebOb==1.8.7
 xarray==0.20.2
+xmip==0.7.1
 zipp==3.10.0
