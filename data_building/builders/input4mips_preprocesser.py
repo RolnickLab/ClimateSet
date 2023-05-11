@@ -712,29 +712,6 @@ class Input4mipsRawPreprocesser:
         in_ds.close()
         role_model.close()
 
-    # TODO find out where the temporal interpolation should be
-    def temp_interpolate_dir(
-        self,
-        directory: Path, # directory on the scenario level
-        role_model_file: Path,
-        store_dir_word: str = "processed",
-        regridder_type: str = "bilinear",
-        overwrite: bool = False,
-    ):
-        """ Interpolates emission files along the temporal axis.
-        Must be nc files!
-        """
-        pass
-        # # run through directory
-        # for root, dirs, files in tqdm(os.walk(directory), total=output_dir_len):
-        #     # get output root
-        #     output_root = root.replace(raw_path_str, processed_path_str)
-
-
-
-
-
-
 
 class Input4mipsResPreprocesser:
     """ Responsible for all Input4mips data peprocessing connected to resolutions.
