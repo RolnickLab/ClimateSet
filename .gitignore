@@ -2,6 +2,7 @@
 *.nc
 RAW_DATA
 PROCESSED_DATA
+tmp/*
 
 # deprecated files
 deprecated/

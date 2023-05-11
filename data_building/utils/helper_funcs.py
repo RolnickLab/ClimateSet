@@ -5,7 +5,6 @@ import xarray as xr
 
 from pathlib import Path
 
-
 def read_gridfile(grid_file) -> dict:
     """ Read out a gridfile.txt from cdo or manually created one.
     Params:
@@ -33,6 +32,9 @@ def get_single_example(dir):
         if len(files) > 0:
             first_file = Path(path, files[0])
             return first_file
+          
+def get_project_root() -> Path:
+    return Path(__file__).parent.parent.parent
 
 def get_keys_from_value(d, val):
     keys = [k for k, v in d.items() if val in v]

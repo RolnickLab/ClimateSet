@@ -10,7 +10,7 @@ from typing import List
 # from pyesgf.logon import LogonManager
 from pyesgf.search import SearchConnection
 
-from data_generation.parameters.constants import (
+from data_building.parameters.esgf_server_constants import (
     RES_TO_CHUNKSIZE,
     MODEL_SOURCES,
     VAR_SOURCE_LOOKUP,
@@ -18,6 +18,8 @@ from data_generation.parameters.constants import (
     PASSWORD,
     SUPPORTED_EXPERIMENTS,
 )
+
+from data_building.parameters.data_paths import ROOT_DIR
 from data_building.parameters.esm_params import VARS, SCENARIOS
 from data_building.utils.helper_funcs import get_keys_from_value, get_MIP
 
@@ -45,9 +47,9 @@ class Downloader:
             "ssp126",
         ],  # sub-selection of ClimateBench defaul
         vars: List[str] = ["tas", "pr", "SO2", "BC"],
-        data_dir: str = "data/data/",
+        data_dir: str = "../../tmp/data/",
         max_ensemble_members: int = 10, #max ensemble members
-        ensemlble_members: List[str] = None #preferred ensemble members used, if None not considered
+        ensemble_members: List[str] = None #preferred ensemble members used, if None not considered
     ):
         """Init method for the Downloader
         params:
@@ -63,7 +65,7 @@ class Downloader:
         self.raw_vars = []
         self.model_vars = []
         self.max_ensemble_members = max_ensemble_members
-        self.ensemble_members = ensemlble_members
+        self.ensemble_members = ensemble_members
 
         # take care of var mistype (node takes no spaces or '-' only '_')
         vars = [v.replace(" ", "_").replace("-", "_") for v in vars]
@@ -259,7 +261,7 @@ class Downloader:
 
                     except OSError:
                         print(
-                            "Having problems downloading th edateset. The server might be down. Skipping"
+                            "Having problems downloading the dateset. The server might be down. Skipping"
                         )
                         continue
 
@@ -599,7 +601,17 @@ if __name__ == "__main__":
     #model="NorESM2-LM"
     max_ensemble_members=1
     ensemble_members=["r1i1p1f1"]
-    data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
-    downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemlble_members=ensemble_members)
+
+    # determine if we are on a slurm cluster
+    cluster = "none"
+    if "SLURM_TMPDIR" in os.environ:
+        cluster = "slurm"
+
+    if cluster == "slurm":
+        data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
+    else:
+        data_dir = str(ROOT_DIR) + "/tmp/data"
+
+    downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemble_members=ensemble_members)
     downloader.download_from_model()
     #downloader.download_raw_input()
