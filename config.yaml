@@ -1,0 +1,5 @@
+dataset:
+  model: "CanESM5"
+  vars: ["pr", "tas"]
+  max_ensemble_members: 1
+  ensemble_members: ["r1i1p1f1"]

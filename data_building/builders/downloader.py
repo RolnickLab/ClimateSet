@@ -5,6 +5,8 @@ import netCDF4
 import numpy as np
 import pandas as pd
 import xarray as xr
+import yaml
+import argparse
 
 from typing import List
 # from pyesgf.logon import LogonManager
@@ -593,14 +595,24 @@ if __name__ == "__main__":
 
     vars=VARS
     experiments=SCENARIOS
-    model="CanESM5"
-    vars=["pr", "tas"]
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cfg", help="Path to config file.")
+    args = parser.parse_args()
+
+    with open(args.cfg, "r") as stream:
+        cfg = yaml.safe_load(stream)
+    
+    model = cfg(["dataset"]["model"])
+    vars = cfg(["dataset"]["vars"])
+    max_ensemble_members = cfg(["dataset"]["max_ensemble_members"])
+    ensemble_members = cfg(["dataset"]["ensemble_members"])
     #experiments=["ssp126", "ssp245", "ssp370", ""]
     #vars=["BC_em_anthro", "BC_em_openburning"]
     #experiments=["ssp126", "historical"]
     #model="NorESM2-LM"
-    max_ensemble_members=1
-    ensemble_members=["r1i1p1f1"]
+    # max_ensemble_members=1
+    # ensemble_members=["r1i1p1f1"]
 
     # determine if we are on a slurm cluster
     cluster = "none"
