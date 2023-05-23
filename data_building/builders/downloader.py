@@ -603,10 +603,10 @@ if __name__ == "__main__":
     with open(args.cfg, "r") as stream:
         cfg = yaml.safe_load(stream)
     
-    model = cfg(["dataset"]["model"])
-    vars = cfg(["dataset"]["vars"])
-    max_ensemble_members = cfg(["dataset"]["max_ensemble_members"])
-    ensemble_members = cfg(["dataset"]["ensemble_members"])
+    model = cfg["dataset"]["model"]
+    vars = cfg["dataset"]["vars"]
+    max_ensemble_members = cfg["dataset"]["max_ensemble_members"]
+    ensemble_members = cfg["dataset"]["ensemble_members"]
     #experiments=["ssp126", "ssp245", "ssp370", ""]
     #vars=["BC_em_anthro", "BC_em_openburning"]
     #experiments=["ssp126", "historical"]
