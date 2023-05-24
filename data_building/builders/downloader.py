@@ -99,6 +99,7 @@ class Downloader:
             self.model_source_center = MODEL_SOURCES[self.model]["center"]
             print("Using:", self.model)
         print("model node link:", self.model_node_link)
+        print('Model Name:', self.model)
 
         # log on Manager
         # self.lm = LogonManager()
@@ -623,6 +624,7 @@ if __name__ == "__main__":
 
     for id, m in enumerate(models):
         max_ensemble_members = df['num_ensemble_members'][id]
+        print(model)
     
         downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
         downloader.download_from_model()
