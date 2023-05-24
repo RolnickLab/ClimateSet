@@ -1,4 +1,5 @@
 import os
+import subprocess
 # import h5py
 import os.path
 import netCDF4
@@ -625,6 +626,8 @@ if __name__ == "__main__":
     
         downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
         downloader.download_from_model()
+        subprocess.call("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/copy.sh")
+
     
     # max_ensemble_members = cfg["dataset"]["max_ensemble_members"]
     # ensemble_members = cfg["dataset"]["ensemble_members"]
