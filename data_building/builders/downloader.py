@@ -69,6 +69,7 @@ class Downloader:
         self.model_vars = []
         self.max_ensemble_members = max_ensemble_members
         self.ensemble_members = ensemble_members
+        self.year_max = 2100
 
         # take care of var mistype (node takes no spaces or '-' only '_')
         vars = [v.replace(" ", "_").replace("-", "_") for v in vars]
@@ -273,6 +274,11 @@ class Downloader:
                     print(f"Data covering years: {years[0]} to {years[-1]}")
 
                     for y in years:
+                        y_int = int(y)
+
+                        if y_int > self.year_max:
+                            continue
+
                         y = str(y)
                         out_dir = f"{project}/{self.model}/{ensemble_member}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
 
