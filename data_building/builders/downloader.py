@@ -593,8 +593,8 @@ class Downloader:
 
 if __name__ == "__main__":
 
-    vars=VARS
-    experiments=SCENARIOS
+    # vars=VARS
+    # experiments=SCENARIOS
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--cfg", help="Path to config file.")
@@ -603,17 +603,13 @@ if __name__ == "__main__":
     with open(args.cfg, "r") as stream:
         cfg = yaml.safe_load(stream)
     
-    model = cfg["dataset"]["model"]
+    csv_path = cfg["dataset"]["data_csv"]
+    experiments = cfg["dataset"]["experiments"]
     vars = cfg["dataset"]["vars"]
-    max_ensemble_members = cfg["dataset"]["max_ensemble_members"]
-    ensemble_members = cfg["dataset"]["ensemble_members"]
-    #experiments=["ssp126", "ssp245", "ssp370", ""]
-    #vars=["BC_em_anthro", "BC_em_openburning"]
-    #experiments=["ssp126", "historical"]
-    #model="NorESM2-LM"
-    # max_ensemble_members=1
-    # ensemble_members=["r1i1p1f1"]
 
+    df = pd.read_csv(csv_path)
+
+    models = df['source_id']
     # determine if we are on a slurm cluster
     cluster = "none"
     if "SLURM_TMPDIR" in os.environ:
@@ -624,6 +620,22 @@ if __name__ == "__main__":
     else:
         data_dir = str(ROOT_DIR) + "/tmp/data"
 
-    downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemble_members=ensemble_members)
-    downloader.download_from_model()
+    for id, m in enumerate(models):
+        max_ensemble_members = df['num_ensemble_members'][id]
+    
+        downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
+        downloader.download_from_model()
+    
+    # max_ensemble_members = cfg["dataset"]["max_ensemble_members"]
+    # ensemble_members = cfg["dataset"]["ensemble_members"]
+
+    #experiments=["ssp126", "ssp245", "ssp370", ""]
+    #vars=["BC_em_anthro", "BC_em_openburning"]
+    #experiments=["ssp126", "historical"]
+    #model="NorESM2-LM"
+    # max_ensemble_members=1
+    # ensemble_members=["r1i1p1f1"]
+
+
+   
     #downloader.download_raw_input()
