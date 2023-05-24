@@ -3,3 +3,5 @@ dataset:
   vars: ["pr", "tas"]
   max_ensemble_members: 1
   ensemble_members: ["r1i1p1f1"]
+  experiments: ["ssp126", "ssp245", "ssp370", "ssp585"]
+  data_csv: "~/projects/def-drolnick/venka97/code/causalpaca/data_building/data_glossary/model_selection/selected_scenarioMIPs.csv"
