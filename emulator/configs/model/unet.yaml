@@ -1,0 +1,19 @@
+defaults:
+  #- /input_transform: 
+  - /optimizer: adam.yaml
+
+_target_: emulator.src.core.models.baselines.UNet
+
+
+in_var_ids: ${datamodule.in_var_ids}
+out_var_ids: ${datamodule.out_var_ids}
+activation_function : null
+encoder_name : "vgg11"
+channels_last: ${datamodule.channels_last}
+
+
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.98
+          

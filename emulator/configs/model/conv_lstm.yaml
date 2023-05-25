@@ -1,0 +1,23 @@
+defaults:
+  #- /input_transform: 
+  - /optimizer: adam.yaml
+
+_target_: emulator.src.core.models.baselines.CNNLSTM_ClimateBench
+
+#monitor: ${val_metric}
+
+lon: ${datamodule.lon}
+lat: ${datamodule.lat}
+in_var_ids: ${datamodule.in_var_ids}
+out_var_ids: ${datamodule.out_var_ids}
+num_conv_filters: 2 #0
+lstm_hidden_size: 5 #25
+num_lstm_layers:  1
+channels_last: ${datamodule.channels_last}
+dropout: 0
+lead_time: ${datamodule.lead_time}
+
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.98

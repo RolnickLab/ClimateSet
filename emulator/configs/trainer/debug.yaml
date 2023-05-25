@@ -3,7 +3,7 @@ _target_: pytorch_lightning.Trainer
 gpus: 1
 
 min_epochs: 1
-max_epochs: 100
+max_epochs: 20
 
 gradient_clip_val: 1.0
 

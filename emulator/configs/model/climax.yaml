@@ -1,0 +1,37 @@
+defaults:
+  #- /input_transform: 
+  - /optimizer: adamw_climax.yaml
+
+_target_: emulator.src.core.models.climax.climax_module.ClimaX
+
+lon: ${datamodule.lon}
+lat: ${datamodule.lat}
+in_vars: ${datamodule.in_var_ids}
+out_vars: ${datamodule.out_var_ids}
+climate_modeling: True
+patch_size: 2
+drop_path: 0.1
+drop_rate: 0.1
+learn_pos_emb: False
+channel_agg: "attention"
+embed_dim: 1024
+depth: 8
+decoder_depth: 2
+num_heads: 16
+mlp_ratio: 4
+init_mode: "small"
+freeze_encoder: False
+time_aggregation: False # wheather to ouput one or t time steps 
+pretrained_path: "/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/src/core/models/climax/pretrained_checkpoints/ClimaX-5.625deg.ckpt"
+
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.98
+#scheduler:
+#  _target_: emulator.src.uils.lr_scheduler.LinearWarmupCosineAnnealingLR
+#  #optimizer: ${optimizer}
+#  warmup_epochs: 60 #original specs
+#  max_epochs: 600 #original specs
+#  warmup_start_lr: 1e-8
+#  eta_min: 1e-8
