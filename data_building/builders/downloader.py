@@ -630,7 +630,7 @@ if __name__ == "__main__":
 
     for id, m in enumerate(models):
         max_ensemble_members = df['num_ensemble_members'][id]
-        print(model)
+        print('Downloading for model: ', m)
     
         downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
         downloader.download_from_model()
