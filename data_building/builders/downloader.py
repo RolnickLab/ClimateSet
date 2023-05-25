@@ -268,6 +268,8 @@ class Downloader:
                         print(
                             "Having problems downloading the dateset. The server might be down. Skipping"
                         )
+                        with open("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/missing.txt", "a") as file:
+                            file.write(f + "\n")
                         continue
 
                     years = np.unique(ds.time.dt.year.to_numpy())
@@ -450,6 +452,8 @@ class Downloader:
                         print(
                             "Having problems downloading th edateset. The server might be dwon. Skipping"
                         )
+                        with open("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/missing.txt", "a") as file:
+                            file.write(f + "\n")
                         continue
 
                     years = np.unique(ds.time.dt.year.to_numpy())
