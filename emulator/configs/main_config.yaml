@@ -39,11 +39,10 @@ datamodule:
    _target_: emulator.src.datamodules.dummy_datamodule.DummyDataModule
    lon: 16
    lat: 16
-   #num_input_vars: 4
    in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']
    out_var_ids: ['pr', 'tas']
    seq_len: 3
-   lead_time: ${datamodule.seq_len}
+   seq_to_seq: True
    num_levels: 1
    batch_size: 4
    channels_last: True

@@ -7,6 +7,7 @@ _target_: emulator.src.core.models.baselines.UNet
 
 in_var_ids: ${datamodule.in_var_ids}
 out_var_ids: ${datamodule.out_var_ids}
+seq_to_seq: ${datamodule.seq_to_seq}
 activation_function : null
 encoder_name : "vgg11"
 channels_last: ${datamodule.channels_last}

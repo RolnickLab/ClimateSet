@@ -15,7 +15,7 @@ lstm_hidden_size: 5 #25
 num_lstm_layers:  1
 channels_last: ${datamodule.channels_last}
 dropout: 0
-lead_time: ${datamodule.lead_time}
+seq_to_seq: ${datamodule.seq_to_seq}
 
 
 scheduler:

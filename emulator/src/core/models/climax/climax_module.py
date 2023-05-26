@@ -73,7 +73,7 @@ class ClimaX(BaseModel):
         mlp_ratio: float =4.0,
         init_mode: str ="xavier",
         freeze_encoder: bool =False,
-        time_aggregation: bool = False,
+        no_time_aggregation: bool = False, # not(seq_to_seq)
         datamodule_config: DictConfig = None,
         pretrained_path: str = None,
         region_info = None, # TODO: maybe later we could actually include that
@@ -131,7 +131,7 @@ class ClimaX(BaseModel):
             mlp_ratio=mlp_ratio,
             init_mode=init_mode,
             freeze_encoder=freeze_encoder,
-            time_aggregation= time_aggregation,  
+            time_aggregation=not(no_time_aggregation),  
             )
 
 
