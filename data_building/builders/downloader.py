@@ -276,6 +276,11 @@ class Downloader:
                             file.write(f + "\n")
                         continue
 
+                    except ValueError:
+                        print("Got the error ValueError: can only read bytes or file-like objects with engine='scipy' or 'h5netcdf'. Skipping download because the download list of available files is likely empty.")
+                        continue
+                        
+
                     years = np.unique(ds.time.dt.year.to_numpy())
                     print(f"Data covering years: {years[0]} to {years[-1]}")
 
