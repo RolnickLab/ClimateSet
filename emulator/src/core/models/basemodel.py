@@ -141,7 +141,7 @@ class BaseModel(LightningModule):
                 "preds": preds}
 
 
-    def training_epoch_end(self, outputs: List[Any]):
+    def on_train_epoch_end(self, outputs: List[Any]):
 
         train_time = time.time() - self._start_epoch_time
         self.log_dict({"epoch": self.current_epoch, "time/train": train_time})
@@ -183,7 +183,7 @@ class BaseModel(LightningModule):
     def validation_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
         return self._evaluation_step(batch, batch_idx)
 
-    def validation_epoch_end(self, outputs: List[Any]) -> dict:
+    def on_validation_epoch_end(self, outputs: List[Any]) -> dict:
         val_time = time.time() - self._start_validation_epoch_time
         self.log("time/validation", val_time)
         
@@ -206,7 +206,7 @@ class BaseModel(LightningModule):
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
         return self._evaluation_step(batch, batch_idx)
 
-    def test_epoch_end(self, outputs: List[Any]) -> dict:
+    def on_test_epoch_end(self, outputs: List[Any]) -> dict:
         test_time = time.time() - self._start_test_epoch_time
         self.log("time/test", test_time)
         

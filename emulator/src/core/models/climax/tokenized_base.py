@@ -70,9 +70,8 @@ class TokenizedBase(nn.Module):
                     mlp_ratio,
                     qkv_bias=True,
                     drop_path=dpr[i],
-                    norm_layer=nn.LayerNorm,
-                    drop=drop_rate,
-                )
+                    norm_layer=nn.LayerNorm
+                ) #drop=drop rate #DEPRECATED - clarify if we wanna use proj_drop or attn_drop
                 for i in range(depth)
             ]
         )

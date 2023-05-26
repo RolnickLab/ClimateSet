@@ -26,7 +26,7 @@ defaults:
   #- override hydra/hydra_logging: colorlog
   # - override hydra/job_logging: colorlog
   # default optimizer is Adam
-  - override optimizer@model.optimizer: adam.yaml
+  #- override optimizer@model.optimizer: adam.yaml
 
 model:
   loss_function: "climax_lon_lat_rmse"

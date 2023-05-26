@@ -235,7 +235,7 @@ class ClimaX(BaseModel):
 if __name__=="__main__":
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = ClimaX().to(device)
+    model = ClimaX(no_time_aggregation=False, channels_last=True).to(device)
     print(device)
     x, y = torch.randn(8, 5, 128, 256, 4).to(device), torch.randn(8, 5, 128, 256, 2).cuda()
     preds = model.forward(x)

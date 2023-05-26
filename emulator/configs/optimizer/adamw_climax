@@ -1,5 +1,0 @@
-name: "adamw"
-lr: 0.0005
-beta_1: 0.9
-beta_2: 0.999
-weight_decay: 1e-5

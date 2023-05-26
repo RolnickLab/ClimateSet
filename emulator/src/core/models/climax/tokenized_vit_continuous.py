@@ -66,8 +66,18 @@ class TokenizedViTContinuous(TokenizedBase):
         self.time_pos_embed = nn.Parameter(torch.zeros(1, time_history, embed_dim), requires_grad=learn_pos_emb)
 
         if time_aggregation==True:
+            # original setup for seq_len->1
             self.time_agg = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
-        else: self.time_agg=None
+            self.head= nn.Linear(embed_dim, len(self.out_vars)*img_size[0]*img_size[1])
+        else: 
+            # if no time agg, additional patching / nonlinear head
+            self.time_agg=None
+            self.head = nn.ModuleList()
+            for i in range(decoder_depth):
+                self.head.append(nn.Linear(embed_dim, embed_dim))
+                self.head.append(nn.GELU())
+            self.head.append(nn.Linear(embed_dim, len(self.out_vars) * patch_size**2))
+            self.head = nn.Sequential(*self.head)
         
         self.time_query = nn.Parameter(torch.zeros(1, 1, embed_dim), requires_grad=True)
 
@@ -81,12 +91,7 @@ class TokenizedViTContinuous(TokenizedBase):
         # --------------------------------------------------------------------------
         # Decoder: either a linear or non linear prediction head
         #self.head = nn.Linear(embed_dim, img_size[0]*img_size[1])
-        self.head = nn.ModuleList()
-        for i in range(decoder_depth):
-             self.head.append(nn.Linear(embed_dim, embed_dim))
-             self.head.append(nn.GELU())
-        self.head.append(nn.Linear(embed_dim, len(self.out_vars) * patch_size**2))
-        self.head = nn.Sequential(*self.head)
+        
         # --------------------------------------------------------------------------
         self.initialize_weights()
 
@@ -197,37 +202,27 @@ class TokenizedViTContinuous(TokenizedBase):
         # lead_time_emb = self.emb_lead_time(lead_times, x.shape[-1], x.device)
         lead_time_emb = lead_time_emb.unsqueeze(1).unsqueeze(2) # B, 1, 1, D
         x = x + lead_time_emb
-
-        #print("x after adding lead time embedding", x.size())
-
         x = x.flatten(0, 1)  # BxT, L, D
-
-        #print("x after flatten BxT, L, D", x.size())
-
-
         x = self.pos_drop(x)
 
         # apply Transformer blocks
         for blk in self.blocks:
             x = blk(x)
-            #print("after block", x.size())
         x = self.norm(x) # BxT, L, D
-        #print("after norm BxT, L, D")
-        #x = x.unflatten(0, sizes=(b, t)) # B, T, L, D
-        ##print("after flatten (B, T, L, D", x.size())
-        #x = x.mean(-2) # B, T, D TODO Why would they mean over l??
-        #print("x before time agg BxT L D", x.size())
+        
         if self.time_agg is not None:
+            x = x.unflatten(0, sizes=(b, t)) # B, T, L, D
+            x = x.mean(-2) # B, T, D TODO Why would they mean over l?? 
             time_query = self.time_query.repeat_interleave(x.shape[0], dim=0)
             x, _ = self.time_agg(time_query, x, x)  # B, 1, D
-            #print("x size after time agg B 1 D ", x.size())
             x = self.head(x)
-            #print("x after head", x.size())
-            x = x.reshape(-1, 1, self.img_size[0], self.img_size[1]) # B, 1, H, W
-            #print("final x B 1 H W", x.size())
+            x = x.reshape(-1, 1, len(self.out_vars), self.img_size[0], self.img_size[1]) # B, 1, H, W
+            # final x B 1 C H W
         else:
-            pass
-           
+            x = self.head(x)
+            x = self.unpatchify(x)
+            x = x.reshape(b,t, len(self.out_vars), self.img_size[0], self.img_size[1]) # B T C H W
+            
         return x
 
     ''' deprecated 
@@ -255,16 +250,11 @@ class TokenizedViTContinuous(TokenizedBase):
         # x: N, T, C, H, W
         # y: N, C, H, W
         # lead_times: N
-        b = x.shape[0]
-        t = x.shape[1]
+        #b = x.shape[0]
+        #t = x.shape[1] if self.time_agg is None else 1
         preds = self.forward_encoder(x, lead_times, self.in_vars, region_info)  # B, TxL, D
         #print("preds after forward encode", preds.size())
-        preds = self.head(preds)
-        #print("preds after head", preds.size())
-        preds = self.unpatchify(preds)
-        #print("preds after unpatchify", preds.size())
-        preds = preds.reshape(b,t, len(self.out_vars), self.img_size[0], self.img_size[1]) # B T C H W
-        #print("x after neshape final ", preds.size())
+        
 
         # preds = self.head(embeddings)[:, -len(region_info['patch_ids']) :]
         #loss, preds = self.forward_loss(y, preds, self.in_vars, self.out_vars, region_info, self.lat)
