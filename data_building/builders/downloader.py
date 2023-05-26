@@ -224,6 +224,10 @@ class Downloader:
 
             # pick a version
             versions = list(ctx.facet_counts["version"].keys())
+
+            if not versions:
+                print('No versions are available. Skipping.')
+                continue
             print("Available versions:", versions)
 
             if default_version == "latest":
