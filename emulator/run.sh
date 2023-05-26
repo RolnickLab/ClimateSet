@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1                     # Ask for GPUs
 #SBATCH --mem=5G                        # Ask for GB of RAM
 #SBATCH --time=01:00:00                   # The job will run for x hours
-#SBATCH -o /projects/def-drolnick/pandora/causalpaca/emulator/run.out  # Write the log in 
+#SBATCH -o /home/pandora/projects/def-drolnick/pandora/causalpaca/emulator/run.out  # Write the log in 
 
 module load python/3.10.2
 
