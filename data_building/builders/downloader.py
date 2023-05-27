@@ -276,7 +276,7 @@ class Downloader:
                             file.write(f + "\n")
                         continue
 
-                    except ValueError:
+                    except:
                         print("Got the error ValueError: can only read bytes or file-like objects with engine='scipy' or 'h5netcdf'. Skipping download because the download list of available files is likely empty.")
                         continue
                         
