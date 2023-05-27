@@ -251,71 +251,70 @@ class Downloader:
 
             for i, files in enumerate(files_list):
 
-                file_names = [files[i].opendap_url for i in range(len(files))]
-                print(f"File {i} names: ", file_names)
+                try:
 
-                num_files = len(file_names)
+                    file_names = [files[i].opendap_url for i in range(len(files))]
+                    print(f"File {i} names: ", file_names)
 
-                chunksize = RES_TO_CHUNKSIZE[frequency]
-                print("Chunksize", chunksize)
+                    num_files = len(file_names)
 
-                nominal_resolution = nominal_resolution.replace(" ", "_")
+                    chunksize = RES_TO_CHUNKSIZE[frequency]
+                    print("Chunksize", chunksize)
 
-                for f in file_names:
-                    # try to opend datset
-                    try:
-                        ds = xr.open_dataset(
-                            f, chunks={"time": chunksize}, engine="netcdf4"
-                        )
+                    nominal_resolution = nominal_resolution.replace(" ", "_")
 
-                    except OSError:
-                        print(
-                            "Having problems downloading the dateset. The server might be down. Skipping"
-                        )
-                        with open("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/missing.txt", "a") as file:
-                            file.write(f + "\n")
-                        continue
+                    for f in file_names:
+                        # try to opend datset
+                        try:
+                            ds = xr.open_dataset(
+                                f, chunks={"time": chunksize}, engine="netcdf4"
+                            )
 
-                    except:
-                        print("Got the error ValueError: can only read bytes or file-like objects with engine='scipy' or 'h5netcdf'. Skipping download because the download list of available files is likely empty.")
-                        continue
-                        
-
-                    years = np.unique(ds.time.dt.year.to_numpy())
-                    print(f"Data covering years: {years[0]} to {years[-1]}")
-
-                    for y in years:
-                        y_int = int(y)
-
-                        if y_int > self.year_max:
+                        except OSError:
+                            print(
+                                "Having problems downloading the dateset. The server might be down. Skipping"
+                            )
+                            with open("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/missing.txt", "a") as file:
+                                file.write(f + "\n")
                             continue
 
-                        y = str(y)
-                        out_dir = f"{project}/{self.model}/{ensemble_member}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
+                        years = np.unique(ds.time.dt.year.to_numpy())
+                        print(f"Data covering years: {years[0]} to {years[-1]}")
 
-                        # check if path is existent
-                        path = self.data_dir_parent + out_dir
-                        isExist = os.path.exists(path)
+                        for y in years:
+                            y_int = int(y)
 
-                        if not isExist:
+                            if y_int > self.year_max:
+                                continue
 
-                            # Create a new directory because it does not exist
-                            os.makedirs(path)
-                            print("The new directory is created!")
+                            y = str(y)
+                            out_dir = f"{project}/{self.model}/{ensemble_member}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
 
-                        out_name = f"{project}_{self.model}_{ensemble_member}_{experiment}_{variable}_{nominal_resolution}_{frequency}_{grid_label}_{y}.nc"
-                        outfile = path + out_name
+                            # check if path is existent
+                            path = self.data_dir_parent + out_dir
+                            isExist = os.path.exists(path)
 
-                        if (not overwrite) and os.path.isfile(outfile):
-                            print(f"File {outfile} already exists, skipping.")
-                        else:
+                            if not isExist:
 
-                            print("Selecting specific year", y)
-                            ds_y = ds.sel(time=y)
-                            print(ds_y)
-                            print("writing file")
-                            print(outfile)
-                            ds_y.to_netcdf(outfile)
+                                # Create a new directory because it does not exist
+                                os.makedirs(path)
+                                print("The new directory is created!")
+
+                            out_name = f"{project}_{self.model}_{ensemble_member}_{experiment}_{variable}_{nominal_resolution}_{frequency}_{grid_label}_{y}.nc"
+                            outfile = path + out_name
+
+                            if (not overwrite) and os.path.isfile(outfile):
+                                print(f"File {outfile} already exists, skipping.")
+                            else:
+
+                                print("Selecting specific year", y)
+                                ds_y = ds.sel(time=y)
+                                print(ds_y)
+                                print("writing file")
+                                print(outfile)
+                                ds_y.to_netcdf(outfile)
+                except:
+                    continue    
 
 
     def download_raw_input_single_var(
