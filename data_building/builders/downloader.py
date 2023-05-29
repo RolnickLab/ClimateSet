@@ -446,7 +446,7 @@ class Downloader:
                     # make sure to only download data for wanted scenarios
                     print('THE NAME OF THE EXPS', experiment)
                     print('ALL EXPERIMENTS', self.experiments)
-                    
+
                     if experiment in self.experiments:
 
                         print("Downloading data for experiment:", experiment)
@@ -518,6 +518,8 @@ class Downloader:
             if "covid" in filename:
                 experiment = experiment + "_covid"
         elif (target_mip == "CMIP") & (int(year_end) < 2015):
+            print("HERE")
+            print("TARGET MIP", target_mip, int(year_end))
             experiment = "historical"
 
         elif target_mip == "AerChemMIP":
@@ -654,7 +656,7 @@ if __name__ == "__main__":
 
     
     if input4mips:
-        experiments=[ "ssp126", "ssp245", "ssp370", "ssp585"]
+        experiments = ["ssp126", "ssp245", "ssp370", "ssp585"]
         # Funktioniert: BC_em_anthro, BC_em_AIR_anthro
         vars = ["CO2_em_anthro", "CO2_em_AIR_anthro"]
         #vars = ["BC", "CO2", "CH4", "SO2"]
