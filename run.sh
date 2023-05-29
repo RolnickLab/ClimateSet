@@ -10,4 +10,4 @@ module load python/3.10.2
 source /home/venka97/scratch/dl/bin/activate
 
 python -m data_building.builders.downloader --cfg /home/venka97/projects/def-drolnick/venka97/code/causalpaca/config.yaml
-rsync -r --ignore-existing $SLURM_TMPDIR/causalpaca /home/venka97/scratch
+rsync -r --ignore-existing $SLURM_TMPDIR/causalpaca_co2 /home/venka97/scratch

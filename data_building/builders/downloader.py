@@ -664,6 +664,17 @@ if __name__ == "__main__":
         print('Downloading RAW Input')
         ensemble_members = None
         model = None
+
+         # determine if we are on a slurm cluster
+        cluster = "none"
+        if "SLURM_TMPDIR" in os.environ:
+            cluster = "slurm"
+
+        if cluster == "slurm":
+            data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca_co2/data/"
+        else:
+            data_dir = str(ROOT_DIR) + "/tmp/data"
+
         downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemble_members=ensemble_members)
         downloader.download_raw_input()
 
