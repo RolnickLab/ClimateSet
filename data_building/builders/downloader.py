@@ -520,7 +520,8 @@ class Downloader:
         elif (target_mip == "CMIP") & (int(year_end) < 2015):
             print("HERE")
             print("TARGET MIP", target_mip, int(year_end))
-            experiment = "historical"
+            experiment = "ssp" + filename.split("ssp")[-1][:3]
+            # experiment = "historical"
 
         elif target_mip == "AerChemMIP":
             experiment = "ssp" + filename.split("ssp")[-1][:3]
