@@ -2,7 +2,7 @@
 #SBATCH --account=rrg-bengioy-ad         # Yoshua pays for your job
 #SBATCH --cpus-per-task=2                # Ask for 6 CPUs
 #SBATCH --gres=gpu:1                     # Ask for 1 GPU
-#SBATCH --mem=30G                        # Ask for 32 GB of RAM
+#SBATCH --mem=20G                        # Ask for 32 GB of RAM
 #SBATCH --time=72:00:00                   # The job will run for 3 hours
 #SBATCH -o /scratch/venka97/nohup.out  # Write the log in $SCRATCH
 
