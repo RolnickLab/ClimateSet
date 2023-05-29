@@ -615,50 +615,78 @@ if __name__ == "__main__":
 
     # vars=VARS
     # experiments=SCENARIOS
+    input4mips = True
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--cfg", help="Path to config file.")
     args = parser.parse_args()
 
-    with open(args.cfg, "r") as stream:
-        cfg = yaml.safe_load(stream)
+    # with open(args.cfg, "r") as stream:
+    #     cfg = yaml.safe_load(stream)
     
-    csv_path = cfg["dataset"]["data_csv"]
-    experiments = cfg["dataset"]["experiments"]
-    vars = cfg["dataset"]["vars"]
+    # csv_path = cfg["dataset"]["data_csv"]
+    # experiments = cfg["dataset"]["experiments"]
+    # vars = cfg["dataset"]["vars"]
 
-    df = pd.read_csv(csv_path)
+    # df = pd.read_csv(csv_path)
 
-    models = df['source_id']
-    # determine if we are on a slurm cluster
-    cluster = "none"
-    if "SLURM_TMPDIR" in os.environ:
-        cluster = "slurm"
+    # models = df['source_id']
+    # # determine if we are on a slurm cluster
+    # cluster = "none"
+    # if "SLURM_TMPDIR" in os.environ:
+    #     cluster = "slurm"
 
-    if cluster == "slurm":
-        data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
+    # if cluster == "slurm":
+    #     data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
+    # else:
+    #     data_dir = str(ROOT_DIR) + "/tmp/data"
+
+    # for id, m in enumerate(models):
+    #     max_ensemble_members = df['num_ensemble_members'][id]
+    #     print('Downloading for model: ', m)
+    
+    #     downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
+    #     downloader.download_from_model()
+    #     subprocess.call("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/copy.sh")
+
+    
+    if input4mips:
+        experiments=[ "ssp126", "ssp245", "ssp370", "ssp585"]
+        # Funktioniert: BC_em_anthro, BC_em_AIR_anthro
+        vars = ["CO2_em_anthro", "CO2_em_AIR_anthro"]
+        #vars = ["BC", "CO2", "CH4", "SO2"]
+        # vars=[
+        #     "BC_em_anthro", "BC_em_AIR_anthro", "BC", "BC_em_openburning",
+        #     "CO2_em_anthro", "CO2_em_AIR_anthro", "CO2", "CO2_em_openburning",
+        #     "CH4_em_anthro", "CH4_em_AIR_anthro", "CH4", "CH4_em_openburning",
+        #     "SO2_em_anthro", "SO2_em_AIR_anthro", "SO2", "SO2_em_openburning",
+        #     ]
+        print('Downloading RAW Input')
+        ensemble_members = None
+        model = None
+        downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemble_members=ensemble_members)
+        downloader.download_raw_input()
+
     else:
-        data_dir = str(ROOT_DIR) + "/tmp/data"
+        vars=VARS
+        experiments=SCENARIOS
+        model="CanESM5"
+        #vars=["pr", "tas"]
 
-    for id, m in enumerate(models):
-        max_ensemble_members = df['num_ensemble_members'][id]
-        print('Downloading for model: ', m)
-    
-        downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
+        #experiments=["ssp126", "historical"]
+        #model="NorESM2-LM"
+        max_ensemble_members=1
+        ensemble_members=["r1i1p1f1"]
+
+        # determine if we are on a slurm cluster
+        cluster = "none"
+        if "SLURM_TMPDIR" in os.environ:
+            cluster = "slurm"
+
+        if cluster == "slurm":
+            data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
+        else:
+            data_dir = str(ROOT_DIR) + "/tmp/data"
+
+        downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemble_members=ensemble_members)
         downloader.download_from_model()
-        subprocess.call("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/copy.sh")
-
-    
-    # max_ensemble_members = cfg["dataset"]["max_ensemble_members"]
-    # ensemble_members = cfg["dataset"]["ensemble_members"]
-
-    #experiments=["ssp126", "ssp245", "ssp370", ""]
-    #vars=["BC_em_anthro", "BC_em_openburning"]
-    #experiments=["ssp126", "historical"]
-    #model="NorESM2-LM"
-    # max_ensemble_members=1
-    # ensemble_members=["r1i1p1f1"]
-
-
-   
-    #downloader.download_raw_input()
