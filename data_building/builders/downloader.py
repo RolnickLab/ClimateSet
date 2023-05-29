@@ -518,8 +518,7 @@ class Downloader:
             if "covid" in filename:
                 experiment = experiment + "_covid"
         elif (target_mip == "CMIP") & (int(year_end) < 2015):
-            print("HERE")
-            print("TARGET MIP", target_mip, int(year_end))
+            print("TARGET MIP", filename)
             experiment = "ssp" + filename.split("ssp")[-1][:3]
             # experiment = "historical"
 
