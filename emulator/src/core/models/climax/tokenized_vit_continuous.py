@@ -38,8 +38,10 @@ class TokenizedViTContinuous(TokenizedBase):
         num_heads=16,
         mlp_ratio=4.0,
         init_mode="xavier",
-        freeze_encoder=False,
-        time_aggregation: bool = False,   
+        freeze_encoder: bool =False,
+        time_aggregation: bool = False, 
+        nonlinear_head: bool = False # linear or nonlinear readout
+
     ):
         super().__init__(
             img_size,
@@ -64,21 +66,30 @@ class TokenizedViTContinuous(TokenizedBase):
         self.out_vars = out_vars
      
         self.time_pos_embed = nn.Parameter(torch.zeros(1, time_history, embed_dim), requires_grad=learn_pos_emb)
-
+       
+        # --------------------------------------------------------------------------
+        # Decoder: either a linear or non linear prediction head
+        #self.head = nn.Linear(embed_dim, img_size[0]*img_size[1])
+        
+        # --------------------------------------------------------------------------
+        for s in img_size:
+            assert (s%patch_size)==0, "Grid sizes must be  divisible by patch size."
+        
         if time_aggregation==True:
             # original setup for seq_len->1
             self.time_agg = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
-            self.head= nn.Linear(embed_dim, len(self.out_vars)*img_size[0]*img_size[1])
-        else: 
-            # if no time agg, additional patching / nonlinear head
+            self.head= nn.Linear(embed_dim,len(self.out_vars)*img_size[0]*img_size[1])
+        else:
             self.time_agg=None
             self.head = nn.ModuleList()
-            for i in range(decoder_depth):
-                self.head.append(nn.Linear(embed_dim, embed_dim))
-                self.head.append(nn.GELU())
-            self.head.append(nn.Linear(embed_dim, len(self.out_vars) * patch_size**2))
+            if nonlinear_head:
+                for i in range(decoder_depth):
+                    self.head.append(nn.Linear(embed_dim, embed_dim))
+                    self.head.append(nn.GELU())
+            self.head.append(nn.Linear(embed_dim, len(self.out_vars) * patch_size**2)) #TODO: only supported if image size is divisizle by path size
+            #self.head.append(nn.Linear(embed_dim, len(self.out_vars)*img_size[0] * img_size[1]))
             self.head = nn.Sequential(*self.head)
-        
+       
         self.time_query = nn.Parameter(torch.zeros(1, 1, embed_dim), requires_grad=True)
 
         # self.lead_time_embed = nn.Sequential(
@@ -88,11 +99,7 @@ class TokenizedViTContinuous(TokenizedBase):
         # )
         self.lead_time_embed = nn.Linear(1, embed_dim)
 
-        # --------------------------------------------------------------------------
-        # Decoder: either a linear or non linear prediction head
-        #self.head = nn.Linear(embed_dim, img_size[0]*img_size[1])
-        
-        # --------------------------------------------------------------------------
+      
         self.initialize_weights()
 
         if freeze_encoder:
@@ -161,20 +168,18 @@ class TokenizedViTContinuous(TokenizedBase):
         """
         b, t, _, _, _ = x.shape
         x = x.flatten(0, 1)  # BxT, C, H, W
-        #print("x shape after flatten BxT C H W", x.size())
+       
         # embed tokens
-
         embeds = []
         var_ids = self.get_channel_ids(variables)
         for i in range(len(var_ids)):
             id = var_ids[i]
             embeds.append(self.token_embeds[id](x[:, i : i + 1]))
         x = torch.stack(embeds, dim=1)  # BxT, C, L, D
-        #print("x size with embeddings BxT C L D", x.size())
-
+       
         # add channel embedding, channel_embed: 1, C, D
         channel_embed = self.get_channel_emb(self.channel_embed, variables)
-        #print("channel embed 1 C D", channel_embed.size())
+      
         x = x + channel_embed.unsqueeze(2) # BxT, C, L, D
 
         if region_info is not None:
@@ -182,11 +187,9 @@ class TokenizedViTContinuous(TokenizedBase):
             x = x[:, :, valid_patch_ids, :]
 
         x = self.aggregate_channel(x)  # BxT, L, D
-        #print("x size after channel aggregation BxT L D", x.size())
-
+      
         x = x.unflatten(0, sizes=(b, t)) # B, T, L, D
-        #print("x flatten B T L D", x.size())
-
+      
         # add time and pos embed
         # pos emb: 1, L, D
         
@@ -199,7 +202,7 @@ class TokenizedViTContinuous(TokenizedBase):
 
         # add lead time embedding
         lead_time_emb = self.lead_time_embed(lead_times.unsqueeze(-1)) # B, D
-        # lead_time_emb = self.emb_lead_time(lead_times, x.shape[-1], x.device)
+        
         lead_time_emb = lead_time_emb.unsqueeze(1).unsqueeze(2) # B, 1, 1, D
         x = x + lead_time_emb
         x = x.flatten(0, 1)  # BxT, L, D
@@ -216,11 +219,12 @@ class TokenizedViTContinuous(TokenizedBase):
             time_query = self.time_query.repeat_interleave(x.shape[0], dim=0)
             x, _ = self.time_agg(time_query, x, x)  # B, 1, D
             x = self.head(x)
+            x = self.unpatchify(x)
             x = x.reshape(-1, 1, len(self.out_vars), self.img_size[0], self.img_size[1]) # B, 1, H, W
             # final x B 1 C H W
         else:
             x = self.head(x)
-            x = self.unpatchify(x)
+            x = self.unpatchify(x) # TODO not supported for grid sizes not divisible by patch size
             x = x.reshape(b,t, len(self.out_vars), self.img_size[0], self.img_size[1]) # B T C H W
             
         return x
@@ -246,18 +250,12 @@ class TokenizedViTContinuous(TokenizedBase):
         return [m(pred, y, out_variables, lat) for m in metric], pred
     '''
 
-    def forward(self, x, lead_times, region_info : Optional[Union[Dict, None]]=None): # TODO: set to initialization
+    def forward(self, x, lead_times, region_info : Optional[Union[Dict, None]]=None): 
         # x: N, T, C, H, W
-        # y: N, C, H, W
-        # lead_times: N
-        #b = x.shape[0]
-        #t = x.shape[1] if self.time_agg is None else 1
-        preds = self.forward_encoder(x, lead_times, self.in_vars, region_info)  # B, TxL, D
-        #print("preds after forward encode", preds.size())
-        
-
-        # preds = self.head(embeddings)[:, -len(region_info['patch_ids']) :]
-        #loss, preds = self.forward_loss(y, preds, self.in_vars, self.out_vars, region_info, self.lat)
+        # y: N, 1/T, C, H, W
+       
+        preds = self.forward_encoder(x, lead_times, self.in_vars, region_info)  
+       
         return preds
 
     def predict(self, x, lead_times, region_info : Optional[Union[Dict, None]]=None):

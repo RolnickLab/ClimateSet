@@ -15,7 +15,7 @@ defaults:
 
 # name of the run determines folder name in logs
 # can also be accessed by loggers
-name: "template"
+name: "test"
 
 seed: 12345
 
@@ -27,21 +27,22 @@ trainer:
 model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
-  finetune: False
-  
-  pretrained_run_id: null # eg "3u0ys0d5"
-  pretrained_ckpt_dir: null # e.g "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
+  finetune: True
+  pretrained_run_id:  "3u0ys0d5"
+  pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
 
 datamodule: # overwrite what stuff to train on
    in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']
    out_var_ids: ['pr', 'tas']
    # more selection like climate models and scenarios + splits should go here
    # ...
+   lon: 32
+   lat: 34
    seq_to_seq: True # determine the task setting
    batch_size: 4
    channels_last: True
-   eval_batch_size: 4
+   eval_batch_size: 8
  
 logger:
   wandb:
-    tags: ["experiment_template"] # set your tags here
+    tags: ["test", "climax"] # set your tags here

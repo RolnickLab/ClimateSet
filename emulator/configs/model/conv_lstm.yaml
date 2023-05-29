@@ -10,13 +10,13 @@ lon: ${datamodule.lon}
 lat: ${datamodule.lat}
 in_var_ids: ${datamodule.in_var_ids}
 out_var_ids: ${datamodule.out_var_ids}
-num_conv_filters: 2 #0
-lstm_hidden_size: 5 #25
+num_conv_filters: 20
+lstm_hidden_size: 25
 num_lstm_layers:  1
 channels_last: ${datamodule.channels_last}
 dropout: 0
 seq_to_seq: ${datamodule.seq_to_seq}
-
+seq_len: ${datamodule.seq_len}
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ExponentialLR

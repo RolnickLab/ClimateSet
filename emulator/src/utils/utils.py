@@ -173,5 +173,30 @@ def weighted_global_mean(input, weights):
     # weitghs * input summed over lon lat / lon+lat    
     return np.mean(input*weights, axis=(-1,-2))
 
+
+def get_epoch_ckpt_or_last(ckpt_files: List[str], epoch: int = None):
+    if epoch is None:
+        if "last.ckpt" in ckpt_files:
+            model_ckpt_filename = "last.ckpt"
+        else:
+            ckpt_epochs = [int(name.replace("epoch", "")[:3]) for name in ckpt_files]
+            # Use checkpoint with latest epoch if epoch is not specified
+            max_epoch = max(ckpt_epochs)
+            model_ckpt_filename = [
+                name for name in ckpt_files if str(max_epoch) in name
+            ][0]
+        logging.warning(
+            f"Multiple ckpt files exist: {ckpt_files}. Using latest epoch: {model_ckpt_filename}"
+        )
+    else:
+        # Use checkpoint with specified epoch
+        model_ckpt_filename = [name for name in ckpt_files if str(epoch) in name]
+        if len(model_ckpt_filename) == 0:
+            raise ValueError(
+                f"There is no ckpt file for epoch={epoch}. Try one of the ones in {ckpt_files}!"
+            )
+        model_ckpt_filename = model_ckpt_filename[0]
+    return model_ckpt_filename
+
 if __name__=="__main__":
     print("hallo")

@@ -24,7 +24,6 @@ class BaseModel(LightningModule):
     Read the docs:
         https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html
     """
-    # TODO data configs
     # TODO normalization / transformation configs and more
     def __init__(self,
                  datamodule_config: DictConfig = None,
@@ -46,7 +45,6 @@ class BaseModel(LightningModule):
 
         self.name=name
         self.verbose=verbose
-        #raise NotImplementedError()
         self.test_step_outputs={}
         
         self.val_step_outputs=[]
@@ -56,7 +54,6 @@ class BaseModel(LightningModule):
 
         if datamodule_config is not None:
             # get information from data config 
-            #TODO what is in there?
             self._out_var_ids = datamodule_config.get('out_var_ids')
             self.num_levels = datamodule_config.get('num_levels')
             self.output_postprocesser = PredictionPostProcessCallback(variables=self._out_var_ids, sizes=self.num_levels)
@@ -129,9 +126,6 @@ class BaseModel(LightningModule):
 
         #  Loop over output variable to comput loss seperateley!!!
         for out_var in self._out_var_ids:
-            #self.log_text.info("Predictions")
-            #self.log_text.info(preds[out_var].max(), preds[out_var].min())
-          
             loss_per_var = self.criterion(preds[out_var], Y[out_var])
             #self.log_text.info(f"Loss for {out_var}: {loss_per_var}")
             if torch.isnan(loss_per_var).sum()>0:
@@ -139,12 +133,11 @@ class BaseModel(LightningModule):
             loss += loss_per_var
             train_log[f'train/{out_var}/loss']=loss_per_var
 
-            # TODO: clarify what else consituetes the loss
+            # TODO: clarify what else consituetes the loss + allow weighting per variable 
             # any additional losses can be computed, logged and added to the loss here
 
         # Average Loss over vars
         loss = loss/len(self._out_var_ids)
-        # self.log_text.info(f"Avg loss: {loss}")
 
         n_zero_gradients = sum(
             [int(torch.count_nonzero(p.grad == 0))
@@ -152,6 +145,7 @@ class BaseModel(LightningModule):
              ]) / self.n_params
 
         self.log_dict({**train_log, "train/loss": loss, "n_zero_gradients": n_zero_gradients})
+
         ret = {"loss": loss,
                 "n_z                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ero_gradients": n_zero_gradients,
                 "targets": Y,
@@ -177,8 +171,6 @@ class BaseModel(LightningModule):
         return ret
         
     def _evaluation_get_preds(self, outputs: List[Any]) -> (Dict[str, np.ndarray], Dict[str, np.ndarray]):
-    
-     
             
         for batch in outputs:
             batch["targets"] = self.output_postprocesser.split_vector_by_variable(batch["targets"]) # TODO: we might want to remove that for the real data module
@@ -207,9 +199,8 @@ class BaseModel(LightningModule):
     def on_validation_epoch_end(self) -> dict:
         val_time = time.time() - self._start_validation_epoch_time
         self.log("time/validation", val_time)
-        outputs=self.val_step_outputs #we need to collect them ourselves and claer them (new in python 10)
-        
-        validation_outputs = self._evaluation_get_preds(outputs)
+       
+        validation_outputs = self._evaluation_get_preds(self.val_step_outputs)
         # get Ytrue and preds
         Ytrue, preds = validation_outputs['targets'], validation_outputs['preds']
 
@@ -219,18 +210,18 @@ class BaseModel(LightningModule):
         
         # Show the main validation metric on the progress bar:
         self.log(self.hparams.monitor, target_val_metric, prog_bar=True)
-        self.val_step_outputs.clear()
+        self.val_step_outputs.clear() # clear memory
         
         return val_stats
 
     def on_test_epoch_start(self) -> None:
         self._start_test_epoch_time = time.time()
         for i,_ in enumerate(self.trainer.datamodule.test_set_names):
-            self.test_step_outputs[i]=[]
+            self.test_step_outputs[i]=[] # initialize output collection
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
         ret=self._evaluation_step(batch, batch_idx)
-        self.test_step_outputs[dataloader_idx].append(ret)
+        self.test_step_outputs[dataloader_idx].append(ret) # collect for evaluation
         return ret
 
     def on_test_epoch_end(self) -> dict:
@@ -258,7 +249,7 @@ class BaseModel(LightningModule):
     
             self.log_dict({**test_stats, 'epoch': self.current_epoch}, prog_bar=False)
 
-        # do we want to put sth else in the main tests stats?
+        # TODO: do we want to put sth else in the main tests stats?
         self.log_dict({**main_test_stats, 'epoch': self.current_epoch}, prog_bar=False)
         self.test_step_outputs.clear()
         return main_test_stats
@@ -291,9 +282,9 @@ class BaseModel(LightningModule):
         return self._evaluation_step(batch, batch_idx)
 
     def on_predict_epoch_end(self, results: List[Any]) -> Dict[int, Dict[str, Dict[str, np.ndarray]]]:
+        # TODO: might be depricated -> instead of getting results, we might need to collect them oursevels like in test and val
         return self.aggregate_predictions(results)
 
-    
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
         return self._evaluation_step(batch, batch_idx)
 
