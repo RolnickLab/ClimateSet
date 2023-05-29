@@ -220,8 +220,7 @@ class UNet(BaseModel):
         # determine padding -> lan and lot must be divisible by 32
         pad_lon=int((np.ceil(self.lon/32)*32)-(self.lon/32)*32)
         pad_lat=int((np.ceil(self.lat/32))*32-(self.lat/32)*32)
-        print("lon", self.lon, "lat", self.lat)
-        print("Padding", pad_lon, pad_lat)
+       
         self.channels_last = channels_last
 
 

@@ -4,7 +4,7 @@ import numpy as np
 
 import time
 
-from typing import Optional, List, Any, Dict, Tuple
+from typing import Optional, List, Any, Dict, Tuple, Union
 
 from omegaconf import DictConfig
 from pytorch_lightning import LightningModule
@@ -12,6 +12,7 @@ import torch
 
 from emulator.src.core.evaluation import evaluate_preds, evaluate_per_target_variable
 from emulator.src.utils.utils import get_loss_function, get_logger, to_DictConfig
+from emulator.src.utils.interface import reload_model_from_id
 from emulator.src.core.callbacks import PredictionPostProcessCallback
 from timm.optim import create_optimizer_v2
 
@@ -33,7 +34,10 @@ class BaseModel(LightningModule):
                  verbose: bool = True,
                  loss_function: str = "mean_squared_error",
                  monitor: Optional[str] = None,
-                 mode: str = "min"
+                 mode: str = "min",
+                 finetune: bool = False, 
+                 pretrained_run_id: Optional[Union[str, None]]= None, 
+                 pretrained_ckpt_dir: Optional[Union[str, None]] = None,
                  ):
         super().__init__()
 
@@ -43,6 +47,9 @@ class BaseModel(LightningModule):
         self.name=name
         self.verbose=verbose
         #raise NotImplementedError()
+        self.test_step_outputs={}
+        
+        self.val_step_outputs=[]
 
         self.criterion = get_loss_function(loss_function)
 
@@ -58,6 +65,17 @@ class BaseModel(LightningModule):
             self.hparams.monitor = f'val/llrmse_climax' 
         if not hasattr(self.hparams, 'mode') or self.hparams.mode is None:
             self.hparams.mode = 'min'
+
+        if finetune:
+            self.log_text.info("Finetuning")
+            assert pretrained_run_id is not None , "Mode is finetune but no run id is given to load from."
+            assert pretrained_ckpt_dir is not None , "Mode is finetune but no run id is given to load from."
+            # load pretrained model
+            base_model, _ = reload_model_from_id(
+                pretrained_run_id, pretrained_ckpt_dir, allow_resume=False)
+            self.log_text.warn("Loading pretrained model")
+            self.model = base_model
+            
 
     @property
     def n_params(self):
@@ -134,14 +152,15 @@ class BaseModel(LightningModule):
              ]) / self.n_params
 
         self.log_dict({**train_log, "train/loss": loss, "n_zero_gradients": n_zero_gradients})
-
-        return {"loss": loss,
+        ret = {"loss": loss,
                 "n_z                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ero_gradients": n_zero_gradients,
                 "targets": Y,
                 "preds": preds}
+        
+        return ret
 
 
-    def on_train_epoch_end(self, outputs: List[Any]):
+    def on_train_epoch_end(self):
 
         train_time = time.time() - self._start_epoch_time
         self.log_dict({"epoch": self.current_epoch, "time/train": train_time})
@@ -151,9 +170,11 @@ class BaseModel(LightningModule):
 
         X,Y = batch
         preds = self.predict(X)
-       
+        ret = {"targets": Y, "preds": preds}
 
-        return {"targets": Y, "preds": preds}
+        self.val_step_outputs.append(ret)
+
+        return ret
         
     def _evaluation_get_preds(self, outputs: List[Any]) -> (Dict[str, np.ndarray], Dict[str, np.ndarray]):
     
@@ -183,9 +204,10 @@ class BaseModel(LightningModule):
     def validation_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
         return self._evaluation_step(batch, batch_idx)
 
-    def on_validation_epoch_end(self, outputs: List[Any]) -> dict:
+    def on_validation_epoch_end(self) -> dict:
         val_time = time.time() - self._start_validation_epoch_time
         self.log("time/validation", val_time)
+        outputs=self.val_step_outputs #we need to collect them ourselves and claer them (new in python 10)
         
         validation_outputs = self._evaluation_get_preds(outputs)
         # get Ytrue and preds
@@ -197,28 +219,36 @@ class BaseModel(LightningModule):
         
         # Show the main validation metric on the progress bar:
         self.log(self.hparams.monitor, target_val_metric, prog_bar=True)
+        self.val_step_outputs.clear()
         
         return val_stats
 
     def on_test_epoch_start(self) -> None:
         self._start_test_epoch_time = time.time()
+        for i,_ in enumerate(self.trainer.datamodule.test_set_names):
+            self.test_step_outputs[i]=[]
 
     def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
-        return self._evaluation_step(batch, batch_idx)
+        ret=self._evaluation_step(batch, batch_idx)
+        self.test_step_outputs[dataloader_idx].append(ret)
+        return ret
 
-    def on_test_epoch_end(self, outputs: List[Any]) -> dict:
+    def on_test_epoch_end(self) -> dict:
         test_time = time.time() - self._start_test_epoch_time
         self.log("time/test", test_time)
         
+        outputs = self.test_step_outputs # we ned to collect and clear our outpets as ourselves (new in python 10)
         main_test_stats = dict()
 
         self.log_text.info(f"in test epoch end len outputs {len(outputs)}")
 
         # test statistisc per test set
-        for i, test_subset_outputs in enumerate(outputs):
-            split_name = self.trainer.datamodule.test_set_names[i]
+        #for i, test_subset_outputs in enumerate(outputs):
+        for i, split_name in enumerate(self.trainer.datamodule.test_set_names):
+            #split_name = self.trainer.datamodule.test_set_names[i]
             self.log_text.info(f"Testing on {split_name}")
-            test_subset_outputs = self._evaluation_get_preds(test_subset_outputs)
+            #test_subset_outputs = self._evaluation_get_preds(test_subset_outputs[i])
+            test_subset_outputs = self._evaluation_get_preds(outputs[i])
 
             Y_test, preds_test = test_subset_outputs['targets'], test_subset_outputs['preds']
 
@@ -230,7 +260,7 @@ class BaseModel(LightningModule):
 
         # do we want to put sth else in the main tests stats?
         self.log_dict({**main_test_stats, 'epoch': self.current_epoch}, prog_bar=False)
-
+        self.test_step_outputs.clear()
         return main_test_stats
     
     def aggregate_predictions(self, results: List[Any]) -> Dict[int, Dict[str, Dict[str, np.ndarray]]]:
@@ -300,3 +330,12 @@ class BaseModel(LightningModule):
 
         lr_dict = {'scheduler': scheduler, 'monitor': self.hparams.monitor, 'mode': self.hparams.mode}
         return {'optimizer': optimizer, 'lr_scheduler': lr_dict}
+
+
+if __name__=="__main__":
+    pretrained_run_id= "3usp9c7m"
+    pretrained_ckpt_dir= "emulator/emulator/"
+    base_model, _ = reload_model_from_id(
+                pretrained_run_id, pretrained_ckpt_dir, allow_resume=False)
+    print(base_model)
+    
