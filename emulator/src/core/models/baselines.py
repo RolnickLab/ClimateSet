@@ -9,7 +9,7 @@ from torch import Tensor
 #from esem import gp_model #ClimateBench GP
 import segmentation_models_pytorch as smp
 from torch.autograd import Variable
-
+import numpy as np
 #import gpytorch # gaussion process alternative?
 
 from emulator.src.core.models.basemodel import BaseModel
@@ -185,29 +185,58 @@ class UNet(BaseModel):
     def __init__(self,
             in_var_ids : List[str],
             out_var_ids: List[str],
+            longitude: int = 32,
+            latitude: int = 32,
             activation_function : Union[str, callable, None] = None , # activation after final convolution
             encoder_name = "vgg11", 
             datamodule_config: DictConfig = None,
             channels_last:  bool = True,
             seq_to_seq: bool = True,
+            seq_len : int = 1,
             *args, **kwargs):
         
         super().__init__(datamodule_config=datamodule_config, *args, **kwargs)
-        self.save_hyperparameters()
-        num_output_vars=len(out_var_ids)
-        num_input_vars=len(in_var_ids)
+
         if datamodule_config is not None:
             if datamodule_config.get('channels_last') is not None:
-                channels_last = datamodule_config.get('channels_last')
+                self.channels_last = datamodule_config.get('channels_last')
+            if datamodule_config.get('lon') is not None:
+                self.lon = datamodule_config.get('lon')
+            if datamodule_config.get('lat') is not None:
+                self.lat = datamodule_config.get('lat')
+            if datamodule_config.get('seq_len') is not None:
+                self.seq_len = datamodule_config.get('seq_len')
+        else:
+            self.lon =longitude
+            self.lat =latitude
+            self.channels_last=channels_last
+            self.seq_len=seq_len
+        self.save_hyperparameters()
+        self.num_output_vars=len(out_var_ids)
+        self.num_input_vars=len(in_var_ids)
+        
+        
+        
+        # determine padding -> lan and lot must be divisible by 32
+        pad_lon=int((np.ceil(self.lon/32)*32)-(self.lon/32)*32)
+        pad_lat=int((np.ceil(self.lat/32))*32-(self.lat/32)*32)
+        print("lon", self.lon, "lat", self.lat)
+        print("Padding", pad_lon, pad_lat)
         self.channels_last = channels_last
 
 
-        self.model = TimeDistributed(smp.Unet(
+        self.model = torch.nn.Sequential(
+                torch.nn.ConstantPad2d((pad_lat,0,pad_lon,0), 0), # zero padding along lon and lat
+                TimeDistributed(smp.Unet(
                 encoder_name=encoder_name,        
                 encoder_weights=None,     
-                in_channels=num_input_vars,           
-                classes=num_output_vars,                      
-                activation=activation_function))
+                in_channels=self.num_input_vars,           
+                classes=self.num_output_vars,                      
+                activation=activation_function)),
+                torch.nn.Flatten(),
+                torch.nn.Linear(in_features=(self.num_output_vars*(self.lon+pad_lon)*(self.lat+pad_lat)*self.seq_len),
+                    out_features=(self.num_output_vars*self.lon*self.lat*self.seq_len)) # map back to original size
+        )
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.to(device)
@@ -218,11 +247,14 @@ class UNet(BaseModel):
         # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
         if self.channels_last:
             x=x.permute((0,1,4,2,3)) # torch con2d expects channels before height and witdth
+        # if images width not divisible by 
         x=self.model(x)
+        x=x.reshape((-1, self.seq_len, self.num_output_vars, self.lon, self.lat))
         if self.channels_last:
             x=x.permute((0,1,3,4,2))
         x=x.nan_to_num()
-        if not(seq_to_seq):
+
+        if not(self.hparams.seq_to_seq):
             x=x[:,-1,:]
             x=torch.unsqueeze(x,1)
 
@@ -235,11 +267,11 @@ if __name__=="__main__":
     
     in_vars=["CO2", "BC", "CH4", "SO2"]
     out_vars=['pr', 'tas']
-    in_time=10
+    in_time=2
     #lead_time=3
-    lon=32
-    lat=32
-    batch_size=16
+    lon=96
+    lat=144
+    batch_size=2
     num_con_layers=20
     num_lstm_layers=25
     channels_last=False
@@ -252,11 +284,11 @@ if __name__=="__main__":
     else:
         dummy=torch.rand(size=(batch_size, in_time, num_in_vars, lon, lat)).cuda()
    
-    unet = UNet(in_vars, out_vars, seq_to_seq=seq_to_seq, channels_last=channels_last)
-    lstm = CNNLSTM_ClimateBench(in_var_ids=in_vars, out_var_ids=out_vars, seq_len=in_time, seq_to_seq=seq_to_seq, channels_last=channels_last, lon=lon, lat=lat)
+    unet = UNet(in_vars, out_vars, seq_to_seq=seq_to_seq, seq_len=in_time, longitude=lon, latitude=lat,channels_last=channels_last)
+    #lstm = CNNLSTM_ClimateBench(in_var_ids=in_vars, out_var_ids=out_vars, seq_len=in_time, seq_to_seq=seq_to_seq, channels_last=channels_last, lon=lon, lat=lat)
 
  
     out=unet(dummy)
     print("Out", out.size())
-    out=lstm(dummy)
-    print("Out", out.size())
+    #out=lstm(dummy)
+    #print("Out", out.size())
