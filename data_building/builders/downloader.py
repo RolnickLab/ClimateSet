@@ -444,6 +444,9 @@ class Downloader:
                     experiment = self.extract_target_mip_exp_name(f, t)
 
                     # make sure to only download data for wanted scenarios
+                    print('THE NAME OF THE EXPS', experiment)
+                    print('ALL EXPERIMENTS', self.experiments)
+                    
                     if experiment in self.experiments:
 
                         print("Downloading data for experiment:", experiment)
