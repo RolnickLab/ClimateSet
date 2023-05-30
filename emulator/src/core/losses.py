@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import logging 
+import gpytorch
 
 # somehow cannot import that..
 #from emulator.src.utils.utils import get_logger, diff_max_min
@@ -25,6 +26,18 @@ def diff_max_min(x,dim):
 
 log = get_logger()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+class MLL(nn.Module):
+    """
+    Marginal log likelihood: loss used for the Variational Gaussian Process
+    """
+    def __init__(self, gp_model, train_y):
+        self.mll = gpytorch.mlls.VariationalELBO(gp_model.likelihood, gp_model.model, num_data=train_y.size(0))
+
+    def forward(self, pred, y):
+        return -self.mll(pred, y)
+
 
 class RMSELoss(nn.Module):
     def __init__(self, reduction: str = 'none', mask=None):

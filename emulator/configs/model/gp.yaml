@@ -1,0 +1,9 @@
+
+defaults:
+  - /optimizer: adam.yaml
+
+_target_: emulator.src.core.models.baselines.GaussianProcess
+
+
+in_var_ids: ${datamodule.in_var_ids}
+out_var_ids: ${datamodule.out_var_ids}

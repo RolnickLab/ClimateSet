@@ -10,24 +10,59 @@ from torch import Tensor
 import segmentation_models_pytorch as smp
 from torch.autograd import Variable
 import numpy as np
-#import gpytorch # gaussion process alternative?
+import gpytorch
 
 from emulator.src.core.models.basemodel import BaseModel
 
+class ApproxGPModel(gpytorch.models.ApproximateGP):
+    def __init__(self, inducing_points, num_tasks):
+        # inducing_points size: num_outputs, num_examples, num_features
+        variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(inducing_points.size(-2), batch_shape=torch.Size([num_tasks]))
+
+        variational_strategy = gpytorch.variational.IndependentMultitaskVariationalStrategy(
+            gpytorch.variational.VariationalStrategy(
+                self, inducing_points, variational_distribution, learn_inducing_locations=True
+            ),
+            num_tasks=num_tasks
+        )
+
+        super().__init__(variational_strategy)
+        self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([num_tasks]))
+
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=1.5, batch_shape=torch.Size([num_tasks])), batch_shape=torch.Size([num_tasks]))
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+
+
 class GaussianProcess(BaseModel):
     """
-    Problem: climatebench baseline very hard to integrat into pytorch lightning - will need to overwrite forward and backward / train_step different + how to do batch learning?
-    needs x and y for initialization....
+    Problem: needs x and y for initialization....
     """
-    def _init__(self):
+    def __init__(self,
+                in_var_ids : List[str],
+                out_var_ids: List[str],
+                *args, **kwargs):
+        """
+        train_x: a minibatch (or more) of data used for the initialization
+        """
+        # super().__init__(datamodule_config=datamodule_config, *args, **kwargs)
+        super().__init__()
+        self.num_out_var = len(out_var_ids)
+        self.first_run = True
 
-        pass
+    def forward(self, x:Tensor) -> Tensor:
+        if self.first_run:
+            self.model = ApproxGPModel(inducing_points=x, num_tasks=self.num_out_var)
+            self.likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=self.num_out_var)
+            self.first_run = False
 
-    def forward(self, x:Tensor)->Tensor:
+        x = x.reshape(x.size(0), -1)
+        return self.model(x)
 
-        return None
 
- 
 class RandomForest(BaseModel):
     def _init__(self):
 
