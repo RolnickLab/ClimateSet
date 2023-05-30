@@ -5,7 +5,7 @@
 defaults:
   - override /mode: exp.yaml
   - override /trainer: default.yaml
-  - override /model: unet.yaml # put the desired model name here
+  - override /model: climax.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
   - override /datamodule: dummy.yaml # standard datamodule configurations
@@ -27,7 +27,7 @@ trainer:
 model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
-  finetune: True
+  finetune: False
   pretrained_run_id:  "3u0ys0d5"
   pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
 
@@ -37,7 +37,7 @@ datamodule: # overwrite what stuff to train on
    # more selection like climate models and scenarios + splits should go here
    # ...
    lon: 32
-   lat: 34
+   lat: 32
    seq_to_seq: True # determine the task setting
    batch_size: 4
    channels_last: True

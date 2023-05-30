@@ -25,13 +25,10 @@ freeze_encoder: False
 pretrained_path: "/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/src/core/models/climax/pretrained_checkpoints/ClimaX-5.625deg.ckpt"
 no_time_aggregation: ${datamodule.seq_to_seq} # if seq_to_seq -> no time aggregation
 
+
 scheduler:
-  _target_: torch.optim.lr_scheduler.ExponentialLR
-  gamma: 0.98
-#scheduler:
-#  _target_: emulator.src.uils.lr_scheduler.LinearWarmupCosineAnnealingLR
-#  #optimizer: ${optimizer}
-#  warmup_epochs: 60 #original specs
-#  max_epochs: 600 #original specs
-#  warmup_start_lr: 1e-8
-#  eta_min: 1e-8
+  _target_: emulator.src.utils.lr_scheduler.LinearWarmupCosineAnnealingLR
+  warmup_epochs: 60 #original specs
+  max_epochs: 600 #original specs
+  warmup_start_lr: 1e-8
+  eta_min: 1e-8

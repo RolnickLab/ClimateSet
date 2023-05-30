@@ -1,4 +1,8 @@
-""" Adapted from ClimaX """
+""" Adapted from ClimaX 
+https://github.com/tung-nd/climax_all/blob/climatebench/src/utils/lr_scheduler.py  
+"""
+
+
 
 import math
 import warnings
@@ -19,8 +23,8 @@ class LinearWarmupCosineAnnealingLR(_LRScheduler):
 
     def __init__(
         self,
-        #optimizer: Optimizer,
-        optimizer_specs: Dict,
+        optimizer: Optimizer,
+        #optimizer_specs: Dict,
         warmup_epochs: int,
         max_epochs: int,
         warmup_start_lr: float = 0.0,
@@ -98,3 +102,6 @@ class LinearWarmupCosineAnnealingLR(_LRScheduler):
             * (1 + math.cos(math.pi * (self.last_epoch - self.warmup_epochs) / (self.max_epochs - self.warmup_epochs)))
             for base_lr in self.base_lrs
         ]
+
+if __name__=="__main__":
+    print("test")
