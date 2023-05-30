@@ -4,7 +4,8 @@
 defaults:
   - _self_
   - trainer: debug.yaml
-  - model: climax.yaml
+  - model: unet.yaml
+  - datamodule: dummy.yaml
 
   - callbacks: default.yaml  # or use wandb.yaml for wandb suppport
   - logger: wandb # set logger here or use command line (e.g. `python run.py logger=wandb`)
@@ -31,45 +32,13 @@ defaults:
 model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
+  #finetune: True
+  #pretrained_run_id: "3u0ys0d5"
+  #pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt" #/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/emulator/${pretrained_run_id}/checkpoints/
  
-
-# TODO make a yaml file for data specs
-# USING DUMMY FOR NOW
 datamodule:
-   _target_: emulator.src.datamodules.dummy_datamodule.DummyDataModule
-   lon: 16
-   lat: 16
-   in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']
-   out_var_ids: ['pr', 'tas']
-   seq_len: 3
-   seq_to_seq: True
-   num_levels: 1
-   batch_size: 4
-   channels_last: True
-   size: 5000
+  batch_size: 4
    
-
-#   exp_type: "pristine"
-#   target_type: "shortwave"
-#   target_variable: "fluxes+heating_rate"
-#   train_years:  "2000"
-#   validation_years: "2005"
-#   batch_size: 128
-#   eval_batch_size: 512
-#   num_workers: 0
-#   pin_memory: True
-#   load_train_into_mem: True
-#   load_valid_into_mem: True
-#   load_test_into_mem: False
-#   test_main_dataset: True
-#   test_ood_1991: False
-#   test_ood_historic: False
-#   test_ood_future: False
-#   verbose: ${verbose}
-#   # path to folder with data (optional, can also override constants.DATA_DIR to point to correct dir)
-#   # Make sure that it is an absolute path! hydra.runtime.cwd points to the original working dir.
-#   data_dir: "${hydra:runtime.cwd}/ClimART_DATA"  # null
-
 # TODO make a yaml file for normalization
 # normalizer:
 #   _target_: climart.data_transform.normalization.Normalizer

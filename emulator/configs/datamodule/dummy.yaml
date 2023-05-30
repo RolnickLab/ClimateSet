@@ -1,0 +1,13 @@
+_target_: emulator.src.datamodules.dummy_datamodule.DummyDataModule
+
+lon: 32
+lat: 32
+in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']
+out_var_ids: ['pr', 'tas']
+seq_len: 3
+seq_to_seq: True
+num_levels: 1
+batch_size: 4
+channels_last: True
+size: 5000
+eval_batch_size: 4

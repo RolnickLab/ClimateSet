@@ -84,11 +84,7 @@ class ClimaX(BaseModel):
         self.save_hyperparameters()
 
         self.log_text = get_logger(__name__)
-        
-        if datamodule_config is not None:
-            if datamodule_config.get('channels_last') is not None:
-                channels_last = datamodule_config.get('channels_last')
-        self.channels_last = channels_last
+
 
         # get info from datamodule
         if datamodule_config is not None:
@@ -96,22 +92,25 @@ class ClimaX(BaseModel):
                 out_vars=datamodule_config.get('out_var_ids')
             if datamodule_config.get('in_var_ids') is not None:
                 in_vars=datamodule_config.get('in_var_ids')
-        
+            if datamodule_config.get('channels_last') is not None:
+                self.channels_last = datamodule_config.get('channels_last')
+            if datamodule_config.get('lon') is not None:
+                self.lon = datamodule_config.get('lon')
+            if datamodule_config.get('lat') is not None:
+                self.lat = datamodule_config.get('lat')
+           
+        else:
+            self.lon =lon
+            self.lat =lat
+            self.channels_last=channels_last
+            
         if climate_modeling:
             assert out_vars is not None
             self.out_vars = out_vars
         else:
             self.out_vars = in_vars
-
-
-        # get info from datamodule
-        if datamodule_config is not None:
-            if datamodule_config.get('lat') is not None:
-                lat=datamodule_config.get('lat')
-            if datamodule_config.get('lat') is not None:
-                lon=datamodule_config.get('lon')
         
-        img_size=[lon, lat]
+        img_size=[self.lon, self.lat]
         # create class
         self.model = TokenizedViTContinuous( 
             climate_modeling=climate_modeling,
@@ -235,8 +234,8 @@ class ClimaX(BaseModel):
 if __name__=="__main__":
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = ClimaX(no_time_aggregation=False, channels_last=True).to(device)
+    model = ClimaX(no_time_aggregation=True, channels_last=True, lon=32, lat=32).to(device)
     print(device)
-    x, y = torch.randn(8, 5, 128, 256, 4).to(device), torch.randn(8, 5, 128, 256, 2).cuda()
+    x, y = torch.randn(8, 5, 32, 32, 4).to(device), torch.randn(8, 5, 32, 32, 2).cuda()
     preds = model.forward(x)
     print(preds.shape)

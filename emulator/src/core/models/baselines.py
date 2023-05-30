@@ -9,7 +9,7 @@ from torch import Tensor
 #from esem import gp_model #ClimateBench GP
 import segmentation_models_pytorch as smp
 from torch.autograd import Variable
-
+import numpy as np
 #import gpytorch # gaussion process alternative?
 
 from emulator.src.core.models.basemodel import BaseModel
@@ -81,22 +81,34 @@ class CNNLSTM_ClimateBench(BaseModel):
         ):
 
         super().__init__(datamodule_config=datamodule_config, *args, **kwargs)
-        self.save_hyperparameters()
-
-        
-        self.lon=lon
-        self.lat=lat
+    
         self.num_input_vars=len(in_var_ids)
         self.num_output_vars=len(out_var_ids)
         self.channels_last=channels_last
-        self.seq_len=seq_len
-        if seq_to_seq:
-            self.out_seq_len=seq_len
-        else: self.out_seq_len=1
+
+       
         if datamodule_config is not None:
             if datamodule_config.get('channels_last') is not None:
-                channels_last = datamodule_config.get('channels_last')
-        self.channels_last = channels_last
+                self.channels_last = datamodule_config.get('channels_last')
+            if datamodule_config.get('lon') is not None:
+                self.lon = datamodule_config.get('lon')
+            if datamodule_config.get('lat') is not None:
+                self.lat = datamodule_config.get('lat')
+            if datamodule_config.get('seq_len') is not None:
+                self.seq_len = datamodule_config.get('seq_len')
+        else:
+            self.lon =lon
+            self.lat =lat
+            self.channels_last=channels_last
+            self.seq_len=seq_len
+        
+        if seq_to_seq:
+            self.out_seq_len=self.seq_len
+        else: self.out_seq_len=1
+
+
+        self.save_hyperparameters()
+
 
         self.model=torch.nn.Sequential(
             #nn.Input(shape=(slider, width, height, num_input_vars)),
@@ -151,8 +163,6 @@ class TimeDistributed(nn.Module):
 
     def low_mem_forward(self, *args, **kwargs):                                           
         "input x with shape:(bs,seq_len,channels,width,height)"
-        #print("args", args[0].size())
-        #print("kwargs", kwargs)
         tlen = args[0].shape[self.tdim]
         args_split = [torch.unbind(x, dim=self.tdim) for x in args]
         out = []
@@ -171,10 +181,8 @@ class extract_tensor(nn.Module):
     def forward(self,x):
         # Output shape (batch, features, hidden)
         tensor, _ = x
-        #print("tensor in extarct", tensor.size(), seq_to_seq)
         if not(self.seq_to_seq):
             tensor = tensor[:, -1, :]
-            #print("tensor last step", tensor.size(), seq_to_seq)
         return tensor
 
 
@@ -185,29 +193,75 @@ class UNet(BaseModel):
     def __init__(self,
             in_var_ids : List[str],
             out_var_ids: List[str],
+            longitude: int = 32,
+            latitude: int = 32,
             activation_function : Union[str, callable, None] = None , # activation after final convolution
             encoder_name = "vgg11", 
             datamodule_config: DictConfig = None,
             channels_last:  bool = True,
             seq_to_seq: bool = True,
+            seq_len : int = 1,
+            readout: str = 'pooling',
             *args, **kwargs):
         
         super().__init__(datamodule_config=datamodule_config, *args, **kwargs)
-        self.save_hyperparameters()
-        num_output_vars=len(out_var_ids)
-        num_input_vars=len(in_var_ids)
+
         if datamodule_config is not None:
             if datamodule_config.get('channels_last') is not None:
-                channels_last = datamodule_config.get('channels_last')
+                self.channels_last = datamodule_config.get('channels_last')
+            if datamodule_config.get('lon') is not None:
+                self.lon = datamodule_config.get('lon')
+            if datamodule_config.get('lat') is not None:
+                self.lat = datamodule_config.get('lat')
+            if datamodule_config.get('seq_len') is not None:
+                self.seq_len = datamodule_config.get('seq_len')
+        else:
+            self.lon =longitude
+            self.lat =latitude
+            self.channels_last=channels_last
+            self.seq_len=seq_len
+        self.save_hyperparameters()
+        self.num_output_vars=len(out_var_ids)
+        self.num_input_vars=len(in_var_ids)
+    
+        
+        # determine padding -> lan and lot must be divisible by 32
+        pad_lon=int((np.ceil(self.lon/32)*32)-(self.lon/32)*32)
+        pad_lat=int((np.ceil(self.lat/32))*32-(self.lat/32)*32)
+       
         self.channels_last = channels_last
 
 
-        self.model = TimeDistributed(smp.Unet(
-                encoder_name=encoder_name,        
-                encoder_weights=None,     
-                in_channels=num_input_vars,           
-                classes=num_output_vars,                      
-                activation=activation_function))
+        # ption 1: linear output layer
+        if readout=='linear':
+            self.model = torch.nn.Sequential(
+                    torch.nn.ConstantPad2d((pad_lat,0,pad_lon,0), 0), # zero padding along lon and lat
+                    TimeDistributed(smp.Unet(
+                    encoder_name=encoder_name,        
+                    encoder_weights=None,     
+                    in_channels=self.num_input_vars,           
+                    classes=self.num_output_vars,                      
+                    activation=activation_function)),
+                    torch.nn.Flatten(),
+                    torch.nn.Linear(in_features=(self.num_output_vars*(self.lon+pad_lon)*(self.lat+pad_lat)*self.seq_len),
+                        out_features=(self.num_output_vars*self.lon*self.lat*self.seq_len)) # map back to original size
+            )
+
+        elif readout == 'pooling':
+             self.model = torch.nn.Sequential(
+                    torch.nn.ConstantPad2d((pad_lat,0,pad_lon,0), 0), # zero padding along lon and lat
+                    TimeDistributed(smp.Unet(
+                    encoder_name=encoder_name,        
+                    encoder_weights=None,     
+                    in_channels=self.num_input_vars,           
+                    classes=self.num_output_vars,                      
+                    activation=activation_function)),
+                    torch.nn.AdaptiveAvgPool3d(output_size=(self.num_output_vars,self.lon, self.lat)) # map back to original size
+            )
+
+        else:
+            self.log_text.warn(f"Readout {readout} is not supported. Pls choose either 'linear' or 'pooling'")
+            raise NotImplementedError
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.to(device)
@@ -218,11 +272,16 @@ class UNet(BaseModel):
         # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
         if self.channels_last:
             x=x.permute((0,1,4,2,3)) # torch con2d expects channels before height and witdth
+        # if images width not divisible by 
         x=self.model(x)
+        # only effective if linear readout
+        x=x.reshape((-1, self.seq_len, self.num_output_vars, self.lon, self.lat))
         if self.channels_last:
             x=x.permute((0,1,3,4,2))
         x=x.nan_to_num()
-        if not(seq_to_seq):
+
+        # choosing only last time step if not seq_to_seq task
+        if not(self.hparams.seq_to_seq):
             x=x[:,-1,:]
             x=torch.unsqueeze(x,1)
 
@@ -235,11 +294,11 @@ if __name__=="__main__":
     
     in_vars=["CO2", "BC", "CH4", "SO2"]
     out_vars=['pr', 'tas']
-    in_time=10
+    in_time=1
     #lead_time=3
-    lon=32
-    lat=32
-    batch_size=16
+    lon=96
+    lat=144
+    batch_size=2
     num_con_layers=20
     num_lstm_layers=25
     channels_last=False
@@ -252,11 +311,11 @@ if __name__=="__main__":
     else:
         dummy=torch.rand(size=(batch_size, in_time, num_in_vars, lon, lat)).cuda()
    
-    unet = UNet(in_vars, out_vars, seq_to_seq=seq_to_seq, channels_last=channels_last)
-    lstm = CNNLSTM_ClimateBench(in_var_ids=in_vars, out_var_ids=out_vars, seq_len=in_time, seq_to_seq=seq_to_seq, channels_last=channels_last, lon=lon, lat=lat)
+    unet = UNet(in_vars, out_vars, seq_to_seq=seq_to_seq, seq_len=in_time, longitude=lon, latitude=lat,channels_last=channels_last)
+    #lstm = CNNLSTM_ClimateBench(in_var_ids=in_vars, out_var_ids=out_vars, seq_len=in_time, seq_to_seq=seq_to_seq, channels_last=channels_last, lon=lon, lat=lat)
 
  
     out=unet(dummy)
     print("Out", out.size())
-    out=lstm(dummy)
-    print("Out", out.size())
+    #out=lstm(dummy)
+    #print("Out", out.size())

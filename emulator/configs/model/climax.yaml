@@ -9,7 +9,7 @@ lat: ${datamodule.lat}
 in_vars: ${datamodule.in_var_ids}
 out_vars: ${datamodule.out_var_ids}
 climate_modeling: True
-patch_size: 2
+patch_size: 16
 drop_path: 0.1
 drop_rate: 0.1
 learn_pos_emb: False
