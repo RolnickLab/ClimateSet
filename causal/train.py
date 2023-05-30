@@ -2,15 +2,17 @@ import torch
 import numpy as np
 
 from dag_optim import compute_dag_constraint
-from plot import plot
+from plot import Plotter
 
 
 class Training:
     def __init__(self, model, data, hp):
         self.model = model
         self.data = data
-        self.gt_dag = data.gt_graph
         self.hp = hp
+        self.latent = hp.latent
+        self.no_gt = hp.no_gt
+        self.gt_dag = data.gt_graph
         self.converged = False
         self.thresholded = False
         self.ended = False
@@ -34,6 +36,8 @@ class Training:
         self.valid_elbo_list = []
         self.mu_list = []
 
+        self.plotter = Plotter()
+
         # TODO just equal size of G
         if self.instantaneous:
             self.adj_tt = np.zeros((self.hp.max_iteration, self.tau + 1, self.d, self.d, self.model.tau_neigh * 2 + 1))
@@ -47,8 +51,6 @@ class Training:
             self.optimizer = torch.optim.SGD(model.parameters(), lr=hp.lr)
         elif hp.optimizer == "rmsprop":
             self.optimizer = torch.optim.RMSprop(model.parameters(), lr=hp.lr)
-        else:
-            raise NotImplementedError("optimizer {} is not implemented".format(hp.optimizer))
 
         # compute constraint normalization
         with torch.no_grad():
@@ -117,7 +119,7 @@ class Training:
 
             # Utilities: log, plot and save results
             if self.iteration % self.hp.plot_freq == 0:
-                plot(self)
+                self.plotter.plot(self)
             # self.save()
 
             self.iteration += 1
@@ -127,7 +129,7 @@ class Training:
                 pass
 
         # final plotting and printing
-        plot(self)
+        self.plotter.plot(self)
         self.print_results()
 
     def QPM(self, iteration: int, valid_loss: float, h: float):
@@ -161,13 +163,11 @@ class Training:
         self.model.train()
 
         # sample data
-        x, y = self.data.sample_train(self.batch_size)
-        density_param = self.model(x)
+        x, y, _ = self.data.sample(self.batch_size, valid=False)
+        nll = self.get_nll(x, y)
 
         # get acyclicity constraint, regularisation
         reg = self.get_regularisation()
-        # TODO: change density_param
-        nll = self.get_nll(y, density_param)
 
         # compute loss
         if self.instantaneous and not self.converged:
@@ -191,13 +191,12 @@ class Training:
         # data = self.test_data
         # idx = np.random.choice(data.shape[0], size=100, replace=False)
         # x = data[idx]
-        x, y = self.data.sample_valid(self.data.x_valid.shape[0] - self.data.tau)
-        density_param = self.model(x)
+        x, y, _ = self.data.sample(self.data.n_valid - self.data.tau, valid=True)
 
         # get acyclicity constraint, regularisation, elbo
         # h = self.get_acyclicity_violation()
+        nll = self.get_nll(x, y)
         reg = self.get_regularisation()
-        nll = self.get_nll(y, density_param)
 
         # compute loss
         if self.instantaneous and not self.converged:
@@ -216,14 +215,15 @@ class Training:
 
         return h
 
-    def get_nll(self, y, density_param) -> torch.Tensor:
+    def get_nll(self, x, y) -> torch.Tensor:
+        density_param = self.model(x)
         mu = density_param[:, :, :, 0].view(-1, 1)
         std = density_param[:, :, :, 1].view(-1, 1)
-        nll = -1/(y.shape[0] * y.shape[1] * y.shape[2]) * self.model.get_likelihood(y, mu, std, self.iteration)
 
+        nll = -1/(y.shape[0] * y.shape[1] * y.shape[2]) * self.model.get_likelihood(y, mu, std, self.iteration)
         return nll
 
-    def get_regularisation(self):
+    def get_regularisation(self) -> float:
         adj = self.model.get_adj()
         reg = self.hp.reg_coeff * torch.norm(adj, p=1)
         reg /= adj.shape[0] ** 2

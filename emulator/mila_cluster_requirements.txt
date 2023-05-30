@@ -33,7 +33,6 @@ decorator==5.1.1
 defusedxml==0.7.1
 dm-tree==0.1.8
 docker-pycreds==0.4.0
-dotenv==0.0.5
 efficientnet-pytorch==0.7.1
 einops==0.4.1
 entrypoints==0.4

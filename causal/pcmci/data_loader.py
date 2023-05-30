@@ -1,9 +1,6 @@
 import os
-import torch
 import tables
 import numpy as np
-from typing import Tuple
-from geopy import distance
 
 
 class DataLoader:
@@ -42,16 +39,7 @@ class DataLoader:
 
         # Load and split the data
         self._load_data()
-        standardize = False
-        if standardize:
-            self._standardize()
         self._split_data()
-
-    def _standardize(self):
-        mean = np.mean(self.x)
-        # __import__('ipdb').set_trace()
-        std = np.std(self.x)
-        self.x = (self.x - mean) / std
 
     def _load_data(self):
         """
@@ -68,6 +56,9 @@ class DataLoader:
         elif self.data_format == "hdf5":
             f = tables.open_file(os.path.join(self.data_path, 'data.h5'), mode='r')
             self.x = f.root.data
+            self.x = np.asarray(self.x)
+            self.x= np.swapaxes(self.x, 0, 1)
+
 
         # names for X, Z dimensions
         self.n = self.x.shape[0]
@@ -86,7 +77,6 @@ class DataLoader:
         """
         t_max = self.x.shape[1]
 
-        # TODO: be more general, n > 1 with different t
         if self.n == 1:
             idx_train = []
             idx_valid = []
@@ -109,79 +99,3 @@ class DataLoader:
             self.idx_valid = np.arange(self.n_train - self.tau, self.n_train + self.n_valid)
             np.random.shuffle(self.idx_train)
             np.random.shuffle(self.idx_valid)
-
-    def sample(self, batch_size: int, valid: bool) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Args:
-            batch_size: the number of examples in a minibatch
-            valid: if True, sample from validation set
-        Returns:
-            x, y, z: tensors of the data x, the data to predict y, and the latent variables z
-        """
-
-        # initiliaze empty arrays
-        # if self.instantaneous:
-        #     x = np.zeros((batch_size, self.tau + 1, self.d, self.d_x))
-        #     if not self.no_gt and self.latent:
-        #         z = np.zeros((batch_size, self.tau + 2, self.d, self.d_z))
-        #     else:
-        #         z = None
-        #     t1 = 1
-        # else:
-        x = np.zeros((batch_size, self.tau, self.d, self.d_x))
-        if not self.no_gt and self.latent:
-            z = np.zeros((batch_size, self.tau + 1, self.d, self.d_z))
-        else:
-            z = None
-        t1 = 0
-        y = np.zeros((batch_size, self.d, self.d_x))
-
-        if valid:
-            dataset_idx = self.idx_valid
-        else:
-            dataset_idx = self.idx_train
-
-        if self.n == 1:
-            # if there is only one long timeserie
-            random_idx = np.random.choice(dataset_idx, replace=False, size=batch_size)
-            for i, idx in enumerate(random_idx):
-                x[i] = self.x[0, idx - self.tau:idx + t1]
-                y[i] = self.x[0, idx + t1]
-                if not self.no_gt and self.latent:
-                    z[i] = self.z[0, idx - self.tau:idx + t1 + 1]
-        else:
-            # if there are multiple timeseries
-            random_idx = np.random.choice(dataset_idx, replace=False, size=batch_size)
-            for i, idx in enumerate(random_idx):
-                x[i] = self.x[idx, 0:self.tau + t1]
-                y[i] = self.x[idx, self.tau + t1]
-                if not self.no_gt and self.latent:
-                    z[i] = self.z[idx, 0:self.tau + t1 + 1]
-
-        # convert to torch tensors
-        x_ = torch.tensor(x)
-        y_ = torch.tensor(y)
-        if not self.no_gt and self.latent:
-            z_ = torch.tensor(z)
-        else:
-            z_ = z
-
-        return x_, y_, z_
-
-    def get_geodisic_distances(self, coordinates: np.ndarray):
-        """
-        Calculate the distance matrix between every pair of coordinates.
-        Use the geodesic distance with the WGS-84 model.
-
-        might be too slow for 10000 grid locations...
-        """
-        d = np.zeros((self.d_x, self.d_x))
-        for i, c1 in enumerate(coordinates):
-            for j, c2 in enumerate(coordinates):
-                if i == j:
-                    d[i, j] = d[j, i] = 0
-                else:
-                    # by default, use the WGS-84 model
-                    d[i, j] = d[j, i] = distance.geodesic(c1, c2).km
-
-        return d

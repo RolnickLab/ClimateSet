@@ -1,0 +1,19 @@
+{
+    "exp_path": "causal_climate_exp",
+    "exp_id": 0,
+    "use_data_config": true,
+    "data_path": "../dataset/data0",
+    "no_gt": false,
+    "data_format": "numpy",
+    "ratio_train": 0.8,
+    "ratio_valid": 0.2,
+    "latent": true,
+    "tau_min": 1,
+    "tau": 1,
+    "random_seed": 0,
+    "pc_alpha": 0.2,
+    "alpha": 0.05,
+    "ci_test": "linear",
+    "fct_type": "linear",
+    "debug_gt_z": false
+}
