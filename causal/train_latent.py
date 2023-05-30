@@ -21,6 +21,7 @@ class TrainingLatent:
         self.gt_dag = data.gt_graph
         self.gt_w = data.gt_w
         self.d_z = hp.d_z
+        self.no_w_constraint = hp.no_w_constraint
 
         self.d = data.x.shape[2]
         self.patience = hp.patience
@@ -109,7 +110,7 @@ class TrainingLatent:
                              self.hp.ortho_omega_mu,
                              self.hp.ortho_h_threshold,
                              self.hp.ortho_min_iter_convergence,
-                             dim_gamma=self.d_z)
+                             dim_gamma=(self.d_z, self.d_z))
         if self.instantaneous:
             # add the acyclicity constraint if the instantaneous connections
             # are considered
@@ -149,8 +150,10 @@ class TrainingLatent:
                                           self.valid_ortho_vector_cons_list,
                                           self.valid_loss_list)
                     if self.iteration > 1000:
-                        ortho_converged = self.ALM_ortho.has_converged
-                        # self.converged = False
+                        if not self.no_w_constraint:
+                            ortho_converged = self.ALM_ortho.has_converged
+                        else:
+                            self.converged = True
                     else:
                         ortho_converged = False
 
@@ -233,8 +236,9 @@ class TrainingLatent:
 
         # compute total loss
         loss = nll + sparsity_reg + connect_reg
-        loss = loss + (self.ALM_ortho.gamma @ h_ortho) + \
-            0.5 * self.ALM_ortho.mu * (h_ortho @ h_ortho)
+        if not self.no_w_constraint:
+            loss = loss + torch.sum(self.ALM_ortho.gamma @ h_ortho) + \
+                0.5 * self.ALM_ortho.mu * torch.sum(h_ortho ** 2)
         if self.instantaneous:
             loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
@@ -244,7 +248,7 @@ class TrainingLatent:
         _, _ = self.optimizer.step() if self.hp.optimizer == "rmsprop" else self.optimizer.step(), self.hp.lr
 
         # projection of the gradient for w
-        if self.model.autoencoder.use_grad_project:
+        if self.model.autoencoder.use_grad_project and not self.no_w_constraint:
             with torch.no_grad():
                 self.model.autoencoder.get_w_decoder().clamp_(min=0.)
             assert torch.min(self.model.autoencoder.get_w_decoder()) >= 0.
@@ -263,38 +267,39 @@ class TrainingLatent:
     def valid_step(self):
         self.model.eval()
 
-        # sample data
-        x, y, z = self.data.sample(self.data.n_valid - self.data.tau, valid=True)
-        nll, recons, kl, y_pred = self.get_nll(x, y, z)
+        with torch.no_grad():
+            # sample data
+            x, y, z = self.data.sample(self.data.n_valid - self.data.tau, valid=True)
+            nll, recons, kl, y_pred = self.get_nll(x, y, z)
 
-        # compute regularisations (sparsity and connectivity)
-        sparsity_reg = self.get_regularisation()
-        connect_reg = torch.tensor([0.])
-        if self.hp.latent and self.hp.reg_coeff_connect > 0:
-            connect_reg = self.connectivity_reg()
+            # compute regularisations (sparsity and connectivity)
+            sparsity_reg = self.get_regularisation()
+            connect_reg = torch.tensor([0.])
+            if self.hp.latent and self.hp.reg_coeff_connect > 0:
+                connect_reg = self.connectivity_reg()
 
-        # compute constraints (acyclicity and orthogonality)
-        h_acyclic = torch.tensor([0.])
-        # h_ortho = torch.tensor([0.])
-        if self.instantaneous and not self.converged:
-            h_acyclic = self.get_acyclicity_violation()
-        h_ortho = self.get_ortho_violation(self.model.autoencoder.get_w_decoder())
+            # compute constraints (acyclicity and orthogonality)
+            h_acyclic = torch.tensor([0.])
+            # h_ortho = torch.tensor([0.])
+            if self.instantaneous and not self.converged:
+                h_acyclic = self.get_acyclicity_violation()
+            h_ortho = self.get_ortho_violation(self.model.autoencoder.get_w_decoder())
 
-        # compute total loss
-        loss = nll + sparsity_reg + connect_reg
-        # loss = loss + self.ALM_ortho.gamma * h_ortho + \
-        #     0.5 * self.ALM_ortho.mu * h_ortho ** 2
-        if self.instantaneous:
-            loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
+            # compute total loss
+            loss = nll + sparsity_reg + connect_reg
+            # loss = loss + self.ALM_ortho.gamma * h_ortho + \
+            #     0.5 * self.ALM_ortho.mu * h_ortho ** 2
+            if self.instantaneous:
+                loss = loss + 0.5 * self.QPM_acyclic.mu * h_acyclic ** 2
 
-        self.valid_loss = loss.item()
-        self.valid_nll = nll.item()
-        self.valid_recons = recons.item()
-        self.valid_kl = kl.item()
-        self.valid_sparsity_reg = sparsity_reg.item()
-        self.valid_ortho_cons = h_ortho.detach()
-        self.valid_connect_reg = connect_reg.item()
-        self.valid_acyclic_cons = h_acyclic.item()
+            self.valid_loss = loss.item()
+            self.valid_nll = nll.item()
+            self.valid_recons = recons.item()
+            self.valid_kl = kl.item()
+            self.valid_sparsity_reg = sparsity_reg.item()
+            self.valid_ortho_cons = h_ortho.detach()
+            self.valid_connect_reg = connect_reg.item()
+            self.valid_acyclic_cons = h_acyclic.item()
 
         return x, y, y_pred
 
@@ -416,7 +421,8 @@ class TrainingLatent:
             # for i in range(w.size(0)):
             #     constraint = constraint + torch.norm(w[i].T @ w[i] - torch.eye(k), p=2)
             i = 0
-            constraint = torch.norm(w[i].T @ w[i] - torch.eye(k), p=2, dim=1)
+            # constraint = torch.norm(w[i].T @ w[i] - torch.eye(k), p=2, dim=1)
+            constraint = w[i].T @ w[i] - torch.eye(k)
             h = constraint / self.ortho_normalization
         else:
             h = torch.tensor([0.])

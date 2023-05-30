@@ -23,7 +23,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
             for func_type in func_type_list:
                 for fixed_diag in fixed_diagonal_list:
                     seed = np.random.randint(1, 1000)
-                    parent_directory = f"exp_lownoise_nonlinearmixing"
+                    parent_directory = f"exp_nonlinearmixing_lowdata"
 
                     for i_exp in range(n_dataset):
                         params = copy.deepcopy(default_params)
@@ -43,7 +43,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
                             diag = 1
                         else:
                             diag = 0
-                        directory = f"data_nonlinearmixing_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}"
+                        directory = f"data_t{params['t']}_nonlinearmixing_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}"
                         directory += f"_dx{params['d_x']}_d{params['d']}_{func_type}_diagonal{diag}"
 
                         params["exp_path"] = os.path.join(root_path, parent_directory, directory, f"data_{i_exp}")
@@ -71,17 +71,18 @@ if __name__ == "__main__":
     default_params = {
         "latent": True,
         "tau": 1,
-        "prob": 0.15,
         "d_z": 10,
         "d_x": 100,
+        "prob": 0.3,
         "d": 1,
-        "t": 5000,
+        "t": 500,
         "n": 1,
         "noise_type": "gaussian",
         "instantaneous": False,
-        "noise_x_std": 0.32,
+        "noise_x_std": 0.707,
         "noise_z_std": 1,
-        "radius_correct": 1e-1
+        "radius_correct": 5e-1,
+        "nb_edges": 30
     }
 
     generate_all_dataset("data", varying_params, default_params)

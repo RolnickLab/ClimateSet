@@ -46,14 +46,16 @@ class LinearMasked(nn.Module):
     def __init__(self, adj, W):
         super().__init__()
         # torch.zeros_like
-        self.weights = nn.Parameter(torch.Tensor(np.zeros_like(adj)))
-        self.W = torch.Tensor(W)
         self.adj = torch.Tensor(adj)
 
+        # TODO: remove, quick test
+        self.adj = self.adj.transpose(0, 1)
+        self.weights = nn.Parameter(torch.Tensor(np.zeros_like(adj)))
+        self.W = torch.Tensor(W)
 
     def forward(self, x_):
         # out = torch.matmul(data, self.adj * self.weights)
-        linear_weights = self.adj * self.weights
+        linear_weights = self.adj[:, :, 1:] * self.weights[:, :, 1:]
         z = torch.einsum("nxt,xz->nzt", x_, self.W)
 
         x = z[:, :, :-1]
@@ -62,7 +64,10 @@ class LinearMasked(nn.Module):
         # TODO: make sure it is column that are parents
         z_hat = torch.einsum("ndt,cdt->nc", x, linear_weights)
         y_hat = torch.einsum("nz,xz->nx", z_hat, self.W)
-        return torch.mean(torch.sum(0.5 * ((y - y_hat))**2, dim=1))
+
+        mse = torch.mean(torch.sum(0.5 * ((y - y_hat)) ** 2, dim=1))
+        smape = torch.mean(torch.sum(2 * (y - y_hat).abs() / (y.abs() + y_hat.abs()), dim=1))
+        return mse, smape
 
 
 class NNMasked(nn.Module):
@@ -71,6 +76,7 @@ class NNMasked(nn.Module):
         self.d_z = d_z
         self.W = torch.Tensor(W)
         self.adj = torch.Tensor(adj[:, :, 1:])
+        self.adj = self.adj.transpose(0, 1)
         self.mlps = nn.ModuleList(MLP(num_layers, num_hidden, d_z, 1) for i in range(d_z))
 
     def forward(self, x_):
@@ -83,8 +89,10 @@ class NNMasked(nn.Module):
             z_hat[:, i] = self.mlps[i]((x * self.adj[i]).reshape(x.shape[0], -1)).squeeze()
 
         y_hat = torch.einsum("nz,xz->nx", z_hat, self.W)
+        mse = torch.mean(torch.sum(0.5 * ((y - y_hat))**2, dim=1))
+        smape = torch.mean(torch.sum(2 * (y - y_hat).abs() / (y.abs() + y_hat.abs()), dim=1))
 
-        return torch.mean(torch.sum(0.5 * ((y - y_hat))**2, dim=1))
+        return mse, smape
 
 
 def train(adj, data, W, idx_train, idx_valid, max_iter, batch_size, linear=True,
@@ -103,8 +111,9 @@ def train(adj, data, W, idx_train, idx_valid, max_iter, batch_size, linear=True,
     for iter in range(max_iter):
         x = sample(data, idx_train, batch_size, tau)
 
-        loss = model(x)
+        loss, smape = model(x)
         train_score = -loss.item()
+        smape = smape.item()
 
         optimizer.zero_grad()
         loss.backward()
@@ -112,13 +121,15 @@ def train(adj, data, W, idx_train, idx_valid, max_iter, batch_size, linear=True,
 
         with torch.no_grad():
             x = sample(data, idx_valid, None, tau)
-            valid_score = -model(x).item()
+            val_loss, val_smape = model(x)
+            valid_score = -val_loss.item()
+            val_smape = val_smape.item()
 
         if valid_score > best_valid_score + 1e-4:
             best_valid_score = valid_score
             # compute best model training score
-            x = sample(data, idx_train, None, tau)
-            best_train_score = -model(x).item()
+            best_train_score = train_score
+
             # restore patience
             patience = full_patience
         else:
@@ -134,7 +145,7 @@ def train(adj, data, W, idx_train, idx_valid, max_iter, batch_size, linear=True,
 
     # print(model.weights)
 
-    return -best_train_score, -best_valid_score, flag_max_iter
+    return -best_train_score, -best_valid_score, flag_max_iter, smape, val_smape
 
 
 def sample(data, idx_train, n, tau):

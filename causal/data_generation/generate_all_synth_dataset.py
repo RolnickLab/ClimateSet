@@ -15,7 +15,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
         n_dataset: number of datasets with the same parameters
     """
     i = 0
-    func_type_list = ["linear", "add_nonlinear"]
+    func_type_list = ["linear"] # , "add_nonlinear"]
     fixed_diagonal_list = [True]
 
     for key_param, val_param in varying_params.items():
@@ -23,7 +23,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
             for func_type in func_type_list:
                 for fixed_diag in fixed_diagonal_list:
                     seed = np.random.randint(1, 1000)
-                    parent_directory = f"exp_lownoise_{key_param}"
+                    parent_directory = f"exp_{key_param}"
 
                     for i_exp in range(n_dataset):
                         params = copy.deepcopy(default_params)
@@ -42,7 +42,7 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
                             diag = 1
                         else:
                             diag = 0
-                        directory = f"data_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}"
+                        directory = f"data_t{params['t']}_tau{params['tau']}_density{params['prob']}_dz{params['d_z']}"
                         directory += f"_dx{params['d_x']}_d{params['d']}_{func_type}_diagonal{diag}"
 
                         params["exp_path"] = os.path.join(root_path, parent_directory, directory, f"data_{i_exp}")
@@ -64,10 +64,13 @@ def generate_all_dataset(root_path: str, varying_params: dict, default_params: d
 
 if __name__ == "__main__":
     varying_params = {
-        "prob": [0.3],
-        "d_z": [5, 10, 20],
-        "tau": [2, 3],
+        "d_z": [10]
     }
+    # "prob": [0.3],
+    # "d_z": [5, 10, 20],
+    # "tau": [2, 3],
+    # "t": [100, 500, 1000, 5000]
+
     # dz could add 50
     # tau could add 10
     # "prob": [0.15, 0.3],

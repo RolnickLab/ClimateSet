@@ -33,30 +33,34 @@ class Plotter:
             w_encoder = learner.model.autoencoder.get_w_encoder().detach().numpy()
             np.save(os.path.join(learner.hp.exp_path, "w_encoder"), w_encoder)
 
+            # save the graphs G
+            adj = learner.model.get_adj().detach().numpy()
+            np.save(os.path.join(learner.hp.exp_path, "graphs"), adj)
+
             # save variance of encoder and decoder
-            np.save(os.path.join(learner.hp.exp_path, "logvar_encoder_tt"), learner.logvar_encoder_tt)
-            np.save(os.path.join(learner.hp.exp_path, "logvar_decoder_tt"), learner.logvar_decoder_tt)
-            np.save(os.path.join(learner.hp.exp_path, "logvar_transition_tt"), learner.logvar_transition_tt)
+            # np.save(os.path.join(learner.hp.exp_path, "logvar_encoder_tt"), learner.logvar_encoder_tt)
+            # np.save(os.path.join(learner.hp.exp_path, "logvar_decoder_tt"), learner.logvar_decoder_tt)
+            # np.save(os.path.join(learner.hp.exp_path, "logvar_transition_tt"), learner.logvar_transition_tt)
 
             # save adj_tt and adj_w_tt, adjacencies through time
-            np.save(os.path.join(learner.hp.exp_path, "adj_tt"), learner.adj_tt)
-            np.save(os.path.join(learner.hp.exp_path, "adj_w_tt"), learner.adj_w_tt)
+            # np.save(os.path.join(learner.hp.exp_path, "adj_tt"), learner.adj_tt)
+            # np.save(os.path.join(learner.hp.exp_path, "adj_w_tt"), learner.adj_w_tt)
 
             # save losses and penalties
-            penalties = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
-                         {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
-                         {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
-                        ]
-            for p in penalties:
-                np.save(os.path.join(learner.hp.exp_path, p["name"]), np.array(p["data"]))
+            # penalties = [{"name": "sparsity", "data": learner.train_sparsity_reg_list, "s": "-"},
+            #              {"name": "tr ortho", "data": learner.train_ortho_cons_list, "s": ":"},
+            #              {"name": "mu ortho", "data": learner.mu_ortho_list, "s": ":"},
+            #             ]
+            # for p in penalties:
+            #     np.save(os.path.join(learner.hp.exp_path, p["name"]), np.array(p["data"]))
 
-            losses = [{"name": "tr ELBO", "data": learner.train_loss_list, "s": "-."},
-                      {"name": "Recons", "data": learner.train_recons_list, "s": "-"},
-                      {"name": "KL", "data": learner.train_kl_list, "s": "-"},
-                      {"name": "val ELBO", "data": learner.valid_loss_list, "s": "-."},
-                      ]
-            for loss in losses:
-                np.save(os.path.join(learner.hp.exp_path, loss["name"]), np.array(loss["data"]))
+            # losses = [{"name": "tr ELBO", "data": learner.train_loss_list, "s": "-."},
+            #           {"name": "Recons", "data": learner.train_recons_list, "s": "-"},
+            #           {"name": "KL", "data": learner.train_kl_list, "s": "-"},
+            #           {"name": "val ELBO", "data": learner.valid_loss_list, "s": "-."},
+            #           ]
+            # for loss in losses:
+            #     np.save(os.path.join(learner.hp.exp_path, loss["name"]), np.array(loss["data"]))
 
     def load(self, exp_path: str, data_loader):
         # load matrix W of the decoder and encoder
@@ -204,6 +208,7 @@ class Plotter:
         else:
             gt_dag = None
             gt_w = None
+
             # for latent models, find the right permutation of the latent
             adj_w = learner.model.autoencoder.get_w_decoder().detach().numpy()
             adj_w2 = learner.model.autoencoder.get_w_encoder().detach().numpy()
@@ -236,15 +241,32 @@ class Plotter:
                                                    learner.logging_iter,
                                                    learner.hp.exp_path,
                                                    'w')
-            # else:
-            #     self.plot_regions_map(adj_w,
-            #                           learner.data.coordinates,
-            #                           learner.logging_iter,
-            #                           learner.hp.plot_through_time,
-            #                           path=learner.hp.exp_path)
+            else:
+                self.plot_regions_map(adj_w,
+                                      learner.data.coordinates,
+                                      learner.logging_iter,
+                                      learner.hp.plot_through_time,
+                                      path=learner.hp.exp_path,
+                                      idx_region=None,
+                                      annotate=True,
+                                      one_plot=True)
+                # for idx in range(learner.d_z):
+                #     self.plot_regions_map(adj_w,
+                #                           learner.data.coordinates,
+                #                           learner.logging_iter,
+                #                           learner.hp.plot_through_time,
+                #                           path=learner.hp.exp_path,
+                #                           idx_region=idx)
+                self.plot_regions_map(adj_w,
+                                      learner.data.coordinates,
+                                      learner.logging_iter,
+                                      learner.hp.plot_through_time,
+                                      path=learner.hp.exp_path,
+                                      idx_region=None,
+                                      annotate=True)
 
     def plot_learned_mixing(self, z, z_hat, w, gt_w, x, path):
-        n_first = 100
+        n_first = 5
 
         for i in range(n_first):
             # plot z_hat vs x
@@ -314,7 +336,8 @@ class Plotter:
         pass
 
     def plot_regions_map(self, w_adj, coordinates: np.ndarray, iteration: int,
-                         plot_through_time: bool, path: str):
+                         plot_through_time: bool, path: str, idx_region: int = None,
+                         annotate: bool = False, one_plot: bool = False):
         """
         Plot the regions
         Args:
@@ -325,17 +348,9 @@ class Plotter:
             path: path where to save the plot
         """
 
-        # plot the map
-        map = Basemap(projection='robin', lon_0=0)
-        map.drawcoastlines()
-        map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
-        map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
-
         # d = w_adj.shape[0]
         # d_x = w_adj.shape[1]
         d_z = w_adj.shape[2]
-
-        # TODO: make sure it works for multiple features
 
         # find the argmax per row
         idx = np.argmax(w_adj, axis=2)[0]
@@ -345,22 +360,118 @@ class Plotter:
         # plot the regions
         colors = plt.cm.rainbow(np.linspace(0, 1, d_z))
 
-        for k, color in zip(range(d_z), colors):
-            alpha = norms[idx == k] / np.max(norms)
-            threshold = np.percentile(alpha, 30)
-            alpha[alpha < threshold] = 0
+        if idx_region is not None:
+            # plot the map
+            map = Basemap(projection='robin', lon_0=0)
+            map.drawcoastlines()
+            map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+            map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+
+            k = idx_region
+            color = colors[idx_region]
+            alpha = 1.
             region = coordinates[idx == k]
             c = np.repeat(np.array([color]), region.shape[0], axis=0)
             map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
+            x, y = map(region[:, 1].mean(), region[:, 0].mean())
+            plt.annotate(str(k), xy=(x, y))
+        elif one_plot:
+            fig, axes = plt.subplots(d_z // 5, 5, figsize=(15, d_z // 2))
 
-        if plot_through_time:
+            for k, color in zip(range(d_z), colors):
+                alpha = 1.
+                region = coordinates[idx == k]
+                c = np.repeat(np.array([color]), region.shape[0], axis=0)
+                i = k // 5
+                j = k % 5
+
+                # plot the map
+                map = Basemap(projection='robin', lon_0=0, ax=axes[i, j])
+                map.drawcoastlines()
+                # map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+                # map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+                map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
+
+                if annotate:
+                    x, y = self.get_centroid(region[:, 1], region[:, 0])
+                    x1, y1 = map(x, y)
+                    # x, y = map(region[:, 1].mean(), region[:, 0].mean())
+                    axes[i, j].annotate(str(k), xy=(x1, y1))
+
+        else:
+            # plot the map
+            map = Basemap(projection='robin', lon_0=0)
+            map.drawcoastlines()
+            map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+            map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+
+            centroids = []
+            centroids_map = []
+
+            for k, color in zip(range(d_z), colors):
+                # alpha = norms[idx == k] / np.max(norms)
+                alpha = 1.
+                # threshold = np.percentile(alpha, 30)
+                # alpha[alpha < threshold] = 0
+                region = coordinates[idx == k]
+                c = np.repeat(np.array([color]), region.shape[0], axis=0)
+                map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
+
+
+                # add number for each region (that are completely in one of the four quadrants)
+                if annotate:
+                    x, y = self.get_centroid(region[:, 1], region[:, 0])
+                    x1, y1 = map(x, y)
+                    centroids.append([x, y])
+                    centroids_map.append([x1, y1])
+                    plt.annotate(str(k), xy=(x1, y1))
+                    # if ((np.sum(region[:, 1] > 0) == 0 and np.sum(region[:, 0] > 0) == 0) or (np.sum(region[:, 1] > 0) == 0 and np.sum(region[:, 0] < 0) == 0) or (np.sum(region[:, 1] < 0) == 0 and np.sum(region[:, 0] > 0) == 0) or (np.sum(region[:, 1] < 0) == 0 and np.sum(region[:, 0] < 0) == 0)):
+                    #     x, y = map(region[:, 1].mean(), region[:, 0].mean())
+                    #     plt.annotate(str(k), xy=(x, y))
+            np.save(os.path.join(path, "centroids.npy"), centroids)
+            np.save(os.path.join(path, "centroids_map.npy"), centroids_map)
+
+        if idx_region is not None:
+            fname = f"spatial_aggregation{idx_region}.png"
+        elif plot_through_time:
             fname = f"spatial_aggregation_{iteration}.png"
+        elif one_plot:
+            fname = "spatial_aggregation_all_clusters.png"
         else:
             fname = "spatial_aggregation.png"
 
-        plt.title("Learned regions")
         plt.savefig(os.path.join(path, fname))
         plt.close()
+
+
+    def get_centroid(self, xs, ys):
+        """
+        http://www.geomidpoint.com/example.html
+        http://gis.stackexchange.com/questions/6025/find-the-centroid-of-a-cluster-of-points
+        """
+        sum_x, sum_y, sum_z = 0, 0, 0
+        n = float(xs.shape[0])
+
+        if n > 0:
+            for (x, y) in zip(xs, ys):
+                lat = np.radians(y)
+                lon = np.radians(x)
+                ## convert lat lon to cartesian coordinates
+                sum_x += np.cos(lat) * np.cos(lon)
+                sum_y += np.cos(lat) * np.sin(lon)
+                sum_z += np.sin(lat)
+            avg_x = sum_x / n
+            avg_y = sum_y / n
+            avg_z = sum_z / n
+            center_lon = np.arctan2(avg_y, avg_x)
+            hyp = np.sqrt(avg_x * avg_x + avg_y * avg_y)
+            center_lat = np.arctan2(avg_z, hyp)
+            final_x, final_y = np.degrees(center_lon), np.degrees(center_lat)
+            print(final_x, final_y)
+            return final_x, final_y
+        else:
+            return 0., 0.
+
 
     def plot_learning_curves(self, train_loss: list, train_recons: list = None, train_kl: list = None,
                              valid_loss: list = None, valid_recons: list = None,
@@ -674,8 +785,6 @@ if __name__ == "__main__":
                              debug_gt_w=hp["debug_gt_w"],
                              instantaneous=hp["instantaneous"],
                              tau=hp["tau"])
-
-    __import__('ipdb').set_trace()
 
     plotter.load(hp["exp_path"], data_loader)
     # plotter.plot(data)

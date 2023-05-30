@@ -5,7 +5,7 @@ This module contains all the dimensionality reduction methods used
 """
 
 # Build in modules
-from savar.functions import *
+from savar_functions import *
 
 # External modules
 import numpy as np
@@ -189,6 +189,7 @@ def get_varimax_loadings_standard(data,
                                                                truncate_by=truncate_by, max_comps=max_comps,
                                                                fraction_explained_variance=fraction_explained_variance,
                                                                verbosity=verbosity)
+    __import__('ipdb').set_trace()
     # if verbosity > 0:
     #     print("Explained variance at max_comps = %d: %.5f" % (max_comps, explained))
 

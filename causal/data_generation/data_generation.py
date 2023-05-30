@@ -61,16 +61,20 @@ class MixingFunctions:
                     # z_ = z_centered / z[:, i, j].std()
 
                     if first:
-                        x[:, i] = z_
+                        # x[:, i] = z_
+                        softplus = self.LeakySoftplus()
+                        x[:, i] = softplus(z_)
                         first = False
                     fct_type = np.random.rand()
 
                     a1 = np.random.rand() * 0.5  + 0.2
-                    if fct_type < 0.5:
+                    if fct_type < 0.8:  # 0.5
                         # x[:, i] = a1 * torch.abs(z_)
                         x[:, i] = (a1) * (2 * torch.sigmoid(10 * z_) - 1) * z_
                     else:
-                        x[:, i] = a1 * z_
+                        softplus = self.LeakySoftplus()
+                        x[:, i] = softplus(z_)
+                    # LeakySoftplus
                     # x[:, i] = x[:, i] / torch.max(x[:, i])
         return x
 

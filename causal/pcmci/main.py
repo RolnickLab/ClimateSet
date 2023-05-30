@@ -6,6 +6,8 @@ import torch
 import numpy as np
 from data_loader import DataLoader
 from pcmci import varimax_pcmci
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 
 
 class Bunch:
@@ -72,6 +74,29 @@ def main(hp):
     with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
         json.dump(metrics, file, indent=4)
 
+    # save G and W
+    np.save(os.path.join(hp.exp_path, "graph.npy"), learned_dag)
+    np.save(os.path.join(hp.exp_path, "w.npy"), learned_W)
+
+    if hp.no_gt:
+        # plot all regions separately
+        plot_regions_map(learned_W,
+                         data_loader.coordinates,
+                         iteration=0,
+                         plot_through_time=False,
+                         path=hp.exp_path,
+                         idx_region=None,
+                         annotate=True,
+                         one_plot=True)
+
+        # plot the globe with all the regions
+        plot_regions_map(learned_W,
+                         data_loader.coordinates,
+                         iteration=0,
+                         plot_through_time=False,
+                         path=hp.exp_path,
+                         idx_region=None)
+
 
 def assert_args(args):
     """
@@ -101,6 +126,96 @@ def assert_args(args):
         warnings.warn("Are you sure you want to have a higher dimension for d_z than d_x")
 
     return args
+
+
+def plot_regions_map(w_adj, coordinates: np.ndarray, iteration: int,
+                     plot_through_time: bool, path: str, idx_region: int = None,
+                     annotate: bool = False, one_plot: bool = False):
+    """
+    Plot the regions
+    Args:
+        w_adj: weight of edges between X and latents Z
+        coordinates: lat, lon of every grid location
+        iteration: number of training iteration
+        plot_through_time: if False, overwrite the plot
+        path: path where to save the plot
+    """
+
+    d_z = w_adj.shape[1]
+
+    # find the argmax per row
+    idx = np.argmax(w_adj, axis=1)
+    norms = np.max(w_adj, axis=1)
+
+    # plot the regions
+    colors = plt.cm.rainbow(np.linspace(0, 1, d_z))
+
+    if idx_region is not None:
+        # plot the map
+        map = Basemap(projection='robin', lon_0=0)
+        map.drawcoastlines()
+        map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+        map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+
+        k = idx_region
+        color = colors[idx_region]
+        alpha = 1.
+        region = coordinates[idx == k]
+        c = np.repeat(np.array([color]), region.shape[0], axis=0)
+        map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
+        x, y = map(region[:, 1].mean(), region[:, 0].mean())
+        plt.annotate(str(k), xy=(x, y))
+    elif one_plot:
+        fig, axes = plt.subplots(d_z // 5, 5, figsize=(15, d_z // 2))
+
+        for k, color in zip(range(d_z), colors):
+            alpha = 1.
+            region = coordinates[idx == k]
+            c = np.repeat(np.array([color]), region.shape[0], axis=0)
+            i = k // 5
+            j = k % 5
+
+            # plot the map
+            map = Basemap(projection='robin', lon_0=0, ax=axes[i, j])
+            map.drawcoastlines()
+            # map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+            # map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+            map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
+
+            if annotate:
+                x, y = map(region[:, 1].mean(), region[:, 0].mean())
+                axes[i, j].annotate(str(k), xy=(x, y))
+
+    else:
+        # plot the map
+        map = Basemap(projection='robin', lon_0=0)
+        map.drawcoastlines()
+        map.drawparallels(np.arange(-90, 90, 30), labels=[1, 0, 0, 0])
+        map.drawmeridians(np.arange(map.lonmin, map.lonmax + 30, 60), labels=[0, 0, 0, 1])
+
+        for k, color in zip(range(d_z), colors):
+            alpha = 1.
+            region = coordinates[idx == k]
+            c = np.repeat(np.array([color]), region.shape[0], axis=0)
+            map.scatter(x=region[:, 1], y=region[:, 0], c=c, alpha=alpha, s=3, latlon=True)
+
+            # add number for each region (that are completely in one of the four quadrants)
+            if annotate:
+                if ((np.sum(region[:, 1] > 0) == 0 and np.sum(region[:, 0] > 0) == 0) or (np.sum(region[:, 1] > 0) == 0 and np.sum(region[:, 0] < 0) == 0) or (np.sum(region[:, 1] < 0) == 0 and np.sum(region[:, 0] > 0) == 0) or (np.sum(region[:, 1] < 0) == 0 and np.sum(region[:, 0] < 0) == 0)):
+                    x, y = map(region[:, 1].mean(), region[:, 0].mean())
+                    plt.annotate(str(k), xy=(x, y))
+
+    if idx_region is not None:
+        fname = f"spatial_aggregation{idx_region}.png"
+    elif plot_through_time:
+        fname = f"spatial_aggregation_{iteration}.png"
+    elif one_plot:
+        fname = "spatial_aggregation_all_clusters.png"
+    else:
+        fname = "spatial_aggregation.png"
+
+    plt.savefig(os.path.join(path, fname))
+    plt.close()
 
 
 if __name__ == "__main__":
@@ -142,6 +257,7 @@ if __name__ == "__main__":
     parser.add_argument("--latent", action="store_true", help="Use the model that assumes latent variables")
     parser.add_argument("--d-z", type=int, help="if latent, d_z is the number of cluster z")
     parser.add_argument("--d-x", type=int, help="if latent, d_x is the number of gridcells")
+    parser.add_argument("--d", type=int, default=1)
     parser.add_argument("--instantaneous", action="store_true", help="Use instantaneous connections")
     parser.add_argument("--tau-min", type=int, help="Number of past timesteps to consider")
     parser.add_argument("--tau", type=int, help="Number of past timesteps to consider")

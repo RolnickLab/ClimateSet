@@ -15,8 +15,8 @@ class ALM:
                  omega_mu: float,
                  h_threshold: float,
                  min_iter_convergence: int,
-                 dim_gamma: int = 1):
-        self.gamma = torch.zeros(dim_gamma)
+                 dim_gamma = (1)):
+        self.gamma = torch.zeros(*dim_gamma)
         self.delta_gamma = -np.inf
         self.mu = mu_init
         self.min_iter_convergence = min_iter_convergence
@@ -55,7 +55,7 @@ class ALM:
 
         if len(val_loss) >= 3:
             h = h_list[-1]
-            if self.dim_gamma > 1:
+            if len(self.dim_gamma) > 1:
                 h_scalar = torch.sum(h)
             else:
                 h_scalar = h

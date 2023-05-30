@@ -17,7 +17,9 @@ from likelihood_models import train
 def dim_reduc(data, d_z: int, unrotated: bool = False, no_sign_flip: bool =
               False, method: str = 'varimax'):
     if method == "varimax":
+        __import__('ipdb').set_trace()
         modes = varimax(data, max_comps=d_z, no_sign_flip=no_sign_flip)
+        __import__('ipdb').set_trace()
 
         # Get matrix W, apply it to grid-level
         if unrotated:
@@ -102,6 +104,7 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     # 1 - Apply varimax+ to the data in order to find W
     # (the relations from the grid locations to the modes)
     if not hp.debug_gt_z:
+        __import__('ipdb').set_trace()
         z_hat, W = dim_reduc(train_data, d_z, hp.unrotated, hp.no_sign_flip)
         z_hat_valid = valid_data @ W
     else:
@@ -136,31 +139,36 @@ def varimax_pcmci(data: np.ndarray, idx_train, idx_valid, hp, gt_z, gt_w,
     # Metrics: SHD, Pr/Re, MSE of pred, MCC
     metrics = {}
     if do_prediction:
+        print("Learning a model following the graph found by Mapped-PCMCI")
         if likelihood_model == "linear":
-            train_mse, val_mse, flag_max_iter = train(graph,
-                                                      data,
-                                                      W,
-                                                      idx_train,
-                                                      idx_valid,
-                                                      max_iter=10000,
-                                                      batch_size=64,
-                                                      linear=True)
+            train_mse, val_mse, flag_max_iter, train_smape, val_smape = train(graph,
+                                                                              data,
+                                                                              W,
+                                                                              idx_train,
+                                                                              idx_valid,
+                                                                              max_iter=10000,
+                                                                              batch_size=64,
+                                                                              linear=True)
             metrics['train_mse'] = train_mse
             metrics['val_mse'] = val_mse
+            metrics['train_smape'] = train_smape
+            metrics['val_smape'] = val_smape
 
         elif likelihood_model == "MLPs":
-            train_mse, val_mse, flag_max_iter = train(graph,
-                                                      data,
-                                                      W,
-                                                      idx_train,
-                                                      idx_valid,
-                                                      max_iter=100000,
-                                                      batch_size=64,
-                                                      linear=False,
-                                                      num_hidden=8,
-                                                      num_layers=2)
+            train_mse, val_mse, flag_max_iter, train_smape, val_smape = train(graph,
+                                                                              data,
+                                                                              W,
+                                                                              idx_train,
+                                                                              idx_valid,
+                                                                              max_iter=100000,
+                                                                              batch_size=64,
+                                                                              linear=False,
+                                                                              num_hidden=8,
+                                                                              num_layers=2)
             metrics['train_mse'] = train_mse
             metrics['val_mse'] = val_mse
+            metrics['train_smape'] = train_smape
+            metrics['val_smape'] = val_smape
         else:
             raise NotImplementedError("Linear and MLPs are the only likelihood models")
 

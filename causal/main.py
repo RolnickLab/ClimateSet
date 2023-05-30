@@ -143,7 +143,6 @@ def main(hp):
         else:
             gt_graph = trainer.gt_dag[:-1]  # remove the graph G_t
 
-        # TODO: doublecheck that
         learned_graph = trainer.model.get_adj().detach().numpy().reshape(gt_graph.shape[0], gt_graph.shape[1], -1)
 
         score, cc_program_perm, assignments, z, z_hat, _ = mcc_latent(trainer.model, trainer.data)
@@ -167,8 +166,12 @@ def main(hp):
         for key, val in valid_loss.items():
             metrics[key] = val
 
-    metrics['train_mse'] = prediction(trainer, False)
-    metrics['val_mse'] = prediction(trainer, True)
+    train_mse, train_smape = prediction(trainer, False)
+    val_mse, val_smape = prediction(trainer, True)
+    metrics['train_mse']= train_mse
+    metrics['train_smape']= train_smape
+    metrics['val_mse'] = val_mse
+    metrics['val_smape'] = val_smape
 
     with open(os.path.join(hp.exp_path, "results.json"), "w") as file:
         json.dump(metrics, file, indent=4)
@@ -176,15 +179,21 @@ def main(hp):
 
 def prediction(trainer, valid):
     """
-    Calculate the MSE between X_{t+1} and X_hat_{t+1}
+    Calculate the MSE and SMAPE between X_{t+1} and X_hat_{t+1}
     """
     if not valid:
-        x, y, y_pred = trainer.train_step()
+        bs = np.min([trainer.data.n_train, 1000])
+        x, y, _ = trainer.data.sample(bs, valid=False)
+        y, y_pred = trainer.model.predict(x, y)
     else:
-        x, y, y_pred = trainer.valid_step()
+        bs = np.min([trainer.data.n_valid, 1000])
+        x, y, _ = trainer.data.sample(bs, valid=True)
+        y, y_pred = trainer.model.predict(x, y)
 
-    mse = torch.mean(0.5 * (y - y_pred) ** 2)
-    return mse.item()
+    with torch.no_grad():
+        mse = torch.mean(torch.sum(0.5 * (y - y_pred) ** 2, dim=2))
+        smape = torch.mean(torch.sum(2 * (y - y_pred).abs() / (y.abs() + y_pred.abs()), dim = 2))
+    return mse.item(), smape.item()
 
 
 def assert_args(args):
@@ -244,6 +253,8 @@ if __name__ == "__main__":
                         help="If true, use the ground truth value of W (use only to debug)")
     parser.add_argument("--debug-gt-graph", action="store_true",
                         help="If true, use the ground truth graph (use only to debug)")
+    parser.add_argument("--no-w-constraint", action="store_true",
+                        help="If True, does not apply constraint on W (non-negativity and ortho)")
 
     # Dataset properties
     parser.add_argument("--data-path", type=str, help="Path to the dataset")
@@ -346,12 +357,13 @@ if __name__ == "__main__":
     # if a json file with params is given,
     # update params accordingly
     if args.config_path != "":
+        print(f"using config file: {args.config_path}")
         default_params = vars(args)
         with open(args.config_path, 'r') as f:
             params = json.load(f)
 
         for key, val in params.items():
-            if default_params[key] is None:  # or not default_params[key]:
+            if default_params[key] is None or not default_params[key]:
                 default_params[key] = val
         args = Bunch(**default_params)
 
@@ -368,6 +380,10 @@ if __name__ == "__main__":
             args.tau = params['tau']
         if 'neighborhood' in params:
             args.tau_neigh = params['neighborhood']
+
+    # args.nonlinear_mixing = True
+    args.latent = True
+    print(args.no_gt)
 
     args = assert_args(args)
 

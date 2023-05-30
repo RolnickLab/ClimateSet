@@ -259,7 +259,7 @@ class LatentTSDCD(nn.Module):
                                                              self.num_layers_mixing,
                                                              use_gumbel_mask=False,
                                                              tied=tied_w,
-                                                             embedding_dim=10,
+                                                             embedding_dim=100,
                                                              gt_w=None)
         else:
             self.autoencoder = LinearAutoEncoder(d, d_x, d_z, tied=tied_w)
@@ -389,6 +389,20 @@ class LatentTSDCD(nn.Module):
 
         return elbo, recons, kl, px_mu
 
+    def predict(self, x, y):
+        b = x.size(0)
+
+        with torch.no_grad():
+            # sample Zs (based on X)
+            z, q_mu_y, q_std_y = self.encode(x, y)
+
+            # get params of the transition model p(z^t | z^{<t})
+            mask = self.mask(b)
+            pz_mu, pz_std = self.transition(z[:, :-1].clone(), mask)
+            px_mu, px_std = self.decode(pz_mu)
+        return px_mu, y
+
+
     def get_kl(self, mu1, sigma1, mu2, sigma2) -> float:
         """KL between two multivariate Gaussian Q and P.
         Here, Q is spherical and P is diagonal"""
@@ -422,8 +436,10 @@ class LinearAutoEncoder(nn.Module):
             unif = (1 - 0.1) * torch.rand(size=(d, d_z, d_x)) + 0.1
             self.w_encoder = nn.Parameter(unif / torch.tensor(d_x))
 
-        self.logvar_encoder = nn.Parameter(torch.ones(d) * -1)
-        self.logvar_decoder = nn.Parameter(torch.ones(d) * -1)
+        # self.logvar_encoder = nn.Parameter(torch.ones(d) * -1)
+        # self.logvar_decoder = nn.Parameter(torch.ones(d) * -1)
+        self.logvar_encoder = nn.Parameter(torch.ones(d_z) * -1)
+        self.logvar_decoder = nn.Parameter(torch.ones(d_x) * -1)
 
     def get_w_encoder(self):
         if self.tied:
@@ -477,8 +493,10 @@ class NonLinearAutoEncoder(nn.Module):
                 unif = (1 - 0.1) * torch.rand(size=(d, d_z, d_x)) + 0.1
                 self.w_encoder = nn.Parameter(unif / torch.tensor(d_x))
 
-        self.logvar_encoder = nn.Parameter(torch.ones(d) * -1)
-        self.logvar_decoder = nn.Parameter(torch.ones(d) * -1)
+        # self.logvar_encoder = nn.Parameter(torch.ones(d) * -1)
+        # self.logvar_decoder = nn.Parameter(torch.ones(d) * -1)
+        self.logvar_encoder = nn.Parameter(torch.ones(d_z) * -1)
+        self.logvar_decoder = nn.Parameter(torch.ones(d_x) * -1)
 
     def get_w_encoder(self):
         if self.use_gumbel_mask:

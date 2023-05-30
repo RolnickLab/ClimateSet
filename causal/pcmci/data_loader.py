@@ -56,6 +56,9 @@ class DataLoader:
         elif self.data_format == "hdf5":
             f = tables.open_file(os.path.join(self.data_path, 'data.h5'), mode='r')
             self.x = f.root.data
+            self.x = np.asarray(self.x)
+            self.x= np.swapaxes(self.x, 0, 1)
+
 
         # names for X, Z dimensions
         self.n = self.x.shape[0]
