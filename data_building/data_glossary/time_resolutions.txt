@@ -1,0 +1,45 @@
+General flags:
+[A] : Average
+[I] : Instantaneous
+[X] : Maximum
+[M] : Minimum
+
+Depending on the (sub)model, the frequencies can be chosen quite differently,
+even considering 50-year frequencies, e.g. in CLM5: hist_mfilt = 50
+
+table_id is decoding which temporal grid should be used for the output of the model.
+It's different for different types of variables.
+
+'fx'      : Fixed variables
+'day'     : Daily data (extension: contains both atmospheric and oceanographic data)
+'SImon'   : Monthly sea-ice data
+'SIday'   : Daily sea-ice data
+'Oyr'     : Annual ocean variables (mean)
+'Omon'    : Monthly ocean variables
+'Ofx'     : Fixed ocean variables
+'Oday'    : Daily ocean variables
+'Lmon'    : Monthly land surface and soil model fields
+'LImon'   : Monthly fields for the terrestrial cryosphere
+'Emon'    : Monthly, time mean, extension
+'Eday'    : Daily, time mean, extension
+'CFmon'   : Monthly data associated with cloud forcing
+'CFday'   : Daily data associated with cloud forcing
+'CF3hr'   : 3-hourly data associated with cloud forcing
+'Amon'    : Monthly atmospheric data
+'AERmon'  : Monthly atmospheric chemistry and aerosol data (same for AERmonZ - zonal mean though)
+'AERfx'   : Fixed atmospheric chemistry and aerosol data
+'AERhr'   : Hourly atmospheric chemistry and aerosol data
+'AERday'  : Daily atmospheric chemistry and aerosol data
+'6hrPlevPt': 6-hourly data on pressure levels (instantaneous mean)
+'6hrPlev' : 6-hourly data on pressure levels (time mean)
+'6hrLev'  : 6-hourly data on atmospheric model levels
+'3hr'     : Atmosphere sampled every three hours
+
+Find more explanations on these kind of parameters: 
+SOURCE: Escuela Peruana del Agua, "Manual de Pangeo CMIP6 Google Cloud Data", https://dl-manual.com/doc/manual-de-pangeo-cmip6-google-cloud-data-2zx9n11krjzj
+
+Open question: Can all variables be found in the extension frequencies "E"?
+
+Mapping variables to table_id s:
+https://docs.google.com/spreadsheets/d/1UUtoz6Ofyjlpx5LdqhKcwHFz2SGoTQV2_yekHyMfL9Y/edit#gid=1221485271
+Attention: Skip everything that includes "subhr", because it is very specific diagnostics that are only available for few sites

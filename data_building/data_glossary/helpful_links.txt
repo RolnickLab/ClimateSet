@@ -1,0 +1,12 @@
+Summary about all CMIP data labels (frequency, grid label, variables, etc.)
+https://docs.google.com/document/d/1h0r8RZr_f3-8egBMMh7aqLwy3snpD6_MrDz1q8n5XUk/edit
+
+List of all models:
+https://docs.google.com/spreadsheets/d/13DHeTEH_8G08vxTMX1Fs-WbAA6SamBjDdh0fextdcGE/edit#gid=165882553
+--> mapping from source_id to different models can also be found in data_description/mappings
+Source: Escuela Peruana del Agua, "Manual de Pangeo CMIP6 Google Cloud Data", https://dl-manual.com/doc/manual-de-pangeo-cmip6-google-cloud-data-2zx9n11krjzj
+
+List of all experiments:
+See Google Drive / CausalSuperEmulator / Emulator / CMIP6 / Experiments
+(Tier 4 missing, unfortunately)
+Source: same as list of all models one

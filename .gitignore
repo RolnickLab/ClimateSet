@@ -1,3 +1,16 @@
+# All data files
+*.nc
+RAW_DATA
+PROCESSED_DATA
+tmp/*
+
+# deprecated files
+deprecated/
+notes/
+
+# privacy files
+data_generation/parameters/credentials.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -106,6 +119,7 @@ celerybeat.pid
 .env
 .venv
 env/
+env39/
 venv/
 ENV/
 env.bak/

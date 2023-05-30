@@ -1,0 +1,409 @@
+ # all available facet options for source id "NorESM2-LM" only!!
+ 
+ facet Conventions
+[]
+
+ facet access
+['OPENDAP', 'LAS', 'HTTPServer', 'GridFTP', 'Globus']
+
+ facet activity
+[]
+
+ facet activity_drs
+['ScenarioMIP', 'RFMIP', 'PMIP', 'PAMIP', 'OMIP', 'DAMIP', 'CMIP', 'CDRMIP', 'C4MIP', 'AerChemMIP']
+
+ facet activity_id
+['ScenarioMIP', 'RFMIP', 'PMIP', 'PAMIP', 'OMIP', 'DAMIP', 'CMIP', 'CDRMIP', 'C4MIP', 'AerChemMIP']
+
+ facet amodell
+[]
+
+ facet branch_method
+[]
+
+ facet cera_acronym
+[]
+
+ facet cf_standard_name
+['wind_speed', 'wet_deposition_rate_of_so4', 'wet_deposition_rate_of_so2', 'wet_deposition_rate_of_sea-salt_aerosol', 'wet_deposition_rate_of_black_carbon_aerosol_mass', 'water_table_depth', 'water_flux_into_sea_water_without_flux_correction', 'water_flux_into_sea_water_from_rivers', 'water_flux_into_sea_water_from_icebergs', 'water_flux_into_sea_water_due_to_sea_ice_thermodynamics', 'water_flux_into_sea_water', 'water_evaporation_flux_where_ice_free_ocean_over_sea', 'water_evaporation_flux_from_soil', 'water_evaporation_flux_from_canopy', 'virtual_salt_flux_into_sea_water', 'vegetation_carbon_content', 'upward_y_stress_at_sea_ice_base', 'upward_x_stress_at_sea_ice_base', 'upward_sea_water_velocity', 'upward_sea_ice_basal_heat_flux', 'upward_ocean_mass_transport', 'tropopause_altitude', 'transpiration_flux', 'total_water_content_of_soil_layer', 'total_soil_moisture_content', 'total_plant_nitrogen_uptake_(sum_of_ammonium_and_nitrate)_irrespective_of_the_source_of_nitrogen', 'total_organic_aerosol_optical_depth_at_550nm', 'total_organic_aerosol_mass_mixing_ratio', 'total_nitrogen_lost_to_the_atmosphere_(sum_of_nhx,_nox,_n2o,_n2)', 'total_nitrogen_lost_to_the_atmosphere_(including_nhx,_nox,_n2o,_n2)_from_fire', 'total_nitrogen_lost_to_the_atmosphere_(including_nhx,_nox,_n2o,_n2)_from_all_processes_except_fire', 'total_nitrogen_lost_(including_nhx,_nox,_n2o,_n2_and_leaching)', 'total_nitrogen_loss_to_leaching_or_runoff_(sum_of_ammonium,_nitrite_and_nitrate)', 'total_nitrogen_in_all_terrestrial_nitrogen_pools', 'total_nitrogen_added_for_cropland_fertilisation_(artificial_and_manure)', 'total_land_nox_flux', 'total_land_n2o_flux', 'total_heterotrophic_respiration_on_land_as_carbon_mass_flux_[kgc_m-2_s-1]', 'total_emission_rate_of_sea-salt_aerosol', 'total_emission_rate_of_nmvoc', 'total_emission_rate_of_dust', 'total_emission_rate_of_black_carbon_aerosol_mass', 'total_emission_rate_of_biogenic_nmvoc', 'total_dissolved_inorganic_silicon_concentration', 'total_dissolved_inorganic_phosphorus_concentration', 'total_direct_emission_rate_of_so4', 'total_carbon_mass_flux_from_vegetation_to_litter_as_a_result_of_mortality', 'total_carbon_mass_flux_from_vegetation_to_litter_as_a_result_of_leaf,_branch,_and_root_senescence', 'total_carbon_mass_flux_from_vegetation_to_litter', 'total_carbon_in_all_terrestrial_carbon_pools', 'total_autotrophic_respiration_on_land_as_carbon_mass_flux_[kgc_m-2_s-1]', 'toa_outgoing_shortwave_flux_assuming_clear_sky', 'toa_outgoing_shortwave_flux', 'toa_outgoing_longwave_flux_assuming_clear_sky', 'toa_outgoing_longwave_flux', 'toa_outgoing_clear-sky,_aerosol-free_shortwave_radiation', 'toa_incoming_shortwave_flux', 'thermal_energy_content_of_surface_snow', 'terrestrial_water_storage', 'tendency_of_sea_ice_area_fraction_due_to_thermodynamics', 'tendency_of_sea_ice_area_fraction_due_to_dynamics', 'tendency_of_sea_ice_amount_due_to_surface_melting', 'tendency_of_sea_ice_amount_due_to_frazil_ice_accumulation_in_leads', 'tendency_of_sea_ice_amount_due_to_congelation_ice_accumulation', 'tendency_of_sea_ice_amount_due_to_basal_melting', 'tendency_of_ocean_mole_content_of_elemental_nitrogen_due_to_fixation', 'tendency_of_mole_concentration_of_particulate_organic_matter_expressed_as_carbon_in_sea_water_due_to_net_primary_production', 'tendency_of_atmosphere_mass_content_of_sulfur_dioxide_due_to_emission', 'tendency_of_atmosphere_mass_content_of_isoprene_due_to_emission', 'tendency_of_atmosphere_mass_content_of_dimethyl_sulfide_due_to_emission', 'temperature_at_ice-ocean_interface', 'surface_upwelling_shortwave_flux_in_air_assuming_clear_sky', 'surface_upwelling_shortwave_flux_in_air', 'surface_upwelling_longwave_flux_in_air', 'surface_upward_sensible_heat_flux', 'surface_upward_mole_flux_of_dimethyl_sulfide', 'surface_upward_mass_flux_of_carbon_dioxide_expressed_as_carbon_due_to_emission_from_fires_excluding_anthropogenic_land_use_change', 'surface_upward_mass_flux_of_carbon_dioxide_expressed_as_carbon_due_to_emission_from_crop_harvesting', 'surface_upward_latent_heat_flux', 'surface_total_dissolved_inorganic_silicon_concentration', 'surface_total_dissolved_inorganic_phosphorus_concentration', 'surface_temperature', 'surface_snow_thickness', 'surface_snow_melt_flux', 'surface_snow_area_fraction', 'surface_snow_amount', 'surface_runoff_flux', 'surface_partial_pressure_of_carbon_dioxide_in_sea_water', 'surface_net_upward_mass_flux_of_carbon_dioxide_expressed_as_carbon_due_to_emission_from_anthropogenic_land_use_change', 'surface_net_downward_mass_flux_of_carbon_dioxide_expressed_as_carbon_due_to_all_land_processes_excluding_anthropogenic_land_use_change', 'surface_net_downward_mass_flux_of_carbon_dioxide_expressed_as_carbon_due_to_all_land_processes', 'surface_mole_concentration_of_particulate_organic_matter_expressed_as_silicon_in_sea_water', 'surface_mole_concentration_of_carbonate_ion_in_equilibrium_with_pure_calcite_in_sea_water', 'surface_mole_concentration_of_carbonate_ion_in_equilibrium_with_pure_aragonite_in_sea_water', 'surface_downwelling_shortwave_flux_in_air_assuming_clear_sky', 'surface_downwelling_shortwave_flux_in_air', 'surface_downwelling_longwave_flux_in_air_assuming_clear_sky', 'surface_downwelling_longwave_flux_in_air', 'surface_downward_y_stress', 'surface_downward_x_stress', 'surface_downward_sensible_heat_flux', 'surface_downward_northward_stress', 'surface_downward_mole_flux_of_molecular_oxygen', 'surface_downward_mass_flux_of_carbon_dioxide_expressed_as_carbon', 'surface_downward_mass_flux_of_carbon_as_natural_co2_[kgc_m-2_s-1]', 'surface_downward_heat_flux_in_sea_water', 'surface_downward_eastward_stress', 'surface_dissolved_oxygen_concentration_at_saturation', 'surface_diffuse_downwelling_shortwave_flux_in_air', 'surface_carbon_dioxide_partial_pressure_difference_between_sea_water_and_air', 'surface_altitude', 'surface_air_pressure', 'sulfate_aerosol_optical_depth_at_550nm', 'subsurface_runoff_flux', 'square_of_sea_surface_temperature', 'square_of_sea_surface_salinity', 'square_of_sea_surface_height_above_geoid', 'square_of_ocean_mixed_layer_thickness_defined_by_sigma_t', 'square_of_brunt_vaisala_frequency_in_sea_water', 'specific_humidity', 'soot_content_of_surface_snow', 'soil_temperature', 'soil_frozen_water_content', 'snowfall_flux', 'snow_mass_rate_of_change_through_wind_drift_of_snow', 'snow_mass_rate_of_change_through_snow-to-ice_conversion', 'snow_evaporation', 'sinking_mole_flux_of_particulate_silicon_in_sea_water', 'sinking_mole_flux_of_particulate_organic_phosphorus_in_sea_water', 'sinking_mole_flux_of_particulate_organic_nitrogen_in_sea_water', 'sinking_mole_flux_of_particulate_organic_matter_expressed_as_carbon_in_sea_water', 'sinking_mole_flux_of_particulate_iron_in_sea_water', 'sinking_mole_flux_of_calcite_expressed_as_carbon_in_sea_water', 'secondary_organic_aerosol_mass_mixing_ratio', 'sea_water_y_velocity', 'sea_water_x_velocity', 'sea_water_volume', 'sea_water_transport_across_line', 'sea_water_surface_downward_y_stress', 'sea_water_surface_downward_x_stress', 'sea_water_salinity_at_sea_floor', 'sea_water_salinity', 'sea_water_pressure_at_sea_water_surface', 'sea_water_pressure_at_sea_floor', 'sea_water_potential_temperature_at_sea_floor', 'sea_water_potential_temperature', 'sea_water_ph_reported_on_total_scale', 'sea_water_mass_per_unit_area', 'sea_water_mass', 'sea_water_alkalinity_expressed_as_mole_equivalent', 'sea_water_age_since_surface_contact', 'sea_surface_temperature', 'sea_surface_salinity', 'sea_surface_height_above_geoid', 'sea_level_pressure', 'sea_ice_y_velocity', 'sea_ice_y_transport', 'sea_ice_x_velocity', 'sea_ice_x_transport', 'sea_ice_volume', 'sea_ice_thickness', 'sea_ice_surface_temperature', 'sea_ice_speed', 'sea_ice_freeboard', 'sea_ice_extent', 'sea_ice_area_fraction', 'sea_ice_area', 'sea_ice_amount', 'sea_floor_depth_below_geoid', 'sea_area_fraction', 'sea-surface_tilt_term_in_force_balance_(y-component)', 'sea-surface_tilt_term_in_force_balance_(x-component)', 'sea-salt_aerosol_optical_depth_at_550nm', 'sea-salt_aerosol_mass_mixing_ratio', 'sea-ice_mass_change_through_snow-to-ice_conversion', 'sea-ice_mass_change_through_evaporation_and_sublimation', 'sea-ice_mass_change_from_thermodynamics', 'sea-ice_mass_change_from_dynamics', 'sea-ice_heat_content_per_unit_area', 'runoff_flux', 'relative_humidity', 'region', 'rainfall_flux', 'primary_organic_carbon_production_by_all_types_of_phytoplankton', 'primary_emission_and_chemical_production_of_dry_aerosol_organic_matter', 'precipitation_flux_onto_canopy', 'precipitation_flux', 'pm2.5_mass_mixing_ratio', 'pm1.0_mass_mixing_ratio', 'particulate_organic_carbon_content', 'ocean_volume', 'ocean_mixed_layer_thickness_defined_by_sigma_t', 'ocean_meridional_overturning_mass_streamfunction_due_to_parameterized_mesoscale_advection', 'ocean_meridional_overturning_mass_streamfunction', 'ocean_mass_y_transport', 'ocean_mass_x_transport', 'ocean_mass_content_of_dissolved_inorganic_carbon', 'ocean_heat_y_transport', 'ocean_heat_x_transport', 'ocean_barotropic_mass_streamfunction', 'number_concentration_of_cloud_liquid_water_particles_in_air', 'northward_wind', 'northward_ocean_heat_transport_due_to_parameterized_mesoscale_diffusion', 'northward_ocean_heat_transport_due_to_parameterized_mesoscale_advection', 'northward_ocean_heat_transport_due_to_parameterized_eddy_advection', 'northward_ocean_heat_transport', 'nitrogen_mass_in_vegetation', 'nitrogen_mass_in_stem', 'nitrogen_mass_in_soil_pool', 'nitrogen_mass_in_roots', 'nitrogen_mass_in_litter_pool', 'nitrogen_mass_in_leaves', 'nitrogen_loss_to_sediments_and_through_denitrification', 'net_primary_production_on_land_as_carbon_mass_flux_[kgc_m-2_s-1]', 'net_primary_production_allocated_to_wood_as_carbon_mass_flux_[kgc_m-2_s-1]', 'net_primary_production_allocated_to_roots_as_carbon_mass_flux_[kgc_m-2_s-1]', 'net_primary_production_allocated_to_leaves_as_carbon_mass_flux_[kgc_m-2_s-1]', 'net_nitrogen_release_from_soil_and_litter_as_the_outcome_of_nitrogen_immobilisation_and_gross_mineralisation', 'net_downward_shortwave_flux_at_sea_water_surface', 'net_downward_radiative_flux_at_top_of_atmosphere_model', 'net_conductive_heat_fluxes_in_ice_at_the_bottom', 'natural_total_alkalinity', 'natural_ph', 'natural_dissolved_inorganic_carbon_concentration', 'natural_carbonate_ion_concentration', 'mole_fraction_of_sulfur_dioxide_in_air', 'mole_fraction_of_ozone_in_air', 'mole_fraction_of_nitrous_oxide_in_air', 'mole_fraction_of_methane_in_air', 'mole_fraction_of_isoprene_in_air', 'mole_fraction_of_hydroxyl_radical_in_air', 'mole_fraction_of_dimethyl_sulfide_in_air', 'mole_fraction_of_cfc12_in_air', 'mole_fraction_of_cfc11_in_air', 'mole_fraction_of_carbon_dioxide_in_air', 'mole_concentration_of_zooplankton_expressed_as_carbon_in_sea_water', 'mole_concentration_of_sf6_in_sea_water', 'mole_concentration_of_phytoplankton_expressed_as_nitrogen_in_sea_water', 'mole_concentration_of_phytoplankton_expressed_as_iron_in_sea_water', 'mole_concentration_of_phytoplankton_expressed_as_carbon_in_sea_water', 'mole_concentration_of_particulate_organic_matter_expressed_as_phosphorus_in_sea_water', 'mole_concentration_of_particulate_organic_matter_expressed_as_nitrogen_in_sea_water', 'mole_concentration_of_particulate_organic_matter_expressed_as_iron_in_sea_water', 'mole_concentration_of_particulate_matter_expressed_as_silicon_in_sea_water', 'mole_concentration_of_organic_detritus_expressed_as_carbon_in_sea_water', 'mole_concentration_of_nitrate_in_sea_water', 'mole_concentration_of_dissolved_organic_carbon_in_sea_water', 'mole_concentration_of_dissolved_molecular_oxygen_in_sea_water_at_shallowest_local_minimum_in_vertical_profile', 'mole_concentration_of_dissolved_molecular_oxygen_in_sea_water', 'mole_concentration_of_dissolved_iron_in_sea_water', 'mole_concentration_of_dissolved_inorganic_carbon_in_sea_water', 'mole_concentration_of_dimethyl_sulfide_in_sea_water', 'mole_concentration_of_cfc12_in_sea_water', 'mole_concentration_of_cfc11_in_sea_water', 'mole_concentration_of_carbonate_ion_in_equilibrium_with_pure_calcite_in_sea_water', 'mole_concentration_of_carbonate_ion_in_equilibrium_with_pure_aragonite_in_sea_water', 'mole_concentration_of_carbonate_expressed_as_carbon_in_sea_water', 'mole_concentration_of_calcite_expressed_as_carbon_in_sea_water', 'moisture_in_upper_portion_of_soil_column', 'modis_liquid_cloud_percentage', 'modis_ice_cloud_area_percentage', 'minimum_depth_of_calcite_undersaturation_in_sea_water', 'minimum_depth_of_aragonite_undersaturation_in_sea_water', 'mineral_nitrogen_in_the_soil', 'mineral_nitrate_in_the_soil', 'mineral_ammonium_in_the_soil', 'mass_fraction_of_cloud_liquid_water_in_air', 'mass_fraction_of_cloud_ice_in_air', 'mass_concentration_of_phytoplankton_expressed_as_chlorophyll_in_sea_water', 'load_of_sea-salt_aerosol', 'load_of_dust', 'liquid_water_content_of_surface_snow', 'liquid_water_content_of_soil_layer', 'leaf_area_index', 'lateral_sea_ice_melt_rate', 'land_ice_area_fraction', 'land_area_fraction', 'lagrangian_tendency_of_air_pressure', 'iron_loss_to_sediments', 'internal_stress_term_in_force_balance_(y-component)', 'internal_stress_term_in_force_balance_(x-component)', 'integral_with_respect_to_depth_of_product_of_sea_water_density_and_potential_temperature', 'harvested_biomass_that_goes_into_product_pool', 'groundwater_recharge_from_soil_layer', 'grid_averaged_methane_emissions_from_wetlands', 'global_average_thermosteric_sea_level_change', 'geopotential_height', 'frozen_water_content_of_soil_layer', 'freshwater_flux_from_sea-ice_surface', 'fraction_of_time_steps_with_sea_ice', 'evaporation_including_sublimation_and_transpiration', 'elemental_carbon_mass_mixing_ratio', 'effective_radius_of_cloud_liquid_water_particle_at_liquid_water_cloud_top', 'eastward_wind', 'dust_optical_thickness_at_550nm', 'dust_aerosol_mass_mixing_ratio', 'dry_deposition_rate_of_so4', 'dry_deposition_rate_of_so2', 'dry_deposition_rate_of_black_carbon_aerosol_mass', 'dry_and_wet_deposition_of_reactive_nitrogen_onto_land', 'downwelling_shortwave_flux_under_sea_ice', 'downward_sea_ice_basal_salt_flux', 'downward_organic_carbon_flux_at_ocean_bottom', 'downward_inorganic_carbon_flux_at_ocean_bottom', 'divergence_of_sea_ice_velocity', 'dissolved_oxygen_concentration_at_saturation', 'dissolved_organic_carbon_content', 'depth_to_soil_thaw', 'depth_of_isosurface_of_sea_water_potential_temperature', 'depth_integral_of_product_of_sea_water_density_and_prognostic_salinity', 'depth_below_geoid', 'depth_at_shallowest_local_minimum_in_vertical_profile_of_mole_concentration_of_dissolved_molecular_oxygen_in_sea_water', 'deforested_or_harvested_biomass_as_a_result_of_anthropogenic_land-use_or_change', 'deforested_biomass_that_goes_into_product_pool_as_a_result_of_anthropogenic_land-use_change', 'coriolis_force_term_in_force_balance_(y-component)', 'coriolis_force_term_in_force_balance_(x-component)', 'convective_precipitation_flux', 'compressive_strength_of_sea_ice', 'cloud_condensation_nuclei_concentration_at_liquid_cloud_top', 'cloud_area_fraction_in_atmosphere_layer', 'cloud_area_fraction', 'cloud_albedo', 'chemical_production_of_dry_aerosol_secondary_organic_matter', 'cell_thickness', 'cell_area', 'carbon_mass_in_wood', 'carbon_mass_in_stem', 'carbon_mass_in_soil_pool_above_1m_depth', 'carbon_mass_in_slow_soil_pool', 'carbon_mass_in_roots', 'carbon_mass_in_other_living_compartments_on_land', 'carbon_mass_in_model_soil_pool', 'carbon_mass_in_medium_soil_pool', 'carbon_mass_in_litter_pool', 'carbon_mass_in_leaves', 'carbon_mass_in_fast_soil_pool', 'carbon_mass_in_coarse_woody_debris', 'carbon_mass_flux_out_of_atmosphere_due_to_gross_primary_production_on_land_[kgc_m-2_s-1]', 'carbon_mass_flux_into_atmosphere_due_to_maintenance_autotrophic_respiration_on_land_[kgc_m-2_s-1]', 'carbon_mass_flux_into_atmosphere_due_to_co2_emission_from_natural_fire_[kgc_m-2_s-1]', 'carbon_mass_flux_into_atmosphere_due_to_autotrophic_(plant)_respiration_on_land_[kgc_m-2_s-1]', 'carbon_mass_flux_from_litter,_cwd_or_any_non-living_pool_into_atmosphere_due_to_co2_emission_from_all_fire_[kgc_m-2_s-1]', 'canopy_temperature', 'canopy_height', 'biological_nitrogen_fixation', 'atmosphere_optical_thickness_due_to_cloud', 'atmosphere_optical_thickness_due_to_black_carbon_ambient_aerosol', 'atmosphere_mass_of_carbon_dioxide', 'atmosphere_mass_of_air_per_unit_area', 'atmosphere_mass_content_of_water_vapor', 'atmosphere_mass_content_of_cloud_liquid_water', 'atmosphere_mass_content_of_cloud_ice', 'atmosphere_mass_content_of_cloud_condensed_water', 'atmosphere_boundary_layer_thickness', 'area_fraction', 'ambient_fine_aerosol_optical_depth_at_550nm', 'ambient_aerosol_optical_thickness_at_550nm', 'ambient_aerosol_optical_thickness_at_440nm', 'ambient_aerosol_optical_depth_at_870nm', 'ambient_aerosol_absorption_optical_thickness_at_550nm', 'air_temperature', 'air_pressure_at_convective_cloud_top', 'air_pressure_at_convective_cloud_base', 'air_pressure_at_cloud_top', 'air_pressure', 'age_of_sea_ice', 'aerosol_water_optical_thickness_at_550nm', 'aerosol_water_mass_mixing_ratio', 'aerosol_sulfate_mass_mixing_ratio', 'aerodynamic_resistance']
+
+ facet cmor_table
+[]
+
+ facet contact
+[]
+
+ facet data_node
+['esgf3.dkrz.de']
+
+ facet data_specs_version
+['01.00.32', '01.00.31']
+
+ facet data_structure
+[]
+
+ facet data_type
+[]
+
+ facet dataset_category
+[]
+
+ facet dataset_status
+[]
+
+ facet dataset_version_number
+[]
+
+ facet deprecated
+[]
+
+ facet directory_format_template_
+['%(root)s/%(mip_era)s/%(activity_drs)s/%(institution_id)s/%(source_id)s/%(experiment_id)s/%(member_id)s/%(table_id)s/%(variable_id)s/%(grid_label)s/%(version)s']
+
+ facet doi
+[]
+
+ facet doi_author
+[]
+
+ facet doi_publication_year
+[]
+
+ facet doi_publisher
+[]
+
+ facet doi_title
+[]
+
+ facet domain
+[]
+
+ facet driving_model
+[]
+
+ facet ensemble
+[]
+
+ facet exp
+[]
+
+ facet experiment
+[]
+
+ facet experiment_description
+[]
+
+ facet experiment_family
+[]
+
+ facet experiment_id
+['ssp585', 'ssp370-lowNTCF', 'ssp370', 'ssp245', 'ssp126', 'piControl', 'piClim-spAer-anthro', 'piClim-spAer-aer', 'piClim-lu', 'piClim-histnat', 'piClim-histghg', 'piClim-histall', 'piClim-histaer', 'piClim-ghg', 'piClim-control', 'piClim-anthro', 'piClim-aer', 'piClim-SO2', 'piClim-OC', 'piClim-N2O', 'piClim-CH4', 'piClim-BC', 'piClim-4xCO2', 'piClim-2xss', 'piClim-2xdust', 'piClim-2xVOC', 'piClim-2xDMS', 'pdSST-piArcSIC', 'pdSST-pdSIC', 'pdSST-futArcSIC', 'omip2', 'midHolocene', 'lig127k', 'historical', 'histSST-piNTCF', 'histSST-piAer', 'histSST', 'hist-spAer-all', 'hist-piNTCF', 'hist-piAer', 'hist-nat', 'hist-aer', 'hist-GHG', 'esm-piControl', 'esm-pi-cdr-pulse', 'esm-pi-CO2pulse', 'esm-hist', 'esm-1pct-brch-1000PgC', 'amip', 'abrupt-4xCO2', '1pctCO2-rad', '1pctCO2-cdr', '1pctCO2']
+
+ facet experiment_title
+['zero emissions simulation branched from 1percent run after 1000 PgC cumulative emission', 'update of RCP8.5 based on SSP5', 'update of RCP4.5 based on SSP2', 'update of RCP2.6 based on SSP1', 'transient effective radiative forcing by natural perturbations', 'transient effective radiative forcing by greenhouse gases', 'transient effective radiative forcing by aerosols', 'transient effective radiative forcing', 'radiatively-coupled version of 1 percent per year increasing CO2 experiment', 'pulse removal of 100 Gt carbon from pre-industrial atmosphere', 'pulse addition of 100 Gt carbon to pre-industrial atmosphere', 'pre-industrial control simulation with CO2 concentration calculated', 'pre-industrial control', 'pre-industrial climatological SSTs and forcing, but with doubled emissions of sea salt', 'pre-industrial climatological SSTs and forcing, but with doubled emissions of dust', 'pre-industrial climatological SSTs and forcing, but with doubled emissions of biogenic VOCs', 'pre-industrial climatological SSTs and forcing, but with doubled emissions of DMS', 'pre-industrial climatological SSTs and forcing, but with 2014 organic carbon emissions', 'pre-industrial climatological SSTs and forcing, but with 2014 methane concentrations (including chemistry)', 'pre-industrial climatological SSTs and forcing, but with 2014 black carbon emissions', 'pre-industrial climatological SSTs and forcing, but with 2014 SO2 emissions', 'pre-industrial climatological SSTs and forcing, but with 2014 N2O concentrations (including chemistry)', 'mid-Holocene', 'last interglacial (127k)', 'historical well-mixed GHG-only run', 'historical simulation with specified anthropogenic aerosols', 'historical prescribed SSTs and historical forcing', 'historical natural-only run', 'historical forcing, but with pre-industrial aerosol emissions', 'historical forcing, but with pre-industrial NTCF emissions', 'historical anthropogenic aerosols-only run', 'historical SSTs and historical forcing, but with pre-industrial aerosol emissions', 'historical SSTs and historical forcing, but with pre-industrial NTCF emissions', 'gap-filling scenario reaching 7.0 based on SSP3', 'effective radiative forcing by present-day land use', 'effective radiative forcing by present-day greenhouse gases', 'effective radiative forcing by present-day aerosols', 'effective radiative forcing by present day anthropogenic agents', 'effective radiative forcing by 4xCO2', 'effective radiative forcing at present day with specified anthropogenic aerosol optical properties, anthropogenic forcings', 'effective radiative forcing at present day with specified anthropogenic aerosol optical properties, all forcings', 'all-forcing simulation of the recent past with atmospheric CO2 concentration calculated', 'all-forcing simulation of the recent past', 'abrupt quadrupling of CO2', 'SSP3-7.0, with low NTCF emissions', 'OMIP experiment forced by JRA55-do atmospheric data set and initialized with observed physical and biogeochemical ocean data', 'Control simulation providing baseline for evaluating effective radiative forcing (ERF)', 'Atmosphere time slice with present day SST and pre-industrial Arctic SIC', 'Atmosphere time slice with present day SST and future Arctic SIC', 'Atmosphere time slice with present day SST and SIC', 'AMIP', '1 percent per year increase in CO2', '1 percent per year decrease in CO2 from 4xCO2']
+
+ facet forcing
+[]
+
+ facet format
+[]
+
+ facet frequency
+['yr', 'monPt', 'mon', 'fx', 'day', '6hrPt', '6hr', '3hrPt', '3hr']
+
+ facet gebiet
+[]
+
+ facet grid
+['zonal mean or integral', 'tripolar grid with 1deg nominal resolution, vertical density coordinate', 'tripolar grid with 1deg nominal resolution, interpolated to z-levels', 'tripolar grid with 1deg nominal resolution', 'global mean or integral', 'finite-volume grid with 1.9x2.5 degree lat/lon resolution']
+
+ facet grid_label
+['grz', 'gr', 'gn', 'gm']
+
+ facet grid_resolution
+[]
+
+ facet index_node
+['esgf-data.dkrz.de']
+
+ facet institute
+[]
+
+ facet institution
+[]
+
+ facet institution_id
+['NCC']
+
+ facet lta
+[]
+
+ facet master_gateway
+[]
+
+ facet member_id
+['r9i1p1f1', 'r99i1p1f1', 'r98i1p1f1', 'r97i1p1f1', 'r96i1p1f1', 'r95i1p1f1', 'r94i1p1f1', 'r93i1p1f1', 'r92i1p1f1', 'r91i1p1f1', 'r90i1p1f1', 'r8i1p1f1', 'r89i1p1f1', 'r88i1p1f1', 'r87i1p1f1', 'r86i1p1f1', 'r85i1p1f1', 'r84i1p1f1', 'r83i1p1f1', 'r82i1p1f1', 'r81i1p1f1', 'r80i1p1f1', 'r7i1p1f1', 'r79i1p1f1', 'r78i1p1f1', 'r77i1p1f1', 'r76i1p1f1', 'r75i1p1f1', 'r74i1p1f1', 'r73i1p1f1', 'r72i1p1f1', 'r71i1p1f1', 'r70i1p1f1', 'r6i1p1f1', 'r69i1p1f1', 'r68i1p1f1', 'r67i1p1f1', 'r66i1p1f1', 'r65i1p1f1', 'r64i1p1f1', 'r63i1p1f1', 'r62i1p1f1', 'r61i1p1f1', 'r60i1p1f1', 'r5i1p1f1', 'r59i1p1f1', 'r58i1p1f1', 'r57i1p1f1', 'r56i1p1f1', 'r55i1p1f1', 'r54i1p1f1', 'r53i1p1f1', 'r52i1p1f1', 'r51i1p1f1', 'r50i1p1f1', 'r4i1p1f1', 'r49i1p1f1', 'r48i1p1f1', 'r47i1p1f1', 'r46i1p1f1', 'r45i1p1f1', 'r44i1p1f1', 'r43i1p1f1', 'r42i1p1f1', 'r41i1p1f1', 'r40i1p1f1', 'r3i1p1f1', 'r39i1p1f1', 'r38i1p1f1', 'r37i1p1f1', 'r36i1p1f1', 'r35i1p1f1', 'r34i1p1f1', 'r33i1p1f1', 'r32i1p1f1', 'r31i1p1f1', 'r30i1p1f1', 'r2i1p1f1', 'r29i1p1f1', 'r28i1p1f1', 'r27i1p1f1', 'r26i1p1f1', 'r25i1p1f1', 'r24i1p1f1', 'r23i1p1f1', 'r22i1p1f1', 'r21i1p1f1', 'r20i1p1f1', 'r1i1p2f1', 'r1i1p1f1', 'r19i1p1f1', 'r18i1p1f1', 'r17i1p1f1', 'r16i1p1f1', 'r15i1p1f1', 'r14i1p1f1', 'r13i1p1f1', 'r12i1p1f1', 'r11i1p1f1', 'r10i1p1f1', 'r100i1p1f1']
+
+ facet metadata_format
+[]
+
+ facet mip_era
+['CMIP6']
+
+ facet model
+[]
+
+ facet model_cohort
+['Registered']
+
+ facet modelvers
+[]
+
+ facet nominal_resolution
+['250 km', '100 km']
+
+ facet product
+['model-output']
+
+ facet project
+['CMIP6']
+
+ facet rcm_name
+[]
+
+ facet rcm_version
+[]
+
+ facet realm
+['seaIce', 'ocnBgchem', 'ocean', 'landIce', 'land', 'atmos', 'aerosol']
+
+ facet shard
+[]
+
+ facet source
+[]
+
+ facet source_id
+['NorESM2-LM']
+
+ facet source_type
+['OGCM', 'CHEM', 'BGC', 'AOGCM', 'AGCM', 'AER']
+
+ facet std_citation
+[]
+
+ facet std_citation_author
+[]
+
+ facet std_citation_publication_year
+[]
+
+ facet std_citation_publisher
+[]
+
+ facet std_citation_title
+[]
+
+ facet sub_experiment_id
+['none']
+
+ facet table_id
+['fx', 'day', 'SImon', 'SIday', 'Oyr', 'Omon', 'Ofx', 'Oday', 'Lmon', 'LImon', 'Emon', 'Eday', 'E3hr', 'CFmon', 'CFday', 'CF3hr', 'Amon', 'AERmon', 'AERday', '6hrPlevPt', '6hrPlev', '6hrLev', '3hr']
+
+ facet target_mip
+[]
+
+ facet time_frequency
+[]
+
+ facet variable
+['ztp', 'zsatcalc', 'zsatarag', 'zostoga', 'zossq', 'zos', 'zoocos', 'zooc', 'zo2min', 'zhalfo', 'zg500', 'zg1000', 'zg100', 'zg10', 'zg', 'zfullo', 'wtd', 'wo', 'wmo', 'wfonocorr', 'wfo', 'wetss', 'wetso4', 'wetso2', 'wetlandFrac', 'wetlandCH4', 'wetbc', 'wap500', 'wap', 'vsf', 'volo', 'volcello', 'vo', 'vmo', 'vegHeight', 'va', 'uo', 'umo', 'ua', 'tslsi', 'tsl', 'ts', 'tran', 'tossq', 'tosga', 'tos', 'tob', 'thkcello', 'thetaot700', 'thetaot300', 'thetaot2000', 'thetaot', 'thetaoga', 'thetao', 'tgs', 'tcs', 'tauvo', 'tauv', 'tauuo', 'tauu', 'tasmin', 'tasmax', 'tas', 'talkos', 'talknat', 'talk', 'ta850', 'ta700', 'ta500', 'ta', 't20d', 'spco2', 'sossq', 'sosga', 'sos', 'sootsn', 'somint', 'soga', 'sob', 'so2', 'so', 'snw', 'sndmasswindrif', 'sndmasssnf', 'sndmasssi', 'sndmassmelt', 'snd', 'snc', 'sivols', 'sivoln', 'sivol', 'siv', 'siu', 'sitimefrac', 'sithick', 'sitemptop', 'sitempsnic', 'sitempbot', 'sistryubot', 'sistrydtop', 'sistrxubot', 'sistrxdtop', 'sispeed', 'sisnthick', 'sisnmass', 'sisnhc', 'sisnconc', 'sirdgthick', 'sirdgconc', 'sipr', 'sios', 'simpconc', 'simass', 'siitdthick', 'siitdsnthick', 'siitdsnconc', 'siitdconc', 'sihc', 'siforcetilty', 'siforcetiltx', 'siforceintstry', 'siforceintstrx', 'siforcecorioly', 'siforcecoriolx', 'siflswutop', 'siflswdtop', 'siflswdbot', 'siflsensupbot', 'siflsenstop', 'sifllwutop', 'sifllwdtop', 'sifllatstop', 'siflfwdrain', 'siflfwbot', 'siflcondtop', 'siflcondbot', 'sifb', 'siextents', 'siextentn', 'sidmasstrany', 'sidmasstranx', 'sidmassth', 'sidmasssi', 'sidmassmelttop', 'sidmassmeltbot', 'sidmasslat', 'sidmassgrowthwat', 'sidmassgrowthbot', 'sidmassevapsubl', 'sidmassdyn', 'sidivvel', 'sidconcth', 'sidconcdyn', 'siconc', 'sicompstren', 'siarean', 'siage', 'si', 'sftof', 'sftlf', 'sftgif', 'sfdsi', 'sfcWind', 'sf6', 'rtmt', 'rsutcsaf', 'rsutcs', 'rsutaf', 'rsut', 'rsuscs', 'rsus', 'rsntds', 'rsdt', 'rsdsdiff', 'rsdscs', 'rsds', 'rlutcsaf', 'rlutcs', 'rlutaf', 'rlut', 'rlus', 'rldscs', 'rlds', 'rh', 'reffclwtop', 'ra', 'rMaint', 'rGrowth', 'qgwr', 'pso', 'psl', 'ps', 'prw', 'prveg', 'prsn', 'prra', 'prc', 'pr', 'ppos', 'pp', 'popos', 'pop', 'ponos', 'pon', 'po4os', 'po4', 'phynos', 'phyn', 'phyfeos', 'phyfe', 'phyc', 'phos', 'phnat', 'phalf', 'ph', 'pfull', 'pctisccp', 'pbo', 'orog', 'opottempmint', 'oh', 'od870aer', 'od550ss', 'od550so4', 'od550oa', 'od550lt1aer', 'od550dust', 'od550csaer', 'od550bc', 'od550aerh2o', 'od550aer', 'od440aer', 'obvfsq', 'o3', 'o2satos', 'o2sat', 'o2os', 'o2min', 'o2', 'nppWood', 'nppRoot', 'nppLeaf', 'npp', 'no3os', 'no3', 'nep', 'nbp', 'nVeg', 'nStem', 'nSoil', 'nRoot', 'nMineralNO3', 'nMineralNH4', 'nMineral', 'nLitter', 'nLeaf', 'nLand', 'n2oglobal', 'msftmzmpa', 'msftmz', 'msftmrhompa', 'msftmrho', 'msftbarot', 'mrtws', 'mrsos', 'mrsol', 'mrso', 'mrsll', 'mrsfl', 'mrros', 'mrrob', 'mrro', 'mrlso', 'mrfso', 'mmrss', 'mmrsoa', 'mmrso4', 'mmrpm2p5', 'mmrpm1', 'mmroa', 'mmrdust', 'mmrbc', 'mmraerh2o', 'mlotstsq', 'mlotstmin', 'mlotstmax', 'mlotst', 'mfo', 'masso', 'masscello', 'lwsnl', 'lwp', 'loadss', 'loaddust', 'lai', 'isop', 'intpp', 'intpoc', 'intpn2', 'intdoc', 'intdic', 'huss', 'hus', 'hurs', 'hur', 'hfy', 'hfx', 'hfss', 'hfls', 'hfds', 'hfbasinpmdiff', 'hfbasinpmadv', 'hfbasinpadv', 'hfbasin', 'gpp', 'fsitherm', 'froc', 'frn', 'friver', 'fric', 'frfe', 'ficeberg', 'fgo2', 'fgdms', 'fgco2nat', 'fgco2', 'fVegLitterSenescence', 'fVegLitterMortality', 'fVegLitter', 'fNup', 'fNnetmin', 'fNloss', 'fNleach', 'fNgasNonFire', 'fNgasFire', 'fNgas', 'fNfert', 'fNdep', 'fNProduct', 'fNOx', 'fN2O', 'fLuc', 'fLitterFire', 'fHarvestToProduct', 'fHarvest', 'fFireNat', 'fFire', 'fDeforestToProduct', 'fBNF', 'evspsblveg', 'evspsblsoi', 'evspsbl', 'evs', 'esn', 'es', 'epsi100', 'epp100', 'epn100', 'epfe100', 'epcalc100', 'epc100', 'emivoc', 'emiss', 'emiso4', 'emiso2', 'emioa', 'emiisop', 'emidust', 'emidms', 'emibvoc', 'emibc', 'ec', 'dryso4', 'dryso2', 'drybc', 'dpco2', 'dmsos', 'dms', 'dmlt', 'dissocos', 'dissoc', 'dissicos', 'dissicnat', 'dissic', 'dfeos', 'dfe', 'detocos', 'detoc', 'deptho', 'cod', 'co3satcalcos', 'co3satcalc', 'co3sataragos', 'co3satarag', 'co3os', 'co3nat', 'co3', 'co2mass', 'co2', 'clwvi', 'clwmodis', 'clw', 'cltmodis', 'cltisccp', 'cltcalipso', 'clt', 'clmcalipso', 'cllcalipso', 'clivi', 'climodis', 'cli', 'clhcalipso', 'cl', 'chlos', 'chl', 'chepsoa', 'ch4global', 'cfc12global', 'cfc12', 'cfc11global', 'cfc11', 'cdnc', 'cct', 'ccn', 'ccb', 'calcos', 'calc', 'cWood', 'cVeg', 'cStem', 'cSoilSlow', 'cSoilMedium', 'cSoilFast', 'cSoilAbove1m', 'cSoil', 'cRoot', 'cMisc', 'cLitter', 'cLeaf', 'cLand', 'cCwd', 'bsios', 'bsi', 'bldep', 'bfeos', 'bfe', 'basin', 'ares', 'areacello', 'areacella', 'albisccp', 'airmass', 'agessc', 'abs550aer']
+
+ facet variable_id
+['ztp', 'zsatcalc', 'zsatarag', 'zostoga', 'zossq', 'zos', 'zoocos', 'zooc', 'zo2min', 'zhalfo', 'zg500', 'zg1000', 'zg100', 'zg10', 'zg', 'zfullo', 'wtd', 'wo', 'wmo', 'wfonocorr', 'wfo', 'wetss', 'wetso4', 'wetso2', 'wetlandFrac', 'wetlandCH4', 'wetbc', 'wap500', 'wap', 'vsf', 'volo', 'volcello', 'vo', 'vmo', 'vegHeight', 'va', 'uo', 'umo', 'ua', 'tslsi', 'tsl', 'ts', 'tran', 'tossq', 'tosga', 'tos', 'tob', 'thkcello', 'thetaot700', 'thetaot300', 'thetaot2000', 'thetaot', 'thetaoga', 'thetao', 'tgs', 'tcs', 'tauvo', 'tauv', 'tauuo', 'tauu', 'tasmin', 'tasmax', 'tas', 'talkos', 'talknat', 'talk', 'ta850', 'ta700', 'ta500', 'ta', 't20d', 'spco2', 'sossq', 'sosga', 'sos', 'sootsn', 'somint', 'soga', 'sob', 'so2', 'so', 'snw', 'sndmasswindrif', 'sndmasssnf', 'sndmasssi', 'sndmassmelt', 'snd', 'snc', 'sivols', 'sivoln', 'sivol', 'siv', 'siu', 'sitimefrac', 'sithick', 'sitemptop', 'sitempsnic', 'sitempbot', 'sistryubot', 'sistrydtop', 'sistrxubot', 'sistrxdtop', 'sispeed', 'sisnthick', 'sisnmass', 'sisnhc', 'sisnconc', 'sirdgthick', 'sirdgconc', 'sipr', 'sios', 'simpconc', 'simass', 'siitdthick', 'siitdsnthick', 'siitdsnconc', 'siitdconc', 'sihc', 'siforcetilty', 'siforcetiltx', 'siforceintstry', 'siforceintstrx', 'siforcecorioly', 'siforcecoriolx', 'siflswutop', 'siflswdtop', 'siflswdbot', 'siflsensupbot', 'siflsenstop', 'sifllwutop', 'sifllwdtop', 'sifllatstop', 'siflfwdrain', 'siflfwbot', 'siflcondtop', 'siflcondbot', 'sifb', 'siextents', 'siextentn', 'sidmasstrany', 'sidmasstranx', 'sidmassth', 'sidmasssi', 'sidmassmelttop', 'sidmassmeltbot', 'sidmasslat', 'sidmassgrowthwat', 'sidmassgrowthbot', 'sidmassevapsubl', 'sidmassdyn', 'sidivvel', 'sidconcth', 'sidconcdyn', 'siconc', 'sicompstren', 'siarean', 'siage', 'si', 'sftof', 'sftlf', 'sftgif', 'sfdsi', 'sfcWind', 'sf6', 'rtmt', 'rsutcsaf', 'rsutcs', 'rsutaf', 'rsut', 'rsuscs', 'rsus', 'rsntds', 'rsdt', 'rsdsdiff', 'rsdscs', 'rsds', 'rlutcsaf', 'rlutcs', 'rlutaf', 'rlut', 'rlus', 'rldscs', 'rlds', 'rh', 'reffclwtop', 'ra', 'rMaint', 'rGrowth', 'qgwr', 'pso', 'psl', 'ps', 'prw', 'prveg', 'prsn', 'prra', 'prc', 'pr', 'ppos', 'pp', 'popos', 'pop', 'ponos', 'pon', 'po4os', 'po4', 'phynos', 'phyn', 'phyfeos', 'phyfe', 'phyc', 'phos', 'phnat', 'phalf', 'ph', 'pfull', 'pctisccp', 'pbo', 'orog', 'opottempmint', 'oh', 'od870aer', 'od550ss', 'od550so4', 'od550oa', 'od550lt1aer', 'od550dust', 'od550csaer', 'od550bc', 'od550aerh2o', 'od550aer', 'od440aer', 'obvfsq', 'o3', 'o2satos', 'o2sat', 'o2os', 'o2min', 'o2', 'nppWood', 'nppRoot', 'nppLeaf', 'npp', 'no3os', 'no3', 'nep', 'nbp', 'nVeg', 'nStem', 'nSoil', 'nRoot', 'nMineralNO3', 'nMineralNH4', 'nMineral', 'nLitter', 'nLeaf', 'nLand', 'n2oglobal', 'msftmzmpa', 'msftmz', 'msftmrhompa', 'msftmrho', 'msftbarot', 'mrtws', 'mrsos', 'mrsol', 'mrso', 'mrsll', 'mrsfl', 'mrros', 'mrrob', 'mrro', 'mrlso', 'mrfso', 'mmrss', 'mmrsoa', 'mmrso4', 'mmrpm2p5', 'mmrpm1', 'mmroa', 'mmrdust', 'mmrbc', 'mmraerh2o', 'mlotstsq', 'mlotstmin', 'mlotstmax', 'mlotst', 'mfo', 'masso', 'masscello', 'lwsnl', 'lwp', 'loadss', 'loaddust', 'lai', 'isop', 'intpp', 'intpoc', 'intpn2', 'intdoc', 'intdic', 'huss', 'hus', 'hurs', 'hur', 'hfy', 'hfx', 'hfss', 'hfls', 'hfds', 'hfbasinpmdiff', 'hfbasinpmadv', 'hfbasinpadv', 'hfbasin', 'gpp', 'fsitherm', 'froc', 'frn', 'friver', 'fric', 'frfe', 'ficeberg', 'fgo2', 'fgdms', 'fgco2nat', 'fgco2', 'fVegLitterSenescence', 'fVegLitterMortality', 'fVegLitter', 'fNup', 'fNnetmin', 'fNloss', 'fNleach', 'fNgasNonFire', 'fNgasFire', 'fNgas', 'fNfert', 'fNdep', 'fNProduct', 'fNOx', 'fN2O', 'fLuc', 'fLitterFire', 'fHarvestToProduct', 'fHarvest', 'fFireNat', 'fFire', 'fDeforestToProduct', 'fBNF', 'evspsblveg', 'evspsblsoi', 'evspsbl', 'evs', 'esn', 'es', 'epsi100', 'epp100', 'epn100', 'epfe100', 'epcalc100', 'epc100', 'emivoc', 'emiss', 'emiso4', 'emiso2', 'emioa', 'emiisop', 'emidust', 'emidms', 'emibvoc', 'emibc', 'ec', 'dryso4', 'dryso2', 'drybc', 'dpco2', 'dmsos', 'dms', 'dmlt', 'dissocos', 'dissoc', 'dissicos', 'dissicnat', 'dissic', 'dfeos', 'dfe', 'detocos', 'detoc', 'deptho', 'cod', 'co3satcalcos', 'co3satcalc', 'co3sataragos', 'co3satarag', 'co3os', 'co3nat', 'co3', 'co2mass', 'co2', 'clwvi', 'clwmodis', 'clw', 'cltmodis', 'cltisccp', 'cltcalipso', 'clt', 'clmcalipso', 'cllcalipso', 'clivi', 'climodis', 'cli', 'clhcalipso', 'cl', 'chlos', 'chl', 'chepsoa', 'ch4global', 'cfc12global', 'cfc12', 'cfc11global', 'cfc11', 'cdnc', 'cct', 'ccn', 'ccb', 'calcos', 'calc', 'cWood', 'cVeg', 'cStem', 'cSoilSlow', 'cSoilMedium', 'cSoilFast', 'cSoilAbove1m', 'cSoil', 'cRoot', 'cMisc', 'cLitter', 'cLeaf', 'cLand', 'cCwd', 'bsios', 'bsi', 'bldep', 'bfeos', 'bfe', 'basin', 'ares', 'areacello', 'areacella', 'albisccp', 'airmass', 'agessc', 'abs550aer']
+
+ facet variable_long_name
+['pH', 'Zooplankton Carbon Concentration', 'Y-Component of Sea-Ice Velocity', 'Y-Component of Sea-Ice Mass Transport', 'Y-Component of Ocean Stress on Sea Ice', 'Y-Component of Atmospheric Stress on Sea Ice', 'X-Component of Sea-Ice Velocity', 'X-Component of Sea-Ice Mass Transport', 'X-Component of Ocean Stress on Sea Ice', 'X-Component of Atmospheric Stress on Sea Ice', 'Wetland Percentage Cover', 'Wet Deposition Rate of Sea-Salt Aerosol', 'Wet Deposition Rate of SO4', 'Wet Deposition Rate of SO2', 'Wet Deposition Rate of Black Carbon Aerosol Mass', 'Water Vapor Path', 'Water Table Depth', 'Water Flux into Sea Water from Rivers', 'Water Flux into Sea Water from Icebergs', 'Water Flux into Sea Water Without Flux Correction', 'Water Flux into Sea Water Due to Sea Ice Thermodynamics', 'Water Flux into Sea Water', 'Water Evaporation from Soil', 'Water Evaporation Flux Where Ice Free Ocean over Sea', 'Virtual Salt Flux into Sea Water', 'Vertically Integrated Mass Content of Air in Layer', 'Vertically Averaged Sea Water Potential Temperature', 'Vegetation Canopy Temperature', 'Upwelling Shortwave Flux over Sea Ice', 'Upwelling Longwave Flux over Sea Ice', 'Upward Ocean Mass Transport', 'Tropopause Altitude Above Geoid', 'Transpiration', 'Total Water Content of Soil Layer', 'Total Soil Moisture Content', 'Total Runoff', 'Total Plant Nitrogen Uptake (Sum of Ammonium and Nitrate) Irrespective of the Source of Nitrogen', 'Total Organic Aerosol Optical Depth at 550nm', 'Total Organic Aerosol Mass Mixing Ratio', 'Total Nitrogen in All Terrestrial Nitrogen Pools', 'Total Nitrogen Lost to the Atmosphere (Sum of NHx, NOx, N2O, N2)', 'Total Nitrogen Lost to the Atmosphere (Including NHx, NOx, N2O, N2) from Fire', 'Total Nitrogen Lost to the Atmosphere (Including NHx, NOx, N2O, N2) from All Processes Except Fire', 'Total Nitrogen Lost (Including NHx, NOx, N2O, N2 and Leaching)', 'Total Nitrogen Loss to Leaching or Runoff (Sum of Ammonium, Nitrite and Nitrate)', 'Total Nitrogen Added for Cropland Fertilisation (Artificial and Manure)', 'Total Land NOx Flux', 'Total Land N2O Flux', 'Total Heterotrophic Respiration on Land as Carbon Mass Flux [kgC m-2 s-1]', 'Total Emission Rate of Sea-Salt Aerosol', 'Total Emission Rate of SO2', 'Total Emission Rate of NMVOC', 'Total Emission Rate of Isoprene', 'Total Emission Rate of Dust', 'Total Emission Rate of DMS', 'Total Emission Rate of Black Carbon Aerosol Mass', 'Total Emission Rate of Biogenic NMVOC', 'Total Dissolved Inorganic Silicon Concentration', 'Total Dissolved Inorganic Phosphorus Concentration', 'Total Direct Emission Rate of SO4', 'Total Cloud Cover Percentage', 'Total Carbon in All Terrestrial Carbon Pools', 'Total Carbon Mass Flux from Vegetation to Litter as a Result of Mortality', 'Total Carbon Mass Flux from Vegetation to Litter as a Result of Leaf, Branch, and Root Senescence', 'Total Carbon Mass Flux from Vegetation to Litter', 'Total Autotrophic Respiration on Land as Carbon Mass Flux [kgC m-2 s-1]', 'Total Atmospheric Mass of CO2', 'Total Alkalinity', 'Terrestrial Water Storage', 'Temperature of Soil', 'Temperature of Bare Soil', 'Temperature at Snow-Ice Interface', 'Temperature at Ice-Ocean Interface', 'TOA Outgoing Shortwave Radiation', 'TOA Outgoing Longwave Radiation', 'TOA Outgoing Clear-Sky, Aerosol-Free Shortwave Radiation', 'TOA Outgoing Clear-Sky, Aerosol-Free Longwave Radiation', 'TOA Outgoing Clear-Sky Shortwave Radiation', 'TOA Outgoing Clear-Sky Longwave Radiation', 'TOA Outgoing Aerosol-Free Shortwave Radiation', 'TOA Outgoing Aerosol-Free Longwave Radiation', 'TOA Incident Shortwave Radiation', 'Surface pH', 'Surface Zooplankton Carbon Concentration', 'Surface Upwelling Shortwave Radiation', 'Surface Upwelling Longwave Radiation', 'Surface Upwelling Clear-Sky Shortwave Radiation', 'Surface Upward Sensible Heat Flux', 'Surface Upward Latent Heat Flux', 'Surface Upward Flux of DMS', 'Surface Total Dissolved Inorganic Silicon Concentration', 'Surface Total Dissolved Inorganic Phosphorus Concentration', 'Surface Total Alkalinity', 'Surface Temperature of Sea Ice', 'Surface Temperature Where Land or Sea Ice', 'Surface Temperature', 'Surface Snow Amount', 'Surface Runoff', 'Surface Mole Concentration of Total Phytoplankton Expressed as Iron in Sea Water', 'Surface Mole Concentration of Phytoplankton Nitrogen in Sea Water', 'Surface Mole Concentration of Particulate Organic Matter Expressed as Silicon in Sea Water', 'Surface Mole Concentration of Particulate Organic Matter Expressed as Phosphorus in Sea Water', 'Surface Mole Concentration of Particulate Organic Matter Expressed as Nitrogen in Sea Water', 'Surface Mole Concentration of Particulate Organic Matter Expressed as Iron in Sea Water', 'Surface Mole Concentration of Dimethyl Sulphide in Sea Water', 'Surface Mole Concentration of Carbonate Ion in Equilibrium with Pure Calcite in Sea Water', 'Surface Mole Concentration of Carbonate Ion in Equilibrium with Pure Aragonite in Sea Water', 'Surface Mass Concentration of Total Phytoplankton Expressed as Chlorophyll in Sea Water', 'Surface Downwelling Shortwave Radiation', 'Surface Downwelling Longwave Radiation', 'Surface Downwelling Clear-Sky Shortwave Radiation', 'Surface Downwelling Clear-Sky Longwave Radiation', 'Surface Downward Northward Wind Stress', 'Surface Downward Mass Flux of Carbon as Natural CO2 [kgC m-2 s-1]', 'Surface Downward Mass Flux of Carbon as CO2 [kgC m-2 s-1]', 'Surface Downward Flux of O2', 'Surface Downward Eastward Wind Stress', 'Surface Dissolved Oxygen Concentration at Saturation', 'Surface Dissolved Oxygen Concentration', 'Surface Dissolved Organic Carbon Concentration', 'Surface Dissolved Nitrate Concentration', 'Surface Dissolved Iron Concentration', 'Surface Dissolved Inorganic Carbon Concentration', 'Surface Diffuse Downwelling Shortwave Radiation', 'Surface Detrital Organic Carbon Concentration', 'Surface Carbonate Ion Concentration', 'Surface Calcite Concentration', 'Surface Aqueous Partial Pressure of CO2', 'Surface Altitude', 'Surface Air Pressure', 'Sulfate Aerosol Optical Depth at 550nm', 'Subsurface Runoff', 'Square of Sea Surface Temperature', 'Square of Sea Surface Salinity', 'Square of Sea Surface Height Above Geoid', 'Square of Ocean Mixed Layer Thickness Defined by Sigma T', 'Square of Brunt Vaisala Frequency in Sea Water', 'Specific Humidity', 'Soil Liquid Water Content', 'Soil Frozen Water Content', 'Snowfall Flux where Ice Free Ocean over Sea', 'Snowfall Flux', 'Snow Thickness in Ice Thickness Categories', 'Snow Thickness', 'Snow Soot Content', 'Snow Mass per Area', 'Snow Mass Rate of Change Through Wind Drift of Snow', 'Snow Mass Rate of Change Through Snow-to-Ice Conversion', 'Snow Mass Rate of Change Through Melt', 'Snow Mass Change Through Snow Fall', 'Snow Heat Content per Unit Area', 'Snow Evaporation', 'Snow Depth', 'Snow Area Percentages in Ice Thickness Categories', 'Snow Area Percentage', 'Secondary Organic Aerosol Mass Mixing Ratio', 'Sea-Surface Tilt Term in Force Balance (Y-Component)', 'Sea-Surface Tilt Term in Force Balance (X-Component)', 'Sea-Salt Aerosol Optical Depth at 550nm', 'Sea-Salt Aerosol Mass Mixing Ratio', 'Sea-Ice Volume per Area', 'Sea-Ice Volume South', 'Sea-Ice Volume North', 'Sea-Ice Thickness in Thickness Categories', 'Sea-Ice Speed', 'Sea-Ice Mass per Area', 'Sea-Ice Mass Change from Thermodynamics', 'Sea-Ice Mass Change from Dynamics', 'Sea-Ice Mass Change Through Surface Melting', 'Sea-Ice Mass Change Through Snow-to-Ice Conversion', 'Sea-Ice Mass Change Through Growth in Supercooled Open Water (Frazil)', 'Sea-Ice Mass Change Through Evaporation and Sublimation', 'Sea-Ice Mass Change Through Bottom Melting', 'Sea-Ice Mass Change Through Basal Growth', 'Sea-Ice Heat Content per Unit Area', 'Sea-Ice Freeboard', 'Sea-Ice Extent South', 'Sea-Ice Extent North', 'Sea-Ice Area Percentages in Thickness Categories', 'Sea-Ice Area Percentage Tendency Due to Thermodynamics', 'Sea-Ice Area Percentage Tendency Due to Dynamics', 'Sea-Ice Area Percentage (Ocean Grid)', 'Sea-Ice Area North', 'Sea Water Y Velocity', 'Sea Water X Velocity', 'Sea Water Volume', 'Sea Water Vertical Velocity', 'Sea Water Transport', 'Sea Water Surface Downward Y Stress', 'Sea Water Surface Downward X Stress', 'Sea Water Salinity at Sea Floor', 'Sea Water Salinity', 'Sea Water Pressure at Sea Water Surface', 'Sea Water Pressure at Sea Floor', 'Sea Water Potential Temperature at Sea Floor', 'Sea Water Potential Temperature', 'Sea Water Mass', 'Sea Water Age Since Surface Contact', 'Sea Surface Temperature', 'Sea Surface Salinity', 'Sea Surface Height Above Geoid', 'Sea Level Pressure', 'Sea Ice Thickness', 'Sea Floor Depth Below Geoid', 'Sea Area Percentage', 'SO2 Volume Mixing Ratio', 'Ridged Ice Thickness', 'Relative Humidity', 'Region Selection Index', 'Rainfall Rate over Sea Ice', 'Rainfall Flux where Ice Free Ocean over Sea', 'Primary Organic Carbon Production by All Types of Phytoplankton', 'Primary Emission and Chemical Production of Dry Aerosol Organic Matter', 'Primary Carbon Production by Phytoplankton', 'Pressure on Model Half-Levels', 'Pressure at Model Full-Levels', 'Pressure Tendency', 'Precipitation onto Canopy', 'Precipitation', 'Phytoplankton Carbon Concentration', 'Percentage of the grid  cell occupied by land (including lakes)', 'Percentage Cover of Sea Ice by Ridging', 'Percentage Cover of Sea Ice by Meltpond', 'Percentage Cloud Cover', 'Particulate Organic Carbon Content', 'PM2.5 Mass Mixing Ratio', 'PM1.0 Mass Mixing Ratio', 'Oxygen Minimum Concentration', 'Omega (=dp/dt)', 'Ocean Model Cell Thickness', 'Ocean Mixed Layer Thickness Defined by Sigma T', 'Ocean Meridional Overturning Mass Streamfunction Due to Parameterized Mesoscale Advection', 'Ocean Meridional Overturning Mass Streamfunction', 'Ocean Mass Y Transport', 'Ocean Mass X Transport', 'Ocean Heat Y Transport', 'Ocean Heat X Transport', 'Ocean Grid-Cell Volume', 'Ocean Grid-Cell Mass per Area', 'Ocean Barotropic Mass Streamfunction', 'OH Volume Mixing Ratio', 'Northward Wind', 'Northward Ocean Heat Transport Due to Parameterized Mesoscale Diffusion', 'Northward Ocean Heat Transport Due to Parameterized Mesoscale Advection', 'Northward Ocean Heat Transport Due to Parameterized Eddy Advection', 'Northward Ocean Heat Transport', 'Nitrogen Mass in Vegetation', 'Nitrogen Mass in Stem', 'Nitrogen Mass in Soil Pool', 'Nitrogen Mass in Roots', 'Nitrogen Mass in Litter Pool', 'Nitrogen Mass in Leaves', 'Nitrogen Loss to Sediments and Through Denitrification', 'Nitrogen Fixation Rate in Ocean', 'Net Upward Sensible Heat Flux over Sea Ice', 'Net Upward Sensible Heat Flux Under Sea Ice', 'Net Primary Production on Land as Carbon Mass Flux [kgC m-2 s-1]', 'Net Primary Production Allocated to Wood as Carbon Mass Flux [kgC m-2 s-1]', 'Net Primary Production Allocated to Roots as Carbon Mass Flux [kgC m-2 s-1]', 'Net Primary Production Allocated to Leaves as Carbon Mass Flux [kgC m-2 s-1]', 'Net Nitrogen Release from Soil and Litter as the Outcome of Nitrogen Immobilisation and Gross Mineralisation', 'Net Latent Heat Flux over Sea Ice', 'Net Downward Shortwave Radiation at Sea Water Surface', 'Net Downward Radiative Flux at Top of Model', 'Net Conductive Heat Fluxes in Ice at the Bottom', 'Net Conductive Heat Flux in Ice at the Surface', 'Net Carbon Mass Flux out of Atmosphere due to Net Ecosystem Productivity on Land [kgC m-2 s-1]', 'Net Carbon Mass Flux into Atmosphere Due to Land-Use Change [kgC m-2 s-1]', 'Near-Surface Wind Speed', 'Near-Surface Specific Humidity', 'Near-Surface Relative Humidity', 'Near-Surface Air Temperature', 'Natural pH', 'Natural Total Alkalinity', 'Natural Dissolved Inorganic Carbon Concentration', 'Natural Carbonate Ion Concentration', 'Mole Fraction of O3', 'Mole Fraction of CO2', 'Mole Concentration of Total Phytoplankton Expressed as Nitrogen in Sea Water', 'Mole Concentration of Total Phytoplankton Expressed as Iron in Sea Water', 'Mole Concentration of SF6 in Sea Water', 'Mole Concentration of Particulate Organic Matter Expressed as Silicon in Sea Water', 'Mole Concentration of Particulate Organic Matter Expressed as Phosphorus in Sea Water', 'Mole Concentration of Particulate Organic Matter Expressed as Nitrogen in Sea Water', 'Mole Concentration of Particulate Organic Matter Expressed as Iron in Sea Water', 'Mole Concentration of Carbonate Ion in Equilibrium with Pure Calcite in Sea Water', 'Mole Concentration of Carbonate Ion in Equilibrium with Pure Aragonite in Sea Water', 'Mole Concentration of CFC12 in Sea Water', 'Mole Concentration of CFC11 in Sea Water', 'Moisture in Upper Portion of Soil Column', 'Minimum Ocean Mixed Layer Thickness Defined by Sigma T', 'Mineral Nitrogen in the Soil', 'Mineral Nitrate in the Soil', 'Mineral Ammonium in the Soil', 'Maximum Ocean Mixed Layer Thickness Defined by Sigma T', 'Mass Fraction of Cloud Liquid Water', 'Mass Fraction of Cloud Ice', 'Mass Concentration of Total Phytoplankton Expressed as Chlorophyll in Sea Water', 'MODIS Total Cloud Cover Percentage', 'MODIS Liquid Cloud Percentage', 'MODIS Ice Cloud Area Percentage', 'Load of Sea-Salt Aerosol', 'Load of Dust', 'Liquid Water Path', 'Liquid Water Content of Soil Layer', 'Liquid Water Content of Snow Layer', 'Leaf Area Index', 'Lateral Sea Ice Melt Rate', 'Land Ice Area Percentage', 'Isoprene Volume Mixing Ratio', 'Iron Loss to Sediments', 'Internal Stress Term in Force Balance (Y-Component)', 'Internal Stress Term in Force Balance (X-Component)', 'Interception Evaporation', 'Integral with Respect to Depth of Product of Sea Water Density and Potential Temperature', 'Ice Water Path', 'ISCCP Total Cloud Cover Percentage', 'ISCCP Mean Cloud Top Pressure', 'ISCCP Mean Cloud Albedo', 'Height of the Vegetation Canopy', 'Harvested Biomass That Goes into Product Pool', 'Groundwater Recharge from Soil Layer', 'Grid-Cell Area for Ocean Variables', 'Grid-Cell Area for Atmospheric Grid Variables', 'Grid Averaged Methane Emissions from Wetlands', 'Global Mean Sea Water Salinity', 'Global Mean Mole Fraction of N2O', 'Global Mean Mole Fraction of CH4', 'Global Mean Mole Fraction of CFC12', 'Global Mean Mole Fraction of CFC11', 'Global Average Thermosteric Sea Level Change', 'Global Average Sea Water Potential Temperature', 'Global Average Sea Surface Temperature', 'Global Average Sea Surface Salinity', 'Geopotential Height at 500hPa', 'Geopotential Height at 10hPa', 'Geopotential Height at 100hPa', 'Geopotential Height at 1000hPa', 'Geopotential Height', 'Frozen Water Content of Soil Layer', 'Freshwater Flux from Sea-Ice Surface', 'Freshwater Flux from Sea Ice', 'Fraction of Time Steps with Sea Ice', 'Evaporation from Canopy', 'Evaporation Including Sublimation and Transpiration', 'Elemental Carbon Mass Mixing Ratio', 'Eastward Wind', 'Dust Optical Thickness at 550nm', 'Dust Aerosol Mass Mixing Ratio', 'Dry and Wet Deposition of Reactive Nitrogen onto Land', 'Dry Deposition Rate of SO4', 'Dry Deposition Rate of SO2', 'Dry Deposition Rate of Black Carbon Aerosol Mass', 'Downwelling Shortwave Flux over Sea Ice', 'Downwelling Shortwave Flux Under Sea Ice', 'Downwelling Longwave Flux over Sea Ice', 'Downward Sea Ice Basal Salt Flux', 'Downward Organic Carbon Flux at Ocean Bottom', 'Downward Inorganic Carbon Flux at Ocean Bottom', 'Downward Heat Flux at Sea Water Surface', 'Downward Flux of Particulate Silicon', 'Downward Flux of Particulate Phosphorus', 'Downward Flux of Particulate Organic Carbon', 'Downward Flux of Particulate Nitrogen', 'Downward Flux of Particulate Iron', 'Downward Flux of Calcite', 'Divergence of the Sea-Ice Velocity Field', 'Dissolved Oxygen Concentration at Saturation', 'Dissolved Oxygen Concentration', 'Dissolved Organic Carbon Content', 'Dissolved Organic Carbon Concentration', 'Dissolved Nitrate Concentration', 'Dissolved Iron Concentration', 'Dissolved Inorganic Carbon Content', 'Dissolved Inorganic Carbon Concentration', 'Dimethyl Sulphide (DMS) Mole Fraction', 'Detrital Organic Carbon Concentration', 'Depth to Soil Thaw', 'Depth of Oxygen Minimum Concentration', 'Depth of 20 degree Celsius Isotherm', 'Depth Integral of Product of Sea Water Density and Prognostic Salinity', 'Depth Below Geoid of Ocean Layer', 'Depth Below Geoid of Interfaces Between Ocean Layers', 'Depth Average Potential Temperature of Upper 700m', 'Depth Average Potential Temperature of Upper 300m', 'Depth Average Potential Temperature of Upper 2000m', 'Delta CO2 Partial Pressure', 'Deforested or Harvested Biomass as a Result of Anthropogenic Land-Use or Change', 'Deforested Biomass That Goes into Product Pool as a Result of Anthropogenic Land-Use Change', 'Daily-Mean Near-Surface Wind Speed', 'Daily Minimum Near-Surface Air Temperature', 'Daily Maximum Near-Surface Air Temperature', 'Coriolis Force Term in Force Balance (Y-Component)', 'Coriolis Force Term in Force Balance (X-Component)', 'Convective Precipitation', 'Condensed Water Path', 'Compressive Sea Ice Strength', 'Cloud-Top Effective Droplet Radius', 'Cloud Optical Depth', 'Cloud Liquid Droplet Number Concentration', 'Cloud Condensation Nuclei Concentration at Liquid Cloud Top', 'Chemical Production of Dry Aerosol Secondary Organic Matter', 'Carbonate Ion Concentration', 'Carbon Mass in Wood', 'Carbon Mass in Vegetation', 'Carbon Mass in Stem', 'Carbon Mass in Soil Pool Above 1m Depth', 'Carbon Mass in Slow Soil Pool', 'Carbon Mass in Roots', 'Carbon Mass in Other Living Compartments on Land', 'Carbon Mass in Model Soil Pool', 'Carbon Mass in Medium Soil Pool', 'Carbon Mass in Litter Pool', 'Carbon Mass in Leaves', 'Carbon Mass in Fast Soil Pool', 'Carbon Mass in Coarse Woody Debris', 'Carbon Mass Flux out of Atmosphere Due to Net Biospheric Production on Land [kgC m-2 s-1]', 'Carbon Mass Flux out of Atmosphere Due to Gross Primary Production on Land [kgC m-2 s-1]', 'Carbon Mass Flux into Atmosphere Due to Maintenance Autotrophic Respiration on Land [kgC m-2 s-1]', 'Carbon Mass Flux into Atmosphere Due to Crop Harvesting [kgC m-2 s-1]', 'Carbon Mass Flux into Atmosphere Due to CO2 Emission from Natural Fire [kgC m-2 s-1]', 'Carbon Mass Flux into Atmosphere Due to CO2 Emission from Fire Excluding Land-Use Change [kgC m-2 s-1]', 'Carbon Mass Flux into Atmosphere Due to Autotrophic (Plant) Respiration on Land [kgC m-2 s-1]', 'Carbon Mass Flux from Litter, CWD or any non-Living Pool into Atmosphere Due to CO2 Emission from All Fire [kgC m-2 s-1]', 'Calcite Saturation Depth', 'Calcite Concentration', 'CALIPSO Total Cloud Cover Percentage', 'CALIPSO Mid Level Cloud Cover Percentage', 'CALIPSO Low Level Cloud Cover Percentage', 'CALIPSO High Level Cloud Area Percentage', 'Boundary Layer Depth', 'Black Carbon Optical Thickness at 550nm', 'Biological Nitrogen Fixation', 'Bare Soil Evaporation', 'Aragonite Saturation Depth', 'Ambient Fine Aerosol Optical Depth at 550nm', 'Ambient Aerosol Optical Thickness at 550nm', 'Ambient Aerosol Optical Thickness at 440nm', 'Ambient Aerosol Optical Depth at 870nm', 'Ambient Aerosol Absorption Optical Thickness at 550nm', 'Air Temperature', 'Air Pressure at Convective Cloud Top', 'Air Pressure at Convective Cloud Base', 'Age of Sea Ice', 'Aerosol Water Optical Thickness at 550nm', 'Aerosol Water Mass Mixing Ratio', 'Aerosol Sulfate Mass Mixing Ratio', 'Aerodynamic Resistance']
+
+ facet variant_label
+['r9i1p1f1', 'r99i1p1f1', 'r98i1p1f1', 'r97i1p1f1', 'r96i1p1f1', 'r95i1p1f1', 'r94i1p1f1', 'r93i1p1f1', 'r92i1p1f1', 'r91i1p1f1', 'r90i1p1f1', 'r8i1p1f1', 'r89i1p1f1', 'r88i1p1f1', 'r87i1p1f1', 'r86i1p1f1', 'r85i1p1f1', 'r84i1p1f1', 'r83i1p1f1', 'r82i1p1f1', 'r81i1p1f1', 'r80i1p1f1', 'r7i1p1f1', 'r79i1p1f1', 'r78i1p1f1', 'r77i1p1f1', 'r76i1p1f1', 'r75i1p1f1', 'r74i1p1f1', 'r73i1p1f1', 'r72i1p1f1', 'r71i1p1f1', 'r70i1p1f1', 'r6i1p1f1', 'r69i1p1f1', 'r68i1p1f1', 'r67i1p1f1', 'r66i1p1f1', 'r65i1p1f1', 'r64i1p1f1', 'r63i1p1f1', 'r62i1p1f1', 'r61i1p1f1', 'r60i1p1f1', 'r5i1p1f1', 'r59i1p1f1', 'r58i1p1f1', 'r57i1p1f1', 'r56i1p1f1', 'r55i1p1f1', 'r54i1p1f1', 'r53i1p1f1', 'r52i1p1f1', 'r51i1p1f1', 'r50i1p1f1', 'r4i1p1f1', 'r49i1p1f1', 'r48i1p1f1', 'r47i1p1f1', 'r46i1p1f1', 'r45i1p1f1', 'r44i1p1f1', 'r43i1p1f1', 'r42i1p1f1', 'r41i1p1f1', 'r40i1p1f1', 'r3i1p1f1', 'r39i1p1f1', 'r38i1p1f1', 'r37i1p1f1', 'r36i1p1f1', 'r35i1p1f1', 'r34i1p1f1', 'r33i1p1f1', 'r32i1p1f1', 'r31i1p1f1', 'r30i1p1f1', 'r2i1p1f1', 'r29i1p1f1', 'r28i1p1f1', 'r27i1p1f1', 'r26i1p1f1', 'r25i1p1f1', 'r24i1p1f1', 'r23i1p1f1', 'r22i1p1f1', 'r21i1p1f1', 'r20i1p1f1', 'r1i1p2f1', 'r1i1p1f1', 'r19i1p1f1', 'r18i1p1f1', 'r17i1p1f1', 'r16i1p1f1', 'r15i1p1f1', 'r14i1p1f1', 'r13i1p1f1', 'r12i1p1f1', 'r11i1p1f1', 'r10i1p1f1', 'r100i1p1f1']
+
+ facet version
+['20210118', '20200218', '20200206', '20191108', '20190920', '20190917', '20190909', '20190815']
+
+ facet ACK
+[]
+
+ facet Acknowledgement
+[]
+
+ facet bias_adjustment
+[]
+
+ facet creation_date
+[]
+
+ facet datetime_end
+[]
+
+ facet driving_ensemble
+[]
+
+ facet driving_reanalysis
+[]
+
+ facet project_name
+[]
+
+ facet project_under
+[]
+
+ facet reanalysis
+[]
+
+ facet reanalysis_ensemble
+[]
+
+ facet run_model
+[]
+
+ facet short_description
+[]
+
+ facet start_date_string
+[]
+
+ facet catalog_version
+[]
+
+ facet dataset_version
+[]
+
+ facet instrument
+[]
+
+ facet processing_level
+[]
+
+ facet variable_label
+[]
+
+ facet year_of_aggregation
+[]
+
+ facet metadata_url
+[]
+
+ facet rcm_model
+[]
+
+ facet realization
+[]
+
+ facet source_data_id
+[]
+
+ facet work_package
+[]
+
+ facet Campaign
+[]
+
+ facet Period
+[]
+
+ facet Science Driver
+[]
+
+ facet atmos_grid_resolution
+[]
+
+ facet campaign
+[]
+
+ facet ensemble_member
+[]
+
+ facet ensemble_member_
+[]
+
+ facet height-units
+[]
+
+ facet land_grid_resolution
+[]
+
+ facet model_version
+[]
+
+ facet ocean_grid_resolution
+[]
+
+ facet period
+[]
+
+ facet quality_control_flags
+[]
+
+ facet range
+[]
+
+ facet realm_drs
+[]
+
+ facet region
+[]
+
+ facet regridding
+[]
+
+ facet run_category
+[]
+
+ facet science driver
+[]
+
+ facet science_driver
+[]
+
+ facet seaice_grid_resolution
+[]
+
+ facet set_name
+[]
+
+ facet source_version
+[]
+
+ facet source_version_number
+[]
+
+ facet status
+[]
+
+ facet table
+[]
+
+ facet target_mip_list
+[]
+
+ facet target_mip_listsource
+[]
+
+ facet target_mip_single
+[]
+
+ facet tuning
+[]
+
+ facet versionnum
+[]
+
+ facet collection
+[]
+
+ facet framework
+[]
+
+ facet product_version
+[]

@@ -1,0 +1,1073 @@
+variable_id,description,table_id(s)
+abs550aer,Ambient Aerosol Absorption Optical Thickness at 550nm [1],AERmon
+acabfIs,Ice Sheet Surface Mass Balance Flux [kg m-2 s-1],LImon
+acabf,Surface Mass Balance Flux [kg m-2 s-1],"ImonAnt, ImonGre"
+agesno,Mean Age of Snow [day],"Eday, LImon"
+agessc,Sea Water Age Since Surface Contact [yr],"Omon, Odec"
+airmass,Vertically Integrated Mass Content of Air in Layer [kg m-2],AERmon
+albc,Canopy Albedo [1],Eday
+albisccp,ISCCP Mean Cloud Albedo [1],CFday
+albsn,Snow Albedo [1],Eday
+aod550volso4,Aerosol Optical Depth at 550nm Due to Stratospheric Volcanic Aerosols [1e-09],Eday
+arag,Aragonite Concentration [mol m-3],Oyr
+aragos,Surface Aragonite Concentration [mol m-3],Omon
+areacella,Grid-Cell Area for Atmospheric Grid Variables [m2],fx
+areacello,Grid-Cell Area for Ocean Variables [m2],Ofx
+areacellr,Grid-Cell Area for River Model Variables [m2],fx
+ares,Aerodynamic Resistance [s m-1],Eday
+bacc,Bacterial Carbon Concentration [mol m-3],"Omon, Oyr"
+baccos,Surface Bacterial Carbon Concentration [mol m-3],Omon
+baresoilFrac,Bare Soil Percentage Area Coverage [%],Lmon
+basin,Region Selection Index [1],Ofx
+bddtalk,Rate of Change of Alkalinity Due to Biological Activity [mol m-3 s-1],Oyr
+bddtdic,Rate of Change of Dissolved Inorganic Carbon Due to Biological Activity [mol m-3 s-1],Oyr
+bddtdife,Rate of Change of Dissolved Inorganic Iron Due to Biological Activity [mol m-3 s-1],Oyr
+bddtdin,Rate of Change of Nitrogen Nutrient Due to Biological Activity [mol m-3 s-1],Oyr
+bddtdip,Rate of Change of Dissolved Phosphorus Due to Biological Activity [mol m-3 s-1],Oyr
+bddtdisi,Rate of Change of Dissolved Inorganic Silicon Due to Biological Activity [mol m-3 s-1],Oyr
+bfe,Mole Concentration of Particulate Organic Matter expressed as Iron in sea water [mol m-3],"Omon, Oyr"
+bfeos,Surface Mole Concentration of Particulate Organic Matter Expressed as Iron in Sea Water [mol m-3],Omon
+bigthetaoga,Global Average Sea Water Conservative Temperature [degC],"Omon, Odec"
+bigthetao,Sea Water Conservative Temperature [degC],Omon
+bldep,Boundary Layer Depth [m],"6hrPlev, AERmon"
+bry,Total Inorganic Bromine Volume Mixing Ratio [mol mol-1],AERmonZ
+bsi,Mole Concentration of Particulate Organic Matter Expressed as Silicon in sea water [mol m-3],"Omon, Oyr"
+bsios,Surface Mole Concentration of Particulate Organic Matter Expressed as Silicon in Sea Water [mol m-3],Omon
+burntFractionAll,Percentage of Entire Grid cell that is Covered by Burnt Vegetation (All Classes) [%],Lmon
+c13Land,Mass of 13C in All Terrestrial Carbon Pools [kg m-2],Emon
+c13Litter,Mass of 13C in Litter Pool [kg m-2],Emon
+c13Soil,Mass of 13C in Soil Pool [kg m-2],Emon
+c13Veg,Mass of 13C in Vegetation [kg m-2],Emon
+c14Land,Mass of 14C in All Terrestrial Carbon Pools [kg m-2],Emon
+c14Litter,Mass of 14C in Litter Pool [kg m-2],Emon
+c14Soil,Mass of 14C in Soil Pool [kg m-2],Emon
+c14Veg,Mass of 14C in Vegetation [kg m-2],Emon
+c2h2,C2H2 Volume Mixing Ratio [mol mol-1],AERmon
+c2h6,C2H6 Volume Mixing Ratio [mol mol-1],AERmon
+c3h6,C3H6 volume mixing ratio [mol mol-1],AERmon
+c3h8,C3H8 volume mixing ratio [mol mol-1],AERmon
+c3PftFrac,Percentage Cover by C3 Plant Functional Type [%],Lmon
+c4PftFrac,Percentage Cover by C4 Plant Functional Type [%],Lmon
+calc,Calcite Concentration [mol m-3],"Omon, Oyr"
+calcos,Surface Calcite Concentration [mol m-3],Omon
+ccb,Air Pressure at Convective Cloud Base [Pa],"CFsubhr, CFday, Amon"
+cct,Air Pressure at Convective Cloud Top [Pa],"CFsubhr, CFday, Amon"
+cCwd,Carbon Mass in Coarse Woody Debris [kg m-2],Lmon
+cdnc,Cloud Liquid Droplet Number Concentration [m-3],AERmon
+cfadDbze94,CloudSat Radar Reflectivity CFAD [1],"E3hrPt, Emon"
+cfadLidarsr532,CALIPSO Scattering Ratio CFAD [1],"E3hrPt, Emon"
+cfc113global,Global Mean Mole Fraction of CFC113 [1e-12],Amon
+cfc11global,Global Mean Mole Fraction of CFC11 [1e-12],Amon
+cfc11,Mole Concentration of CFC11 in Sea Water [mol m-3],"Omon, Oyr"
+cfc12global,Global Mean Mole Fraction of CFC12 [1e-12],Amon
+cfc12,Mole Concentration of CFC12 in Sea water [mol m-3],"Omon, Oyr"
+ch3coch3,CH3COCH3 volume mixing ratio [mol mol-1],AERmon
+ch4global,Global Mean Mole Fraction of CH4 [1e-09],Amon
+ch4,Mole Fraction of CH4 [mol mol-1],"AERmon, AERmonZ, Amon"
+cheaqpso4,Aqueous-Phase Production Rate of SO4 [kg m-2 s-1],AERmon
+chegpso4,Gas-Phase Production Rate of SO4 [kg m-2 s-1],AERmon
+chepasoa,Total Net Production of Anthropogenic Secondary Organic Aerosol [kg m-2 s-1],AERmon
+chepsoa,Chemical Production of Dry Aerosol Secondary Organic Matter [kg m-2 s-1],AERmon
+chlcalc,Mass Concentration of Calcareous Phytoplankton Expressed as Chlorophyll in Sea Water [kg m-3],Omon
+chlcalcos,Surface Mass Concentration of Calcareous Phytoplankton Expressed as Chlorophyll in Sea Water [kg m-3],Omon
+chldiat,Mass Concentration of Diatoms expressed as Chlorophyll in Sea Water [kg m-3],"Omon, Oyr"
+chldiatos,Surface Mass Concentration of Diatoms Expressed as Chlorophyll in Sea Water [kg m-3],Omon
+chldiaz,Mass Concentration of Diazotrophs Expressed as Chlorophyll in Sea Water [kg m-3],"Omon, Oyr"
+chldiazos,Surface Mass Concentration of Diazotrophs Expressed as Chlorophyll in Sea Water [kg m-3],Omon
+chl,Mass Concentration of Total Phytoplankton expressed as Chlorophyll in Sea Water [kg m-3],"Omon, Oyr"
+chlmisc,Mass Concentration of Other Phytoplankton expressed as Chlorophyll in Sea Water [kg m-3],"Omon, Oyr"
+chlmiscos,Surface Mass Concentration of Other Phytoplankton Expressed as Chlorophyll in Sea Water [kg m-3],Omon
+chlos,Surface Mass Concentration of Total Phytoplankton expressed as Chlorophyll in Sea Water [kg m-3],"Oday, Omon"
+chlpico,Mass Concentration of Picophytoplankton Expressed as Chlorophyll in Sea Water [kg m-3],"Omon, Oyr"
+chlpicoos,Surface Mass Concentration of Picophytoplankton Expressed as Chlorophyll in Sea Water [kg m-3],Omon
+ci,Fraction of Time Convection Occurs in Cell [1],"CFsubhr, CF3hr, Amon"
+cLand,Total Carbon in All Terrestrial Carbon Pools [kg m-2],Emon
+clayfrac,Clay Fraction [1],Efx
+clcalipso2,CALIPSO Cloud Cover Percentage Undetected by CloudSat (as Percentage of Area Covered) [%],E3hrPt
+clcalipso,CALIPSO Percentage Cloud Cover [%],"E3hrPt, CFday, CFmon"
+clcalipsoice,CALIPSO Ice Cloud Percentage [%],Emon
+clcalipsoliq,CALIPSO Liquid Cloud Percentage [%],Emon
+clc,Convective Cloud Area Percentage [%],"CF3hr, CFmon"
+cldicemxrat,Cloud Ice Mixing Ratio [1],"6hrPlevPt, Emon"
+cldnci,Ice Crystal Number Concentration of Cloud Tops [m-3],Emon
+cldncl,Cloud Droplet Number Concentration of Cloud Tops [m-3],Emon
+cldnvi,Column Integrated Cloud Droplet Number [m-2],Emon
+cldwatmxrat,Cloud Water Mixing Ratio [1],"6hrPlevPt, Emon"
+cLeaf,Carbon Mass in Leaves [kg m-2],Lmon
+clhcalipso,CALIPSO High Level Cloud Area Percentage [%],"CFday, CFmon"
+clic,Mass Fraction of Convective Cloud Ice [1],"CF3hr, CFmon"
+cli,Mass Fraction of Cloud Ice [kg kg-1],"CFsubhr, Amon"
+climodis,MODIS Ice Cloud Area Percentage [%],Emon
+clisccp,ISCCP Cloud Area Percentage [%],CFmon
+clis,Mass Fraction of Stratiform Cloud Ice [1],"CF3hr, CFmon"
+cLitterAbove,Carbon Mass in Above-Ground Litter [kg m-2],Lmon
+cLitterBelow,Carbon Mass in Below-Ground Litter [kg m-2],Lmon
+cLitter,Carbon Mass in Litter Pool [kg m-2],Lmon
+cLitterCwd,Carbon Mass in Coarse Woody Debris [kg m-2],Emon
+cLitterGrass,Carbon Mass in Litter on Grass Tiles [kg m-2],Emon
+cLitterSubSurf,Carbon Mass in Below-Ground Litter [kg m-2],Emon
+cLitterSurf,Carbon Mass in Above-Ground Litter [kg m-2],Emon
+cLitterTree,Carbon Mass in Litter on Tree Tiles [kg m-2],Emon
+clivic,Convective Ice Water Path [kg m-2],Eday
+clivi,Ice Water Path [kg m-2],"CFsubhr, CF3hr, CFday, Amon"
+cllcalipso,CALIPSO Low Level Cloud Cover Percentage [%],"E3hrPt, CFday, CFmon"
+clmcalipso,CALIPSO Mid Level Cloud Cover Percentage [%],"E3hrPt, CFday"
+clmisr,Percentage Cloud Cover as Calculated by the MISR Simulator (Including Error Flag) [%],"E3hrPt, Emon"
+cl,Percentage Cloud Cover [%],"CFsubhr, CFday, Amon"
+cls,Percentage Cover of Stratiform Cloud [%],"CF3hr, CFmon"
+cltcalipso,CALIPSO Total Cloud Cover Percentage [%],"E3hrPt, CFday"
+cltc,Convective Cloud Cover Percentage [%],"CF3hr, AERmon"
+cltisccp,ISCCP Total Cloud Cover Percentage [%],"CFday, CFmon"
+cltmodis,MODIS Total Cloud Cover Percentage [%],Emon
+clt,Total Cloud Cover Percentage [%],"CFsubhr, CF3hr, 3hr, day, Amon"
+clwc,Mass Fraction of Convective Cloud Liquid Water [1],"CF3hr, CFmon"
+clw,Mass Fraction of Cloud Liquid Water [kg kg-1],"CFsubhr, Amon"
+clwmodis,MODIS Liquid Cloud Percentage [%],Emon
+clws,Mass Fraction of Stratiform Cloud Liquid Water [1],"CF3hr, CFmon"
+clwvic,Convective Condensed Water Path [kg m-2],"Eday, Emon"
+clwvi,Condensed Water Path [kg m-2],"CFsubhr, Amon"
+cly,Total Inorganic Chlorine Volume Mixing Ratio [mol mol-1],AERmonZ
+cMisc,Carbon Mass in Other Living Compartments on Land [kg m-2],Emon
+cnc,Canopy Covered Area Percentage [%],Eday
+co23D,3D-Field of Transported CO2 [kg kg-1],Emon
+co2mass,Total Atmospheric Mass of CO2 [kg],Amon
+co2,Mole Fraction of CO2 [mol mol-1],"AERmon, Amon"
+co2s,Atmosphere CO2 [1e-06],Emon
+co3,Carbonate Ion Concentration [mol m-3],"Omon, Oyr"
+co3nat,Natural Carbonate Ion Concentration [mol m-3],Omon
+co3os,Surface Carbonate Ion Concentration [mol m-3],Omon
+co3satarag,Mole Concentration of Carbonate Ion in Equilibrium with Pure Aragonite in Sea Water [mol m-3],"Omon, Oyr"
+co3sataragos,Surface Mole Concentration of Carbonate Ion in Equilibrium with Pure Aragonite in Sea Water [mol m-3],Omon
+co3satcalc,Mole Concentration of Carbonate Ion in Equilibrium with Pure Calcite in Sea Water [mol m-3],"Omon, Oyr"
+co3satcalcos,Surface Mole Concentration of Carbonate Ion in Equilibrium with Pure Calcite in Sea Water [mol m-3],Omon
+co,CO Volume Mixing Ratio [mol mol-1],AERmon
+cod,Cloud Optical Depth [1],"AERday, AERmon"
+conccmcn,Number Concentration Coarse Mode Aerosol [m-3],Emon
+conccn,Aerosol Number Concentration [m-3],Emon
+concdust,Concentration of Dust [kg m-3],Emon
+concnmcn,Number Concentration of Nucleation Mode Aerosol [m-3],Emon
+cOther,"Carbon Mass in Vegetation Components Other than Leaves, Stems and Roots [kg m-2]",Emon
+cProduct,Carbon Mass in Products of Land-Use Change [kg m-2],Lmon
+cRoot,Carbon Mass in Roots [kg m-2],Lmon
+cropFracC3,Percentage Cover by C3 Crops [%],Emon
+cropFracC4,Percentage Cover by C4 Crops [%],Emon
+cropFrac,Percentage Crop Cover [%],Lmon
+cSoilAbove1m,Carbon Mass in Soil Pool Above 1m Depth [kg m-2],Emon
+cSoil,Carbon Mass in Model Soil Pool [kg m-2],Emon
+cSoilFast,Carbon Mass in Fast Soil Pool [kg m-2],Lmon
+cSoilGrass,Carbon Mass in Soil on Grass Tiles [kg m-2],Emon
+cSoilLevels,Carbon Mass in Each Model Soil Level (Summed over All Soil Carbon Pools in That Level) [kg m-2],Emon
+cSoilMedium,Carbon Mass in Medium Soil Pool [kg m-2],Lmon
+cSoilPools,Carbon Mass in Each Model Soil Pool (Summed over Vertical Levels) [kg m-2],Emon
+cSoilSlow,Carbon Mass in Slow Soil Pool [kg m-2],Lmon
+cSoilTree,Carbon Mass in Soil on Tree Tiles [kg m-2],Emon
+cStem,Carbon Mass in Stem [kg m-2],Emon
+cTotFireLut,"Total Carbon Loss from Natural and Managed Fire on Land-Use Tile, Including Deforestation Fires [kg m-2 s-1]",Emon
+cVeg,Carbon Mass in Vegetation [kg m-2],Lmon
+cVegGrass,Carbon Mass in Vegetation on Grass Tiles [kg m-2],Emon
+cVegShrub,Carbon Mass in Vegetation on Shrub Tiles [kg m-2],Emon
+cVegTree,Carbon Mass in Vegetation on Tree Tiles [kg m-2],Emon
+cWood,Carbon Mass in Wood [kg m-2],Emon
+cw,Total Canopy Water Storage [kg m-2],Eday
+darag,Aragonite Dissolution [mol m-3 s-1],Oyr
+dcalc,Calcite Dissolution [mol m-3 s-1],Oyr
+depdust,Total Deposition Rate of Dust [kg m-2 s-1],Emon
+deptho,Sea Floor Depth Below Geoid [m],Ofx
+detoc,Detrital Organic Carbon Concentration [mol m-3],"Omon, Oyr"
+detocos,Surface Detrital Organic Carbon Concentration [mol m-3],Omon
+dfe,Dissolved Iron Concentration [mol m-3],"Omon, Oyr"
+dfeos,Surface Dissolved Iron Concentration [mol m-3],Omon
+diftrblo,Ocean Tracer Diffusivity due to Parameterized Mesoscale Advection [m2 s-1],"Oclim, Oyr"
+diftrelo,Ocean Tracer Epineutral Laplacian Diffusivity [m2 s-1],"Oclim, Oyr"
+difvho,Ocean Vertical Heat Diffusivity [m2 s-1],"Oclim, Oyr"
+difvmto,Ocean Vertical Momentum Diffusivity Due to Tides [m2 s-1],Oclim
+difvso,Ocean Vertical Salt Diffusivity [m2 s-1],"Oclim, Oyr"
+difvtrto,Ocean Vertical Tracer Diffusivity Due to Tides [m2 s-1],Oclim
+dispkevfo,Ocean Kinetic Energy Dissipation per Unit Area Due to Vertical Friction [W m-2],Oclim
+dispkexyfo,Ocean Kinetic Energy Dissipation per Unit Area Due to XY Friction [W m-2],Oclim
+dissi14cabio,Abiotic Dissolved Inorganic Carbon-14 Concentration [mol m-3],"Omon, Oyr"
+dissi14cabioos,Surface Abiotic Dissolved Inorganic Carbon-14 Concentration [mol m-3],Omon
+dissicabio,Abiotic Dissolved Inorganic Carbon Concentration [mol m-3],"Omon, Oyr"
+dissicabioos,Surface Abiotic Dissolved Inorganic Carbon Concentration [mol m-3],Omon
+dissic,Dissolved Inorganic Carbon Concentration [mol m-3],"Omon, Oyr"
+dissicnat,Natural Dissolved Inorganic Carbon Concentration [mol m-3],"Omon, Oyr"
+dissicnatos,Surface Natural Dissolved Inorganic Carbon Concentration [mol m-3],Omon
+dissicos,Surface Dissolved Inorganic Carbon Concentration [mol m-3],Omon
+dissoc,Dissolved Organic Carbon Concentration [mol m-3],"Omon, Oyr"
+dissocos,Surface Dissolved Organic Carbon Concentration [mol m-3],Omon
+dms,Dimethyl Sulphide (DMS) Mole Fraction [mol mol-1],AERmon
+dmso,Mole Concentration of Dimethyl Sulphide in Sea Water [mol m-3],Omon
+dmsos,Surface Mole Concentration of Dimethyl Sulphide in Sea Water [mol m-3],Omon
+dpco2abio,Abiotic Delta Pco Partial Pressure [Pa],Omon
+dpco2,Delta CO2 Partial Pressure [Pa],Omon
+dpco2nat,Natural Delta CO2 Partial Pressure [Pa],Omon
+dpo2,Delta O2 Partial Pressure [Pa],Omon
+drivw,Change in River Storage [kg m-2],Eday
+drybc,Dry Deposition Rate of Black Carbon Aerosol Mass [kg m-2 s-1],AERmon
+drydust,Dry Deposition Rate of Dust [kg m-2 s-1],AERmon
+drynh3,Dry Deposition Rate of NH3 [kg m-2 s-1],AERmon
+drynh4,Dry Deposition Rate of NH4 [kg m-2 s-1],AERmon
+drynoy,Dry Deposition Rate of NOy [kg m-2 s-1],AERmon
+dryo3,Dry Deposition Rate of O3 [kg m-2 s-1],AERmon
+dryoa,Dry Deposition Rate of Dry Aerosol Total Organic Matter [kg m-2 s-1],AERmon
+dryso2,Dry Deposition Rate of SO2 [kg m-2 s-1],AERmon
+dryso4,Dry Deposition Rate of SO4 [kg m-2 s-1],AERmon
+dryss,Dry Deposition Rate of sea-salt aerosol [kg m-2 s-1],AERmon
+dslw,Change in Soil Moisture [kg m-2],Eday
+dsn,Change in Snow Water Equivalent [kg m-2],Eday
+dsw,Change in Surface Water Storage [kg m-2],Eday
+dtes,Change in Surface Heat Storage [J m-2],Eday
+dtesn,Change in Snow and Ice Cold Content [J m-2],Eday
+ec550aer,Aerosol Extinction Coefficient [m-1],"6hrLev, Emon"
+ec,Interception Evaporation [kg m-2 s-1],Eday
+edt,Eddy Diffusivity Coefficient for Temperature [m2 s-1],"CFsubhr, CFmon"
+emiaco,Total Emission Rate of Anthropogenic CO [kg m-2 s-1],AERmon
+emianox,Total Emission Rate of Anthropogenic NOx [kg m-2 s-1],AERmon
+emiaoa,Total Emission Rate of Anthropogenic Organic Aerosol [kg m-2 s-1],AERmon
+emibc,Total Emission Rate of Black Carbon Aerosol Mass [kg m-2 s-1],AERmon
+emibvoc,Total Emission Rate of Biogenic NMVOC [kg m-2 s-1],AERmon
+emico,Total Emission Rate of CO [kg m-2 s-1],AERmon
+emidms,Total Emission Rate of DMS [kg m-2 s-1],AERmon
+emidust,Total Emission Rate of Dust [kg m-2 s-1],AERmon
+emiisop,Total Emission Rate of Isoprene [kg m-2 s-1],AERmon
+emilnox,Layer-Integrated Lightning Production of NOx [mol s-1],AERmon
+eminh3,Total Emission Rate of NH3 [kg m-2 s-1],AERmon
+eminox,Total Emission Rate of NOx [kg m-2 s-1],AERmon
+emioa,Primary Emission and Chemical Production of Dry Aerosol Organic Matter [kg m-2 s-1],AERmon
+emiso2,Total Emission Rate of SO2 [kg m-2 s-1],AERmon
+emiso4,Total Direct Emission Rate of SO4 [kg m-2 s-1],AERmon
+emiss,Total Emission Rate of sea-salt aerosol [kg m-2 s-1],AERmon
+emivoc,Total Emission Rate of NMVOC [kg m-2 s-1],AERmon
+eow,Open Water Evaporation [kg m-2 s-1],Eday
+eparag100,Downward Flux of Aragonite [mol m-2 s-1],Omon
+epc100,Downward Flux of Particulate Organic Carbon [mol m-2 s-1],Omon
+epcalc100,Downward Flux of Calcite [mol m-2 s-1],Omon
+epfe100,Downward Flux of Particulate Iron [mol m-2 s-1],Omon
+epfy,Northward Component of the Eliassen-Palm Flux [m3 s-2],"EdayZ, EmonZ"
+epfz,Upward Component of the Eliassen-Palm Flux [m3 s-2],"EdayZ, EmonZ"
+epn100,Downward Flux of Particulate Nitrogen [mol m-2 s-1],Omon
+epp100,Downward Flux of Particulate Phosphorus [mol m-2 s-1],Omon
+epsi100,Downward Flux of Particulate Silicon [mol m-2 s-1],Omon
+es,Bare Soil Evaporation [kg m-2 s-1],Eday
+evspsbl,Evaporation Including Sublimation and Transpiration [kg m-2 s-1],Amon
+evspsblpot,Potential Evapotranspiration [kg m-2 s-1],"Eday, Emon"
+evspsblsoi,Water Evaporation from Soil [kg m-2 s-1],Lmon
+evspsblveg,Evaporation from Canopy [kg m-2 s-1],Lmon
+evs,Water Evaporation Flux Where Ice Free Ocean over Sea [kg m-2 s-1],Omon
+evu,Eddy Viscosity Coefficient for Momentum [m2 s-1],CFmon
+exparag,Downward Flux of Aragonite [mol m-2 s-1],Oyr
+expcalc,Downward Flux of Calcite [mol m-2 s-1],"Emon, Oyr"
+expc,Downward Flux of Particulate Organic Carbon [mol m-2 s-1],"Omon, Oyr"
+expfe,Sinking Particulate Iron Flux [mol m-2 s-1],"Emon, Oyr"
+expn,Sinking Particulate Organic Nitrogen Flux [mol m-2 s-1],"Emon, Oyr"
+expp,Sinking Particulate Organic Phosphorus Flux [mol m-2 s-1],"Emon, Oyr"
+expsi,Sinking Particulate Silicon Flux [mol m-2 s-1],"Emon, Oyr"
+fAnthDisturb,"Carbon Mass Flux from Vegetation, Litter or Soil Pools into the Atmosphere Due to any Human Activity [kg m-2 s-1]",Emon
+fbddtalk,Rate of Change of Biological Alkalinity Due to Biological Activity [mol m-2 s-1],"Emon, Omon"
+fbddtdic,Rate of Change of Dissolved Inorganic Carbon Due to Biological Activity [mol m-2 s-1],"Emon, Omon"
+fbddtdife,Rate of Change of Dissolved Inorganic Iron Due to Biological Activity [mol m-2 s-1],"Emon, Omon"
+fbddtdin,Rate of Change of Dissolved Inorganic Nitrogen Due to Biological Activity [mol m-2 s-1],"Emon, Omon"
+fbddtdip,Rate of Change of Dissolved Inorganic Phosphorus due to Biological Activity [mol m-2 s-1],"Emon, Omon"
+fbddtdisi,Rate of Change of Dissolved Inorganic Silicon due to Biological Activity [mol m-2 s-1],"Emon, Omon"
+fBNF,Biological Nitrogen Fixation [kg m-2 s-1],Emon
+fCLandToOcean,Lateral Transfer of Carbon out of Grid Cell That Eventually Goes into Ocean [kg m-2 s-1],Emon
+fco2antt,Carbon Mass Flux into Atmosphere Due to All Anthropogenic Emissions of CO2 [kg m-2 s-1],Amon
+fco2fos,Carbon Mass Flux into Atmosphere Due to Fossil Fuel Emissions of CO2 [kg m-2 s-1],Amon
+fco2nat,Surface Carbon Mass Flux into the Atmosphere Due to Natural Sources [kg m-2 s-1],Amon
+fddtalk,Rate of Change of Total Alkalinity [mol m-2 s-1],Omon
+fddtdic,Rate of Change of Net Dissolved Inorganic Carbon [mol m-2 s-1],Omon
+fddtdife,Rate of Change of Net Dissolved Inorganic Iron [mol m-2 s-1],Omon
+fddtdin,Rate of Change of Net Dissolved Inorganic Nitrogen [mol m-2 s-1],Omon
+fddtdip,Rate of Change of Net Dissolved Inorganic Phosphorus [mol m-2 s-1],Omon
+fddtdisi,Rate of Change of Net Dissolved Inorganic Silicon [mol m-2 s-1],Omon
+fDeforestToAtmos,Deforested Biomass That Goes into Atmosphere as a Result of Anthropogenic Land-Use Change [kg m-2 s-1],Emon
+fDeforestToProduct,Deforested Biomass That Goes into Product Pool as a Result of Anthropogenic Land-Use Change [kg m-2 s-1],Emon
+fediss,Particulate Source of Dissolved Iron [mol m-3 s-1],Oyr
+fescav,Non-Biogenic Iron Scavenging [mol m-3 s-1],Oyr
+fFireAll,Carbon Mass Flux into Atmosphere Due to CO2 Emission from Fire Including All Sources [kg m-2 s-1],Emon
+fFire,Carbon Mass Flux into Atmosphere Due to CO2 Emission from Fire Excluding Land-Use Change [kg m-2 s-1],Lmon
+fFireNat,Carbon Mass Flux into Atmosphere Due to CO2 Emission from Natural Fire [kg m-2 s-1],Emon
+fg14co2abio,Surface Downward Flux of Abiotic 14CO2 [kg m-2 s-1],"Omon, Oyr"
+fgcfc11,Surface Downward CFC11 Flux [mol m-2 s-1],Omon
+fgcfc12,Surface Downward CFC12 Flux [mol m-2 s-1],Omon
+fgco2abio,Surface Downward Flux of Abiotic CO2 [kg m-2 s-1],"Omon, Oyr"
+fgco2nat,Surface Downward Flux of Natural CO2 [kg m-2 s-1],"Omon, Oyr"
+fgco2,Surface Downward Flux of Total CO2 [kg m-2 s-1],"Omon, Oyr"
+fgdms,Surface Upward Flux of DMS [mol m-2 s-1],Omon
+fgo2,Surface Downward Flux of O2 [mol m-2 s-1],Omon
+fGrazing,Carbon Mass Flux into Atmosphere Due to Grazing on Land [kg m-2 s-1],Lmon
+fgsf6,Surface Downward SF6 Flux [mol m-2 s-1],Omon
+fHarvest,Carbon Mass Flux into Atmosphere Due to Crop Harvesting [kg m-2 s-1],Lmon
+fHarvestToAtmos,Harvested Biomass That Goes Straight into Atmosphere [kg m-2 s-1],Emon
+fHarvestToProduct,Harvested Biomass That Goes into Product Pool [kg m-2 s-1],Emon
+ficeberg,Water Flux into Sea Water from Icebergs [kg m-2 s-1],Omon
+flandice,Water Flux into Sea Water from Land Ice [kg m-2 s-1],Emon
+flashrate,Lightning Flash Rate [km-2 s-1],Emon
+fldcapacity,Field Capacity [%],Efx
+fLitterSoil,Total Carbon Mass Flux from Litter to Soil [kg m-2 s-1],Lmon
+fLuc,Net Carbon Mass Flux into Atmosphere Due to Land-Use Change [kg m-2 s-1],Emon
+fLulccAtmLut,Carbon Transferred Directly to Atmosphere Due to any Land-Use or Land-Cover Change Activities [kg m-2 s-1],Emon
+fLulccProductLut,Carbon Harvested Due to Land-Use or Land-Cover Change Process That Enters Anthropogenic Product Pools on Tile [kg m-2 s-1],Emon
+fLulccResidueLut,Carbon Transferred to Soil or Litter Pools Due to Land-Use or Land-Cover Change Processes on Tile [kg m-2 s-1],Emon
+fN2O,Total Land N2O Flux [kg m-2 s-1],Emon
+fNAnthDisturb,Nitrogen Mass Flux out of Land Due to Any Human Activity [kg m-2 s-1],Emon
+fNdep,Dry and Wet Deposition of Reactive Nitrogen onto Land [kg m-2 s-1],Emon
+fNfert,Total Nitrogen Added for Cropland Fertilisation (Artificial and Manure) [kg m-2 s-1],Emon
+fNgasFire,"Total Nitrogen Lost to the Atmosphere (Including NHx, NOx, N2O, N2) from Fire [kg m-2 s-1]",Emon
+fNgasNonFire,"Total Nitrogen Lost to the Atmosphere (Including NHx, NOx, N2O, N2) from All Processes Except Fire [kg m-2 s-1]",Emon
+fNgas,"Total Nitrogen Lost to the Atmosphere (Sum of NHx, NOx, N2O, N2) [kg m-2 s-1]",Emon
+fNleach,"Total Nitrogen Loss to Leaching or Runoff (Sum of Ammonium, Nitrite and Nitrate) [kg m-2 s-1]",Emon
+fNLitterSoil,Total Nitrogen Mass Flux from Litter to Soil [kg m-2 s-1],Emon
+fNloss,"Total Nitrogen Lost (Including NHx, NOx, N2O, N2 and Leaching) [kg m-2 s-1]",Emon
+fNnetmin,Net Nitrogen Release from Soil and Litter as the Outcome of Nitrogen Immobilisation and Gross Mineralisation [kg m-2 s-1],Emon
+fNProduct,Deforested or Harvested Biomass as a Result of Anthropogenic Land-Use or Change [kg m-2 s-1],Emon
+fNup,Total Plant Nitrogen Uptake (Sum of Ammonium and Nitrate) Irrespective of the Source of Nitrogen [kg m-2 s-1],Emon
+fNVegLitter,Total Nitrogen Mass Flux from Vegetation to Litter [kg m-2 s-1],Emon
+fNVegSoil,Total Nitrogen Mass Flux from Vegetation Directly to Soil [kg m-2 s-1],Emon
+fProductDecomp,Decomposition out of Product Pools to CO2 in Atmosphere [kg m-2 s-1],Emon
+fProductDecompLut,Flux from Wood and Agricultural Product Pools on Land Use Tile into Atmosphere [kg m-2 s-1],Emon
+fracLut,Percentage of Grid Cell for Each Land-Use Tile [%],Emon
+frfe,Iron Loss to Sediments [mol m-2 s-1],Omon
+fric,Downward Inorganic Carbon Flux at Ocean Bottom [mol m-2 s-1],Omon
+friver,Water Flux into Sea Water from Rivers [kg m-2 s-1],Omon
+frn,Nitrogen Loss to Sediments and Through Denitrification [mol m-2 s-1],Omon
+froc,Downward Organic Carbon Flux at Ocean Bottom [mol m-2 s-1],Omon
+fsfe,Surface Downward Net Flux of Iron [mol m-2 s-1],Omon
+fsitherm,Water Flux into Sea Water Due to Sea Ice Thermodynamics [kg m-2 s-1],Omon
+fsn,Surface Downward Net Flux of Nitrogen [mol m-2 s-1],Omon
+fVegFire,Carbon Mass Flux from Vegetation into Atmosphere Due to CO2 Emission from All Fire [kg m-2 s-1],Emon
+fVegLitterMortality,Total Carbon Mass Flux from Vegetation to Litter as a Result of Mortality [kg m-2 s-1],Emon
+fVegLitterSenescence,"Total Carbon Mass Flux from Vegetation to Litter as a Result of Leaf, Branch, and Root Senescence [kg m-2 s-1]",Emon
+fVegLitter,Total Carbon Mass Flux from Vegetation to Litter [kg m-2 s-1],Lmon
+fVegSoil,Total Carbon Mass Flux from Vegetation Directly to Soil [kg m-2 s-1],Lmon
+gppc13,Mass Flux of 13C out of Atmosphere Due to Gross Primary Production on Land [kg m-2 s-1],Emon
+gppc14,Mass Flux of 14C out of Atmosphere Due to Gross Primary Production on Land [kg m-2 s-1],Emon
+gpp,Carbon Mass Flux out of Atmosphere Due to Gross Primary Production on Land [kg m-2 s-1],"E3hr, Lmon"
+gppGrass,Gross Primary Production on Grass Tiles [kg m-2 s-1],Emon
+gppLut,Gross Primary Productivity on Land-Use Tile [kg m-2 s-1],Emon
+gppShrub,Gross Primary Production on Shrub Tiles [kg m-2 s-1],Emon
+gppTree,Gross Primary Production on Tree Tiles [kg m-2 s-1],Emon
+grassFracC3,C3 Grass Area Percentage [%],Emon
+grassFracC4,C4 Grass Area Percentage [%],Emon
+grassFrac,Natural Grass Area Percentage [%],Lmon
+graz,Total Grazing of Phytoplankton by Zooplankton [mol m-3 s-1],"Omon, Oyr"
+h2o,Mass Fraction of Water [1],"AERmon, AERmonZ"
+hcfc22global,Global Mean Mole Fraction of HCFC22 [1e-12],Amon
+hcho,Formaldehyde Volume Mixing Ratio [mol mol-1],AERmon
+hcl,HCl Volume Mixing Ratio [mol mol-1],"AERmon, AERmonZ"
+hfbasin,Northward Ocean Heat Transport [W],"Omon, Odec"
+hfbasinpadv,Northward Ocean Heat Transport Due to Parameterized Eddy Advection [W],Omon
+hfbasinpmadv,Northward Ocean Heat Transport Due to Parameterized Mesoscale Advection [W],Omon
+hfbasinpmdiff,Northward Ocean Heat Transport Due to Parameterized Mesoscale Diffusion [W],Omon
+hfbasinpsmadv,Northward Ocean Heat Transport Due to Parameterized Submesoscale Advection [W],Omon
+hfcorr,Heat Flux Correction [W m-2],Omon
+hfds,Downward Heat Flux at Sea Water Surface [W m-2],"Omon, Odec"
+hfdsn,Downward Heat Flux into Snow Where Land over Land [W m-2],"Eday, LImon"
+hfevapds,Temperature Flux Due to Evaporation Expressed as Heat Flux out of Sea Water [W m-2],Omon
+hfgeoubed,Geothermal Heat Flux Beneath Land Ice [W m-2],IfxGre
+hfgeou,Upward Geothermal Heat Flux at Sea Floor [W m-2],Omon
+hfibthermds,Heat Flux into Sea Water Due to Iceberg Thermodynamics [W m-2],Omon
+hflsIs,Ice Sheet Surface Upward Latent Heat Flux [W m-2],LImon
+hflsLut,Latent Heat Flux on Land-Use Tile [W m-2],Emon
+hflso,Surface Downward Latent Heat Flux [W m-2],Omon
+hfls,Surface Upward Latent Heat Flux [W m-2],"CFsubhr, CF3hr, 3hr, day, Amon, ImonAnt, ImonGre"
+hfrainds,Temperature Flux Due to Rainfall Expressed as Heat Flux into Sea Water [W m-2],Omon
+hfrunoffds,Temperature Flux Due to Runoff Expressed as Heat Flux into Sea Water [W m-2],Omon
+hfsifrazil,Heat Flux into Sea Water Due to Frazil Ice Formation [W m-2],Omon
+hfsnthermds,Heat Flux into Sea Water Due to Snow Thermodynamics [W m-2],Omon
+hfssIs,Ice Sheet Surface Upward Sensible Heat Flux [W m-2],LImon
+hfssLut,Sensible Heat Flux on Land-Use Tile [W m-2],Emon
+hfsso,Surface Downward Sensible Heat Flux [W m-2],Omon
+hfss,Surface Upward Sensible Heat Flux [W m-2],"CFsubhr, CF3hr, 3hr, day, Amon, ImonAnt, ImonGre"
+hfx,Ocean Heat X Transport [W],Omon
+hfy,Ocean Heat Y Transport [W],Omon
+hno3,HNO3 Volume Mixing Ratio [mol mol-1],"AERmon, AERmonZ"
+ho2,HO2 Volume Mixing Ratio [mol mol-1],AERmonZ
+htovgyre,Northward Ocean Heat Transport Due to Gyre [W],Omon
+htovovrt,Northward Ocean Heat Transport Due to Overturning [W],Omon
+hur,Relative Humidity [%],"CFsubhr, day, CFday, Amon, CFmon"
+hursmax,Daily Maximum Near-Surface Relative Humidity [%],day
+hursmin,Daily Minimum Near-Surface Relative Humidity [%],day
+hurs,Near-Surface Relative Humidity [%],"CFsubhr, CF3hr, 6hrPlev, day, Amon"
+hussLut,Near-Surface Specific Humidity on Land-Use Tile [1],Emon
+huss,Near-Surface Specific Humidity [1],"CFsubhr, 3hr, 6hrPlevPt, day, Amon"
+hus,Specific Humidity [1],"CFsubhr, 6hrLev, 6hrPlev, 6hrPlevPt, day, CFday, Eday, EdayZ, Amon, CFmon, Emon"
+icemIs,Ice Sheet Surface Ice Melt Flux [kg m-2 s-1],LImon
+icem,Surface Ice Melt Flux [kg m-2 s-1],"ImonAnt, ImonGre"
+icfriver,Flux of Inorganic Carbon into Ocean Surface by Runoff [mol m-2 s-1],Omon
+intdic,Dissolved Inorganic Carbon Content [kg m-2],Omon
+intdoc,Dissolved Organic Carbon Content [kg m-2],Omon
+intparag,Aragonite Production [mol m-2 s-1],Omon
+intpbfe,Iron Production [mol m-2 s-1],Omon
+intpbn,Nitrogen Production [mol m-2 s-1],Omon
+intpbp,Phosphorus Production [mol m-2 s-1],Omon
+intpbsi,Silicon Production [mol m-2 s-1],Omon
+intpcalcite,Calcite Production [mol m-2 s-1],Omon
+intpn2,Nitrogen Fixation Rate in Ocean [mol m-2 s-1],Omon
+intpoc,Particulate Organic Carbon Content [kg m-2],Omon
+intppcalc,Net Primary Mole Productivity of Carbon by Calcareous Phytoplankton [mol m-2 s-1],Omon
+intppdiat,Net Primary Organic Carbon Production by Diatoms [mol m-2 s-1],Omon
+intppdiaz,Net Primary Mole Productivity of Carbon by Diazotrophs [mol m-2 s-1],Omon
+intppmisc,Net Primary Organic Carbon Production by Other Phytoplankton [mol m-2 s-1],Omon
+intppnitrate,Primary Organic Carbon Production by Phytoplankton Based on Nitrate Uptake Alone [mol m-2 s-1],Omon
+intpppico,Net Primary Mole Productivity of Carbon by Picophytoplankton [mol m-2 s-1],Omon
+intpp,Primary Organic Carbon Production by All Types of Phytoplankton [mol m-2 s-1],Omon
+intuadse,Vertically Integrated Eastward Dry Statice Energy Transport [MJ m-1 s-1],Emon
+intuaw,Vertically Integrated Eastward Moisture Transport [kg m-1 s-1],Emon
+intvadse,Vertically Integrated Northward Dry Static Energy Transport [MJ m-1 s-1],Emon
+intvaw,Vertically Integrated Northward Moisture Transport [kg m-1 s-1],Emon
+irrLut,"Irrigation Flux Including any Irrigation for Crops, Trees, Pasture, or Urban Lawns [kg m-2 s-1]",Emon
+isop,Isoprene Volume Mixing Ratio [mol mol-1],AERmon
+jno2,Photolysis Rate of NO2 [s-1],AERmon
+jo2,Photolysis Rate of Diatomic Molecular Oxygen [s-1],EmonZ
+jo3,Photolysis Rate of Ozone (O3) [s-1],EmonZ
+jpdftaureicemodis,"MODIS Joint Distribution of Optical Thickness and Particle Size, Ice [%]",Emon
+jpdftaureliqmodis,"MODIS Optical Thickness-Particle Size Joint Distribution, Liquid [%]","E3hrPt, Emon"
+ksat,Saturated Hydraulic Conductivity [micron s-1],Efx
+lai,Leaf Area Index [1],"Eday, Lmon"
+laiLut,Leaf Area Index on Land-Use Tile [1],Emon
+landCoverFrac,Percentage of Area by Vegetation or Land-Cover Category [%],Lmon
+limfecalc,Iron Limitation of Calcareous Phytoplankton [1],Omon
+limfediat,Iron Limitation of Diatoms [1],Omon
+limfediaz,Iron Limitation of Diazotrophs [1],Omon
+limfemisc,Iron Limitation of Other Phytoplankton [1],Omon
+limfepico,Iron Limitation of Picophytoplankton [1],Omon
+limirrcalc,Irradiance Limitation of Calcareous Phytoplankton [1],Omon
+limirrdiat,Irradiance Limitation of Diatoms [1],Omon
+limirrdiaz,Irradiance Limitation of Diazotrophs [1],Omon
+limirrmisc,Irradiance Limitation of Other Phytoplankton [1],Omon
+limirrpico,Irradiance Limitation of Picophytoplankton [1],Omon
+limncalc,Nitrogen Limitation of Calcareous Phytoplankton [1],Omon
+limndiat,Nitrogen Limitation of Diatoms [1],Omon
+limndiaz,Nitrogen Limitation of Diazotrophs [1],Omon
+limnmisc,Nitrogen Limitation of Other Phytoplankton [1],Omon
+limnpico,Nitrogen Limitation of Picophytoplankton [1],Omon
+litemptopIs,Ice Sheet Temperature at Top of Ice Sheet Model [K],LImon
+litemptop,Temperature at Top of Ice Sheet Model [K],"ImonAnt, ImonGre"
+lithk,Ice Sheet Thickness [m],IfxGre
+loaddust,Load of Dust [kg m-2],"Eday, Emon"
+loadno3,Load of NO3 [kg m-2],Eday
+loadoa,Load of Dry Aerosol Organic Matter [kg m-2],Eday
+loadpoa,Load of Dry Aerosol Primary Organic Matter [kg m-2],Eday
+loadso4,Load of SO4 [kg m-2],"Eday, Emon"
+loadsoa,Load of Dry Aerosol Secondary Organic Matter [kg m-2],Eday
+loadss,Load of Sea-Salt Aerosol [kg m-2],Emon
+lossch4,Monthly Loss of Atmospheric Methane [mol m-3 s-1],AERmon
+lossco,Monthly Loss of Atmospheric Carbon Monoxide [mol m-3 s-1],AERmon
+lossn2o,Monthly Loss of Atmospheric Nitrous Oxide [mol m-3 s-1],AERmon
+lwp,Liquid Water Path [kg m-2],AERmon
+lwsffluxaero,Longwave flux due to volcanic aerosols at the surface [W m-2],6hrPlevPt
+lwsnl,Liquid Water Content of Snow Layer [kg m-2],"Eday, LImon"
+lwtoacsaer,TOA Clear-Sky longwave Radiative Forcing due to Aerosols [W m-2],Emon
+lwtoafluxaerocs,TOA Outgoing Clear-Sky Longwave Flux Due to Volcanic Aerosols [W m-2],6hrPlevPt
+masscello,Ocean Grid-Cell Mass per Area [kg m-2],Omon
+masso,Sea Water Mass [kg],"Odec, Omon"
+maxpblz,Maximum PBL Height [m],AERday
+mc,Convective Mass Flux [kg m-2 s-1],"CFsubhr, CFday, Amon"
+mcu,Convective Updraft Mass Flux [kg m-2 s-1],CFmon
+meanage,Mean Age of Stratospheric Air [yr],AERmonZ
+mfo,Sea Water Transport [kg s-1],Omon
+minpblz,Minimum PBL Height [m],AERday
+mlotstmax,Maximum Ocean Mixed Layer Thickness Defined by Sigma T [m],Omon
+mlotstmin,Minimum Ocean Mixed Layer Thickness Defined by Sigma T [m],Omon
+mlotst,Ocean Mixed Layer Thickness Defined by Sigma T [m],Omon
+mlotstsq,Square of Ocean Mixed Layer Thickness Defined by Sigma T [m2],Omon
+mmraerh2o,Aerosol Water Mass Mixing Ratio [kg kg-1],AERmon
+mmrbc,Elemental Carbon Mass Mixing Ratio [kg kg-1],"AERmon, Emon"
+mmrdust,Dust Aerosol Mass Mixing Ratio [kg kg-1],AERmon
+mmrnh4,NH4 Mass Mixing Ratio [kg kg-1],AERmon
+mmrno3,NO3 Aerosol Mass Mixing Ratio [kg kg-1],"AERmon, Emon"
+mmroa,Total Organic Aerosol Mass Mixing Ratio [kg kg-1],AERmon
+mmrpm10,PM10 Mass Mixing Ratio [kg kg-1],AERmon
+mmrpm1,PM1.0 Mass Mixing Ratio [kg kg-1],AERmon
+mmrpm2p5,PM2.5 Mass Mixing Ratio [kg kg-1],AERmon
+mmrso4,Aerosol Sulfate Mass Mixing Ratio [kg kg-1],AERmon
+mmrsoa,Secondary Organic Aerosol Mass Mixing Ratio [kg kg-1],AERmon
+mmrss,sea-salt aerosol Mass Mixing Ratio [kg kg-1],"AERmon, Emon"
+mrfsofr,Average Layer Fraction of Frozen Moisture [1],Eday
+mrfso,Soil Frozen Water Content [kg m-2],Lmon
+mrlqso,Average Layer Fraction of Liquid Moisture [1],Eday
+mrlso,Soil Liquid Water Content [kg m-2],Emon
+mrrob,Subsurface Runoff [kg m-2 s-1],Eday
+mrroIs,Ice Sheet Total Runoff [kg m-2 s-1],LImon
+mrroLi,Land Ice Runoff Flux [kg m-2 s-1],"ImonAnt, ImonGre"
+mrroLut,Total Runoff from Land-Use Tile [kg m-2 s-1],Emon
+mrros,Surface Runoff [kg m-2 s-1],Lmon
+mrro,Total Runoff [kg m-2 s-1],"3hr, day, Lmon"
+mrsfl,Frozen Water Content of Soil Layer [kg m-2],"Eday, Emon"
+mrsll,Liquid Water Content of Soil Layer [kg m-2],"Eday, Emon"
+mrsofc,Capacity of Soil to Store Water (Field Capacity) [kg m-2],fx
+mrsol,Total Water Content of Soil Layer [kg m-2],"6hrPlevPt, Eday, Emon"
+mrsoLut,Total Soil Moisture [kg m-2],Emon
+mrsosLut,Moisture in Upper Portion of Soil Column of Land-Use Tile [kg m-2],Emon
+mrsos,Moisture in Upper Portion of Soil Column [kg m-2],"3hr, 6hrPlevPt, day, Lmon"
+mrso,Total Soil Moisture Content [kg m-2],"day, Lmon"
+mrtws,Terrestrial Water Storage [kg m-2],Emon
+msftbarot,Ocean Barotropic Mass Streamfunction [kg s-1],Omon
+msftmrhompa,Ocean Meridional Overturning Mass Streamfunction Due to Parameterized Mesoscale Advection [kg s-1],Omon
+msftmrho,Ocean Meridional Overturning Mass Streamfunction [kg s-1],Omon
+msftmzmpa,Ocean Meridional Overturning Mass Streamfunction Due to Parameterized Mesoscale Advection [kg s-1],Omon
+msftmz,Ocean Meridional Overturning Mass Streamfunction [kg s-1],Omon
+msftmzsmpa,Ocean Meridional Overturning Mass Streamfunction Due to Parameterized Submesoscale Advection [kg s-1],Omon
+msftyrho,Ocean Y Overturning Mass Streamfunction [kg s-1],Omon
+msftyzmpa,Ocean Y Overturning Mass Streamfunction Due to Parameterized Mesoscale Advection [kg s-1],Omon
+msftyz,Ocean Y Overturning Mass Streamfunction [kg s-1],Omon
+msftyzsmpa,Ocean Y Overturning Mass Streamfunction Due to Parameterized Submesoscale Advection [kg s-1],Omon
+n2oglobal,Global Mean Mole Fraction of N2O [1e-09],Amon
+n2o,Mole Fraction of N2O [mol mol-1],"AERmon, AERmonZ, Amon"
+nbp,Carbon Mass Flux out of Atmosphere Due to Net Biospheric Production on Land [kg m-2 s-1],Lmon
+necbLut,Net Rate of Carbon Accumulation (or Loss) on Land-Use Tile [kg m-2 s-1],Emon
+nep,Net Carbon Mass Flux out of Atmosphere due to Net Ecosystem Productivity on Land [kg m-2 s-1],Emon
+netAtmosLandC13Flux,Net Mass Flux of 13C Between Atmosphere and Land (Positive into Land) as a Result of All Processes [kg m-2 s-1],Emon
+netAtmosLandC14Flux,Net Mass Flux of 14C Between Atmosphere and Land (Positive into Land) as a Result of All Processes [kg m-2 s-1],Emon
+netAtmosLandCO2Flux,Net Flux of CO2 Between Atmosphere and Land (Positive into Land) as a Result of All Processes [kg m-2 s-1],Emon
+nh4,Dissolved Ammonium Concentration [mol m-3],"Omon, Oyr"
+nh4os,Surface Dissolved Ammonium Concentration [mol m-3],Omon
+nh50,Artificial Tracer with 50 Day Lifetime [mol mol-1],AERmon
+nLand,Total Nitrogen in All Terrestrial Nitrogen Pools [kg m-2],Emon
+nLeaf,Nitrogen Mass in Leaves [kg m-2],Emon
+nLitterCwd,Nitrogen Mass in Coarse Woody Debris [kg m-2],Emon
+nLitter,Nitrogen Mass in Litter Pool [kg m-2],Emon
+nMineral,Mineral Nitrogen in the Soil [kg m-2],Emon
+nMineralNH4,Mineral Ammonium in the Soil [kg m-2],Emon
+nMineralNO3,Mineral Nitrate in the Soil [kg m-2],Emon
+no2,NO2 Volume Mixing Ratio [mol mol-1],AERmon
+no3,Dissolved Nitrate Concentration [mol m-3],"Omon, Oyr"
+no3os,Surface Dissolved Nitrate Concentration [mol m-3],Omon
+no,NO Volume Mixing Ratio [mol mol-1],AERmon
+noy,Total Reactive Nitrogen Volume Mixing Ratio [mol mol-1],AERmonZ
+npp,Carbon Mass Flux out of Atmosphere Due to Net Primary Production on Land [kg m-2 s-1],Lmon
+nppGrass,Net Primary Production on Grass Tiles [kg m-2 s-1],Emon
+nppLeaf,Carbon Mass Flux Due to NPP Allocation to Leaf [kg m-2 s-1],Lmon
+nppLut,Net Primary Productivity on Land-Use Tile [kg m-2 s-1],Emon
+nppOther,Net Primary Production Allocated to Other Pools (not Leaves Stem or Roots) [kg m-2 s-1],Emon
+nppRoot,Carbon Mass Flux Due to NPP Allocation to Roots [kg m-2 s-1],Lmon
+nppShrub,Net Primary Production on Shrub Tiles [kg m-2 s-1],Emon
+nppStem,Net Primary Production Allocated to Stem [kg m-2 s-1],Emon
+nppTree,Net Primary Production on Tree Tiles [kg m-2 s-1],Emon
+nppWood,Carbon Mass Flux Due to NPP Allocation to Wood [kg m-2 s-1],Lmon
+nProduct,Nitrogen Mass in Products of Land-Use Change [kg m-2],Emon
+nRoot,Nitrogen Mass in Roots [kg m-2],Emon
+nSoil,Nitrogen Mass in Soil Pool [kg m-2],Emon
+nStem,Nitrogen Mass in Stem [kg m-2],Emon
+nVeg,Nitrogen Mass in Vegetation [kg m-2],Emon
+nwdFracLut,Non-Woody Vegetation Percentage Cover [%],Emon
+o2,Dissolved Oxygen Concentration [mol m-3],"Omon, Oyr"
+o2min,Oxygen Minimum Concentration [mol m-3],Omon
+o2os,Surface Dissolved Oxygen Concentration [mol m-3],Omon
+o2sat,Dissolved Oxygen Concentration at Saturation [mol m-3],"Omon, Oyr"
+o2satos,Surface Dissolved Oxygen Concentration at Saturation [mol m-3],Omon
+o3loss,O3 Destruction Rate [mol m-3 s-1],AERmon
+o3,Mole Fraction of O3 [mol mol-1],"E3hrPt, AERmon, AERmonZ, Amon"
+o3prod,O3 Production Rate [mol m-3 s-1],AERmon
+o3ste,Stratospheric Ozone Tracer Volume Mixing Ratio [mol mol-1],AERmon
+obvfsq,Square of Brunt Vaisala Frequency in Sea Water [s-2],Omon
+ocfriver,Flux of Organic Carbon into Ocean Surface by Runoff [mol m-2 s-1],Omon
+ocontempdiff,Tendency of Sea Water Conservative Temperature Expressed as Heat Content due to Parameterized Dianeutral Mixing [W m-2],"Emon, Oyr"
+ocontemppadvect,Tendency of Sea Water Conservative Temperature Expressed as Heat Content Due to Parameterized Eddy Advection [W m-2],"Emon, Oyr"
+ocontemppmdiff,Tendency of Sea Water Conservative Temperature Expressed as Heat Content Due to Parameterized Mesoscale Diffusion [W m-2],"Emon, Oyr"
+ocontemprmadvect,Tendency of Sea Water Conservative Temperature Expressed as Heat Content Due to Residual Mean Advection [W m-2],"Emon, Oyr"
+ocontemptend,Tendency of Sea Water Conservative Temperature Expressed as Heat Content [W m-2],"Emon, Oyr"
+od440aer,Ambient Aerosol Optical Thickness at 440nm [1],AERmon
+od443dust,Optical Thickness at 443nm Dust [1],Emon
+od550aer,Ambient Aerosol Optical Thickness at 550nm [1],"AERday, AERmon"
+od550aerh2o,Aerosol Water Optical Thickness at 550nm [1],AERmon
+od550aerso,Stratospheric Optical Depth at 550nm (All Aerosols) 2D-Field (Stratosphere Only) [1],Emon
+od550bb,Aerosol Optical Depth at 550nm Due to Biomass Burning [1],AERmon
+od550bc,Black Carbon Optical Thickness at 550nm [1],AERmon
+od550csaer,Ambient Aerosol Optical Thickness at 550nm [1],AERmon
+od550dust,Dust Optical Thickness at 550nm [1],AERmon
+od550lt1aer,Ambient Fine Aerosol Optical Depth at 550nm [1],AERmon
+od550no3,Nitrate Aerosol Optical Depth at 550nm [1],AERmon
+od550oa,Total Organic Aerosol Optical Depth at 550nm [1],AERmon
+od550so4,Sulfate Aerosol Optical Depth at 550nm [1],AERmon
+od550soa,Particulate Organic Aerosol Optical Depth at 550nm [1],AERmon
+od550ss,Sea-Salt Aerosol Optical Depth at 550nm [1],AERmon
+od865dust,Dust Optical Depth at 865nm [1],Emon
+od870aer,Ambient Aerosol Optical Depth at 870nm [1],AERmon
+oh,OH Volume Mixing Ratio [mol mol-1],"AERmon, AERmonZ"
+omldamax,Mean Daily Maximum Ocean Mixed Layer Thickness Defined by Mixing Scheme [m],Oday
+opottempdiff,Tendency of Sea Water Potential Temperature Expressed as Heat Content Due to Parameterized Dianeutral Mixing [W m-2],"Emon, Oyr"
+opottempmint,Integral with Respect to Depth of Product of Sea Water Density and Potential Temperature [degC kg m-2],"Emon, Oyr"
+opottemppadvect,Tendency of Sea Water Potential Temperature Expressed as Heat Content Due to Parameterized Eddy Advection [W m-2],"Emon, Oyr"
+opottemppmdiff,Tendency of Sea Water Potential Temperature Expressed as Heat Content Due to Parameterized Mesoscale Diffusion [W m-2],"Emon, Oyr"
+opottemppsmadvect,Tendency of Sea water Potential Temperature Expressed as Heat Content Due to Parameterized Submesoscale Advection [W m-2],"Emon, Oyr"
+opottemprmadvect,Tendency of Sea Water Potential Temperature Expressed as Heat Content Due to Residual Mean Advection [W m-2],"Emon, Oyr"
+opottemptend,Tendency of Sea water Potential Temperature Expressed as Heat Content [W m-2],"Emon, Oyr"
+orogIs,Ice Sheet Surface Altitude [m],LImon
+orog,Surface Altitude [m],"fx, Emon, ImonGre"
+osaltdiff,Tendency of Sea water Salinity Expressed as Salt Content Due to Parameterized Dianeutral Mixing [kg m-2 s-1],"Emon, Oyr"
+osaltpadvect,Tendency of Sea water Salinity Expressed as Salt Content Due to Parameterized Eddy Advection [kg m-2 s-1],"Emon, Oyr"
+osaltpmdiff,Tendency of Sea water Salinity Expressed as Salt Content Due to Parameterized Mesoscale Diffusion [kg m-2 s-1],"Emon, Oyr"
+osaltpsmadvect,Tendency of Sea Water Salinity Expressed as Salt Content Due to Parameterized Submesoscale Advection [kg m-2 s-1],"Emon, Oyr"
+osaltrmadvect,Tendency of Sea Water Salinity Expressed as Salt Content Due to Residual Mean Advection [kg m-2 s-1],"Emon, Oyr"
+osalttend,Tendency of Sea water Salinity Expressed as Salt Content [kg m-2 s-1],"Emon, Oyr"
+oxloss,Total Odd Oxygen (Ox) Loss Rate [mol m-3 s-1],EmonZ
+oxprod,Total Odd Oxygen (Ox) Production Rate [mol m-3 s-1],EmonZ
+pan,PAN Volume Mixing Ratio [mol mol-1],AERmon
+parag,Aragonite Production [mol m-3 s-1],Oyr
+parasolRefl,PARASOL Reflectance [1],"E3hrPt, Eday, Emon"
+pastureFracC3,C3 Pasture Area Percentage [%],Emon
+pastureFracC4,C4 Pasture Area Percentage [%],Emon
+pastureFrac,Percentage of Land Which Is Anthropogenic Pasture [%],Lmon
+pathetao,Sea Water Additional Potential Temperature [degC],Emon
+pbfe,Biogenic Iron Production [mol m-3 s-1],"Omon, Oyr"
+pbo,Sea Water Pressure at Sea Floor [Pa],Omon
+pbsi,Biogenic Silicon Production [mol m-3 s-1],"Omon, Oyr"
+pcalc,Calcite Production [mol m-3 s-1],Oyr
+pctisccp,ISCCP Mean Cloud Top Pressure [Pa],CFday
+pfull,Pressure at Model Full-Levels [Pa],"CFsubhr, CF3hr6hrLev, CFday, AERmon, Amon"
+phabioos,Surface Abiotic pH [1],Omon
+phalf,Pressure on Model Half-Levels [Pa],"CF3hr, CFday, AERmon, Amon"
+phnatos,Surface Natural pH [1],Omon
+phos,Surface pH [1],Omon
+photo1d,"Photolysis Rate of Ozone (O3) to Excited Atomic Oxygen (the Singlet D State, O1D) [s-1]",AERmon
+ph,pH [1],"Omon, Oyr"
+phycalc,Mole Concentration of Calcareous Phytoplankton Expressed as Carbon in Sea Water [mol m-3],Omon
+phycalcos,Surface Mole Concentration of Calcareous Phytoplankton Expressed as Carbon in Sea Water [mol m-3],Omon
+phycos,Sea Surface Phytoplankton Carbon Concentration [mol m-3],"Oday, Omon"
+phyc,Phytoplankton Carbon Concentration [mol m-3],"Omon, Oyr"
+phydiat,Mole Concentration of Diatoms Expressed as Carbon in Sea Water [mol m-3],"Omon, Oyr"
+phydiatos,Surface Mole Concentration of Diatoms Expressed as Carbon in Sea Water [mol m-3],Omon
+phydiaz,Mole Concentration of Diazotrophs Expressed as Carbon in Sea Water [mol m-3],"Omon, Oyr"
+phydiazos,Surface Mole Concentration of Diazotrophs Expressed as Carbon in Sea Water [mol m-3],Omon
+phyfe,Mole Concentration of Total Phytoplankton expressed as Iron in sea water [mol m-3],"Omon, Oyr"
+phyfeos,Surface Mole Concentration of Total Phytoplankton Expressed as Iron in Sea Water [mol m-3],Omon
+phymisc,Mole Concentration of Miscellaneous Phytoplankton Expressed as Carbon in Sea Water [mol m-3],"Omon, Oyr"
+phymiscos,Surface Mole Concentration of Miscellaneous Phytoplankton Expressed as Carbon in Sea Water [mol m-3],Omon
+phyn,Mole Concentration of Total Phytoplankton expressed as Nitrogen in sea water [mol m-3],"Omon, Oyr"
+phynos,Surface Mole Concentration of Phytoplankton Nitrogen in Sea Water [mol m-3],Omon
+phypico,Mole Concentration of Picophytoplankton Expressed as Carbon in Sea Water [mol m-3],"Omon, Oyr"
+phypicoos,Surface Mole Concentration of Picophytoplankton Expressed as Carbon in Sea Water [mol m-3],Omon
+phyp,Mole Concentration of Total Phytoplankton expressed as Phosphorus in sea water [mol m-3],"Omon, Oyr"
+phypos,Surface Mole Concentration of Total Phytoplankton Expressed as Phosphorus in Sea Water [mol m-3],Omon
+physi,Mole Concentration of Total Phytoplankton expressed as Silicon in sea water [mol m-3],"Omon, Oyr"
+physios,Surface Mole Concentration of Total Phytoplankton Expressed as Silicon in Sea Water [mol m-3],Omon
+pnitrate,Primary Carbon Production by Phytoplankton Due to Nitrate Uptake Alone [mol m-3 s-1],"Omon, Oyr"
+po4os,Surface Total Dissolved Inorganic Phosphorus Concentration [mol m-3],Omon
+po4,Total Dissolved Inorganic Phosphorus Concentration [mol m-3],"Omon, Oyr"
+pon,Mole Concentration of Particulate Organic Matter expressed as Nitrogen in sea water [mol m-3],"Omon, Oyr"
+ponos,Surface Mole Concentration of Particulate Organic Matter Expressed as Nitrogen in Sea Water [mol m-3],Omon
+pop,Mole Concentration of Particulate Organic Matter expressed as Phosphorus in sea water [mol m-3],"Omon, Oyr"
+popos,Surface Mole Concentration of Particulate Organic Matter Expressed as Phosphorus in Sea Water [mol m-3],Omon
+ppdiat,Net Primary Organic Carbon Production by Diatoms [mol m-3 s-1],"Emon, Oyr"
+ppdiaz,Net Primary Mole Productivity of Carbon by Diazotrophs [mol m-3 s-1],"Emon, Oyr"
+ppmisc,Net Primary Organic Carbon Production by Other Phytoplankton [mol m-3 s-1],"Emon, Oyr"
+ppos,Primary Carbon Production by Phytoplankton [mol m-3 s-1],Omon
+pppico,Net Primary Mole Productivity of Carbon by Picophytoplankton [mol m-3 s-1],Oyr
+pp,Primary Carbon Production by Phytoplankton [mol m-3 s-1],"Omon, Oyr"
+prc,Convective Precipitation [kg m-2 s-1],"CFsubhr, E1hr, 3hr, CF3hr, day, Amon"
+prcprof,Convective Rainfall Flux [kg m-2 s-1],CF3hr
+prhmax,Maximum Hourly Precipitation Rate [kg m-2 s-1],"6hrPlev, Eday, Emon"
+prlsns,Stratiform Snowfall Flux [kg m-2 s-1],CF3hr
+pr,Precipitation [kg m-2 s-1],"CFsubhr, E1hr, 3hr, CF3hr, 6hrPlev, day, Amon"
+prraIs,Ice Sheet Rainfall Rate [kg m-2 s-1],LImon
+prra,Rainfall Flux [kg m-2 s-1],"E3hr, Omon, ImonAnt, ImonGre"
+prrc,Convective Rainfall Rate [kg m-2 s-1],E3hr
+prsnc,Convective Snowfall Flux [kg m-2 s-1],CF3hr
+prsnIs,Ice Sheet Snowfall Flux [kg m-2 s-1],LImon
+prsn,Snowfall Flux [kg m-2 s-1],"CFsubhr, 3hr, Amon, Omon, day"
+prveg,Precipitation onto Canopy [kg m-2 s-1],"Eday, Lmon"
+prw,Water Vapor Path [kg m-2],"CFsubhr, E3hr, CF3hr, Eday, Amon"
+psitem,Transformed Eulerian Mean Mass Streamfunction [kg s-1],EdayZ
+psl,Sea Level Pressure [Pa],"CF3hr, E3hr, 6hrPlev, 6hrPlevPt, day, Amon"
+pso,Sea Water Pressure at Sea Water Surface [Pa],Omon
+ps,Surface Air Pressure [Pa],"CFsubhr, AERhr, 3hr, 6hrLev, CFday, AERmon, Amon, CFmon, Emon"
+ptp,Tropopause Air Pressure [Pa],AERmon
+qgwr,Groundwater Recharge from Soil Layer [kg m-2 s-1],Eday
+rac13,Mass Flux of 13C into Atmosphere Due to Autotrophic (Plant) Respiration on Land [kg m-2 s-1],Emon
+rac14,Mass Flux of 14C into Atmosphere Due to Autotrophic (Plant) Respiration on Land [kg m-2 s-1],Emon
+ra,Carbon Mass Flux into Atmosphere Due to Autotrophic (Plant) Respiration on Land [kg m-2 s-1],"E3hr, Lmon"
+raGrass,Autotrophic Respiration on Grass Tiles [kg m-2 s-1],Emon
+rainmxrat,Mass Fraction of Rain in Air [1],Emon
+raLeaf,Total Respiration from Leaves [kg m-2 s-1],Emon
+raLut,Plant Respiration on Land-Use Tile [kg m-2 s-1],Emon
+raRoot,Total Respiration from Roots [kg m-2 s-1],Emon
+raShrub,Autotrophic Respiration on Shrub Tiles [kg m-2 s-1],Emon
+raTree,Autotrophic Respiration on Tree Tiles [kg m-2 s-1],Emon
+reffclic,Hydrometeor Effective Radius of Convective Cloud Ice [m],Emon
+reffclis,Hydrometeor Effective Radius of Stratiform Cloud Ice [m],"CF3hr, Emon"
+reffclwc,Convective Cloud Liquid Droplet Effective Radius [m],Emon
+reffclws,Stratiform Cloud Liquid Droplet Effective Radius [m],Emon
+reffclwtop,Cloud-Top Effective Droplet Radius [m],AERmon
+reffsclwtop,Cloud-Top Effective Droplet Radius in Stratiform Cloud [m],Eday
+remoc,Remineralization of Organic Carbon [mol m-3 s-1],Oyr
+residualFrac,Percentage of Grid Cell That Is Land but neither Vegetation Covered nor Bare Soil [%],Lmon
+rGrowth,Carbon Mass Flux into Atmosphere Due to Growth Autotrophic Respiration on Land [kg m-2 s-1],Lmon
+rhc13,Mass Flux of 13C into Atmosphere Due to Heterotrophic Respiration on Land [kg m-2 s-1],Emon
+rhc14,Mass Flux of 14C into Atmosphere Due to Heterotrophic Respiration on Land [kg m-2 s-1],Emon
+rh,Carbon Mass Flux into Atmosphere Due to Heterotrophic Respiration on Land [kg m-2 s-1],"E3hr, Lmon"
+rhGrass,Heterotrophic Respiration on Grass Tiles [kg m-2 s-1],Emon
+rhLitter,Carbon Mass Flux into Atmosphere Due to Heterotrophic Respiration from Litter on Land [kg m-2 s-1],Emon
+rhLut,Soil Heterotrophic Respiration on Land-Use Tile [kg m-2 s-1],Emon
+rhSoil,Carbon Mass Flux into Atmosphere Due to Heterotrophic Respiration from Soil on Land [kg m-2 s-1],Emon
+rhTree,Heterotrophic Respiration on Tree Tiles [kg m-2 s-1],Emon
+rivo,River Discharge [m3 s-1],Eday
+rld4co2,Downwelling Longwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rldcs,Downwelling Clear-Sky Longwave Radiation [W m-2],CFsubhr
+rld,Downwelling Longwave Radiation [W m-2],CFmon
+rldscs,Surface Downwelling Clear-Sky Longwave Radiation [W m-2],"CFsubhr, 3hr, CF3hr, CFday, Amon"
+rldsIs,Ice Sheet Surface Downwelling Longwave Radiation [W m-2],LImon
+rlds,Surface Downwelling Longwave Radiation [W m-2],"CFsubhr, 3hr, CF3hr, day, Amon, ImonAnt, ImonGre"
+rlntds,Surface Net Downward Longwave Radiation [W m-2],Omon
+rls,Net Longwave Surface Radiation [W m-2],"day, Eday, Emon"
+rlu4co2,Upwelling Longwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rlucs4co2,Upwelling Clear-Sky Longwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rlucs,Upwelling Clear-Sky Longwave Radiation [W m-2],"CFsubhr, CFmon"
+rlusIs,Ice Sheet Surface Upwelling Longwave Radiation [W m-2],LImon
+rlusLut,Surface Upwelling Longwave on Land-Use Tile [W m-2],Emon
+rlus,Surface Upwelling Longwave Radiation [W m-2],"CFsubhr, 3hr, CF3hr, day, ImonAnt, ImonGre, Amon"
+rlut4co2,TOA Outgoing Longwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rlutaf,TOA Outgoing Aerosol-Free Longwave Radiation [W m-2],AERmon
+rlutcsaf,"TOA Outgoing Clear-Sky, Aerosol-Free Longwave Radiation [W m-2]",AERmon
+rlutcs,TOA Outgoing Clear-Sky Longwave Radiation [W m-2],"CFsubhr, CF3hr, Amon"
+rlut,TOA Outgoing Longwave Radiation [W m-2],"CFsubhr, CF3hr, day, Amon"
+rlu,Upwelling Longwave Radiation [W m-2],"Efx, CFsubhr, CFmon"
+rMaint,Carbon Mass Flux into Atmosphere Due to Maintenance Autotrophic Respiration on Land [kg m-2 s-1],Lmon
+rootd,Maximum Root Depth [m],fx
+rsd4co2,Downwelling Shortwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rsdcs4co2,Downwelling Clear-Sky Shortwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rsdcs,Downwelling Clear-Sky Shortwave Radiation [W m-2],CFmon
+rsd,Downwelling Shortwave Radiation [W m-2],Efx
+rsdoabsorb,Net Rate of Absorption of Shortwave Energy in Ocean Layer [W m-2],"Emon, Oyr"
+rsdo,Downwelling Shortwave Radiation in Sea Water [W m-2],Omon
+rsdscsdiff,Surface Diffuse Downwelling Clear Sky Shortwave Radiation [W m-2],"Eday, Emon"
+rsdscs,Surface Downwelling Clear-Sky Shortwave Radiation [W m-2],"CFsbuhr, 3hr, CFday, Amon"
+rsdsdiff,Surface Diffuse Downwelling Shortwave Radiation [W m-2],"3hr, Eday, Emon"
+rsdsIs,Ice Sheet Surface Downwelling Shortwave Radiation [W m-2],LImon
+rsds,Surface Downwelling Shortwave Radiation [W m-2],"CFsubhr, 3hr, day, Amon, ImonAnt, ImonGre"
+rsdt,TOA Incident Shortwave Radiation [W m-2],"CFsubhr, CF3hr, Amon"
+rsntds,Net Downward Shortwave Radiation at Sea Water Surface [W m-2],Omon
+rss,Net Shortwave Surface Radiation [W m-2],"day, Eday, Emon"
+rsu4co2,Upwelling Shortwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rsucs,Upwelling Clear-Sky Shortwave Radiation [W m-2],"CFsubhr, CFmon"
+rsuscs,Surface Upwelling Clear-Sky Shortwave Radiation [W m-2],"3hr, CF3hr, CFday, Amon"
+rsusIs,Ice Sheet Surface Upwelling Shortwave Radiation [W m-2],LImon
+rsusLut,Surface Upwelling Shortwave on Land-use Tile [W m-2],Emon
+rsus,Surface Upwelling Shortwave Radiation [W m-2]," CFsubhr, 3hr, CF3hr, day, Amon, ImonAnt, ImonGre"
+rsutaf,TOA Outgoing Aerosol-Free Shortwave Radiation [W m-2],AERmon
+rsutcs4co2,TOA Outgoing Clear-Sky Shortwave Radiation 4XCO2 Atmosphere [W m-2],CFmon
+rsutcsaf,"TOA Outgoing Clear-Sky, Aerosol-Free Shortwave Radiation [W m-2]",AERmon
+rsutcs,TOA Outgoing Clear-Sky Shortwave Radiation [W m-2],"CF3hr, CFday, Amon"
+rsut,TOA Outgoing Shortwave Radiation [W m-2],"CFsubhr, CF3hr, CFday, Amon"
+rsu,Upwelling Shortwave Radiation [W m-2],"Efx, CFsubhr, CFmon"
+rtmt,Net Downward Radiative Flux at Top of Model [W m-2],Amon
+rv850,Relative Vorticity at 850hPa [s-1],"6hrPlev, 6hrPlevPt"
+rzwc,Root Zone Soil Moisture [kg m-2],Eday
+sandfrac,Sand Fraction [1],Efx
+sblIs,Ice Sheet Surface Snow and Ice Sublimation Flux [kg m-2 s-1],LImon
+sbl,Surface Snow and Ice Sublimation Flux [kg m-2 s-1],"CFsubhr, CF3hr, Amon, ImonAnt, ImonGre, LImon"
+sci,Fraction of Time Shallow Convection Occurs [1],"CFsubhr, CF3hr, Amon"
+sconcdust,Surface Concentration of Dust [kg m-3],Emon
+sconcso4,Surface Concentration of SO4 [kg m-3],Emon
+sconcss,Surface Concentration of Sea-Salt Aerosol [kg m-3],Emon
+sedustCI,Sedimentation Flux of Dust Mode Coarse Insoluble [kg m-2 s-1],Emon
+sf6,Mole Concentration of SF6 in sea water [mol m-3],"Omon, Oyr"
+sfcWindmax,Daily Maximum Near-Surface Wind Speed [m s-1],"day, Emon"
+sfcWind,Near-Surface Wind Speed [m s-1],"CFsubhr, CF3hr, E3hr, 6hrPlev, 6hrPlevPt, day, Amon"
+sfdsi,Downward Sea Ice Basal Salt Flux [kg m-2 s-1],"Omon, SImon, Odec"
+sfno2,NO2 Volume Mixing Ratio in Lowest Model Layer [mol mol-1],AERhr
+sfo3max,Daily Maximum O3 Volume Mixing Ratio in Lowest Model Layer [mol mol-1],AERday
+sfo3,O3 Volume Mixing Ratio in Lowest Model Layer [mol mol-1],AERhr
+sftgif,Land Ice Area Percentage [%],"fx, LImon"
+sftgrf,Grounded Ice Sheet Area Percentage [%],"Efx, LImon"
+sftlf,Percentage of the grid cell occupied by land (including lakes) [%],fx
+sftof,Sea Area Percentage [%],Ofx
+shrubFrac,Percentage Cover by Shrub [%],Lmon
+siage,Age of Sea Ice [s],SImon
+siareaacrossline,Sea-Ice Area Flux Through Straits [m2 s-1],SImon
+siarean,Sea-Ice Area North [1e6 km2],SImon
+siareas,Sea-Ice Area South [1e6 km2],SImon
+sicompstren,Compressive Sea Ice Strength [N m-1],SImon
+siconca,Sea-ice Area Percentage (Atmospheric Grid) [%],"SIday, SImon"
+siconc,Sea-ice Area Percentage (Ocean Grid) [%],"SIday, SImon"
+sidconcdyn,Sea-ice Area Percentage Tendency Due to Dynamics [s-1],SImon
+sidconcth,Sea-ice Area Percentage Tendency Due to Thermodynamics [s-1],SImon
+sidivvel,Divergence of the Sea-Ice Velocity Field [s-1],SImon
+sidmassdyn,Sea-Ice Mass Change from Dynamics [kg m-2 s-1],SImon
+sidmassevapsubl,Sea-Ice Mass Change Through Evaporation and Sublimation [kg m-2 s-1],SImon
+sidmassgrowthbot,Sea-Ice Mass Change Through Basal Growth [kg m-2 s-1],SImon
+sidmassgrowthwat,Sea-Ice Mass Change Through Growth in Supercooled Open Water (Frazil) [kg m-2 s-1],SImon
+sidmasslat,Lateral Sea Ice Melt Rate [kg m-2 s-1],SImon
+sidmassmeltbot,Sea-Ice Mass Change Through Bottom Melting [kg m-2 s-1],SImon
+sidmassmelttop,Sea-Ice Mass Change Through Surface Melting [kg m-2 s-1],SImon
+sidmasssi,Sea-Ice Mass Change Through Snow-to-Ice Conversion [kg m-2 s-1],SImon
+sidmassth,Sea-Ice Mass Change from Thermodynamics [kg m-2 s-1],SImon
+sidmasstranx,X-Component of Sea-Ice Mass Transport [kg s-1],SImon
+sidmasstrany,Y-Component of Sea-Ice Mass Transport [kg s-1],SImon
+sidragbot,Ocean Drag Coefficient [1],SImon
+sidragtop,Atmospheric Drag Coefficient [1],SImon
+siextentn,Sea-Ice Extent North [1e6 km2],SImon
+siextents,Sea-Ice Extent South [1e6 km2],SImon
+sifb,Sea-Ice Freeboard [m],SImon
+siflcondbot,Net Conductive Heat Fluxes in Ice at the Bottom [W m-2],SImon
+siflcondtop,Net Conductive Heat Flux in Ice at the Surface [W m-2],SImon
+siflfwbot,Freshwater Flux from Sea Ice [kg m-2 s-1],SImon
+siflfwdrain,Freshwater Flux from Sea-Ice Surface [kg m-2 s-1],SImon
+sifllatstop,Net Latent Heat Flux over Sea Ice [W m-2],SImon
+sifllwdtop,Downwelling Longwave Flux over Sea Ice [W m-2],SImon
+sifllwutop,Upwelling Longwave Flux over Sea Ice [W m-2],SImon
+siflsenstop,Net Upward Sensible Heat Flux over Sea Ice [W m-2],SImon
+siflsensupbot,Net Upward Sensible Heat Flux Under Sea Ice [W m-2],SImon
+siflswdbot,Downwelling Shortwave Flux Under Sea Ice [W m-2],SImon
+siflswdtop,Downwelling Shortwave Flux over Sea Ice [W m-2],SImon
+siflswutop,Upwelling Shortwave Flux over Sea Ice [W m-2],SImon
+siforcecoriolx,Coriolis Force Term in Force Balance (X-Component) [N m-2],SImon
+siforcecorioly,Coriolis Force Term in Force Balance (Y-Component) [N m-2],SImon
+siforceintstrx,Internal Stress Term in Force Balance (X-Component) [N m-2],SImon
+siforceintstry,Internal Stress Term in Force Balance (Y-Component) [N m-2],SImon
+siforcetiltx,Sea-Surface Tilt Term in Force Balance (X-Component) [N m-2],SImon
+siforcetilty,Sea-Surface Tilt Term in Force Balance (Y-Component) [N m-2],SImon
+sihc,Sea-Ice Heat Content per Unit Area [J m-2],SImon
+siitdconc,Sea-Ice Area Percentages in Thickness Categories [%],SImon
+siitdsnthick,Snow Thickness in Ice Thickness Categories [m],SImon
+siitdthick,Sea-Ice Thickness in Thickness Categories [m],SImon
+siltfrac,Silt Fraction [1],Efx
+simassacrossline,Sea Mass Area Flux Through Straits [kg s-1],SImon
+simass,Sea-Ice Mass per Area [kg m-2],SImon
+simpconc,Percentage Cover of Sea Ice by Meltpond [%],SImon
+simpmass,Meltpond Mass per Unit Area (as Depth) [m],SImon
+sios,Surface Total Dissolved Inorganic Silicon Concentration [mol m-3],Omon
+sipr,Rainfall Rate over Sea Ice [kg m-2 s-1],SImon
+sirdgconc,Percentage Cover of Sea Ice by Ridging [1],SImon
+sirdgthick,Ridged Ice Thickness [m],SImon
+sisali,Sea Ice Salinity [0.001],SImon
+sisaltmass,Mass of Salt in Sea Ice per Area [kg m-2],SImon
+sishevel,Maximum Shear of Sea-Ice Velocity Field [s-1],SImon
+sisnconc,Snow Area Percentage [%],SImon
+sisnhc,Snow Heat Content per Unit Area [J m-2],SImon
+sisnmass,Snow Mass per Area [kg m-2],SImon
+sisnthick,Snow Thickness [m],"SIday, SImon"
+sispeed,Sea-Ice Speed [m s-1],"SIday, SImon"
+sistremax,Maximum Shear Stress in Sea Ice [N m-1],SImon
+sistresave,Average Normal Stress in Sea Ice [N m-1],SImon
+sistrxdtop,X-Component of Atmospheric Stress on Sea Ice [N m-2],SImon
+sistrxubot,X-Component of Ocean Stress on Sea Ice [N m-2],SImon
+sistrydtop,Y-Component of Atmospheric Stress on Sea Ice [N m-2],SImon
+sistryubot,Y-Component of Ocean Stress on Sea Ice [N m-2],SImon
+sitempbot,Temperature at Ice-Ocean Interface [K],SImon
+sitempsnic,Temperature at Snow-Ice Interface [K],SImon
+sitemptop,Surface Temperature of Sea Ice [K],"SIday, SImon"
+sithick,Sea Ice Thickness [m],"SIday, SImon"
+sitimefrac,Fraction of Time Steps with Sea Ice [1],"SIday, SImon"
+si,Total Dissolved Inorganic Silicon Concentration [mol m-3],"Omon, Oyr"
+siu,X-Component of Sea-Ice Velocity [m s-1],"SIday, SImon"
+sivoln,Sea-Ice Volume North [1e3 km3],SImon
+sivol,Sea-Ice Volume per Area [m],SImon
+sivols,Sea-Ice Volume South [1e3 km3],SImon
+siv,Y-Component of Sea-Ice Velocity [m s-1],"SIday, SImon"
+sltbasin,Northward Ocean Salt Transport [kg s-1],EmonZ
+sltovgyre,Northward Ocean Salt Transport Due to Gyre [kg s-1],Omon
+sltovovrt,Northward Ocean Salt Transport Due to Overturning [kg s-1],Omon
+smc,Shallow Convective Mass Flux [kg m-2 s-1],CFmon
+sncIs,Ice Sheet Snow Cover Percentage [%],LImon
+snc,Snow Area Percentage [%],"day, LImon, ImonAnt, ImonGre"
+sndmassdyn,Snow Mass Rate of Change Through Advection by Sea-Ice Dynamics [kg m-2 s-1],SImon
+sndmassmelt,Snow Mass Rate of Change Through Melt [kg m-2 s-1],SImon
+sndmasssi,Snow Mass Rate of Change Through Snow-to-Ice Conversion [kg m-2 s-1],SImon
+sndmasssnf,Snow Mass Change Through Snow Fall [kg m-2 s-1],SImon
+sndmasssubl,Snow Mass Rate of Change Through Evaporation or Sublimation [kg m-2 s-1],SImon
+sndmasswindrif,Snow Mass Rate of Change Through Wind Drift of Snow [kg m-2 s-1],SImon
+snd,Snow Depth [m],LImon
+snicefreezIs,Ice Sheet Surface Snow and Ice Refreeze Flux [kg m-2 s-1],LImon
+snicefreez,Surface Snow and Ice Refreeze Flux [kg m-2 s-1],"ImonAnt, ImonGre"
+snicemIs,Ice Sheet Surface Snow and Ice Melt Flux [kg m-2 s-1],LImon
+snicem,Surface Snow and Ice Melt Flux [kg m-2 s-1],"ImonAnt, ImonGre"
+snmassacrossline,Snow Mass Flux Through Straits [kg s-1],SImon
+snmIs,Ice Sheet Surface Snow Melt [kg m-2 s-1],LImon
+snm,Surface Snow Melt [kg m-2 s-1],"Eday, LImon, ImonAnt, ImonGre"
+snowmxrat,Mass Fraction of Snow in Air [1],Emon
+snw,Surface Snow Amount [kg m-2],"6hrPlevPt, day, LImon"
+so2,SO2 Volume Mixing Ratio [mol mol-1],AERmon
+sob,Sea Water Salinity at Sea Floor [0.001],Omon
+soga,Global Mean Sea Water Salinity [0.001],"Omon, Odec"
+solbnd,TOA Solar Irradiance for each band [W m-2],E3hrPt
+somint,Depth Integral of Product of Sea Water Density and Prognostic Salinity [g m-2],"Emon, Oyr"
+sootsn,Snow Soot Content [kg m-2],LImon
+so,Sea Water Salinity [0.001],Omon
+sosga,Global Average Sea Surface Salinity [0.001],Omon
+sos,Sea Surface Salinity [0.001],"Oday, Omon, Odec"
+sossq,Square of Sea Surface Salinity [1e-06],"Oday, Omon"
+spco2abio,Abiotic Surface Aqueous Partial Pressure of CO2 [Pa],Omon
+spco2nat,Natural Surface Aqueous Partial Pressure of CO2 [Pa],Omon
+spco2,Surface Aqueous Partial Pressure of CO2 [Pa],Omon
+sweLut,Snow Water Equivalent on Land-Use Tile [m],Emon
+swsffluxaero,Shortwave Heating Rate Due to Volcanic Aerosols [W m-2],6hrPlevPt
+sw,Surface Water Storage [kg m-2],Eday
+swtoafluxaerocs,TOA Outgoing Clear-Sky Shortwave Flux Due to Volcanic Aerosols [W m-2],6hrPlevPt
+sza,Solar Zenith Angle [degree],E3hrPt
+t20d,Depth of 20 degree Celsius Isotherm [m],Emon
+t2,Mean-Squared Air Temperature [K2],Emon
+ta500,Air Temperature [K],Eday
+ta700,Air Temperature [K],CFday
+ta850,Air Temperature [K],Eday
+ta,Air Temperature [K],"CFsubhr, 6hrLev, 6hrPlevPt, day, CFday, Eday, EdayZ, Amon, AERmonZ, CFmon, Emon"
+talknat,Natural Total Alkalinity [mol m-3],"Omon, Oyr"
+talknatos,Surface Natural Total Alkalinity [mol m-3],Omon
+talkos,Surface Total Alkalinity [mol m-3],Omon
+talk,Total Alkalinity [mol m-3],"Omon, Oyr"
+tasIs,Ice Sheet Near-Surface Air Temperature [K],LImon
+tasLut,Near-surface Air Temperature on Land Use Tile [K],Emon
+tasmaxCrop,Daily Maximum Near-Surface Air Temperature over Crop Tile [K],Emon
+tasmax,Daily Maximum Near-Surface Air Temperature [K],"day, Amon"
+tasminCrop,Daily Minimum Near-Surface Air Temperature over Crop Tile [K],Emon
+tasmin,Daily Minimum Near-Surface Air Temperature [K],"day, Amon"
+tas,Near-Surface Air Temperature [K],"CFsubhr, AERhr, 3hr, 6hrPlev, 6hrPlevPt, day, Amon, ImonAnt, ImonGre"
+tatp,Tropopause Air Temperature [K],AERmon
+tauuo,Surface Downward X Stress [N m-2],Omon
+tauupbl,Eastward Surface Stress from Planetary Boundary Layer Scheme [Pa],Eday
+tauu,Surface Downward Eastward Wind Stress [Pa],"CFsubhr, Eday, Amon"
+tauvo,Surface Downward Y Stress [N m-2],"Omon, Odec"
+tauv,Surface Downward Northward Wind Stress [Pa],"CFsubhr, CF3hr, Eday, Amon"
+tdps,2m Dewpoint Temperature [K],"Eday, Emon"
+thetaoga,Global Average Sea Water Potential Temperature [degC],"Omon, Odec"
+thetao,Sea Water Potential Temperature [degC],Omon
+thetaot2000,Depth Average Potential Temperature of Upper 2000m [degC],Emon
+thetaot300,Depth Average Potential Temperature of Upper 300m [degC],Emon
+thetaot700,Depth Average Potential Temperature of Upper 700m [degC],Emon
+thetaot,Vertically Averaged Sea Water Potential Temperature [degC],Emon
+thkcello,Ocean Model Cell Thickness [m],"Ofx, Omon, Odec"
+tnhusa,Tendency of Specific Humidity Due to Advection [s-1],"CFsubhr, CFmon"
+tnhusc,Tendency of Specific Humidity Due to Convection [s-1],CFmon
+tnhusd,Tendency of Specific Humidity Due to Numerical Diffusion [s-1],CFmon
+tnhusmp,Tendency of Specific Humidity Due to Model Physics [s-1],CFsubhr
+tnhuspbl,Tendency of Specific Humidity Due to Boundary Layer Mixing [s-1],"Esubhr, Emon"
+tnhusscpbl,Tendency of Specific Humidity Due to Stratiform Cloud and Precipitation and Boundary Layer Mixing [s-1],CFsubhr
+tnhusscp,Tendency of Specific Humidity Due to Stratiform Clouds and Precipitation [s-1],"Esubhr, Emon"
+tnhus,Tendency of Specific Humidity [s-1],"CFsubhr, CFmon"
+tnkebto,Tendency of Ocean Eddy Kinetic Energy Content due to Parameterized Eddy Advection [W m-2],Oclim
+tnpeo,Tendency of Ocean Potential Energy Content [W m-2],"Oclim, Oyr"
+tnta,Tendency of Air Temperature Due to Advection [K s-1],"CFsubhr, CFmon"
+tntc,Tendency of Air Temperature Due to Convection [K s-1],"CFsubhr, CFmon, EmonZ"
+tntd,Tendency of Air Temperature Due to Numerical Diffusion [K s-1],"Esubhr, Emon"
+tntmp,Tendency of Air Temperature Due to Model Physics [K s-1],"CFsubhr,CFmon, Emon, EmonZ"
+tntnogw,Temperature Tendency due to Non-orographic Gravity Wave Dissipation [K s-1],EmonZ
+tntogw,Temperature Tendency Due to Orographic Gravity Wave Dissipation [K s-1],EmonZ
+tntpbl,Tendency of Air Temperature Due to Boundary Layer Mixing [K s-1],"Esubhr, Emon"
+tntrlcs,Tendency of Air Temperature Due to Clear Sky Longwave Radiative Heating [K s-1],"Esubhr, Emon, EmonZ"
+tntrl,Tendency of Air Temperature Due to Longwave Radiative Heating [K s-1],"Esubhr, AERmon, Emon, EmonZ"
+tntrscs,Tendency of Air Temperature Due to Clear Sky Shortwave Radiative Heating [K s-1],"Esubhr, Emon, EmonZ"
+tntrs,Tendency of Air Temperature Due to Shortwave Radiative Heating [K s-1],"Esubhr, AERmon, EmonZ"
+tntr,Tendency of Air Temperature Due to Radiative Heating [K s-1],CFmon
+tntscpbl,Tendency of Air Temperature Due to Stratiform Cloud and Precipitation and Boundary Layer Mixing [K s-1],CFmon
+tntscp,Tendency of Air Temperature Due to Stratiform Clouds and Precipitation [K s-1],"Esubhr, Emon, EmonZ"
+tnt,Tendency of Air Temperature [K s-1],"CFsubhr, CFmon"
+tob,Sea Water Potential Temperature at Sea Floor [degC],Omon
+topg,Bedrock Altitude [m],IfxGre
+tosga,Global Average Sea Surface Temperature [degC],"Omon, Odec"
+tos,Sea Surface Temperature [degC],"3hr, Oday, Amon, Omon, Odec"
+tossq,Square of Sea Surface Temperature [degC2],"Oday, Omon"
+toz,Total Column Ozone [m],"AERday, AERmon"
+tpf,Permafrost Layer Thickness [m],LImon
+tran,Transpiration [kg m-2 s-1],"Eday, Lmon"
+treeFracBdlDcd,Broadleaf Deciduous Tree Area Percentage [%],Emon
+treeFracBdlEvg,Broadleaf Evergreen Tree Area Percentage [%],Emon
+treeFracNdlDcd,Needleleaf Deciduous Tree Area Percentage [%],Emon
+treeFracNdlEvg,Needleleaf Evergreen Tree Area Percentage [%],Emon
+treeFracPrimDec,Percentage Cover by Primary Deciduous Tree [%],Lmon
+treeFracPrimEver,Percentage Cover by Primary Evergreen Trees [%],Lmon
+treeFrac,Tree Cover Percentage [%],Lmon
+tropoz,Tropospheric Ozone Column [m],AERmon
+tsIs,Ice Sheet Surface Temperature [K],LImon
+tslsiLut,Surface Temperature on Landuse Tile [K],Emon
+tslsi,Surface Temperature Where Land or Sea Ice [K],"3hr, day"
+tsl,Temperature of Soil [K],"6hrPlevPt, Eday, Lmon"
+tsnIs,Ice Sheet Snow Internal Temperature [K],LImon
+tsn,Snow Internal Temperature [K],"ImonAnt, ImonGre, LImon"
+tSoilPools,Turnover Rate of Each Model Soil Carbon Pool [s-1],Emon
+ts,Surface Temperature [K],"CFsubhr, CF3hr, 6hrPlevPt, Eday, Amon, ImonAnt, ImonGre"
+ttop,Air Temperature at Cloud Top [K],AERmon
+twap,Product of Air Temperature and Omega [K Pa s-1],Emon
+u2,Mean-Squared Eastward Wind Speed [m2 s-2],Emon
+ua100m,Eastward Wind at 100m [m s-1],6hrPlev
+ua10,Eastward Wind at 10hPa [m s-1],AERday
+ua,Eastward Wind [m s-1],"CFsbuhr, 6hrLev, 6hrPlevPt, day, CFday, Eday EdayZ, Amon, AERmon, AERmonZ, Emon"
+uas,Eastward Near-Surface Wind [m s-1],"CFsubhr, 3hr, E3hr, 6hrPlev, 6hrPlevPt, day, Amon"
+umo,Ocean Mass X Transport [kg s-1],Omon
+uo,Sea Water X Velocity [m s-1],"Omon, Odec"
+uqint,Eastward Humidity Transport [m2 s-1],Emon
+utendepfd,Tendency of Eastward Wind Due to Eliassen-Palm Flux Divergence [m s-2],EmonZ
+utendnogw,Eastward Acceleration Due to Non-Orographic Gravity Wave Drag [m s-2],"EdayZ, Emon, EmonZ"
+utendogw,Eastward Acceleration Due to Orographic Gravity Wave Drag [m s-2],"EdayZ, Emon"
+utendwtem,Tendency of Eastward Wind Due to TEM Upward Advection [m s-1 d-1],EdayZ
+ut,Product of Air Temperature and Eastward Wind [K m s-1],Emon
+uv,Product of Eastward Wind and Northward Wind [m2 s-2],Emon
+uwap,Product of Eastward Wind and Omega [Pa m s-2],Emon
+v2,Mean-Squared Northward Wind Speed [m2 s-2],Emon
+va100m,Northward Wind at 100m [m s-1],6hrPlev
+va,Northward Wind [m s-1],"CFsubhr, 6hrLev, 6hrPlevPt, day, CFday, Eday, EdayZ, Amon, AERmon, AERmonZ, Emon"
+vas,Northward Near-Surface Wind [m s-1],"CFsubhr, 3hr, E3hr, 6hrPlev, 6hrPlevPt, day, Amon"
+vegFrac,Total Vegetated Percentage Cover [%],Emon
+vegHeightCrop,Height of Crops [m],Emon
+vegHeightGrass,Height of Grass [m],Emon
+vegHeight,Height of the Vegetation Canopy [m],Emon
+vegHeightPasture,Height of Pastures [m],Emon
+vegHeightShrub,Height of Shrubs [m],Emon
+vegHeightTree,Height of Trees [m],Emon
+vmo,Ocean Mass Y Transport [kg s-1],Omon
+vmrox,"Mole Fraction of Odd Oxygen (O, O3 and O1D) [mol mol-1]",EmonZ
+volcello,Ocean Grid-Cell Volume [m3],"Ofx, Omon, Oyr"
+volo,Sea Water Volume [m3],"Omon, Odec"
+vo,Sea Water Y Velocity [m s-1],"Omon, Odec"
+vqint,Northward Humidity Transport [m2 s-1],Emon
+vsfevap,Virtual Salt Flux into Sea Water Due to Evaporation [kg m-2 s-1],Omon
+vsfpr,Virtual Salt Flux into Sea Water Due to Rainfall [kg m-2 s-1],Omon
+vsfriver,Virtual Salt Flux into Sea Water from Rivers [kg m-2 s-1],Omon
+vsfsit,Virtual Salt Flux into Sea Water Due to Sea Ice Thermodynamics [kg m-2 s-1],Omon
+vsf,Virtual Salt Flux into Sea Water [kg m-2 s-1],Omon
+vt100,Northward Heat Flux Due to Eddies [W m-2],AERmonZ
+vtem,Transformed Eulerian Mean Northward Wind [m s-1],"EdayZ, EmonZ"
+vtendnogw,Northward Acceleration Due to Non-Orographic Gravity Wave Drag [m s-2],"Emon, EmonZ"
+vtendogw,Northward Acceleration Due to Orographic Gravity Wave Drag [m s-2],Emon
+vt,Product of Air Temperature and Northward Wind [K m s-1],Emon
+vwap,Product of Northward Wind and Omega [Pa m s-2],Emon
+wap2,Mean-Squared Vertical Velocity (Omega) [Pa2 s-2],Emon
+wap,Omega (=dp/dt) [Pa s-1],"CFsubhr, 6hrPlev, day, CFday, Eday, Amon, Emon"
+wa,Upward Air Velocity [m s-1],AERmon
+wbptemp,Wet Bulb Potential Temperature [K],6hrPlevPt
+wetbc,Wet Deposition Rate of Black Carbon Aerosol Mass [kg m-2 s-1],AERmon
+wetdust,Wet Deposition Rate of Dust [kg m-2 s-1],AERmon
+wetlandCH4cons,Grid Averaged Methane Consumption (Methanotrophy) from Wetlands [kg m-2 s-1],Emon
+wetlandCH4,Grid Averaged Methane Emissions from Wetlands [kg m-2 s-1],Emon
+wetlandCH4prod,Grid Averaged Methane Production (Methanogenesis) from Wetlands [kg m-2 s-1],Emon
+wetlandFrac,Wetland Percentage Cover [%],Emon
+wetnh3,Wet Deposition Rate of NH3 [kg m-2 s-1],AERmon
+wetnh4,Wet Deposition Rate of NH4 [kg m-2 s-1],AERmon
+wetnoy,Wet Deposition Rate of NOy Including Aerosol Nitrate [kg m-2 s-1],AERmon
+wetoa,Wet Deposition Rate of Dry Aerosol Total Organic Matter [kg m-2 s-1],AERmon
+wetso2,Wet Deposition Rate of SO2 [kg m-2 s-1],AERmon
+wetso4,Wet Deposition Rate of SO4 [kg m-2 s-1],AERmon
+wetss,Wet Deposition Rate of Sea-Salt Aerosol [kg m-2 s-1],AERmon
+wfcorr,Water Flux Correction [kg m-2 s-1],Omon
+wfonocorr,Water Flux into Sea Water Without Flux Correction [kg m-2 s-1],Omon
+wfo,Water Flux into Sea Water [kg m-2 s-1],"Omon, Odec"
+wmo,Upward Ocean Mass Transport [kg s-1],Omon
+wo,Sea Water Vertical Velocity [m s-1],"Omon, Odec"
+wsgmax10m,Maximum Wind Speed of Gust at 10m [m s-1],6hrPlev
+wtd,Water Table Depth [m],Emon
+wtem,Transformed Eulerian Mean Upward Wind [m s-1],"EdayZ, EmonZ"
+xgwdparam,Eastward Gravity Wave Drag [Pa],"Emon, EmonZ"
+ygwdparam,Northward Gravity Wave Drag [Pa],"Emon, EmonZ"
+zfull,Altitude of Model Full-Levels [m],"fx, CF3hr"
+zfullo,Depth Below Geoid of Ocean Layer [m],Omon
+zg1000,Geopotential Height at 1000hPa [m],"6hrPlev, AERday"
+zg100,Geopotential Height at 100hPa [m],AERday
+zg10,Geopotential Height at 10hPa [m],AERday
+zg500,Geopotential Height at 500hPa [m],"6hrPlevPt, AERday"
+zg,Geopotential Height [m],"CFsubhr, 6hrPlevPt, day, Eday, EdayZ, Amon, AERmon, AERmonZ, Emon"
+zhalf,Altitude of Model Half-Levels [m],CF3hr
+zhalfo,Depth Below Geoid of Interfaces Between Ocean Layers [m],Omon
+zmeso,Mole Concentration of Mesozooplankton Expressed as Carbon in Sea Water [mol m-3],"Omon, Oyr"
+zmesoos,Surface Mole Concentration of Mesozooplankton Expressed as Carbon in Sea Water [mol m-3],Omon
+zmicro,Mole Concentration of Microzooplankton Expressed as Carbon in Sea Water [mol m-3],"Omon, Oyr"
+zmicroos,Surface Mole Concentration of Microzooplankton Expressed as Carbon in Sea Water [mol m-3],Omon
+zmtnt,Zonal Mean Diabatic Heating Rates [K s-1],EmonZ
+zo2min,Depth of Oxygen Minimum Concentration [m],Omon
+zoocos,Surface Zooplankton Carbon Concentration [mol m-3],Omon
+zooc,Zooplankton Carbon Concentration [mol m-3],"Omon, Oyr"
+zos,Sea Surface Height Above Geoid [m],Omon
+zossq,Square of Sea Surface Height Above Geoid [m2],Omon
+zostoga,Global Average Thermosteric Sea Level Change [m],Omon
+zsatarag,Aragonite Saturation Depth [m],Omon
+zsatcalc,Calcite Saturation Depth [m],Omon
+ztp,Tropopause Altitude Above Geoid [m],AERmon
