@@ -32,7 +32,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             mode: str = "train", # Train or test maybe # deprecated
             #input4mips_data_dir: Optional[str] ='/scratch/venka97/causalpaca_load/',  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
             #cmip6_data_dir:  Optional[str] = '/scratch/venka97/causalpaca_processed/',
-            output_save_dir: Optional[str] = '/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
+            output_save_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_savedata', #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
             climate_model: str = 'NorESM2-LM', # implementing single model only for now
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: Union[List[str], str] = ['ssp126','ssp370','ssp585'],
@@ -233,9 +233,9 @@ class ClimateDataset(torch.utils.data.Dataset):
             return s
 
         def __len__(self):
-            print(self.input4mips_ds.lenght,self.cmip6_ds.lenght)
-            assert self.input4mips_ds.lenght == self.cmip6_ds.lenght, "Datasets not of same length"
-            return self.input4mips_ds.lenght
+            print(self.input4mips_ds.length,self.cmip6_ds.length)
+            assert self.input4mips_ds.length == self.cmip6_ds.length, "Datasets not of same length"
+            return self.input4mips_ds.length
 
 
 class CMIP6Dataset(ClimateDataset):
@@ -363,7 +363,7 @@ class CMIP6Dataset(ClimateDataset):
             # Either normalized whole array here or per instance getitem, that maybe faster
 
             # Now X and Y is ready for getitem
-        self.lenght=self.Data.shape[0]
+        self.length=self.Data.shape[0]
     def __getitem__(self, index):
         return self.Data[index]
 
@@ -390,7 +390,7 @@ class Input4MipsDataset(ClimateDataset):
         self.channels_last=channels_last
 
         #self.mode = mode
-        self.root_dir = os.path.join(data_dir, "inputs/input4mips")
+        self.root_dir = os.path.join(data_dir, "input_alternate/input4mips")
         #self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
@@ -433,10 +433,10 @@ class Input4MipsDataset(ClimateDataset):
                     else:
                         filter_path_by=ssp_openburning
                     print("filter path", filter_path_by)
-                    var_dir = os.path.join(self.root_dir, exp, var, f'{INPUT4MIPS_NOM_RES}/{INPUT4MIPS_TEMP_RES}')
+                    var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
                     files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
                 
-                    print(files)
+#                    print(files)
                     #break
                     output_nc_files += files
                 files_per_var.append(output_nc_files)
@@ -458,7 +458,7 @@ class Input4MipsDataset(ClimateDataset):
 
             # Now X and Y is ready for getitem
         print("sDATA shape", self.Data.shape)
-        self.lenght=self.Data.shape[0]
+        self.length=self.Data.shape[0]
 
     def __getitem__(self, index):
         return self.Data[index]
