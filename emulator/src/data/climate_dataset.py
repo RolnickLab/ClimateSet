@@ -450,7 +450,7 @@ class Input4MipsDataset(ClimateDataset):
 
                     for y in get_years:
                         var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
-                        print(var_dir)
+#                        print(var_dir)
                         files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
                         output_nc_files += files
 #                    print(files)
