@@ -423,6 +423,16 @@ class Input4MipsDataset(ClimateDataset):
             files_per_var=[]
             for var in variables:
                 output_nc_files=[]
+        
+                for exp in scenarios:
+                    if exp=='historical':
+                        get_years=historical_years
+                    else:
+                        get_years=years
+                    for y in get_years:
+                        var_dir = os.path.join(self.ensemble_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
+
+                output_nc_files=[]
                 for exp in scenarios: # TODO: implement getting by years! also sub seletction for historical years
                     print(var, exp)
                     if var in NO_OPENBURNING_VARS:
@@ -430,15 +440,20 @@ class Input4MipsDataset(ClimateDataset):
                         print("CO2 found")
                     elif exp=='historical':
                         filter_path_by=historical_openburning
+                        get_years=historical_years
                     else:
                         filter_path_by=ssp_openburning
+                        get_years=years
+
                     print("filter path", filter_path_by)
-                    var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
-                    files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
-                
+
+                    for y in get_years:
+                        var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
+                        print(var_dir)
+                        files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
+                        output_nc_files += files
 #                    print(files)
                     #break
-                    output_nc_files += files
                 files_per_var.append(output_nc_files)
 
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
