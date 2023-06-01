@@ -219,7 +219,7 @@ class BaseModel(LightningModule):
         for i,_ in enumerate(self.trainer.datamodule.test_set_names):
             self.test_step_outputs[i]=[] # initialize output collection
 
-    def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
+    def test_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0):
         ret=self._evaluation_step(batch, batch_idx)
         self.test_step_outputs[dataloader_idx].append(ret) # collect for evaluation
         return ret
