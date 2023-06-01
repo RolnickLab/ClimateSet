@@ -105,24 +105,23 @@ class ClimateDataset(torch.utils.data.Dataset):
         # this operates variable vise now.... #TODO: sizes for input4mips / adapt to mulitple vars
         def load_into_mem(self, paths: List[List[str]], num_vars, channels_last=True, seq_to_seq=True): #-> np.ndarray():
             array_list =[]
-            print("lengh paths", len(paths))
+            print("lenght paths", len(paths))
             
-            print('File paths', paths)
             for vlist in paths:
                 print("length_paths_list", len(vlist))
                 temp_data = xr.open_mfdataset(vlist, concat_dim='time', combine='nested').compute() #.compute is not necessary but eh, doesn't hurt
                 temp_data = temp_data.to_array().to_numpy() # Should be of shape (vars, 1036*num_scenarios, 96, 144)
                 #temp_data = temp_data.squeeze() # (1036*num_scanarios, 96, 144)
-                print("temp data sahpe", temp_data.shape)
+                print("temp data shape", temp_data.shape)
                 array_list.append(temp_data)
             temp_data = np.concatenate(array_list, axis=0)
-            print("temp data sahpe", temp_data.shape)
+            print("temp data shape", temp_data.shape)
             temp_data = temp_data.reshape(num_vars,-1, SEQ_LEN, LON, LAT)
-            print("temp data sahpe", temp_data.shape)
+            print("temp data shape", temp_data.shape)
             if seq_to_seq==False:
                 temp_data=temp_data[:,:,-1,:,:] # only take last time step
                 temp_data=np.expand_dims(temp_data, axis=2)
-                print("seq to 1 temp data sahpe", temp_data.shape)
+                print("seq to 1 temp data shape", temp_data.shape)
             if channels_last:
                 temp_data = temp_data.transpose((1,2,3,4,0))
             else:
