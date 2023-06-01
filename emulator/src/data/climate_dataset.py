@@ -107,6 +107,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             array_list =[]
             print("lengh paths", len(paths))
             
+            print('File paths', paths)
             for vlist in paths:
                 print("length_paths_list", len(vlist))
                 temp_data = xr.open_mfdataset(vlist, concat_dim='time', combine='nested').compute() #.compute is not necessary but eh, doesn't hurt
@@ -320,7 +321,7 @@ class CMIP6Dataset(ClimateDataset):
 
         if os.path.isfile(os.path.join(output_save_dir, fname)): # we first need to get the name here to test that...
             self.data_path=os.path.join(output_save_dir, fname)
-            print("path exiists, reloading")
+            print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
 
         else:
@@ -341,9 +342,9 @@ class CMIP6Dataset(ClimateDataset):
                         get_years=years
                     for y in get_years:
                         var_dir = os.path.join(self.ensemble_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
-                        print(var_dir)
+                        # print(var_dir)
                         files = glob.glob(var_dir + f'/*.nc', recursive=True)
-                        print(files)
+                        # print(files)
                         # loads all years! implement plitting
                         output_nc_files += files
                 files_per_var.append(output_nc_files)
