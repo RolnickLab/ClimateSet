@@ -103,7 +103,7 @@ class ClimateDataset(torch.utils.data.Dataset):
 
         
         # this operates variable vise now.... #TODO: sizes for input4mips / adapt to mulitple vars
-        def load_data_into_mem(self, paths: List[List[str]], num_vars, channels_last=True, seq_to_seq=True): #-> np.ndarray():
+        def load_into_mem(self, paths: List[List[str]], num_vars, channels_last=True, seq_to_seq=True): #-> np.ndarray():
             array_list =[]
             print("lengh paths", len(paths))
             
@@ -349,7 +349,7 @@ class CMIP6Dataset(ClimateDataset):
                 files_per_var.append(output_nc_files)
 
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
-            self.raw_data = self.load_data_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq) 
+            self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq) 
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
@@ -458,7 +458,7 @@ class Input4MipsDataset(ClimateDataset):
                 files_per_var.append(output_nc_files)
 
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
-            self.raw_data = self.load_data_into_mem(files_per_var, num_vars=len(variables), channels_last=self.channels_last, seq_to_seq=True) # we always want the full sequence for input4mips
+            self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=self.channels_last, seq_to_seq=True) # we always want the full sequence for input4mips
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
