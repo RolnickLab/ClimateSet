@@ -1,0 +1,29 @@
+_target_: emulator.src.datamodules.climate_datamodule.ClimateDataModule
+
+in_var_ids: ['BC_sum', 'CO2_sum', 'SO2_sum', 'CH4_sum']
+out_var_ids: ['pr', 'tas']
+seq_to_seq: True
+batch_size: 4
+channels_last: True
+eval_batch_size: 4
+train_historical_years: "1850-1900"
+test_years: "2015-2100"
+train_years: "2015-2100"
+val_split: 0.1
+train_scenarios: ["ssp126"]
+test_scenarios: ["ssp370"]
+train_models:  ["NorESM2-LM"]
+num_ensembles: 1
+num_workers:  0
+pin_memory: False
+load_train_into_mem: True
+load_test_into_mem:  True
+verbose: True
+seed: 11
+output_save_dir: '/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA'
+seq_len: 12
+lon: 96
+lat: 144
+num_levels: 1
+#input_transform: Optional[AbstractTransform] = None,
+#normalizer: Optional[Normalizer] = None,
