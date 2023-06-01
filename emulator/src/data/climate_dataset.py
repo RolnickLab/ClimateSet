@@ -343,6 +343,7 @@ class CMIP6Dataset(ClimateDataset):
                         var_dir = os.path.join(self.ensemble_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
                         print(var_dir)
                         files = glob.glob(var_dir + f'/*.nc', recursive=True)
+                        print(files)
                         # loads all years! implement plitting
                         output_nc_files += files
                 files_per_var.append(output_nc_files)
@@ -430,7 +431,7 @@ class Input4MipsDataset(ClimateDataset):
                     else:
                         get_years=years
                     for y in get_years:
-                        var_dir = os.path.join(self.ensemble_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
+                        var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
 
                 output_nc_files=[]
                 for exp in scenarios: # TODO: implement getting by years! also sub seletction for historical years
