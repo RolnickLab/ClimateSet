@@ -199,10 +199,42 @@ class ClimateDataset(torch.utils.data.Dataset):
             return min_year, max_year
 
 
-        def get_dataset_statistics(self, data):
+        def get_dataset_statistics(self, data, mode, type='z-norm', mips= 'cmip6'):
+            if mode == 'train':
+                if type == 'z-norm':
+                    mean, std = self.get_mean_std(data)
+                elif type == 'minmax':
+                    min, max = self.get_min_max(data)
+                else:
+                    print('Normalizing of type {0} has not been implemented!'.format(type))
+            else:
+                print('In testing mode, skipping statistics calculations')
+                continue
+
+        def get_mean_std(self, data):
+            # DATA shape (258, 12, 4, 96, 144) or DATA shape (258, 12, 2, 96, 144)
+
+            data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) easier to calulate statistics
+            vars_mean = np.mean(data, axis=(1, 2, 3, 4)) #sDATA shape (258, 12, 4, 96, 144)
+            vars_std = np.std(data, axis=(1, 2, 3, 4))
+            vars_mean = np.expand_dims(vars_mean, (1, 2, 3, 4)) # Shape of mean & std (4, 1, 1, 1, 1)
+            vars_std = np.expand_dims(vars_std, (1, 2, 3, 4))
+            return vars_mean, vars_std
+
+        def get_min_max(self, data):
+
+            data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) easier to calulate statistics
+            vars_max = np.max(data, axis=(1, 2, 3, 4)) #sDATA shape (258, 12, 4, 96, 144)
+            vars_min = np.min(data, axis=(1, 2, 3, 4))
+            vars_max = np.expand_dims(vars_max, (1, 2, 3, 4)) # Shape of mean & std (4, 1, 1, 1, 1)
+            vars_min= np.expand_dims(vars_min, (1, 2, 3, 4))
+            return vars_min, vars_max
+
+        def write_dataset_statistics(self, stats):
             pass
-        # Load the saved data here and calculate the mean & std for normalizing the input
-        # Return and normalized before __getitem__()
+
+        def normalize_data(self, data, stats, type='z-norm'):
+            pass                  
         
         def __getitem__(self, index):  # Dict[str, Tensor]):
 
@@ -350,6 +382,14 @@ class CMIP6Dataset(ClimateDataset):
 
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq) 
+
+            if self.mode == 'train':
+                pass
+                # Return vars should be written to a np file based on the norm-type. 
+                # Save return vars as dict(stat1, stat2).
+                stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
+                self.norm_data = self.normalize_data(self.raw_data, stats)
+                #self.write_dataset_statistics({stat1, stat2})
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
