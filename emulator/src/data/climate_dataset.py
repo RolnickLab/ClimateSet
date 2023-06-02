@@ -468,9 +468,9 @@ class Input4MipsDataset(ClimateDataset):
 
         self.channels_last=channels_last
 
-        #self.mode = mode
+        self.mode = mode
         self.root_dir = os.path.join(data_dir, "input_alternate/input4mips")
-        #self.output_save_dir = output_save_dir
+        self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
 
@@ -552,7 +552,7 @@ class Input4MipsDataset(ClimateDataset):
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     #
                     stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-                    _ = self.write_dataset_statistics({stat1, stat2})
+                    save_file_name = self.write_dataset_statistics(stats_fname, stats)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
