@@ -208,13 +208,15 @@ class ClimateDataset(torch.utils.data.Dataset):
             if mode == 'train':
                 if type == 'z-norm':
                     mean, std = self.get_mean_std(data)
+                    return mean, std
                 elif type == 'minmax':
-                    min, max = self.get_min_max(data)
+                    min_val, max_val = self.get_min_max(data)
+                    return min_val, max_val
                 else:
                     print('Normalizing of type {0} has not been implemented!'.format(type))
             else:
                 print('In testing mode, skipping statistics calculations.')
-                continue
+
 
         def get_mean_std(self, data):
             # DATA shape (258, 12, 4, 96, 144) or DATA shape (258, 12, 2, 96, 144)
@@ -241,19 +243,19 @@ class ClimateDataset(torch.utils.data.Dataset):
             # min-max = (v - v.min()) / (v.max() - v.min())
 
             print('Normalizing data...')
-
+            data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) 
             norm_data = (data - stats['mean'])/(stats['std'])
             if norm_data.shape[0] == 4:
                 norm_data = np.moveaxis(norm_data, 0, 2) # Switch back to (258, 12, 4, 96, 144)
             
             return norm_data
 
-        def write_dataset_statistics(self, stats, mips='cmip6'):
-            np.save(os.path.join(output_save_dir, fname), data=data, allow_pickle=True)
-            return os.path.join(output_save_dir, fname) 
+        def write_dataset_statistics(self, fname, stats):
+            np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)
+            return os.path.join(self.output_save_dir, fname) 
 
         def load_dataset_statistics(self, fname):
-            stats_data = np.load(fname, allow_pickle=True).item()
+            stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
             return stats_data      
         
         def __getitem__(self, index):  # Dict[str, Tensor]):
@@ -323,7 +325,8 @@ class CMIP6Dataset(ClimateDataset):
             #load_data_into_mem: bool = True, # Keeping this true be default for now
     ):
 
-        #self.mode = mode
+        self.mode = mode
+        self.output_save_dir = output_save_dir
         self.root_dir = os.path.join(data_dir, "targets/CMIP6")
         #self.output_save_dir = output_save_dir
         self.input_nc_files = []
@@ -417,7 +420,7 @@ class CMIP6Dataset(ClimateDataset):
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     #
                     fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-                    _ = self.write_dataset_statistics({stat1, stat2})
+                    save_file_name = self.write_dataset_statistics(fname, stats)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
@@ -438,6 +441,7 @@ class CMIP6Dataset(ClimateDataset):
         
 
             # Now X and Y is ready for getitem
+        print(self.Data.shape)
         self.length=self.Data.shape[0]
     def __getitem__(self, index):
         return self.Data[index]
