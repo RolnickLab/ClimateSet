@@ -205,7 +205,7 @@ class ClimateDataset(torch.utils.data.Dataset):
 
 
         def get_dataset_statistics(self, data, mode, type='z-norm', mips= 'cmip6'):
-            if mode == 'train':
+            if mode == 'train' or mode == 'train+val':
                 if type == 'z-norm':
                     mean, std = self.get_mean_std(data)
                     return mean, std
@@ -548,7 +548,7 @@ class Input4MipsDataset(ClimateDataset):
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=self.channels_last, seq_to_seq=True) # we always want the full sequence for input4mips
 
-            if self.mode == 'train':
+            if self.mode == 'train' or self.mode == 'train+val':
                 stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
 
                 if os.path.isfile(stats_fname):
