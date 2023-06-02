@@ -381,7 +381,7 @@ class CMIP6Dataset(ClimateDataset):
             # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
             stats = self.load_dataset_statistics(stats_fname)
-            self.Data = self.normalize_data(data, stats)
+            self.Data = self.normalize_data(self.Data, stats)
 
         else:
             # Add code here for adding files for input nc data
@@ -411,7 +411,7 @@ class CMIP6Dataset(ClimateDataset):
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq) 
 
-            if self.mode == 'train':
+            if self.mode == 'train' or self.mode == 'train+val':
                 stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
 
                 if os.path.isfile(stats_fname):
@@ -506,7 +506,7 @@ class Input4MipsDataset(ClimateDataset):
             # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
             stats = self.load_dataset_statistics(stats_fname)
-            self.Data = self.normalize_data(data, stats)
+            self.Data = self.normalize_data(self.Data, stats)
            
         else:
             files_per_var=[]
@@ -580,6 +580,7 @@ class Input4MipsDataset(ClimateDataset):
 
             # Call _reload_data here with self.input_path and self.output_path
             # self.X = self._reload_data(input_path)
+            print('THIS IS THE MODE', self.mode)
             self.Data = self.norm_data
             # self.Data = self._reload_data(self.data_path)
             # Write a normalize transform to calculate mean and std
