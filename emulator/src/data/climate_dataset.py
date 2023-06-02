@@ -407,11 +407,11 @@ class CMIP6Dataset(ClimateDataset):
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq) 
 
             if self.mode == 'train':
-                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
 
-                if os.path.isfile(fname):
+                if os.path.isfile(stats_fname):
                     print('Stats file already exists! Loading from mempory.')
-                    stats = self.load_statistics_data(fname)
+                    stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
                 else:    
@@ -419,15 +419,15 @@ class CMIP6Dataset(ClimateDataset):
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     #
-                    fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-                    save_file_name = self.write_dataset_statistics(fname, stats)
+                    stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                    save_file_name = self.write_dataset_statistics(stats_fname, stats)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
 
             elif self.mode == 'test':
-                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-                stats = self.load_dataset_statistics(fname)
+                stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats = self.load_dataset_statistics(stats_fname)
                 self.norm_data = self.normalize_data(data, stats)
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
@@ -539,11 +539,11 @@ class Input4MipsDataset(ClimateDataset):
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=self.channels_last, seq_to_seq=True) # we always want the full sequence for input4mips
 
             if self.mode == 'train':
-                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
 
-                if os.path.isfile(fname):
+                if os.path.isfile(stats_fname):
                     print('Stats file already exists! Loading from mempory.')
-                    stats = self.load_statistics_data(fname)
+                    stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
                 else:    
@@ -551,15 +551,15 @@ class Input4MipsDataset(ClimateDataset):
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     #
-                    fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                    stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
                     _ = self.write_dataset_statistics({stat1, stat2})
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
 
             elif self.mode == 'test':
-                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-                stats = self.load_dataset_statistics(fname)
+                stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats = self.load_dataset_statistics(stats_fname)
                 self.norm_data = self.normalize_data(data, stats)
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
