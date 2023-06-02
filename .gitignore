@@ -135,5 +135,5 @@ dmypy.json
 # Model checkpoint
 *.ckpt
 
-# Config files
-/emulator/configs/
+# Config files and emulator outputs
+/emulator/outputs/
