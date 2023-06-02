@@ -234,6 +234,8 @@ class ClimateDataset(torch.utils.data.Dataset):
             pass
 
         def normalize_data(self, data, stats, type='z-norm'):
+            # z-norm: (data-mean)/(std + eps); eps=1e-9
+            # min-max = (v - v.min()) / (v.max() - v.min())
             pass                  
         
         def __getitem__(self, index):  # Dict[str, Tensor]):
