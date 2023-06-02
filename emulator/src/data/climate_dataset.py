@@ -547,7 +547,7 @@ class Input4MipsDataset(ClimateDataset):
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
                 else:    
-                    stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='input4mips')
+                    stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     #
