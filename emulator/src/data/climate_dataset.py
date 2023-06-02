@@ -262,9 +262,9 @@ class ClimateDataset(torch.utils.data.Dataset):
                      stats_files = [line.rstrip('\n') for line in f]
                 
                 if mips == 'cmip6':
-                    stats_data = np.load(stats_files[0], allow_pickle=True).item() 
+                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[0]), allow_pickle=True).item() 
                 else:
-                    stats_data = np.load(stats_files[1], allow_pickle=True).item()   
+                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[1]), allow_pickle=True).item()   
                 
             return stats_data      
         
@@ -390,7 +390,7 @@ class CMIP6Dataset(ClimateDataset):
 
             # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-            stats = self.load_dataset_statistics(stats_fname)
+            stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='cmip6')
             self.Data = self.normalize_data(self.Data, stats)
 
         else:
@@ -442,8 +442,8 @@ class CMIP6Dataset(ClimateDataset):
 
             elif self.mode == 'test':
                 stats_fname = self.get_save_name_from_kwargs(mode='train', file='statistics', kwargs=fname_kwargs)
-                stats = self.load_dataset_statistics(stats_fname)
-                self.norm_data = self.normalize_data(data, stats)
+                stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='cmip6')
+                self.norm_data = self.normalize_data(self.raw_data, stats)
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
@@ -515,7 +515,7 @@ class Input4MipsDataset(ClimateDataset):
 
             # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-            stats = self.load_dataset_statistics(stats_fname)
+            stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='input4mips')
             self.Data = self.normalize_data(self.Data, stats)
            
         else:
@@ -579,8 +579,8 @@ class Input4MipsDataset(ClimateDataset):
 
             elif self.mode == 'test':
                 stats_fname = self.get_save_name_from_kwargs(mode='train', file='statistics', kwargs=fname_kwargs) #Load train stats cause we don't calculcate norm stats for test.
-                stats = self.load_dataset_statistics(stats_fname)
-                self.norm_data = self.normalize_data(data, stats)
+                stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='input4mips')
+                self.norm_data = self.normalize_data(self.raw_data, stats)
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
