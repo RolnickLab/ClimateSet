@@ -112,12 +112,12 @@ class ClimateDataset(torch.utils.data.Dataset):
                 temp_data = xr.open_mfdataset(vlist, concat_dim='time', combine='nested').compute() #.compute is not necessary but eh, doesn't hurt
                 temp_data = temp_data.to_array().to_numpy() # Should be of shape (vars, 1036*num_scenarios, 96, 144)
                 #temp_data = temp_data.squeeze() # (1036*num_scanarios, 96, 144)
-                print("temp data shape", temp_data.shape)
+#                print("temp data shape", temp_data.shape)
                 array_list.append(temp_data)
             temp_data = np.concatenate(array_list, axis=0)
-            print("temp data shape", temp_data.shape)
+#            print("temp data shape", temp_data.shape)
             temp_data = temp_data.reshape(num_vars,-1, SEQ_LEN, LON, LAT)
-            print("temp data shape", temp_data.shape)
+#            print("temp data shape", temp_data.shape)
             if seq_to_seq==False:
                 temp_data=temp_data[:,:,-1,:,:] # only take last time step
                 temp_data=np.expand_dims(temp_data, axis=2)
@@ -245,7 +245,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             print('Normalizing data...')
             data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) 
             norm_data = (data - stats['mean'])/(stats['std'])
-            if norm_data.shape[0] == 4:
+            if norm_data.shape[0] in [1, 2, 4]: # Also move year axis (258) to 0
                 norm_data = np.moveaxis(norm_data, 0, 2) # Switch back to (258, 12, 4, 96, 144)
             
             return norm_data
@@ -287,7 +287,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             return s
 
         def __len__(self):
-            print(self.input4mips_ds.length,self.cmip6_ds.length)
+            print('Input4mips', self.input4mips_ds.length, 'CMIP6 data' , self.cmip6_ds.length)
             assert self.input4mips_ds.length == self.cmip6_ds.length, "Datasets not of same length"
             return self.input4mips_ds.length
 
@@ -431,7 +431,7 @@ class CMIP6Dataset(ClimateDataset):
 
 
             elif self.mode == 'test':
-                stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats_fname = self.get_save_name_from_kwargs(mode='train', file='statistics', kwargs=fname_kwargs)
                 stats = self.load_dataset_statistics(stats_fname)
                 self.norm_data = self.normalize_data(data, stats)
 
@@ -446,7 +446,7 @@ class CMIP6Dataset(ClimateDataset):
             
 
             # Now X and Y is ready for getitem
-        print(self.Data.shape)
+        print('CMIP6 shape', self.Data.shape)
         self.length=self.Data.shape[0]
     def __getitem__(self, index):
         return self.Data[index]
@@ -568,7 +568,7 @@ class Input4MipsDataset(ClimateDataset):
 
 
             elif self.mode == 'test':
-                stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats_fname = self.get_save_name_from_kwargs(mode='train', file='statistics', kwargs=fname_kwargs) #Load train stats cause we don't calculcate norm stats for test.
                 stats = self.load_dataset_statistics(stats_fname)
                 self.norm_data = self.normalize_data(data, stats)
 
@@ -580,14 +580,13 @@ class Input4MipsDataset(ClimateDataset):
 
             # Call _reload_data here with self.input_path and self.output_path
             # self.X = self._reload_data(input_path)
-            print('THIS IS THE MODE', self.mode)
             self.Data = self.norm_data
             # self.Data = self._reload_data(self.data_path)
             # Write a normalize transform to calculate mean and std
             # Either normalized whole array here or per instance getitem, that maybe faster
 
             # Now X and Y is ready for getitem
-        print("sDATA shape", self.Data.shape)
+        print("Input4mips shape", self.Data.shape)
         self.length=self.Data.shape[0]
 
     def __getitem__(self, index):
