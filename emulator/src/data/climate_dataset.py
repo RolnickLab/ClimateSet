@@ -378,6 +378,11 @@ class CMIP6Dataset(ClimateDataset):
             print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
 
+            # Load stats and normalize
+            stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+            stats = self.load_dataset_statistics(stats_fname)
+            self.Data = self.normalize_data(data, stats)
+
         else:
             # Add code here for adding files for input nc data
             # Similar to the loop below for output files
@@ -436,9 +441,9 @@ class CMIP6Dataset(ClimateDataset):
             #self.copy_to_slurm(self.input_path)
             self.copy_to_slurm(self.data_path)
 
-
-            self.Data = self._reload_data(self.data_path)
-        
+            self.Data = self.norm_data
+            # self.Data = self._reload_data(self.data_path)
+            
 
             # Now X and Y is ready for getitem
         print(self.Data.shape)
@@ -497,6 +502,11 @@ class Input4MipsDataset(ClimateDataset):
             self.data_path=os.path.join(output_save_dir, fname)
             print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
+
+            # Load stats and normalize
+            stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+            stats = self.load_dataset_statistics(stats_fname)
+            self.Data = self.normalize_data(data, stats)
            
         else:
             files_per_var=[]
@@ -570,7 +580,8 @@ class Input4MipsDataset(ClimateDataset):
 
             # Call _reload_data here with self.input_path and self.output_path
             # self.X = self._reload_data(input_path)
-            self.Data = self._reload_data(self.data_path)
+            self.Data = self.norm_data
+            # self.Data = self._reload_data(self.data_path)
             # Write a normalize transform to calculate mean and std
             # Either normalized whole array here or per instance getitem, that maybe faster
 
