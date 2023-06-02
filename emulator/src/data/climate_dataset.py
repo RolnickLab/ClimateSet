@@ -45,9 +45,9 @@ class ClimateDataset(torch.utils.data.Dataset):
             channels_last: bool = True,
             load_data_into_mem: bool = True, # Keeping this true be default for now
             input_transform = None, # TODO: implement
-            input_normalization = None, #TODO: implement
+            input_normalization = 'z-norm', #TODO: implement
             output_transform = None,
-            output_normalization = None,
+            output_normalization = 'z-norm',
             *args, **kwargs,
             
             ):
@@ -137,12 +137,17 @@ class ClimateDataset(torch.utils.data.Dataset):
 
         def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
             fname =""
+                
             for k in kwargs:
                 if isinstance(kwargs[k], List):
                     fname+=f"{k}_"+"_".join(kwargs[k])+'_'
                 else:
                     fname+=f"{k}_{kwargs[k]}_"
-            fname += mode + '_' + file + '.npz'
+
+            if file == 'statistics':
+                fname +=  '_' + file + '.npy'
+            else:
+                fname += mode + '_' + file + '.npz'
             print(fname)
             return fname
 
@@ -208,7 +213,7 @@ class ClimateDataset(torch.utils.data.Dataset):
                 else:
                     print('Normalizing of type {0} has not been implemented!'.format(type))
             else:
-                print('In testing mode, skipping statistics calculations')
+                print('In testing mode, skipping statistics calculations.')
                 continue
 
         def get_mean_std(self, data):
@@ -230,13 +235,26 @@ class ClimateDataset(torch.utils.data.Dataset):
             vars_min= np.expand_dims(vars_min, (1, 2, 3, 4))
             return vars_min, vars_max
 
-        def write_dataset_statistics(self, stats):
-            pass
-
         def normalize_data(self, data, stats, type='z-norm'):
+            # Only implementing z-norm for now
             # z-norm: (data-mean)/(std + eps); eps=1e-9
             # min-max = (v - v.min()) / (v.max() - v.min())
-            pass                  
+
+            print('Normalizing data...')
+
+            norm_data = (data - stats['mean'])/(stats['std'])
+            if norm_data.shape[0] == 4:
+                norm_data = np.moveaxis(norm_data, 0, 2) # Switch back to (258, 12, 4, 96, 144)
+            
+            return norm_data
+
+        def write_dataset_statistics(self, stats, mips='cmip6'):
+            np.save(os.path.join(output_save_dir, fname), data=data, allow_pickle=True)
+            return os.path.join(output_save_dir, fname) 
+
+        def load_dataset_statistics(self, fname):
+            stats_data = np.load(fname, allow_pickle=True).item()
+            return stats_data      
         
         def __getitem__(self, index):  # Dict[str, Tensor]):
 
@@ -386,12 +404,28 @@ class CMIP6Dataset(ClimateDataset):
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq) 
 
             if self.mode == 'train':
-                pass
-                # Return vars should be written to a np file based on the norm-type. 
-                # Save return vars as dict(stat1, stat2).
-                stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
+                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+
+                if os.path.isfile(fname):
+                    print('Stats file already exists! Loading from mempory.')
+                    stats = self.load_statistics_data(fname)
+                    self.norm_data = self.normalize_data(self.raw_data, stats)
+
+                else:    
+                    stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
+                    stats = {'mean': stat1, 'std': stat2}
+                    self.norm_data = self.normalize_data(self.raw_data, stats)
+                    #
+                    fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                    _ = self.write_dataset_statistics({stat1, stat2})
+
                 self.norm_data = self.normalize_data(self.raw_data, stats)
-                #self.write_dataset_statistics({stat1, stat2})
+
+
+            elif self.mode == 'test':
+                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats = self.load_dataset_statistics(fname)
+                self.norm_data = self.normalize_data(data, stats)
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
@@ -399,11 +433,9 @@ class CMIP6Dataset(ClimateDataset):
             #self.copy_to_slurm(self.input_path)
             self.copy_to_slurm(self.data_path)
 
-            # Call _reload_data here with self.input_path and self.output_path
-            # self.X = self._reload_data(input_path)
+
             self.Data = self._reload_data(self.data_path)
-            # Write a normalize transform to calculate mean and std
-            # Either normalized whole array here or per instance getitem, that maybe faster
+        
 
             # Now X and Y is ready for getitem
         self.length=self.Data.shape[0]
@@ -501,6 +533,30 @@ class Input4MipsDataset(ClimateDataset):
 
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=self.channels_last, seq_to_seq=True) # we always want the full sequence for input4mips
+
+            if self.mode == 'train':
+                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+
+                if os.path.isfile(fname):
+                    print('Stats file already exists! Loading from mempory.')
+                    stats = self.load_statistics_data(fname)
+                    self.norm_data = self.normalize_data(self.raw_data, stats)
+
+                else:    
+                    stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='input4mips')
+                    stats = {'mean': stat1, 'std': stat2}
+                    self.norm_data = self.normalize_data(self.raw_data, stats)
+                    #
+                    fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                    _ = self.write_dataset_statistics({stat1, stat2})
+
+                self.norm_data = self.normalize_data(self.raw_data, stats)
+
+
+            elif self.mode == 'test':
+                fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                stats = self.load_dataset_statistics(fname)
+                self.norm_data = self.normalize_data(data, stats)
 
             #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
