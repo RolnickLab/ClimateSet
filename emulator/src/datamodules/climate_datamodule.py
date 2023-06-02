@@ -146,7 +146,7 @@ class ClimateDataModule(LightningDataModule):
         # Test sets:
         if stage == "test" or stage is None:
             self._data_test = [ClimateDataset(years=self.hparams.test_years, mode='test', scenarios=test_scenario, climate_model=test_model, load_data_into_mem=self.hparams.load_test_into_mem, **dataset_kwargs) for test_scenario in self.hparams.test_scenarios for test_model in self.test_models]
-            print("lenght data test", len(self._data_test))
+            print("length data test", len(self._data_test))
         # Prediction set:
         if stage == "predict":
             # just choosing at random here

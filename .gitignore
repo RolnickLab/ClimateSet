@@ -1,26 +1,13 @@
-# All data files
-*.nc
-RAW_DATA
-PROCESSED_DATA
-tmp/*
-
-# deprecated files
-deprecated/
-notes/
-
-# privacy files
-data_generation/parameters/credentials.txt
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.swp
 
 # C extensions
 *.so
 
 # Distribution / packaging
+*.out
 .Python
 build/
 develop-eggs/
@@ -119,11 +106,13 @@ celerybeat.pid
 .env
 .venv
 env/
-env39/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Wandb
+emulator/wandb/
 
 # Spyder project settings
 .spyderproject
@@ -142,3 +131,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Model checkpoint
+*.ckpt
+
+# Config files
+/emulator/configs/
