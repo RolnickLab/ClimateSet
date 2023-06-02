@@ -254,8 +254,18 @@ class ClimateDataset(torch.utils.data.Dataset):
             np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)
             return os.path.join(self.output_save_dir, fname) 
 
-        def load_dataset_statistics(self, fname):
-            stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
+        def load_dataset_statistics(self, fname, mode, mips):
+            if mode != 'test':
+                stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
+            else:
+                with open(os.path.join(self.output_save_dir, 'stats.txt')) as f:
+                     stats_files = [line.rstrip('\n') for line in f]
+                
+                if mips == 'cmip6':
+                    stats_data = np.load(stats_files[0], allow_pickle=True).item() 
+                else:
+                    stats_data = np.load(stats_files[1], allow_pickle=True).item()   
+                
             return stats_data      
         
         def __getitem__(self, index):  # Dict[str, Tensor]):
