@@ -415,7 +415,7 @@ class CMIP6Dataset(ClimateDataset):
                 stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
 
                 if os.path.isfile(stats_fname):
-                    print('Stats file already exists! Loading from mempory.')
+                    print('Stats file already exists! Loading from memory.')
                     stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
@@ -523,10 +523,10 @@ class Input4MipsDataset(ClimateDataset):
 
                 output_nc_files=[]
                 for exp in scenarios: # TODO: implement getting by years! also sub seletction for historical years
-                    print(var, exp)
+                    # print(var, exp)
                     if var in NO_OPENBURNING_VARS:
                         filter_path_by=''
-                        print("CO2 found")
+                        # print("CO2 found")
                     elif exp=='historical':
                         filter_path_by=historical_openburning
                         get_years=historical_years
@@ -534,7 +534,7 @@ class Input4MipsDataset(ClimateDataset):
                         filter_path_by=ssp_openburning
                         get_years=years
 
-                    print("filter path", filter_path_by)
+                    # print("filter path", filter_path_by)
 
                     for y in get_years:
                         var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
