@@ -32,7 +32,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             mode: str = "train", # Train or test maybe # deprecated
             #input4mips_data_dir: Optional[str] ='/scratch/venka97/causalpaca_load/',  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
             #cmip6_data_dir:  Optional[str] = '/scratch/venka97/causalpaca_processed/',
-            output_save_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_savedata', #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
+            output_save_dir: Optional[str] = '/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
             climate_model: str = 'NorESM2-LM', # implementing single model only for now
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: Union[List[str], str] = ['ssp126','ssp370','ssp585'],
@@ -135,6 +135,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             np.savez(os.path.join(output_save_dir, fname), data=data)
             return os.path.join(output_save_dir, fname) 
 
+        """
         def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
             fname =""
                 
@@ -150,7 +151,35 @@ class ClimateDataset(torch.utils.data.Dataset):
                 fname += mode + '_' + file + '.npz'
             print(fname)
             return fname
+        """
+        def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
+            fname =""
+            print("KWARGs:", kwargs)
 
+            if file == 'statistics':
+                # only cmip 6
+                if 'climate_model' in kwargs:
+                    fname += kwargs['climate_model'] + '_'
+                if 'num_ensembles' in kwargs:
+                    fname += kwargs['num_ensembles'] + '_'
+                # all
+                fname += '_'.join(kwargs['variables']) +'_' #+ '_' + kwargs['input_normalization']
+                #fname +=  '_' + file + '.npy'
+                #print(fname)
+                
+
+            else:
+
+                for k in kwargs:
+                    if isinstance(kwargs[k], List):
+                        fname+=f"{k}_"+"_".join(kwargs[k])+'_'
+                    else:
+                        fname+=f"{k}_{kwargs[k]}_"
+
+            fname += mode + '_' + file + '.npz'
+
+            print(fname)
+            return fname
 
         def copy_to_slurm(self, fname):
             pass
@@ -390,7 +419,8 @@ class CMIP6Dataset(ClimateDataset):
 
             # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-            stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='cmip6')
+            
+            stats = self.load_dataset_statistics(os.path.join(self.output_save_dir, stats_fname), mode=self.mode, mips='cmip6')
             self.Data = self.normalize_data(self.Data, stats)
 
         else:
@@ -434,14 +464,16 @@ class CMIP6Dataset(ClimateDataset):
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     #
-                    stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                    #stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
+                    print("WROTE STATISTICS", save_file_name)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
 
             elif self.mode == 'test':
                 stats_fname = self.get_save_name_from_kwargs(mode='train', file='statistics', kwargs=fname_kwargs)
+                save_file_name = os.path.join(self.output_save_dir, fname)
                 stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='cmip6')
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
@@ -512,12 +544,13 @@ class Input4MipsDataset(ClimateDataset):
             self.data_path=os.path.join(output_save_dir, fname)
             print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
-
-            # Load stats and normalize
+                  # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-            stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='input4mips')
-            self.Data = self.normalize_data(self.Data, stats)
+            if os.path.isfile(os.path.join(self.output_save_dir, stats_fname)):
+                stats = self.load_dataset_statistics(os.path.join(self.output_save_dir, stats_fname), mode=self.mode, mips='input4mips')
+                self.Data = self.normalize_data(self.Data, stats)
            
+      
         else:
             files_per_var=[]
             for var in variables:
