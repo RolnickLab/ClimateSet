@@ -108,7 +108,7 @@ class ClimateDataset(torch.utils.data.Dataset):
         # this operates variable vise now.... #TODO: sizes for input4mips / adapt to mulitple vars
         def load_into_mem(self, paths: List[List[str]], num_vars, channels_last=True, seq_to_seq=True): #-> np.ndarray():
             array_list =[]
-            print("lenght paths", len(paths))
+            print("length paths", len(paths))
             
             for vlist in paths:
                 print("length_paths_list", len(vlist))
@@ -585,6 +585,7 @@ class Input4MipsDataset(ClimateDataset):
 
                     for y in get_years:
                         var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
+#                        print('THIS IS THE VARDIR', var_dir)
                         files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
                         output_nc_files += files
                 files_per_var.append(output_nc_files)

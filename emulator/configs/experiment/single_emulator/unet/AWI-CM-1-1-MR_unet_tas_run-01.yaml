@@ -8,7 +8,7 @@ defaults:
   - override /model: unet.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
-  - override /datamodule: dummy.yaml # standard datamodule configurations
+  - override /datamodule: climate.yaml # standard datamodule configurations
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -21,7 +21,7 @@ seed: 22201
 
 trainer:
   min_epochs: 1
-  max_epochs: 50
+  max_epochs: 30
 
 model:
   loss_function: "climax_lon_lat_rmse"
@@ -33,16 +33,16 @@ model:
 datamodule: # overwrite what stuff to train on
     # more selection like climate models and scenarios + splits should go here
     # ...
-   in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']
-   out_var_ids: ['tas']
+   in_var_ids: ['BC_sum', 'CO2_sum', 'SO2_sum', 'CH4_sum']
+   out_var_ids: ['tas', 'pr']
    train_historical_years: "1850-2010"
    train_models:  ["AWI-CM-1-1-MR"]
-   seq_length: 120
+   #   seq_length: 120
    seq_to_seq: True # determine the task setting
    batch_size: 4
-   channels_last: True
+   channels_last: False
    eval_batch_size: 4
 
 logger:
   wandb:
-    tags: ["single_emulator", "unet", "AWI-CM-1-1-MR", "tas", "run1"] # set your tags here
+          tags: ["single_emulator", "unet", "AWI-CM-1-1-MR", "tas+pr", "run1"] # set your tags here
