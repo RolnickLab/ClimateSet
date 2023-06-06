@@ -293,17 +293,8 @@ class ClimateDataset(torch.utils.data.Dataset):
             elif 'test' in fname:
                 fname = fname.replace('test', 'train+val')
 
-            print('This is the stats file name: ', fname)
-#            if mode != 'test':
+#            print('This is the stats file name: ', fname)
             stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
-#            else:
-#                with open(os.path.join(self.output_save_dir, 'stats.txt')) as f:
-#                     stats_files = [line.rstrip('\n') for line in f]
-#                
-#                if mips == 'cmip6':
-#                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[0]), allow_pickle=True).item() 
-#                else:
-#                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[1]), allow_pickle=True).item()   
                 
             return stats_data      
         
@@ -482,7 +473,7 @@ class CMIP6Dataset(ClimateDataset):
 
 
             elif self.mode == 'test':
-                stats_fname = self.get_save_name_from_kwargs(mode='train', file='statistics', kwargs=fname_kwargs)
+                stats_fname = self.get_save_name_from_kwargs(mode='train+val', file='statistics', kwargs=fname_kwargs)
                 save_file_name = os.path.join(self.output_save_dir, fname)
                 stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='cmip6')
                 self.norm_data = self.normalize_data(self.raw_data, stats)
@@ -550,15 +541,16 @@ class Input4MipsDataset(ClimateDataset):
 
         # Check here if os.path.isfile($SCRATCH/data.npz) exists #TODO: check if exists on slurm
         # if it does, use self._reload data(path)
+
         if os.path.isfile(os.path.join(output_save_dir, fname)): # we first need to get the name here to test that...
             self.data_path=os.path.join(output_save_dir, fname)
             print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
-                  # Load stats and normalize
+
+            # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-            if os.path.isfile(os.path.join(self.output_save_dir, stats_fname)):
-                stats = self.load_dataset_statistics(os.path.join(self.output_save_dir, stats_fname), mode=self.mode, mips='input4mips')
-                self.Data = self.normalize_data(self.Data, stats)
+            stats = self.load_dataset_statistics(os.path.join(self.output_save_dir, stats_fname), mode=self.mode, mips='input4mips')
+            self.Data = self.normalize_data(self.Data, stats)
            
       
         else:
@@ -587,15 +579,11 @@ class Input4MipsDataset(ClimateDataset):
                         filter_path_by=ssp_openburning
                         get_years=years
 
-                    # print("filter path", filter_path_by)
 
                     for y in get_years:
                         var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
-#                        print(var_dir)
                         files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
                         output_nc_files += files
-#                    print(files)
-                    #break
                 files_per_var.append(output_nc_files)
 
             #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
@@ -621,7 +609,7 @@ class Input4MipsDataset(ClimateDataset):
 
 
             elif self.mode == 'test':
-                stats_fname = self.get_save_name_from_kwargs(mode='train', file='statistics', kwargs=fname_kwargs) #Load train stats cause we don't calculcate norm stats for test.
+                stats_fname = self.get_save_name_from_kwargs(mode='train+val', file='statistics', kwargs=fname_kwargs) #Load train stats cause we don't calculcate norm stats for test.
                 stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='input4mips')
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
