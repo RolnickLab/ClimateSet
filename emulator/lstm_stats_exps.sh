@@ -17,22 +17,22 @@ python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_
 python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=7
 
 python run.py experiment=single_emulator/convlstm/FGOALS-f3-L_convlstm_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=7
+python run.py experiment=single_emulator/convlstm/FGOALS-f3-L_convlstm_tas+pr_run-01.yaml seed=22201
+python run.py experiment=single_emulator/convlstm/FGOALS-f3-L_convlstm_tas+pr_run-01.yaml seed=7
 
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=7
+python run.py experiment=single_emulator/convlstm/EC-Earth3_convlstm_tas+pr_run-01.yaml seed=3423
+python run.py experiment=single_emulator/convlstm/EC-Earth3_convlstm_tas+pr_run-01.yaml seed=22201
+python run.py experiment=single_emulator/convlstm/EC-Earth3_convlstm_tas+pr_run-01.yaml seed=7
 
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=7
+python run.py experiment=single_emulator/convlstm/BCC-CSM2-MR_convlstm_tas_run-01.yaml seed=3423
+python run.py experiment=single_emulator/convlstm/BCC-CSM2-MR_convlstm_tas_run-01.yaml seed=22201
+python run.py experiment=single_emulator/convlstm/BCC-CSM2-MR_convlstm_tas_run-01.yaml seed=7
 
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=7
+python run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_tas+pr_run-01.yaml seed=3423
+python run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_tas+pr_run-01.yaml seed=22201
+python run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_tas+pr_run-01.yaml seed=7
 
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/convlstm/AWI-CM-1-1-MR_convlstm_tas+pr_run-01.yaml seed=7
+python run.py experiment=single_emulator/convlstm/CESM2-WACCM_convlstm_tas+pr_run-01.yaml seed=3423
+python run.py experiment=single_emulator/convlstm/CESM2-WACCM_convlstm_tas+pr_run-01.yaml seed=22201
+python run.py experiment=single_emulator/convlstm/CESM2-WACCM_convlstm_tas+pr_run-01.yaml seed=7
 
