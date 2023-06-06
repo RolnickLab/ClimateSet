@@ -16,18 +16,17 @@ for x in AWI-CM-1-1-MR.tar.gz BCC-CSM2-MR.tar.gz CAMS-CSM1-0.tar.gz CAS-ESM2-0.t
 
 #curl https://object-arbutus.cloud.computecanada.ca/causalpaca/outputs/NorESM2-LM.tar.gz --output ${data_dir}/outputs/NorESM2-LM.tar.gz
 
-echo "Done. Finished downloading the compressed files, now extracting and deleting compressed files!"
+echo "Done. Finished downloading the compressed files, now extracting!"
 
 cd ${data_dir}/inputs
 for x in `ls |grep .gz`;
-do tar -xzf $x;
-do rm -f $x;
+do tar -xzf $x; rm -f $x;
 done;
 
 cd ../../${data_dir}/outputs
 for x in `ls |grep .gz`;
-do tar -xzf $x;
-do rm -f $x;
+do tar -xzf $x;  rm -f $x;
 done;
+
 
 echo "Done. Finished downloading Climateset data! :)"
