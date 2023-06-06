@@ -32,7 +32,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             mode: str = "train", # Train or test maybe # deprecated
             #input4mips_data_dir: Optional[str] ='/scratch/venka97/causalpaca_load/',  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
             #cmip6_data_dir:  Optional[str] = '/scratch/venka97/causalpaca_processed/',
-            output_save_dir: Optional[str] = '/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
+            output_save_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_savedata', #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
             climate_model: str = 'NorESM2-LM', # implementing single model only for now
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: Union[List[str], str] = ['ssp126','ssp370','ssp585'],
@@ -161,7 +161,7 @@ class ClimateDataset(torch.utils.data.Dataset):
                 if 'climate_model' in kwargs:
                     fname += kwargs['climate_model'] + '_'
                 if 'num_ensembles' in kwargs:
-                    fname += kwargs['num_ensembles'] + '_'
+                    fname += str(kwargs['num_ensembles']) + '_'
                 # all
                 fname += '_'.join(kwargs['variables']) +'_' #+ '_' + kwargs['input_normalization']
                 #fname +=  '_' + file + '.npy'
@@ -175,8 +175,11 @@ class ClimateDataset(torch.utils.data.Dataset):
                         fname+=f"{k}_"+"_".join(kwargs[k])+'_'
                     else:
                         fname+=f"{k}_{kwargs[k]}_"
-
-            fname += mode + '_' + file + '.npz'
+            
+            if file == 'statistics':
+                fname += mode + '_' + file + '.npy'
+            else:
+                fname += mode + '_' + file + '.npz'
 
             print(fname)
             return fname
@@ -280,20 +283,27 @@ class ClimateDataset(torch.utils.data.Dataset):
             return norm_data
 
         def write_dataset_statistics(self, fname, stats):
-            np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)
+#            fname = fname.replace('.npz.npy', '.npy')
+            np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)            
             return os.path.join(self.output_save_dir, fname) 
 
         def load_dataset_statistics(self, fname, mode, mips):
-            if mode != 'test':
-                stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
-            else:
-                with open(os.path.join(self.output_save_dir, 'stats.txt')) as f:
-                     stats_files = [line.rstrip('\n') for line in f]
-                
-                if mips == 'cmip6':
-                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[0]), allow_pickle=True).item() 
-                else:
-                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[1]), allow_pickle=True).item()   
+            if 'train_' in fname:
+                fname = fname.replace('train', 'train+val')
+            elif 'test' in fname:
+                fname = fname.replace('test', 'train+val')
+
+            print('This is the stats file name: ', fname)
+#            if mode != 'test':
+            stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
+#            else:
+#                with open(os.path.join(self.output_save_dir, 'stats.txt')) as f:
+#                     stats_files = [line.rstrip('\n') for line in f]
+#                
+#                if mips == 'cmip6':
+#                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[0]), allow_pickle=True).item() 
+#                else:
+#                    stats_data = np.load(os.path.join(self.output_save_dir, stats_files[1]), allow_pickle=True).item()   
                 
             return stats_data      
         
@@ -506,7 +516,7 @@ class Input4MipsDataset(ClimateDataset):
             data_dir: Optional[str] = DATA_DIR,
             variables:  List[str] = ['BC_sum'],
             scenarios: List[str] = ['ssp126','ssp370','ssp585'],
-            channels_last: bool = True,
+            channels_last: bool = False,
             openburning_specs : Tuple[str] = ("no_fires", "no_fires"),
             mode : str = 'train',
             output_save_dir : str = "",
@@ -604,7 +614,7 @@ class Input4MipsDataset(ClimateDataset):
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     #
-                    stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+#                    stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
