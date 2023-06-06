@@ -13,7 +13,7 @@ import torch
 from torch import Tensor
 
 from emulator.src.utils.utils import get_logger
-from emulator.src.data.constants import LON, LAT, SEQ_LEN, INPUT4MIPS_TEMP_RES, CMIP6_TEMP_RES, INPUT4MIPS_NOM_RES, CMIP6_NOM_RES, DATA_DIR, OPENBURNING_MODEL_MAPPING, NO_OPENBURNING_VARS
+from emulator.src.data.constants import LON, LAT, SEQ_LEN, INPUT4MIPS_TEMP_RES, CMIP6_TEMP_RES, INPUT4MIPS_NOM_RES, CMIP6_NOM_RES, DATA_DIR, OPENBURNING_MODEL_MAPPING, NO_OPENBURNING_VARS, AVAILABLE_MODELS_FIRETYPE
 log = get_logger()
 
 # I think we should have 2 dataset classes, one for input4mips and one for cmip6 (as the latter is model dependent)
@@ -81,7 +81,10 @@ class ClimateDataset(torch.utils.data.Dataset):
                 self.historical_years = self.get_years_list(historical_years, give_list=True) # Can use this to split data into train/val eg. 2015-2080 train. 2080-2100 val.
             self.n_years = len(self.years) + len(self.historical_years)
 
-            openburning_specs=OPENBURNING_MODEL_MAPPING[climate_model]
+            if climate_model in AVAILABLE_MODELS_FIRETYPE:
+                openburning_specs=OPENBURNING_MODEL_MAPPING[climate_model]
+            else:
+                openburning_specs=OPENBURNING_MODEL_MAPPING["other"]
 
 
             ds_kwargs = dict(
