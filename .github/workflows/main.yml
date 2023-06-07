@@ -1,0 +1,17 @@
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - emulator_structure
+jobs:
+  get_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Update diagram
+        uses: githubocto/repo-visualizer@main
+        with:
+          excluded_paths: "ignore,.github"
+          
