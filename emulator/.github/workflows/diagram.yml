@@ -3,7 +3,7 @@ on:
   workflow_dispatch: {}
   push:
     branches:
-      - main
+      - emulator_structure
 jobs:
   get_data:
     runs-on: ubuntu-latest
@@ -11,6 +11,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@master
       - name: Update diagram
-        uses: githubocto/repo-visualizer@main
+        uses: RolnickLab/causalpaca@emulator_structure
         with:
           excluded_paths: "ignore,.github"
