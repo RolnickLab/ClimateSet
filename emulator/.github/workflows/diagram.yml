@@ -11,6 +11,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@master
       - name: Update diagram
-        uses: RolnickLab/causalpaca@emulator_structure
+        uses: githubocto/repo-visualizer@main
         with:
           excluded_paths: "ignore,.github"
