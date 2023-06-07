@@ -6,14 +6,17 @@ This readme should help you to get started on running and implementing emulator 
 ## Getting started
 The environment set-up happens separately from the dataset set-up since a different set of
 packages is needed for running the emulators.
+For a minimal list of all packages needed see [requirement_minimal](requirements/minimal_requirements.txt).
+To reproduce the environment in which most experiments were conducted, use the [requirements_all file](requirements/requirements_all.txt):
 
 ```python
 python -m venv env_emulator
 source env_emulator/bin/activate
-pip install -r requirements_emulator.txt
+pip install -r requirements/requirements_emulator.txt
 ```
-Bigger requirements:
-pytorch, wandb
+
+Needed Packages:
+pytorch, pytorh lightning, wandb, dask, xarray, segmentation models pytorch
 
 ## Run a model locally
 
@@ -54,7 +57,9 @@ You can add new models in `src/core/models`. Each model should inherit from the 
 ├── tests
 ├── LICENSE
 ├── README.md
-├── requirements_emulator.txt
+├── requirements
+    ├── requirements_minimal.txt
+    └── equirements_all.txt
 ├── run.py
 └── setup.py
 
