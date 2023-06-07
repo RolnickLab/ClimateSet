@@ -77,7 +77,7 @@ class ClimaX(BaseModel):
         datamodule_config: DictConfig = None,
         pretrained_path: str = None,
         region_info = None, # TODO: maybe later we could actually include that
-        channels_last : bool = True,
+        channels_last : bool = False,
         *args, **kwargs,
     ):
         super().__init__(datamodule_config=datamodule_config, *args, **kwargs)

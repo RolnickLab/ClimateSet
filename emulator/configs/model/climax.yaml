@@ -25,7 +25,6 @@ freeze_encoder: False
 pretrained_path: "/home/mila/v/venkatesh.ramesh/scratch/causalpaca/emulator/src/core/models/climax/pretrained_checkpoints/ClimaX-5.625deg.ckpt"
 no_time_aggregation: ${datamodule.seq_to_seq} # if seq_to_seq -> no time aggregation
 
-
 scheduler:
   _target_: emulator.src.utils.lr_scheduler.LinearWarmupCosineAnnealingLR
   warmup_epochs: 2 #60 #original specs

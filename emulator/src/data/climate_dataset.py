@@ -42,7 +42,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             out_variables: Union[str, List[str]] = 'pr',
             in_variables: Union[str, List[str]] = ['BC_sum','SO2_sum', 'CH4_sum', 'CO2_sum'],
             seq_to_seq: bool = True, #TODO: implement if false
-            channels_last: bool = True,
+            channels_last: bool = False,
             load_data_into_mem: bool = True, # Keeping this true be default for now
             input_transform = None, # TODO: implement
             input_normalization = 'z-norm', #TODO: implement

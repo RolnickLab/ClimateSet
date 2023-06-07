@@ -5,7 +5,7 @@
 defaults:
   - override /mode: exp.yaml
   - override /trainer: default.yaml
-  - override /model: unet.yaml # put the desired model name here
+  - override /model: climax.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
   - override /datamodule: climate.yaml # standard datamodule configurations
@@ -15,7 +15,7 @@ defaults:
 
 # name of the run determines folder name in logs
 # can also be accessed by loggers
-name: "EC-Earth3_unet_tas_run-01"
+name: "EC-Earth3_climax_tas_run-01"
 
 seed: 22201
 #seed: 7
@@ -47,4 +47,4 @@ datamodule: # overwrite what stuff to train on
 
 logger:
   wandb:
-          tags: ["single_emulator", "unet", "EC-Earth3", "tas+pr", "run1"] # set your tags here
+          tags: ["single_emulator", "climax", "EC-Earth3", "tas+pr", "run1"] # set your tags here

@@ -37,7 +37,7 @@ class ClimateDataModule(LightningDataModule):
             test_years: Union[int,str] = "2090-2100", # do we want to implement keeping only certain years for testing?
             val_split: float = 0.1, # fraction of testing to split for valdation
             seq_to_seq: bool = True, #if true maps from T->T else from T->1
-            channels_last: bool = True, # wheather variables come last our after sequence lenght
+            channels_last: bool = False, # wheather variables come last our after sequence lenght
             train_scenarios: List[str] = ["historical", "ssp126"],
             test_scenarios: List[str] = ["ssp370", "ssp126"],
             train_models: List[str] = ["NorESM2-LM"],
