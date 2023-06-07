@@ -5,7 +5,7 @@
 defaults:
   - override /mode: exp.yaml
   - override /trainer: default.yaml
-  - override /model: unet.yaml # put the desired model name here
+  - override /model: conv_lstm.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
   - override /datamodule: climate.yaml # standard datamodule configurations
@@ -15,7 +15,7 @@ defaults:
 
 # name of the run determines folder name in logs
 # can also be accessed by loggers
-name: "BCC-CSM2-MR_unet_tas_run-01"
+name: "BCC-CSM2-MR_conv_lstm_tas_run-01"
 
 seed: 22201
 #seed: 7
@@ -47,4 +47,4 @@ datamodule: # overwrite what stuff to train on
 
 logger:
   wandb:
-          tags: ["single_emulator", "unet", "BCC-CSM2-MR", "tas+pr", "run1"] # set your tags here
+          tags: ["single_emulator", "conv_lstm", "BCC-CSM2-MR", "tas+pr", "run1"] # set your tags here
