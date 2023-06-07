@@ -93,7 +93,7 @@ Option 2: Use wandb offline
 logger:
     wandb:
         project: "YOUR_PROJECT"
-        group: "YOUR GROUP"
+        group: "YOUR_GROUP"
         offline: True
  ```
 
@@ -106,7 +106,7 @@ To run with logging to wandb, you can simply use the wandb logger overwriting th
 logger:
     wandb:
         project: "YOUR_PROJECT"
-        group: "YOUR GROUP"
+        group: "YOUR_GROUP"
         offline: False #default
  ```
 ## How to add new models
