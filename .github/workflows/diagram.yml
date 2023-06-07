@@ -13,6 +13,6 @@ jobs:
       - name: Update diagram
         uses: githubocto/repo-visualizer@main
         with:
-          max_depth: 5
-          excluded_globs: "frontend/*.spec.js;**/*.{png,jpg};**/!(*.module).ts/*.{txt,md}"
+          max_depth: 7
+          excluded_globs: "frontend/*.spec.js;**/*.{png,jpg};**/!(*.module).ts/**/*.{txt,md}"
           excluded_paths: ".esg, .circleci, emulator/logs, ignore,.github, causal, causalpaca2, data_building, deprecated, env39, notebooks, diagram.svg, download_cliateset.sh, requirements.txt, requirements2.txt, requirements37.txt, requirements_data.txt, setup.sh, tests.py"
