@@ -13,4 +13,4 @@ jobs:
       - name: Update diagram
         uses: githubocto/repo-visualizer@main
         with:
-          excluded_paths: "ignore,.github, causal, causalpaca2, data_building, deprecated, env39, notebooks, diagram.svg, download_cliateset.sh, requirements.txt, requirements2.txt, requirements37.txt, requirements_data.txt, setup.sh, tests.py"
+          excluded_paths: ".esg, .circleci, emulator/logs, ignore,.github, causal, causalpaca2, data_building, deprecated, env39, notebooks, diagram.svg, download_cliateset.sh, requirements.txt, requirements2.txt, requirements37.txt, requirements_data.txt, setup.sh, tests.py"
