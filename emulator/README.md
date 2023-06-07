@@ -6,13 +6,15 @@ This readme should help you to get started on running and implementing emulator 
 ## Getting started
 The environment set-up happens separately from the dataset set-up since a different set of
 packages is needed for running the emulators.
-For a minimal list of all packages needed see [requirement_minimal](requirements/minimal_requirements.txt).
-To reproduce the environment in which most experiments were conducted, use the [requirements_all file](requirements/requirements_all.txt):
+For a minimal list of all packages needed see [requirements_minimal](requirements/minimal_requirements.txt).
+To reproduce the environment in which most experiments were conducted, use the [requirements_all file](requirements/requirements_all.txt). 
+Finally, setup the emulator module.
 
 ```python
 python -m venv env_emulator
 source env_emulator/bin/activate
 pip install -r requirements/requirements_emulator.txt
+pip install -e .
 ```
 
 Needed Packages:
