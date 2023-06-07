@@ -77,7 +77,6 @@ python run.py experiment=test # will run whatever is specified by the configs/ex
 
 You can make use of the [experiment template](configs/experiment/templatte.yaml).
 
-# Running a model
 ## Logging locally
 To run your model locally can either use no logger at all or tell the wandb logger to log your experiments offlien you will need to overwrite the default logger (wandb) and set it to offline:
 
