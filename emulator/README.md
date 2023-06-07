@@ -28,7 +28,7 @@ pytorch, pytorh lightning, wandb, dask, xarray, segmentation models pytorch
 You can add new models in `src/core/models`. Each model should inherit from the Basemodel class you can find in `basemodel.py`. Add a new config file for your model in `config/models/`.
 
 ## Structure
-![Visualization of the codebase](./diagram.svg)
+![Visualization of the codebase](diagram.svg)
 
 ├── configs
 │   ├── experiments
