@@ -30,15 +30,12 @@ class ClimateDataset(torch.utils.data.Dataset):
         def __init__(self,
             years: Union[int,str] = "2015-2020", 
             mode: str = "train", # Train or test maybe # deprecated
-            #input4mips_data_dir: Optional[str] ='/scratch/venka97/causalpaca_load/',  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
-            #cmip6_data_dir:  Optional[str] = '/scratch/venka97/causalpaca_processed/',
-            output_save_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_savedata', #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
+            output_save_dir: Optional[str] = DATA_DIR,
             climate_model: str = 'NorESM2-LM', # implementing single model only for now
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: Union[List[str], str] = ['ssp126','ssp370','ssp585'],
             historical_years: Union[Union[int, str], None] = "1850-1900",
-            #train_experiments: List[str] = ['ssp126','ssp370','ssp585'],
-            #test_experiments: Union[str, List[str]] = ['ssp245'],
+            
             out_variables: Union[str, List[str]] = 'pr',
             in_variables: Union[str, List[str]] = ['BC_sum','SO2_sum', 'CH4_sum', 'CO2_sum'],
             seq_to_seq: bool = True, #TODO: implement if false
@@ -351,26 +348,21 @@ class CMIP6Dataset(ClimateDataset):
             self,
             years: Union[int,str], 
             historical_years: Union[int,str],
-            #mode: str = "train", # Train or test maybe # deprecated
             data_dir: Optional[str] = DATA_DIR,
-            #output_save_dir: Optional[str] = '/home/venka97/scratch/causal_savedata',
             climate_model: str = 'NorESM2-LM',
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: List[str] = ['ssp126','ssp370','ssp585'],
-            #train_experiments: List[str] = ['ssp126','ssp370','ssp585'],
-            #test_experiments: Union[str, List[str]] = ['ssp245'],
             variables: List[str] = ['pr'],
             mode: str = 'train',
             output_save_dir: str = "",
             channels_last: bool = True,
             seq_to_seq: bool = True,
             *args, **kwargs,
-            #load_data_into_mem: bool = True, # Keeping this true be default for now
     ):
 
         self.mode = mode
         self.output_save_dir = output_save_dir
-        self.root_dir = os.path.join(data_dir, "targets/CMIP6")
+        self.root_dir = os.path.join(data_dir, "outputs")
         #self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
@@ -411,7 +403,7 @@ class CMIP6Dataset(ClimateDataset):
         # else do random split logic here
 
 
-        # Check here if os.path.isfile($SCRATCH/data.npz) exists
+        # Check here if os.path.isfile(data.npz) exists
         # if it does, use self._reload data(path)
         fname = self.get_save_name_from_kwargs(mode=mode, file='target', kwargs=fname_kwargs)
 
@@ -520,7 +512,7 @@ class Input4MipsDataset(ClimateDataset):
         self.channels_last=channels_last
 
         self.mode = mode
-        self.root_dir = os.path.join(data_dir, "input_alternate/input4mips")
+        self.root_dir = os.path.join(data_dir, "inputs")
         self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
@@ -542,7 +534,7 @@ class Input4MipsDataset(ClimateDataset):
         # else do random split logic here
         fname = self.get_save_name_from_kwargs(mode=mode, file='input', kwargs=fname_kwargs)
 
-        # Check here if os.path.isfile($SCRATCH/data.npz) exists #TODO: check if exists on slurm
+        # Check here if os.path.isfile(data.npz) exists #TODO: check if exists on slurm
         # if it does, use self._reload data(path)
 
         if os.path.isfile(os.path.join(output_save_dir, fname)): # we first need to get the name here to test that...

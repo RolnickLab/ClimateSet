@@ -1,3 +1,4 @@
+import os
 # Data constants
 
 
@@ -14,7 +15,7 @@ SEQ_LEN_MAPPING ={
     'mon': 12
 }
 
-DATA_DIR = '/home/mila/v/venkatesh.ramesh/scratch/causal_data' # MILA cluster
+DATA_DIR = os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
 # Model : (historical_obe_files, future_obe_files)
 
 #Available models 
