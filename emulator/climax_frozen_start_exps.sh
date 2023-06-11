@@ -44,13 +44,13 @@ python run.py experiment=single_emulator/climax_frozen/INM-CM5-0_climax_tas+pr_r
 python run.py experiment=single_emulator/climax_frozen/INM-CM5-0_climax_tas+pr_run-01.yaml seed=22201
 python run.py experiment=single_emulator/climax_frozen/INM-CM5-0_climax_tas+pr_run-01.yaml seed=7
 
-python run.py experiment=single_emulator/climax_frozen/CMCC-CM2-SR5_climax_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/climax_frozen/CMCC-CM2-SR5_climax_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/climax_frozen/CMCC-CM2-SR5_climax_tas+pr_run-01.yaml seed=7
+#python run.py experiment=single_emulator/climax_frozen/CMCC-CM2-SR5_climax_tas+pr_run-01.yaml seed=3423
+#python run.py experiment=single_emulator/climax_frozen/CMCC-CM2-SR5_climax_tas+pr_run-01.yaml seed=22201
+#python run.py experiment=single_emulator/climax_frozen/CMCC-CM2-SR5_climax_tas+pr_run-01.yaml seed=7
 
-python run.py experiment=single_emulator/climax_frozen/CAMS-CSM1-0_climax_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/climax_frozen/CAMS-CSM1-0_climax_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/climax_frozen/CAMS-CSM1-0_climax_tas+pr_run-01.yaml seed=7
+#python run.py experiment=single_emulator/climax_frozen/CAMS-CSM1-0_climax_tas+pr_run-01.yaml seed=3423
+#python run.py experiment=single_emulator/climax_frozen/CAMS-CSM1-0_climax_tas+pr_run-01.yaml seed=22201
+#python run.py experiment=single_emulator/climax_frozen/CAMS-CSM1-0_climax_tas+pr_run-01.yaml seed=7
 
 python run.py experiment=single_emulator/climax_frozen/NorESM2-MM_climax_tas+pr_run-01.yaml seed=3423
 python run.py experiment=single_emulator/climax_frozen/NorESM2-MM_climax_tas+pr_run-01.yaml seed=22201
@@ -76,9 +76,9 @@ python run.py experiment=single_emulator/climax_frozen/CNRM-CM6-1-HR_climax_tas+
 python run.py experiment=single_emulator/climax_frozen/CNRM-CM6-1-HR_climax_tas+pr_run-01.yaml seed=22201
 python run.py experiment=single_emulator/climax_frozen/CNRM-CM6-1-HR_climax_tas+pr_run-01.yaml seed=7
 
-python run.py experiment=single_emulator/climax_frozen/CMCC-ESM2_climax_tas+pr_run-01.yaml seed=3423
-python run.py experiment=single_emulator/climax_frozen/CMCC-ESM2_climax_tas+pr_run-01.yaml seed=22201
-python run.py experiment=single_emulator/climax_frozen/CMCC-ESM2_climax_tas+pr_run-01.yaml seed=7
+#python run.py experiment=single_emulator/climax_frozen/CMCC-ESM2_climax_tas+pr_run-01.yaml seed=3423
+#python run.py experiment=single_emulator/climax_frozen/CMCC-ESM2_climax_tas+pr_run-01.yaml seed=22201
+#python run.py experiment=single_emulator/climax_frozen/CMCC-ESM2_climax_tas+pr_run-01.yaml seed=7
 
 python run.py experiment=single_emulator/climax_frozen/CAS-ESM2-0_climax_tas+pr_run-01.yaml seed=3423
 python run.py experiment=single_emulator/climax_frozen/CAS-ESM2-0_climax_tas+pr_run-01.yaml seed=22201

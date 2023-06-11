@@ -27,7 +27,7 @@ no_time_aggregation: ${datamodule.seq_to_seq} # if seq_to_seq -> no time aggrega
 
 scheduler:
   _target_: emulator.src.utils.lr_scheduler.LinearWarmupCosineAnnealingLR
-  warmup_epochs: 2 #60 #original specs
-  max_epochs: 10 #600 #original specs
+  warmup_epochs: 5 #60 #original specs
+  max_epochs: 50 #600 #original specs
   warmup_start_lr: 1e-8
   eta_min: 1e-8
