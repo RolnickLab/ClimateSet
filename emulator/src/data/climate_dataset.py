@@ -16,8 +16,6 @@ from emulator.src.utils.utils import get_logger
 from emulator.src.data.constants import LON, LAT, SEQ_LEN, INPUT4MIPS_TEMP_RES, CMIP6_TEMP_RES, INPUT4MIPS_NOM_RES, CMIP6_NOM_RES, DATA_DIR, OPENBURNING_MODEL_MAPPING, NO_OPENBURNING_VARS, AVAILABLE_MODELS_FIRETYPE
 log = get_logger()
 
-# I think we should have 2 dataset classes, one for input4mips and one for cmip6 (as the latter is model dependent)
-# Also, we should create separate datasets for testing and training and validation, to make the splitting easier
 """
 - base data set: implements copy to slurm, get item etc pp
 - cmip6 data set: model wise
@@ -135,23 +133,6 @@ class ClimateDataset(torch.utils.data.Dataset):
             np.savez(os.path.join(output_save_dir, fname), data=data)
             return os.path.join(output_save_dir, fname) 
 
-        """
-        def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
-            fname =""
-                
-            for k in kwargs:
-                if isinstance(kwargs[k], List):
-                    fname+=f"{k}_"+"_".join(kwargs[k])+'_'
-                else:
-                    fname+=f"{k}_{kwargs[k]}_"
-
-            if file == 'statistics':
-                fname +=  '_' + file + '.npy'
-            else:
-                fname += mode + '_' + file + '.npz'
-            print(fname)
-            return fname
-        """
         def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
             fname =""
             print("KWARGs:", kwargs)
@@ -186,20 +167,6 @@ class ClimateDataset(torch.utils.data.Dataset):
 
         def copy_to_slurm(self, fname):
             pass
-            # Need to re-write this depending on which directory structure we want
-
-            # if 'SLURM_TMPDIR' in os.environ:
-            #     print('Copying the datato SLURM_TMPDIR')
-
-            #     input_dir = os.environ['SLURM_TMPDIR'] + '/input'
-            #     os.makedirs(os.path.dirname(in_dir), exist_ok=True)
-
-            #     shutil.copyfile(self.input_fname, input_dir)
-            #     self.input_path = h5_path_new_in
-
-            #     h5_path_new_out = os.environ['SLURM_TMPDIR'] + '/output_' + self._filename
-            #     shutil.copyfile(self._out_path, h5_path_new_out)
-            #     self._out_path = h5_path_new_out
 
         def _reload_data(self, fname):
             try:
@@ -293,7 +260,6 @@ class ClimateDataset(torch.utils.data.Dataset):
             elif 'test' in fname:
                 fname = fname.replace('test', 'train+val')
 
-#            print('This is the stats file name: ', fname)
             stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
                 
             return stats_data      
