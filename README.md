@@ -11,49 +11,65 @@ To download and store the preprocessed dataset ready for training locally, execu
 bash download_climateset.sh
 ```
 
-You should now see a newly created directory called "Climateset_DATA" containing inputs and targets. This folder will be referenced within the emulator pipeline.
+#### Note that this by default only downloads NorESM2-LM data. To download data for all climate models, please uncomment the line with the for loop.
+
+You should now see a newly created directory called "Climateset_DATA" containing inputs and targets. This folder will be referenced within the emulator pipeline. 
 
 ### Setting up the environment
-The environment set-up happens separately from the dataset set-up since a different set of packages is needed for running the emulators. 
-For a minimal list of all packages needed see [requirements_minimal](minimal_requirements.txt).
-To reproduce the environment in which most experiments were conducted, use the [requirements_all file](requirements_all.txt). 
-Finally, setup the emulator module.
+
+To setup the environment for causalpaca, we use python3.10. There are two separate requirements file for creating environments.
+
+To create the environment used for training unet & convlstm models, use [requirements](requirements.txt) and climax related experiments, use [requirements_climax](requirements_climax.txt).
+
+
+Follow the following steps to create the environment:
 
 ```python
 python -m venv env_emulator
 source env_emulator/bin/activate
-pip install -r requirements_emulator.txt
+pip install -r requirements.txt
 pip install -e .
 ```
 
-Needed Packages:
-pytorch, pytorh lightning, wandb, dask, xarray, segmentation models pytorch
-
-
-## Structure
-![Visualization of the codebase](./diagram.svg)
-
-
-The repository is inspired by [ClimART](https://github.com/RolnickLab/climart/tree/main) and PL+Hydra template implementation [ashleve/lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template)
-
-
 # Running a model
-To run the model, edit the [main config](emulator/configs/main_config.yaml) to fit what you want to run. 
-Executing the run.py script plain will use the main config. 
+
+We provide some experiment configs in ```emulator/configs/experiment``` to recreate some of our models. Here are some example to recreate single emulator experimnts for NorESM2-LM.
 
 ```python
-python emulator/run.py # will run with configs/main_config.yml
+python emulator/run.py experiment=single_emulator/unet/NorESM2-LM_unet_tas+pr_run-01.yaml seed=3423
 ```
-To exectute one of the preset experiments or to run your own experiments you can create and pass on experiment configs:
+
+This will train the U-Net model on NorESM2-LM dataset. To change some of the parameters of the experiment, you can use hydra to override them. For eg. to run with different experiment seed:
 
 ```python
-python emulator/run.py experiment=test # will run whatever is specified by the configs/experiment/test.yml file
+python emulator/run.py experiment=single_emulator/unet/NorESM2-LM_unet_tas+pr_run-01.yaml seed=22201
 ```
 
-You can make use of the [experiment template](emulator/configs/experiment/templatte.yaml).
+For running experiments with other models, here are some example commands:
+
+```python
+python emulator/run.py experiment=single_emulator/climax/NorESM2-LM_climax_tas+pr_run-01.yaml seed=3423
+```
+
+```python
+python emulator/run.py experiment=single_emulator/climax_frozen/NorESM2-LM_climax_tas+pr_run-01.yaml seed=3423
+```
+
+```python
+python emulator/run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_tas+pr_run-01.yaml seed=3423
+```
+
+For climax & climax_frozen models, we will need to use a different requirements file to create another environment.
+
+For the single-emulator experiments, we example templates for a couple of climate models for each ml model in ```configs/experiment/single_emulator```  and for fine-tuning experimnts, the configs can be found in ```configs/experiment/finetuning_emulator```.
+
+An example command for finetuning would look like this:
+```python
+python run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423
+```
 
 ## Logging locally
-To run your model locally can either use no logger at all or tell the wandb logger to log your experiments offlien you will need to overwrite the default logger (wandb) and set it to offline:
+To run your model locally can either use no logger at all or tell the wandb logger to log your experiments offline you will need to overwrite the default logger (wandb) and set it to offline:
 
 Option 1: Setting loger to none
 ``` yaml
@@ -86,3 +102,9 @@ logger:
  ```
 ## How to add new models
 You can add new models in `emulator/src/core/models`. Each model should inherit from the Basemodel class you can find in `basemodel.py`. Add a new config file for your model in `emulator/config/models/`.
+
+## Structure
+![Visualization of the codebase](./diagram.svg)
+
+
+The repository is inspired by [ClimART](https://github.com/RolnickLab/climart/tree/main) and PL+Hydra template implementation [ashleve/lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template)

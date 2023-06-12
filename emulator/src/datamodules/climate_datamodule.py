@@ -51,9 +51,7 @@ class ClimateDataModule(LightningDataModule):
             verbose: bool = True,
             seed: int = 11,
             seq_len: int = SEQ_LEN_MAPPING[TEMP_RES],
-            #input4mips_data_dir: Optional[str] ='/scratch/venka97/causalpaca_load/',  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
-            #cmip6_data_dir:  Optional[str] = '/scratch/venka97/causalpaca_processed/',
-            output_save_dir: Optional[str] = DATA_DIR, #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',
+            output_save_dir: Optional[str] = DATA_DIR, 
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             lon:int = LON,
             lat: int = LAT,
