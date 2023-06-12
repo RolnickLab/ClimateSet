@@ -29,9 +29,9 @@ model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
   finetune: False
-  pretrained_run_id: "ne8oyt48" #eg "3u0ys0d5"
-  pretrained_ckpt_dir: "/network/scratch/v/venkatesh.ramesh/causalpaca/emulator/emulator/ne8oyt48/checkpoints/epoch=49-step=2950.ckpt"  # e.g "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
-
+  pretrained_run_id: "" #eg "3u0ys0d5"
+  pretrained_ckpt_dir: "" # eg. "causalpaca/emulator/emulator/ne8oyt48/checkpoints/epoch=49-step=2950.ckpt"  
+  
 datamodule: # overwrite what stuff to train on
     # more selection like climate models and scenarios + splits should go here
     # ...
