@@ -78,7 +78,7 @@ trainer:
 model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
-  finetune: False
+  finetune: True
   pretrained_run_id: "" #eg "3u0ys0d5"
   pretrained_ckpt_dir: "" # eg. "causalpaca/emulator/emulator/ne8oyt48/checkpoints/epoch=49-step=2950.ckpt"  
   
