@@ -63,7 +63,7 @@ For climax & climax_frozen models, we will need to use a different requirements 
 
 For the single-emulator experiments, we example templates for a couple of climate models for each ml model in ```configs/experiment/single_emulator```  and for fine-tuning experimnts, the configs can be found in ```configs/experiment/finetuning_emulator```.
 
-For finetuning, we need to fill in ```pretrained_run_id``` and ```pretrained_ckpt_dir``` in the config files.
+For finetuning, we need to fill in ```pretrained_run_id``` and ```pretrained_ckpt_dir``` in the config files for resuming the experiments.
 
 An example command for finetuning would look like this:
 ```python
