@@ -190,7 +190,8 @@ def reload_model_from_id(
 
     """
     run_path = f"{group}/{project}/{run_id}"
-    log.info("given direc", direc)
+    print('THIS IS THE DIREC', str(direc))
+    log.info("given direc", str(direc))
     if os.path.isdir(os.path.join(direc, run_id)):
         saved_ckpts = [
             f for f in os.listdir(os.path.join(direc, run_id)) if f.endswith(".ckpt")
