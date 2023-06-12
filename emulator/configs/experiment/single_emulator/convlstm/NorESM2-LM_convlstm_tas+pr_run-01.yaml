@@ -29,8 +29,8 @@ model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
   finetune: False
-  pretrained_run_id: null # eg "3u0ys0d5"
-  pretrained_ckpt_dir: null # e.g "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
+  pretrained_run_id: null 
+  pretrained_ckpt_dir: null 
 
 datamodule: # overwrite what stuff to train on
     # more selection like climate models and scenarios + splits should go here
@@ -48,4 +48,4 @@ datamodule: # overwrite what stuff to train on
 logger:
   wandb:
           offline: True
-          #          tags: ["single_emulator", "conv_lstm", "NorESM2-LM", "tas+pr", "run1"] # set your tags here
+          tags: ["single_emulator", "conv_lstm", "NorESM2-LM", "tas+pr", "run1"] # set your tags here
