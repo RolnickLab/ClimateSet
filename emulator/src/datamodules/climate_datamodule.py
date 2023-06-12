@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from emulator.src.data.climate_dataset import ClimateDataset
 import torch
-from emulator.src.data.constants import TEMP_RES, SEQ_LEN_MAPPING, LAT, LON, NUM_LEVELS
+from emulator.src.data.constants import TEMP_RES, SEQ_LEN_MAPPING, LAT, LON, NUM_LEVELS, DATA_DIR
 from emulator.src.utils.utils import get_logger, random_split
 log = get_logger()
 
@@ -53,7 +53,7 @@ class ClimateDataModule(LightningDataModule):
             seq_len: int = SEQ_LEN_MAPPING[TEMP_RES],
             #input4mips_data_dir: Optional[str] ='/scratch/venka97/causalpaca_load/',  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
             #cmip6_data_dir:  Optional[str] = '/scratch/venka97/causalpaca_processed/',
-            output_save_dir: Optional[str] = '/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',
+            output_save_dir: Optional[str] = DATA_DIR, #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             lon:int = LON,
             lat: int = LAT,

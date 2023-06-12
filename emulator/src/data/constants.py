@@ -16,7 +16,7 @@ SEQ_LEN_MAPPING ={
     'mon': 12
 }
 
-DATA_DIR = os.path.join(Path(__file__).absolute().parent.parent, 'Climateset_DATA') #os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
+DATA_DIR = os.path.join(Path(__file__).absolute().parent.parent.parent.parent, 'Climateset_DATA') #os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
 # Model : (historical_obe_files, future_obe_files)
 
 #Available models 

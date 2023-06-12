@@ -47,4 +47,5 @@ datamodule: # overwrite what stuff to train on
 
 logger:
   wandb:
-          tags: ["single_emulator", "conv_lstm", "NorESM2-LM", "tas+pr", "run1"] # set your tags here
+          offline: True
+          #          tags: ["single_emulator", "conv_lstm", "NorESM2-LM", "tas+pr", "run1"] # set your tags here

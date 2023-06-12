@@ -48,8 +48,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             ):
 
             super().__init__()
-            self.data_dir = data_dir
-            print('THIS IS THE DATA DIR', self.data_dir)
+            self.test_dir = output_save_dir 
             self.output_save_dir = output_save_dir
             
             self.channels_last = channels_last
@@ -329,7 +328,7 @@ class CMIP6Dataset(ClimateDataset):
 
         self.mode = mode
         self.output_save_dir = output_save_dir
-        self.root_dir = os.path.join(data_dir, "outputs")
+        self.root_dir = os.path.join(data_dir, "outputs/CMIP6")
         #self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
@@ -479,7 +478,7 @@ class Input4MipsDataset(ClimateDataset):
         self.channels_last=channels_last
 
         self.mode = mode
-        self.root_dir = os.path.join(data_dir, "inputs")
+        self.root_dir = os.path.join(data_dir, "inputs/input4mips")
         self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
