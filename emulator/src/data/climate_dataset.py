@@ -48,7 +48,8 @@ class ClimateDataset(torch.utils.data.Dataset):
             ):
 
             super().__init__()
-            #self.data_dir = data_dir
+            self.data_dir = data_dir
+            print('THIS IS THE DATA DIR', self.data_dir)
             self.output_save_dir = output_save_dir
             
             self.channels_last = channels_last
