@@ -138,3 +138,7 @@ dmypy.json
 # Config files and emulator outputs
 /emulator/outputs/
 /emulator/logs/
+
+Climateset_DATA/
+logs/
+wandb/
