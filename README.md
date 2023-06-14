@@ -11,7 +11,7 @@ We showcase the potential of our dataset by using it as a benchmark for ML-based
 ## Usage 
 
 1. Create a new conda environment ```python >=3.10``` and activate it.
-2. Install the libraries mentioned in ```requirements.txt```
+2. Install the libraries mentioned in ```requirements.txt``` with ```pip install -r requirements.txt```.
 3. Install CDO.
 4. Run ```python -m data_building.builders.downloader --cfg config.yaml``` 
 5. Feel free to change confg.yaml to change the variables and experiments being downloaded.
