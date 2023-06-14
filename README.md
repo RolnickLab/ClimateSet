@@ -16,6 +16,7 @@ We showcase the potential of our dataset by using it as a benchmark for ML-based
 4. Run ```python -m data_building.builders.downloader --cfg config.yaml``` 
 5. Feel free to change confg.yaml to change the variables and experiments being downloaded.
 6. The list of the models can be edited by changing ```databuilding/selected_scenariosMIPs.csv```
+7. To download ```input4mips``` instead of ```cmip6``` data, change the line ``615`` in ```data_building/builders/downloader.py``` to ```False```.
 
 ## Development
 

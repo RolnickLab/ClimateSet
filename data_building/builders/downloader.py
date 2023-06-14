@@ -26,10 +26,6 @@ from data_building.parameters.data_paths import ROOT_DIR
 from data_building.parameters.esm_params import VARS, SCENARIOS
 from data_building.utils.helper_funcs import get_keys_from_value, get_MIP
 
-# Question @Charlie (by Julia): Why are we not doing the downloading process
-# as it is done here? https://github.com/aditya-grover/climate-learn/blob/main/src/climate_learn/data/download.py
-# we could use subprocess.check_call() with the parameter "--no-check-certificate" to circumvent the cookie situation
-
 overwrite = False  # flag if files should be overwritten
 
 
@@ -274,8 +270,6 @@ class Downloader:
                             print(
                                 "Having problems downloading the dateset. The server might be down. Skipping"
                             )
-                            with open("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/missing.txt", "a") as file:
-                                file.write(f + "\n")
                             continue
 
                         years = np.unique(ds.time.dt.year.to_numpy())
@@ -463,8 +457,6 @@ class Downloader:
                         print(
                             "Having problems downloading th edateset. The server might be dwon. Skipping"
                         )
-                        with open("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/missing.txt", "a") as file:
-                            file.write(f + "\n")
                         continue
 
                     years = np.unique(ds.time.dt.year.to_numpy())
@@ -626,36 +618,35 @@ if __name__ == "__main__":
     parser.add_argument("--cfg", help="Path to config file.")
     args = parser.parse_args()
 
-    # with open(args.cfg, "r") as stream:
-    #     cfg = yaml.safe_load(stream)
+    if not input4mips:
+        with open(args.cfg, "r") as stream:
+            cfg = yaml.safe_load(stream)
+        
+        csv_path = cfg["dataset"]["data_csv"]
+        experiments = cfg["dataset"]["experiments"]
+        vars = cfg["dataset"]["vars"]
+
+        df = pd.read_csv(csv_path)
+
+        models = df['source_id']
+        # determine if we are on a slurm cluster
+        cluster = "none"
+        if "SLURM_TMPDIR" in os.environ:
+            cluster = "slurm"
+
+        if cluster == "slurm":
+            data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
+        else:
+            data_dir = str(ROOT_DIR) + "/tmp/data"
+
+        for id, m in enumerate(models):
+            max_ensemble_members = df['num_ensemble_members'][id]
+            print('Downloading for model: ', m)
+        
+            downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
+            downloader.download_from_model()
     
-    # csv_path = cfg["dataset"]["data_csv"]
-    # experiments = cfg["dataset"]["experiments"]
-    # vars = cfg["dataset"]["vars"]
-
-    # df = pd.read_csv(csv_path)
-
-    # models = df['source_id']
-    # # determine if we are on a slurm cluster
-    # cluster = "none"
-    # if "SLURM_TMPDIR" in os.environ:
-    #     cluster = "slurm"
-
-    # if cluster == "slurm":
-    #     data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
-    # else:
-    #     data_dir = str(ROOT_DIR) + "/tmp/data"
-
-    # for id, m in enumerate(models):
-    #     max_ensemble_members = df['num_ensemble_members'][id]
-    #     print('Downloading for model: ', m)
-    
-    #     downloader = Downloader(experiments=experiments, vars=vars, model=m, data_dir=data_dir, max_ensemble_members=max_ensemble_members)
-    #     downloader.download_from_model()
-    #     subprocess.call("/home/venka97/projects/def-drolnick/venka97/code/causalpaca/copy.sh")
-
-    
-    if input4mips:
+    else:
         experiments = ["ssp126", "ssp245", "ssp370", "ssp585"]
         # Funktioniert: BC_em_anthro, BC_em_AIR_anthro
         vars = ["CO2_em_anthro", "CO2_em_AIR_anthro"]
@@ -682,27 +673,3 @@ if __name__ == "__main__":
 
         downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemble_members=ensemble_members)
         downloader.download_raw_input()
-
-    else:
-        vars=VARS
-        experiments=SCENARIOS
-        model="CanESM5"
-        #vars=["pr", "tas"]
-
-        #experiments=["ssp126", "historical"]
-        #model="NorESM2-LM"
-        max_ensemble_members=1
-        ensemble_members=["r1i1p1f1"]
-
-        # determine if we are on a slurm cluster
-        cluster = "none"
-        if "SLURM_TMPDIR" in os.environ:
-            cluster = "slurm"
-
-        if cluster == "slurm":
-            data_dir=f"{os.environ['SLURM_TMPDIR']}/causalpaca/data/"
-        else:
-            data_dir = str(ROOT_DIR) + "/tmp/data"
-
-        downloader = Downloader(experiments=experiments, vars=vars, model=model, data_dir=data_dir, ensemble_members=ensemble_members)
-        downloader.download_from_model()
