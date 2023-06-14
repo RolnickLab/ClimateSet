@@ -17,7 +17,7 @@ You should now see a newly created directory called "Climateset_DATA" containing
 
 ### Setting up the environment
 
-To setup the environment for causalpaca, we use python3.10. There are two separate requirements file for creating environments.
+To setup the environment for causalpaca, we use ```python>=3.10```. There are two separate requirements file for creating environments.
 
 To create the environment used for training unet & convlstm models, use [requirements](requirements.txt) and climax related experiments, use [requirements_climax](requirements_climax.txt).
 
