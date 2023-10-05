@@ -111,7 +111,15 @@ def extras(config: DictConfig) -> None:
         if config.datamodule.get("pin_memory"):
             config.datamodule.pin_memory = False
 
-    USE_WANDB = "logger" in config.keys() and config.logger.get("wandb")
+    if ("logger" in config.keys()) and config.logger.get("wandb"):
+        USE_WANDB=True
+    else:
+        USE_WANDB=False
+    
+    # in case there is no logger
+    if config.logger.get("name")=="none":
+        USE_WANDB=False
+    print("USE WAND", USE_WANDB)
     if USE_WANDB:
         if not config.logger.wandb.get('id'):  # no wandb id has been assigned yet
             wandb_id = wandb.util.generate_id()
@@ -220,16 +228,19 @@ def log_hyperparameters(
     
     params['dirs/work_dir'] = config.get('work_dir')
     params['dirs/ckpt_dir'] = config.get('ckpt_dir')
-    params['dirs/wandb_save_dir'] = config.logger.wandb.save_dir if (
+    if config.logger.get("name")=="none":
+        params['dirs/wandb_save_dir'] = None
+    else:
+        params['dirs/wandb_save_dir'] = config.logger.wandb.save_dir if (
             config.get('logger') and config.logger.get('wandb')) else None
 
-    # send hparams to all loggers
-    trainer.logger.log_hyperparams(params)
+        # send hparams to all loggers
+        trainer.logger.log_hyperparams(params)
 
-    # disable logging any more hyperparameters for all loggers
-    # this is just a trick to prevent trainer from logging hparams of model,
-    # since we already did that above
-    trainer.logger.log_hyperparams = no_op
+        # disable logging any more hyperparameters for all loggers
+        # this is just a trick to prevent trainer from logging hparams of model,
+        # since we already did that above
+        trainer.logger.log_hyperparams = no_op
 
 
 def save_hydra_config_to_wandb(config: DictConfig):
