@@ -1,6 +1,6 @@
 # Causalpaca: Emulator Models
 
-This branch contains the code for running the climate model emulation benchmark experiments on ClimateSet. 
+This branch contains the code for running the climate model emulation benchmark experiments on the core ClimateSet data. 
 Here we provide a quick documentation on installation, setup and a quickstart guide to reproduce our experiments.
 
 ## Getting started
@@ -31,9 +31,43 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+### For ClimaX: Download pretrained checkpoints
+
+To work with ClimaX, you will need to download the pretrained checkpoints from the original release and place them in the correct folder. To do so, exectute the following command:
+
+```bash
+bash download_climax_checkpoints.sh
+```
+
 # Running a model
 
-We provide some experiment configs in ```emulator/configs/experiment``` to recreate some of our models. Here are some example to recreate single emulator experimnts for NorESM2-LM.
+To run the model, edit the [main config](emulator/configs/main_config.yaml) to fit what you want to run. 
+Executing the run.py script plain will use the main config. 
+
+The [configs folder](emulator/configs/) serves as a blueprint, listing all the modules available. To get a better understanding of our codebases structure please refer to the section on [Structure](#structure) 
+
+```python
+python run.py # will run with configs/main_config.yml
+```
+
+To exectute one of the preset experiments or to run your own experiments you can create and pass on experiment configs:
+
+```python
+python run.py experiment=test # will run whatever is specified by the configs/experiment/test.yml file
+```
+
+You can make use of the [experiment template](emulator/configs/experiment/templatte.yaml).
+
+
+## Reproduce experiments
+We provide some experiment configs in ```emulator/configs/experiment``` to recreate some of our models.
+
+We ran 3 different configurations of experiments:
+- *single emulator*: A single ML-model - climate-model pairing.
+- *finetuning emulator*: A single ML-model that was pretrained on one climate-model and fine-tuned on another.
+- *super emulator*: A single ML-model that was trained on multiple climate-models.
+
+Here are some example to recreate single emulator experimnts for NorESM2-LM.
 
 ```python
 python emulator/run.py experiment=single_emulator/unet/NorESM2-LM_unet_tas+pr_run-01.yaml seed=3423
@@ -69,6 +103,20 @@ An example command for finetuning would look like this:
 ```python
 python run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423
 ```
+
+## Reloading pretrained checkpoints
+
+Similar to the fine-tuning experiments you can load, fine-tune and test preexisting models by adjusting the following parameters in the respective experiment config:
+
+``` yaml
+# In your experiment_name.yml
+model:
+    finetune: True
+    pretrained_run_id: "" #eg "3u0ys0d5"
+    pretrained_ckpt_dir: "" # eg. "causalpaca/emulator/emulator/ne8oyt48/checkpoints/epoch=49-step=2950.ckpt"
+ ```
+
+We are currently in the process of backing up all of our models used for the paper and will provide the pretrained checkpoints publicly as far as possible. Please feel free to reach out to us if you want to work with the repository and are in need of pretrained models.
 
 ## Logging locally
 To run your model locally can either use no logger at all or tell the wandb logger to log your experiments offline you will need to overwrite the default logger (wandb) and set it to offline:
@@ -106,6 +154,14 @@ logger:
 You can add new models in `emulator/src/core/models`. Each model should inherit from the Basemodel class you can find in `basemodel.py`. Add a new config file for your model in `emulator/config/models/`.
 
 ## Structure
+
+The codebase is divided in two main parts, [configs](emulator/configs/) and [src](emulator/src/).
+The *configs* folder provides parameterization for all the modules and experiments possible within the code provided in *src*.
+
+Within *src*, *core* includes all the code for the training and testing pipeline, 
+*data* loads and creates a custom dataset object from the core ClimateSet dataset and *datamodules* handles interfacing with the dataset for the different configurations.
+
+
 ![Visualization of the codebase](./diagram.svg)
 
 
