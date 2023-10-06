@@ -16,12 +16,10 @@ from emulator.src.utils.utils import get_logger
 from emulator.src.data.constants import LON, LAT, SEQ_LEN, INPUT4MIPS_TEMP_RES, CMIP6_TEMP_RES, INPUT4MIPS_NOM_RES, CMIP6_NOM_RES, DATA_DIR, OPENBURNING_MODEL_MAPPING, NO_OPENBURNING_VARS, AVAILABLE_MODELS_FIRETYPE
 log = get_logger()
 
-# I think we should have 2 dataset classes, one for input4mips and one for cmip6 (as the latter is model dependent)
-# Also, we should create separate datasets for testing and training and validation, to make the splitting easier
 """
 - base data set: implements copy to slurm, get item etc pp
-- cmip6 data set: model wise
-- input4mips data set: same per model
+- cmip6 data set: model-member wise
+- input4mips data set: same per model-member pairing (but unique to each openburning spec)
 
 - from datamodule create one of these per train/test/val
 """
@@ -31,12 +29,10 @@ class ClimateDataset(torch.utils.data.Dataset):
             years: Union[int,str] = "2015-2020", 
             mode: str = "train+val", # Train or test maybe # deprecated
             output_save_dir: Optional[str] = DATA_DIR, 
-            climate_model: str = 'NorESM2-LM', # implementing single model only for now
+            climate_model: str = 'NorESM2-LM', # implementing single model, for mulitple models use SuperClimateDataset
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: Union[List[str], str] = ['ssp126','ssp370','ssp585'],
             historical_years: Union[Union[int, str], None] = "1850-1900",
-            #train_experiments: List[str] = ['ssp126','ssp370','ssp585'],
-            #test_experiments: Union[str, List[str]] = ['ssp245'],
             out_variables: Union[str, List[str]] = 'pr',
             in_variables: Union[str, List[str]] = ['BC_sum','SO2_sum', 'CH4_sum', 'CO2_sum'],
             seq_to_seq: bool = True, #TODO: implement if false
@@ -53,8 +49,6 @@ class ClimateDataset(torch.utils.data.Dataset):
 
             super().__init__()
 
-            print("Seq len", seq_len)
-            
             self.test_dir = output_save_dir
             self.output_save_dir = output_save_dir
             
@@ -102,28 +96,22 @@ class ClimateDataset(torch.utils.data.Dataset):
                 seq_len=seq_len
             )
             # creates on cmip and on input4mip dataset
-            print("creating input4mips")
+            print("Creating input4mips...")
             self.input4mips_ds = Input4MipsDataset(variables=in_variables, **ds_kwargs)
-            print("creating cmip6")
-            #self.cmip6_ds=self.input4mips_ds
+            print("Creating cmip6...")
             self.cmip6_ds=CMIP6Dataset(climate_model=climate_model, num_ensembles=num_ensembles, variables=out_variables, **ds_kwargs)
 
         
-        # this operates variable vise now.... #TODO: sizes for input4mips / adapt to mulitple vars
+        # this operates variable vise now.... 
         def load_into_mem(self, paths: List[List[str]], num_vars, channels_last=True, seq_to_seq=True, seq_len=12): #-> np.ndarray():
            
             array_list =[]
-           
-            
             for vlist in paths:
-                print("length of var list", len(vlist))
-                print(vlist)
+                print("Number of files per var:", len(vlist))
                 temp_data = xr.open_mfdataset(vlist, concat_dim='time', combine='nested').compute() #.compute is not necessary but eh, doesn't hurt
-                temp_data = temp_data.to_array().to_numpy() # Should be of shape (vars, years*ensemble_members*num_scenarios, 96, 144)
-                print("temp_data shape", temp_data.shape) # years*seq_len*num_sceenarios*num_ensembles
+                temp_data = temp_data.to_array().to_numpy() # Should be of shape (vars, years*ensemble_members*num_scenarios, lon, lat)
                 array_list.append(temp_data)
             temp_data = np.concatenate(array_list, axis=0)
-            print("temp_data", temp_data.shape)
 
             if seq_len!=SEQ_LEN:
                 print("Choosing a sequence length greater or lesser than the data sequence length.")
@@ -136,24 +124,18 @@ class ClimateDataset(torch.utils.data.Dataset):
                 print(f"New sequence length: {seq_len} Dropping {temp_data.shape[1]-(new_shape_one*seq_len)} years")
                 temp_data=temp_data[:,:(new_shape_one*seq_len),:]
                 
-                
             else:
                 new_shape_one=int(temp_data.shape[1]/seq_len)
 
-            print("num_vars", num_vars)
-            
             temp_data = temp_data.reshape(num_vars,new_shape_one, seq_len, LON, LAT) # num_vars, num_scenarios*num_remainding_years, seq_len,lon,lat)
-            print("temp data reshape with seq len shape", seq_len, temp_data.shape)
             if seq_to_seq==False:
                 temp_data=temp_data[:,:,-1,:,:] # only take last time step
                 temp_data=np.expand_dims(temp_data, axis=2)
-                #print("seq to 1 temp data shape", temp_data.shape)
             if channels_last:
                 temp_data = temp_data.transpose((1,2,3,4,0))
             else:
                 temp_data = temp_data.transpose((1,2,0,3,4))
-            print("final temp data shape", temp_data.shape)
-            return temp_data # (years*num_scenarios, seq_len, vars, 96, 144)
+            return temp_data # (years*num_scenarios, seq_len, vars, lon, lat)
 
 
         def save_data_into_disk(self, data:np.ndarray,fname:str, output_save_dir: str) -> str:
@@ -161,26 +143,9 @@ class ClimateDataset(torch.utils.data.Dataset):
             np.savez(os.path.join(output_save_dir, fname), data=data)
             return os.path.join(output_save_dir, fname) 
 
-        """
         def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
             fname =""
-                
-            for k in kwargs:
-                if isinstance(kwargs[k], List):
-                    fname+=f"{k}_"+"_".join(kwargs[k])+'_'
-                else:
-                    fname+=f"{k}_{kwargs[k]}_"
-
-            if file == 'statistics':
-                fname +=  '_' + file + '.npy'
-            else:
-                fname += mode + '_' + file + '.npz'
-            print(fname)
-            return fname
-        """
-        def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
-            fname =""
-            print("KWARGs:", kwargs)
+            #print("KWARGs:", kwargs)
 
             if file == 'statistics':
                 # only cmip 6
@@ -190,8 +155,6 @@ class ClimateDataset(torch.utils.data.Dataset):
                     fname += str(kwargs['num_ensembles']) + '_'
                 # all
                 fname += '_'.join(kwargs['variables']) +'_' #+ '_' + kwargs['input_normalization']
-                #fname +=  '_' + file + '.npy'
-                #print(fname)
                 
 
             else:
@@ -207,7 +170,6 @@ class ClimateDataset(torch.utils.data.Dataset):
             else:
                 fname += mode + '_' + file + '.npz'
 
-            print(fname)
             return fname
 
         def copy_to_slurm(self, fname):
@@ -277,13 +239,12 @@ class ClimateDataset(torch.utils.data.Dataset):
 
 
         def get_mean_std(self, data):
-            # DATA shape (258, 12, 4, 96, 144) or DATA shape (258, 12, 2, 96, 144)
-
+            # DATA shape (years*scenarios, seq, vars, lon, lat)
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0)
             else: 
-                data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) easier to calulate statistics
-            vars_mean = np.mean(data, axis=(1, 2, 3, 4)) #sDATA shape (258, 12, 4, 96, 144)
+                data = np.moveaxis(data, 2, 0) 
+            vars_mean = np.mean(data, axis=(1, 2, 3, 4)) 
             vars_std = np.std(data, axis=(1, 2, 3, 4))
             vars_mean = np.expand_dims(vars_mean, (1, 2, 3, 4)) # Shape of mean & std (4, 1, 1, 1, 1)
             vars_std = np.expand_dims(vars_std, (1, 2, 3, 4))
@@ -310,14 +271,10 @@ class ClimateDataset(torch.utils.data.Dataset):
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0) # vars from last to 0 (num_vars, years, seq_len, lon, lat)
             else:
-                data = np.moveaxis(data, 2, 0) #DATA shape (years, seq_len, num_vars, 96, 144) -> (num_vars, years, seq_len, 96, 144) 
+                data = np.moveaxis(data, 2, 0) #DATA shape (years, seq_len, num_vars, lon, lat) -> (num_vars, years, seq_len, lon, lat) 
             
-            print("in normalize data shape", data.shape)
             print("mean", stats['mean'].shape, 'std', stats['std'].shape)
             norm_data = (data - stats['mean'])/(stats['std'])
-
-           
-            
 
             if self.channels_last:
                 norm_data = np.moveaxis(norm_data, 0, -1)
@@ -327,7 +284,6 @@ class ClimateDataset(torch.utils.data.Dataset):
             return norm_data
 
         def write_dataset_statistics(self, fname, stats):
-#            fname = fname.replace('.npz.npy', '.npy')
             np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)            
             return os.path.join(self.output_save_dir, fname) 
 
@@ -337,7 +293,6 @@ class ClimateDataset(torch.utils.data.Dataset):
             elif 'test' in fname:
                 fname = fname.replace('test', 'train+val')
 
-#            print('This is the stats file name: ', fname)
             stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
                 
             return stats_data      
@@ -350,12 +305,10 @@ class ClimateDataset(torch.utils.data.Dataset):
                 index=index-self.input4mips_ds.length # just shifiting back by one time the full dataset
             raw_Xs = self.input4mips_ds[index]
             raw_Ys= self.cmip6_ds[index]
-            #raw_Ys = self.cmip6_ds[index]
             if not self.load_data_into_mem:
                 X = raw_Xs
                 Y = raw_Ys
             else:
-                #if self.in
                 #TO-DO: Need to write Normalizer transform and To-Tensor transform
                 # Doing norm and to-tensor per-instance here. 
                 #X_norm = self.input_transforms(self.X[index]) 
@@ -375,7 +328,6 @@ class ClimateDataset(torch.utils.data.Dataset):
 
         def __len__(self):
             print('Input4mips', self.input4mips_ds.length, 'CMIP6 data' , self.cmip6_ds.length)
-            #assert self.input4mips_ds.length == self.cmip6_ds.length, "Datasets not of same length"
             # cmip must be num_ensemble members times input4mips
             assert self.input4mips_ds.length*self.num_ensembles == self.cmip6_ds.length, f"CMIP6 must be num_ensembles times the length of input4mips. Got {self.cmip6_ds.length} and {self.input4mips_ds.length}"
             return self.cmip6_ds.length
@@ -383,28 +335,16 @@ class ClimateDataset(torch.utils.data.Dataset):
 
 class CMIP6Dataset(ClimateDataset):
     """ 
-    
-    Use first ensemble member for now 
-    Option to use multile ensemble member later
-    Give option for which variable to use
-    Load 3 scenarios for train/val: Take this as a list
-    Process and save this as .npz in $SLURM_TMPDIR
-    Load these in train/val/test Dataloader functions
-    Keep one scenario for testing
-    # Target shape (85 * 12, 1, 144, 96) # ! * num_scenarios!!
+
     """
     def __init__( # inherits all the stuff from Base
             self,
             years: Union[int,str], 
             historical_years: Union[int,str],
-            #mode: str = "train", # Train or test maybe # deprecated
             data_dir: Optional[str] = DATA_DIR,
-            #output_save_dir: Optional[str] = '/home/venka97/scratch/causal_savedata',
             climate_model: str = 'NorESM2-LM',
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: List[str] = ['ssp126','ssp370','ssp585'],
-            #train_experiments: List[str] = ['ssp126','ssp370','ssp585'],
-            #test_experiments: Union[str, List[str]] = ['ssp245'],
             variables: List[str] = ['pr'],
             mode: str = 'train',
             output_save_dir: str = "",
@@ -412,13 +352,12 @@ class CMIP6Dataset(ClimateDataset):
             seq_to_seq: bool = True,
             seq_len: int = 12,
             *args, **kwargs,
-            #load_data_into_mem: bool = True, # Keeping this true be default for now
     ):
 
         self.mode = mode
         self.output_save_dir = output_save_dir
         self.root_dir = os.path.join(data_dir, "outputs/CMIP6")
-        #self.output_save_dir = output_save_dir
+
         self.input_nc_files = []
         self.output_nc_files = []
 
@@ -437,15 +376,10 @@ class CMIP6Dataset(ClimateDataset):
             seq_=seq_len
         )
      
-
-        #TO-DO: This is just getting the list of .nc files for targets. Put this logic in a function and get input list as well.
-        # In a function, we can call CausalDataset() instance for train and test separately to load the data
-
         if isinstance(climate_model, str):
             self.root_dir = os.path.join(self.root_dir, climate_model)
         else:
-            # Logic for multiple climate models, not sure how to load/create dataset yet
-            log.warn("Data loader not yet implemented for multiple climate models.")
+            log.warn("For loading multiple climate models, please make sure to use the Super Climate Dataset Class.")
             raise NotImplementedError
 
         if num_ensembles == 1:
@@ -459,18 +393,10 @@ class CMIP6Dataset(ClimateDataset):
                 self.ensemble_dir.append(os.path.join(self.root_dir, folder)) # Taking multiple ensemble members
                 if i==(num_ensembles-1):
                     break # if num_ensemble ==-1 we take all
-            # log.warn("Data loader not yet implemented for mulitple ensemble members.")
-            # raise NotImplementedError
-
-
-        # Split the data here using n_years if needed,
-        # else do random split logic here
-
-
+            
         # Check here if os.path.isfile($SCRATCH/data.npz) exists
         # if it does, use self._reload data(path)
         fname = self.get_save_name_from_kwargs(mode=mode, file='target', kwargs=fname_kwargs)
-
 
         if os.path.isfile(os.path.join(output_save_dir, fname)): # we first need to get the name here to test that...
             self.data_path=os.path.join(output_save_dir, fname)
@@ -484,19 +410,12 @@ class CMIP6Dataset(ClimateDataset):
             self.Data = self.normalize_data(self.Data, stats)
 
         else:
-            # Add code here for adding files for input nc data
-            # Similar to the loop below for output files
-
-            # Got all the files paths at this point, now open and merge
-
-            # List of output files
+            # Getting list of file names per variable for open and merging
             files_per_var=[]
             for var in variables:
-                print("val", var)
+             
                 output_nc_files=[]
-        
                 for exp in scenarios:
-                    print("exp", exp)
                     if exp=='historical':
                         get_years=historical_years
                     else:
@@ -504,18 +423,13 @@ class CMIP6Dataset(ClimateDataset):
                     for y in get_years:
                         for em in self.ensemble_dir:
                             var_dir = os.path.join(em, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
-                            print(var_dir)
                             files = glob.glob(var_dir + f'/*.nc', recursive=True)
-                            print("files", files)
                             if len(files)==0:
                                 print("No files for this ensemble member,y,scenario", exp, y, em)
                                 exit(0)
-                            # loads all years! implement plitting
+                            # loads all years!
                             output_nc_files += files
                 files_per_var.append(output_nc_files)
-
-            #print("files per var", files_per_var)
-            #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq, seq_len=seq_len) 
 
             if self.mode == 'train' or self.mode == 'train+val':
@@ -530,8 +444,7 @@ class CMIP6Dataset(ClimateDataset):
                     stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
-                    #
-                    #stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
+                    
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
                     print("WROTE STATISTICS", save_file_name)
 
@@ -544,19 +457,15 @@ class CMIP6Dataset(ClimateDataset):
                 stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='cmip6')
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
-            #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
 
-            #self.copy_to_slurm(self.input_path)
             self.copy_to_slurm(self.data_path)
 
-            self.Data = self.norm_data
-            # self.Data = self._reload_data(self.data_path)
-            
-
-            # Now X and Y is ready for getitem
-        print('CMIP6 shape', self.Data.shape)
+            self.Data = self.norm_data # ready for getitem
         self.length=self.Data.shape[0]
+
+
+
     def __getitem__(self, index):
         return self.Data[index]
 
@@ -564,7 +473,7 @@ class CMIP6Dataset(ClimateDataset):
 
 class Input4MipsDataset(ClimateDataset):
     """ 
-    Loads all scenarios for a given var / for all vars
+    Loads all scenarios for a given var.
     """
     def __init__( # inherits all the stuff from Base
             self,
@@ -605,12 +514,7 @@ class Input4MipsDataset(ClimateDataset):
         
         historical_openburning, ssp_openburning = openburning_specs
 
-        # Split the data here using n_years if needed,
-        # else do random split logic here
         fname = self.get_save_name_from_kwargs(mode=mode, file='input', kwargs=fname_kwargs)
-
-        # Check here if os.path.isfile($SCRATCH/data.npz) exists #TODO: check if exists on slurm
-        # if it does, use self._reload data(path)
 
         if os.path.isfile(os.path.join(output_save_dir, fname)): # we first need to get the name here to test that...
             self.data_path=os.path.join(output_save_dir, fname)
@@ -639,10 +543,8 @@ class Input4MipsDataset(ClimateDataset):
 
                 output_nc_files=[]
                 for exp in scenarios: # TODO: implement getting by years! also sub seletction for historical years
-                    # print(var, exp)
                     if var in NO_OPENBURNING_VARS:
                         filter_path_by=''
-                        # print("CO2 found")
                     elif exp=='historical':
                         filter_path_by=historical_openburning
                         get_years=historical_years
@@ -653,12 +555,10 @@ class Input4MipsDataset(ClimateDataset):
 
                     for y in get_years:
                         var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
-#                        print('THIS IS THE VARDIR', var_dir)
                         files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
                         output_nc_files += files
                 files_per_var.append(output_nc_files)
 
-            #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=self.channels_last, seq_to_seq=True ,seq_len=seq_len) # we always want the full sequence for input4mips
 
             if self.mode == 'train' or self.mode == 'train+val':
@@ -673,8 +573,6 @@ class Input4MipsDataset(ClimateDataset):
                     stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
-                    #
-#                    stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
@@ -685,21 +583,11 @@ class Input4MipsDataset(ClimateDataset):
                 stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='input4mips')
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
-            #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
 
-            #self.copy_to_slurm(self.input_path)
             self.copy_to_slurm(self.data_path)
 
-            # Call _reload_data here with self.input_path and self.output_path
-            # self.X = self._reload_data(input_path)
             self.Data = self.norm_data
-            # self.Data = self._reload_data(self.data_path)
-            # Write a normalize transform to calculate mean and std
-            # Either normalized whole array here or per instance getitem, that maybe faster
-
-            # Now X and Y is ready for getitem
-        print("Input4mips shape", self.Data.shape)
         self.length=self.Data.shape[0]
 
     def __getitem__(self, index):
