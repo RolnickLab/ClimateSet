@@ -12,7 +12,7 @@ import xarray as xr
 import torch
 from torch import Tensor
 
-from emulator.src.utils.utils import get_logger
+from emulator.src.utils.utils import get_logger, all_equal
 from emulator.src.data.constants import LON, LAT, SEQ_LEN, INPUT4MIPS_TEMP_RES, CMIP6_TEMP_RES, INPUT4MIPS_NOM_RES, CMIP6_NOM_RES, DATA_DIR, OPENBURNING_MODEL_MAPPING, NO_OPENBURNING_VARS, AVAILABLE_MODELS_FIRETYPE
 log = get_logger()
 
@@ -26,17 +26,22 @@ log = get_logger()
 - from datamodule create one of these per train/test/val
 """
 
-class ClimateDataset(torch.utils.data.Dataset):
+class SuperClimateDataset(torch.utils.data.Dataset):
+        """
+        Class to efficiently load data for multi-model multi-ensemble experiments.
+        Input4MIPS data is only loaded once (per desired fire-model as specified by the climate models)
+        
+        """
         def __init__(self,
             years: Union[int,str] = "2015-2020", 
             mode: str = "train+val", # Train or test maybe # deprecated
-            output_save_dir: Optional[str] = DATA_DIR, 
-            climate_model: str = 'NorESM2-LM', # implementing single model only for now
-            num_ensembles: int = 1, # 1 for first ensemble, -1 for all
+            input4mips_data_dir: Optional[str] = DATA_DIR,  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
+            cmip6_data_dir: Optional[str] = DATA_DIR, #'/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/',#DATA_DIR,
+            output_save_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_savedata', #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
+            climate_models: List[str] = ['NorESM2-LM','EC-Earth3-Veg-LR'], 
+            num_ensembles: Union[List[int],int] = 1, # 1 for first ensemble, -1 for all
             scenarios: Union[List[str], str] = ['ssp126','ssp370','ssp585'],
-            historical_years: Union[Union[int, str], None] = "1850-1900",
-            #train_experiments: List[str] = ['ssp126','ssp370','ssp585'],
-            #test_experiments: Union[str, List[str]] = ['ssp245'],
+            historical_years: Union[Union[int, str], None] = "1950-1955",
             out_variables: Union[str, List[str]] = 'pr',
             in_variables: Union[str, List[str]] = ['BC_sum','SO2_sum', 'CH4_sum', 'CO2_sum'],
             seq_to_seq: bool = True, #TODO: implement if false
@@ -53,11 +58,7 @@ class ClimateDataset(torch.utils.data.Dataset):
 
             super().__init__()
 
-            print("Seq len", seq_len)
-            
-            self.test_dir = output_save_dir
-            self.output_save_dir = output_save_dir
-            
+            self.output_save_dir = output_save_dir            
             self.channels_last = channels_last
             self.load_data_into_mem = load_data_into_mem
 
@@ -68,9 +69,14 @@ class ClimateDataset(torch.utils.data.Dataset):
             if isinstance(scenarios, str):
                 scenarios=[scenarios]
 
-            self.scenarios=scenarios   
-            self.num_ensembles=num_ensembles
+            self.scenarios=scenarios  
+            self.climate_models=climate_models
 
+            if isinstance(num_ensembles, int):
+                self.num_ensembles = [num_ensembles]*len(climate_models)
+            else:
+                self.num_ensembles=num_ensembles
+            
             if isinstance(years, int): 
                 self.years = years
             else:
@@ -82,31 +88,92 @@ class ClimateDataset(torch.utils.data.Dataset):
                 self.historical_years = historical_years
             else:
                 self.historical_years = self.get_years_list(historical_years, give_list=True) # Can use this to split data into train/val eg. 2015-2080 train. 2080-2100 val.
+            
             self.n_years = len(self.years) + len(self.historical_years) if 'historical' in self.scenarios else len(self.years)
+    
+            # if model to num is None, create
+            # DEPRECATED - using the model names in getitem
+            """
+            if model_to_model_num is None:
+                model_to_model_num = dict()
+                for i,m in enumerate(climate_models):
+                    model_to_model_num[m]=i 
+            self.model_to_model_num=model_to_model_num
+            """
 
-            if climate_model in AVAILABLE_MODELS_FIRETYPE:
-                openburning_specs=OPENBURNING_MODEL_MAPPING[climate_model]
-            else:
-                openburning_specs=OPENBURNING_MODEL_MAPPING["other"]
-
-
+            # we need to create a mapping from climate model to respective input4mips ds (because openburning specs might differ)
+            self.openburning_specs=[OPENBURNING_MODEL_MAPPING[climate_model] if climate_model in  AVAILABLE_MODELS_FIRETYPE else OPENBURNING_MODEL_MAPPING["other"] for climate_model in climate_models]
+           
             ds_kwargs = dict(
-                scenarios=scenarios,
-                years=self.years,
-                historical_years=self.historical_years,
-                channels_last=channels_last,
-                openburning_specs = openburning_specs,
-                mode=mode,
-                output_save_dir=output_save_dir,
-                seq_to_seq=seq_to_seq,
-                seq_len=seq_len
-            )
-            # creates on cmip and on input4mip dataset
-            print("creating input4mips")
-            self.input4mips_ds = Input4MipsDataset(variables=in_variables, **ds_kwargs)
-            print("creating cmip6")
-            #self.cmip6_ds=self.input4mips_ds
-            self.cmip6_ds=CMIP6Dataset(climate_model=climate_model, num_ensembles=num_ensembles, variables=out_variables, **ds_kwargs)
+                    scenarios=scenarios,
+                    years=self.years,
+                    historical_years=self.historical_years,
+                    channels_last=channels_last,
+                    mode=mode,
+                    output_save_dir=output_save_dir,
+                    seq_to_seq=seq_to_seq,
+                    seq_len=seq_len,
+                    data_dir=input4mips_data_dir,
+                )
+            # creates list of input4mips (one per unique openburning spec)
+            self.input4mips_ds = dict()
+            for spec in set(self.openburning_specs):
+                self.input4mips_ds[spec] = Input4MipsDataset(variables=in_variables, openburning_specs=spec, **ds_kwargs)
+
+
+            # we create one CMIP6 dataset per model-ensemble member pair for easier iteration
+            self.cmip6_ds_model = []
+            self.cmip6_model_index=0
+            self.cmip6_member_index=0
+            self.input4mips_shift=0
+            
+            # switch out data directory
+            ds_kwargs.pop('data_dir')
+            for climate_model, num_ensembles, openburning_specs in zip(self.climate_models, self.num_ensembles, self.openburning_specs):
+                 
+                cmip6_ds_model_member = []
+                # get ensemble dir list
+                root_dir = os.path.join(cmip6_data_dir, "targets/CMIP6")
+                if isinstance(climate_model, str):
+                    root_dir = os.path.join(root_dir, climate_model)
+
+                if num_ensembles == 1:
+                    ensembles = os.listdir(root_dir)
+                    ensemble_dir =  [os.path.join(root_dir, ensembles[0])] # Taking first ensemble member
+                else:
+                    print("Multiple ensembles", num_ensembles)
+                    ensemble_dir = []
+                    ensembles = os.listdir(root_dir)
+                    for i,folder in enumerate(ensembles):
+                        ensemble_dir.append(os.path.join(root_dir, folder)) # Taking multiple ensemble members
+                        if i==(num_ensembles-1):
+                            break
+                            
+                for em in ensemble_dir:
+                    # data dir = ensemble dir
+                    # create on ds for each ensemble member
+                    cmip6_ds_model_member.append(CMIP6Dataset(data_dir=em, climate_model=climate_model, openburning_specs=openburning_specs, variables=out_variables,**ds_kwargs))
+                
+                self.cmip6_ds_model.append(cmip6_ds_model_member)
+
+            # for index shift we need the cum sum of the lenghts
+            lenghts_model = []
+            for model in self.cmip6_ds_model:
+                lengths_member=[]
+                for member in model:
+                    lengths_member.append(member.length)
+                lenghts_model.append(lengths_member)
+            
+            lenghts_model = np.asarray(lenghts_model)
+            # roll by one to get the correct shift
+            lenghts_model=np.roll(lenghts_model,1)
+            lenghts_model[0][0]=0
+            index = np.cumsum(lenghts_model).reshape(lenghts_model.shape)
+            self.index_shifts = index
+            print("Index shifts", self.index_shifts)
+            print("Models", climate_models)
+            print("historical years", historical_years)
+           
 
         
         # this operates variable vise now.... #TODO: sizes for input4mips / adapt to mulitple vars
@@ -116,43 +183,40 @@ class ClimateDataset(torch.utils.data.Dataset):
            
             
             for vlist in paths:
-                print("length of var list", len(vlist))
-                print(vlist)
+              
                 temp_data = xr.open_mfdataset(vlist, concat_dim='time', combine='nested').compute() #.compute is not necessary but eh, doesn't hurt
-                temp_data = temp_data.to_array().to_numpy() # Should be of shape (vars, years*ensemble_members*num_scenarios, 96, 144)
-                print("temp_data shape", temp_data.shape) # years*seq_len*num_sceenarios*num_ensembles
+                temp_data = temp_data.to_array().to_numpy() 
+                #print("temp_data shape", temp_data.shape) # years*seq_len*num_sceenarios*num_ensembles
                 array_list.append(temp_data)
             temp_data = np.concatenate(array_list, axis=0)
-            print("temp_data", temp_data.shape)
+            
 
             if seq_len!=SEQ_LEN:
-                print("Choosing a sequence length greater or lesser than the data sequence length.")
+                print("Choosing a sequence lenght greater or lesser than the data sequence lenght.")
                 new_num_years = int(np.floor(temp_data.shape[1]/seq_len/len(self.scenarios)))
                 
                 # divide by scenario num and seq len, round
                 # multiply with scenario num an dseq len to get correct shape
                 new_shape_one=new_num_years*len(self.scenarios)
-                assert new_shape_one*seq_len > temp_data.shape[1], f"New sequence length {seq_len} greater than available years {temp_data.shape[1]}!"
-                print(f"New sequence length: {seq_len} Dropping {temp_data.shape[1]-(new_shape_one*seq_len)} years")
+                assert new_shape_one*seq_len > temp_data.shape[1], f"New sequence lenght {seq_len} greater than available years {temp_data.shape[1]}!"
+                print(f"New sequence lenght: {seq_len} Dropping {temp_data.shape[1]-(new_shape_one*seq_len)} years")
                 temp_data=temp_data[:,:(new_shape_one*seq_len),:]
                 
                 
             else:
                 new_shape_one=int(temp_data.shape[1]/seq_len)
 
-            print("num_vars", num_vars)
-            
             temp_data = temp_data.reshape(num_vars,new_shape_one, seq_len, LON, LAT) # num_vars, num_scenarios*num_remainding_years, seq_len,lon,lat)
-            print("temp data reshape with seq len shape", seq_len, temp_data.shape)
+            
             if seq_to_seq==False:
                 temp_data=temp_data[:,:,-1,:,:] # only take last time step
                 temp_data=np.expand_dims(temp_data, axis=2)
-                #print("seq to 1 temp data shape", temp_data.shape)
+        
             if channels_last:
                 temp_data = temp_data.transpose((1,2,3,4,0))
             else:
                 temp_data = temp_data.transpose((1,2,0,3,4))
-            print("final temp data shape", temp_data.shape)
+            
             return temp_data # (years*num_scenarios, seq_len, vars, 96, 144)
 
 
@@ -180,7 +244,6 @@ class ClimateDataset(torch.utils.data.Dataset):
         """
         def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
             fname =""
-            print("KWARGs:", kwargs)
 
             if file == 'statistics':
                 # only cmip 6
@@ -277,13 +340,13 @@ class ClimateDataset(torch.utils.data.Dataset):
 
 
         def get_mean_std(self, data):
-            # DATA shape (258, 12, 4, 96, 144) or DATA shape (258, 12, 2, 96, 144)
+            # DATA shape (examples, seq_len, vars, lon, lat) or DATA shape (examples, seq_len, vars, lon, lat)
 
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0)
             else: 
-                data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) easier to calulate statistics
-            vars_mean = np.mean(data, axis=(1, 2, 3, 4)) #sDATA shape (258, 12, 4, 96, 144)
+                data = np.moveaxis(data, 2, 0) # move vars to first axis, easier to calulate statistics
+            vars_mean = np.mean(data, axis=(1, 2, 3, 4)) 
             vars_std = np.std(data, axis=(1, 2, 3, 4))
             vars_mean = np.expand_dims(vars_mean, (1, 2, 3, 4)) # Shape of mean & std (4, 1, 1, 1, 1)
             vars_std = np.expand_dims(vars_std, (1, 2, 3, 4))
@@ -294,10 +357,10 @@ class ClimateDataset(torch.utils.data.Dataset):
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0)
             else:
-                data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) easier to calulate statistics
-            vars_max = np.max(data, axis=(1, 2, 3, 4)) #sDATA shape (258, 12, 4, 96, 144)
+                data = np.moveaxis(data, 2, 0) # move vars to front, easier to calulate statistics
+            vars_max = np.max(data, axis=(1, 2, 3, 4)) 
             vars_min = np.min(data, axis=(1, 2, 3, 4))
-            vars_max = np.expand_dims(vars_max, (1, 2, 3, 4)) # Shape of mean & std (4, 1, 1, 1, 1)
+            vars_max = np.expand_dims(vars_max, (1, 2, 3, 4)) # Shape of mean & std (vars, 1, 1, 1, 1)
             vars_min= np.expand_dims(vars_min, (1, 2, 3, 4))
             return vars_min, vars_max
 
@@ -312,12 +375,8 @@ class ClimateDataset(torch.utils.data.Dataset):
             else:
                 data = np.moveaxis(data, 2, 0) #DATA shape (years, seq_len, num_vars, 96, 144) -> (num_vars, years, seq_len, 96, 144) 
             
-            print("in normalize data shape", data.shape)
-            print("mean", stats['mean'].shape, 'std', stats['std'].shape)
             norm_data = (data - stats['mean'])/(stats['std'])
 
-           
-            
 
             if self.channels_last:
                 norm_data = np.moveaxis(norm_data, 0, -1)
@@ -327,7 +386,6 @@ class ClimateDataset(torch.utils.data.Dataset):
             return norm_data
 
         def write_dataset_statistics(self, fname, stats):
-#            fname = fname.replace('.npz.npy', '.npy')
             np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)            
             return os.path.join(self.output_save_dir, fname) 
 
@@ -337,20 +395,61 @@ class ClimateDataset(torch.utils.data.Dataset):
             elif 'test' in fname:
                 fname = fname.replace('test', 'train+val')
 
-#            print('This is the stats file name: ', fname)
             stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
                 
-            return stats_data      
+            return stats_data     
+
+        #def climate_model_index_to_num(self, index):
+        #    # getting overall model num from internal index (test set might contain additional models)
+        #    return self.model_to_model_num[ self.climate_models[index]]
         
+        def increment_cimp6_index(self):
+           
+            # if exceeded member reset member index to 0
+            if self.cmip6_member_index+1 >= len(self.cmip6_ds_model[self.cmip6_model_index]):
+                
+                # resetting member index
+                self.cmip6_member_index=0    
+
+                # if exceeded models rerest model index to 0
+                if self.cmip6_model_index+1 >= len(self.cmip6_ds_model):
+                    self.cmip6_model_index=0
+            
+                else:
+                    # increment model index
+                    self.cmip6_model_index+=1
+            else: 
+                # increment member index
+                self.cmip6_member_index+=1
+
+        def model_index_to_spec(self, index):
+            # get correct openburning spec
+            return self.openburning_specs[index]
+            
         def __getitem__(self, index):  # Dict[str, Tensor]):
 
+            # check that everything is reset if index is zero (starting again)
+            if index==0:
+                self.cmip6_model_index=0
+                self.cmip6_member_index=0
+            # get climate model index
+            # shift indexd (for models and members)
+            # 1. deal with multiple models
+            # if current iteration longer than the models ds, increment model index
+            if (index-self.index_shifts[self.cmip6_model_index][self.cmip6_member_index]) > self.cmip6_ds_model[self.cmip6_model_index][self.cmip6_member_index].length-1:
+                self.increment_cimp6_index()
+           
             # access data in input4mips and cmip6 datasets
-            # for mulitple ensemble members, we have to repeat the input4mips dataset!
-            if index>=self.input4mips_ds.length-1:
-                index=index-self.input4mips_ds.length # just shifiting back by one time the full dataset
-            raw_Xs = self.input4mips_ds[index]
-            raw_Ys= self.cmip6_ds[index]
-            #raw_Ys = self.cmip6_ds[index]
+            # get correct input4mips set
+            input4mips_spec_index=self.model_index_to_spec(self.cmip6_model_index)
+            
+            # for input4mips we need an index shift (dependent on num ensembles and num models)
+            input4mips_index = index - self.index_shifts[self.cmip6_model_index][self.cmip6_member_index]  
+
+            raw_Xs = self.input4mips_ds[input4mips_spec_index][input4mips_index]
+            raw_Ys= self.cmip6_ds_model[self.cmip6_model_index][self.cmip6_member_index][input4mips_index]
+         
+           
             if not self.load_data_into_mem:
                 X = raw_Xs
                 Y = raw_Ys
@@ -363,25 +462,40 @@ class ClimateDataset(torch.utils.data.Dataset):
                 X = raw_Xs
                 Y = raw_Ys
 
-            return X,Y
+            # convert cmip model index to overall model num
+            #model_num = self.climate_model_index_to_num(self.cmip6_model_index)
+            model_id = self.climate_models[self.cmip6_model_index]
+            # return which climate model index the batch belongs to
+            return X,Y, model_id
 
         # @property
         # def name(self):
         #     return self._name.upper()
 
         def __str__(self):
-            s = f" {self.name} dataset: {self.n_years} years used, with a total size of {len(self)} examples."
+            s = f" Super Emulator dataset: {len(self.climate_models)} climate models with {self.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
             return s
 
         def __len__(self):
-            print('Input4mips', self.input4mips_ds.length, 'CMIP6 data' , self.cmip6_ds.length)
-            #assert self.input4mips_ds.length == self.cmip6_ds.length, "Datasets not of same length"
-            # cmip must be num_ensemble members times input4mips
-            assert self.input4mips_ds.length*self.num_ensembles == self.cmip6_ds.length, f"CMIP6 must be num_ensembles times the length of input4mips. Got {self.cmip6_ds.length} and {self.input4mips_ds.length}"
-            return self.cmip6_ds.length
+
+            # len is lenght of ds times lenght of each individual
+            in_lenghts = [self.input4mips_ds[spec].length for spec in self.openburning_specs]
+            assert all_equal(in_lenghts), f"input4mip datasets do not have the same lenght for each openburning spec!"
+
+            for i,m in enumerate(self.cmip6_ds_model):
+                
+                # lenghts per model member pair
+                out_lenghts = [ds.length for ds in m]
+            
+                # cmip must be num_ensemble members times input4mips
+                
+                assert in_lenghts[0]*self.num_ensembles[i] == np.sum(out_lenghts), f"CMIP6 must be num_ensembles times the lenght of input4mips. Got {np.sum(out_lenghts)} and {in_lenghts[0]}"
+            
+            # total lenght includes ensemble members so taking output lenght
+            return np.sum(out_lenghts)*len(self.cmip6_ds_model)
 
 
-class CMIP6Dataset(ClimateDataset):
+class CMIP6Dataset(SuperClimateDataset):
     """ 
     
     Use first ensemble member for now 
@@ -395,13 +509,14 @@ class CMIP6Dataset(ClimateDataset):
     """
     def __init__( # inherits all the stuff from Base
             self,
+            data_dir, # dir leading to a specific ensemble member
             years: Union[int,str], 
             historical_years: Union[int,str],
             #mode: str = "train", # Train or test maybe # deprecated
-            data_dir: Optional[str] = DATA_DIR,
+            #data_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/',#DATA_DIR,
             #output_save_dir: Optional[str] = '/home/venka97/scratch/causal_savedata',
             climate_model: str = 'NorESM2-LM',
-            num_ensembles: int = 1, # 1 for first ensemble, -1 for all
+            #num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: List[str] = ['ssp126','ssp370','ssp585'],
             #train_experiments: List[str] = ['ssp126','ssp370','ssp585'],
             #test_experiments: Union[str, List[str]] = ['ssp245'],
@@ -417,7 +532,7 @@ class CMIP6Dataset(ClimateDataset):
 
         self.mode = mode
         self.output_save_dir = output_save_dir
-        self.root_dir = os.path.join(data_dir, "outputs/CMIP6")
+        #self.root_dir = os.path.join(data_dir, "targets/CMIP6")
         #self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
@@ -427,17 +542,17 @@ class CMIP6Dataset(ClimateDataset):
 
         fname_kwargs = dict(
             climate_model = climate_model,
-            num_ensembles = num_ensembles,
+            ensemble_member = data_dir.split('/')[-1],
             years=f"{years[0]}-{years[-1]}", 
             historical_years= f"{historical_years[0]}-{historical_years[-1]}",
             variables = variables,
             scenarios = scenarios,
             channels_last = channels_last,
             seq_to_seq=seq_to_seq,
-            seq_=seq_len
+            seq_len=seq_len
         )
      
-
+        '''
         #TO-DO: This is just getting the list of .nc files for targets. Put this logic in a function and get input list as well.
         # In a function, we can call CausalDataset() instance for train and test separately to load the data
 
@@ -461,7 +576,7 @@ class CMIP6Dataset(ClimateDataset):
                     break # if num_ensemble ==-1 we take all
             # log.warn("Data loader not yet implemented for mulitple ensemble members.")
             # raise NotImplementedError
-
+        '''
 
         # Split the data here using n_years if needed,
         # else do random split logic here
@@ -492,30 +607,27 @@ class CMIP6Dataset(ClimateDataset):
             # List of output files
             files_per_var=[]
             for var in variables:
-                print("val", var)
+               
                 output_nc_files=[]
         
                 for exp in scenarios:
-                    print("exp", exp)
+                   
                     if exp=='historical':
                         get_years=historical_years
                     else:
                         get_years=years
                     for y in get_years:
-                        for em in self.ensemble_dir:
-                            var_dir = os.path.join(em, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
-                            print(var_dir)
+                            # we only have one ensemble here
+                            var_dir = os.path.join(data_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
                             files = glob.glob(var_dir + f'/*.nc', recursive=True)
-                            print("files", files)
                             if len(files)==0:
-                                print("No files for this ensemble member,y,scenario", exp, y, em)
+                                print("No files for this climate model, ensemble member, var, year ,scenario:", climate_model, data_dir.split('/')[-1],var, y, exp)
+                                print("Exiting! Please fix the data issue.")
                                 exit(0)
                             # loads all years! implement plitting
                             output_nc_files += files
                 files_per_var.append(output_nc_files)
 
-            #print("files per var", files_per_var)
-            #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=channels_last, seq_to_seq=seq_to_seq, seq_len=seq_len) 
 
             if self.mode == 'train' or self.mode == 'train+val':
@@ -555,14 +667,14 @@ class CMIP6Dataset(ClimateDataset):
             
 
             # Now X and Y is ready for getitem
-        print('CMIP6 shape', self.Data.shape)
         self.length=self.Data.shape[0]
+
     def __getitem__(self, index):
         return self.Data[index]
 
 
 
-class Input4MipsDataset(ClimateDataset):
+class Input4MipsDataset(SuperClimateDataset):
     """ 
     Loads all scenarios for a given var / for all vars
     """
@@ -585,7 +697,7 @@ class Input4MipsDataset(ClimateDataset):
         self.channels_last=channels_last
 
         self.mode = mode
-        self.root_dir = os.path.join(data_dir, 'inputs/input4mips')
+        self.root_dir = os.path.join(data_dir, "input_alternate/input4mips")
         self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
@@ -619,7 +731,6 @@ class Input4MipsDataset(ClimateDataset):
 
             # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
-            print(stats_fname)
             stats = self.load_dataset_statistics(os.path.join(self.output_save_dir, stats_fname), mode=self.mode, mips='input4mips')
             self.Data = self.normalize_data(self.Data, stats)
            
@@ -639,10 +750,10 @@ class Input4MipsDataset(ClimateDataset):
 
                 output_nc_files=[]
                 for exp in scenarios: # TODO: implement getting by years! also sub seletction for historical years
-                    # print(var, exp)
+                    
                     if var in NO_OPENBURNING_VARS:
                         filter_path_by=''
-                        # print("CO2 found")
+                        
                     elif exp=='historical':
                         filter_path_by=historical_openburning
                         get_years=historical_years
@@ -653,7 +764,6 @@ class Input4MipsDataset(ClimateDataset):
 
                     for y in get_years:
                         var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}')
-#                        print('THIS IS THE VARDIR', var_dir)
                         files = glob.glob(var_dir + f'/**/*{filter_path_by}*.nc', recursive=True)
                         output_nc_files += files
                 files_per_var.append(output_nc_files)
@@ -685,10 +795,8 @@ class Input4MipsDataset(ClimateDataset):
                 stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='input4mips')
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
-            #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
 
-            #self.copy_to_slurm(self.input_path)
             self.copy_to_slurm(self.data_path)
 
             # Call _reload_data here with self.input_path and self.output_path
@@ -699,7 +807,7 @@ class Input4MipsDataset(ClimateDataset):
             # Either normalized whole array here or per instance getitem, that maybe faster
 
             # Now X and Y is ready for getitem
-        print("Input4mips shape", self.Data.shape)
+            
         self.length=self.Data.shape[0]
 
     def __getitem__(self, index):
@@ -707,12 +815,18 @@ class Input4MipsDataset(ClimateDataset):
 
 
 if __name__=="__main__":
-    # FGOALS-g3 MPI-ESM1-2-HR
-    ds = ClimateDataset(seq_to_seq=True, in_variables=['BC_sum','SO2_sum', 'CH4_sum'], scenarios=["historical","ssp370"],climate_model="MPI-ESM1-2-HR", seq_len=12, num_ensembles=2, output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=False)
+    #ds = ClimateDataset(seq_to_seq=True, seq_len=12, climate_models=['NorESM2-LM','EC-Earth3-Veg-LR','NorESM2-LM'], num_ensembles=1, output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=True)
+    ds = SuperClimateDataset(seq_to_seq=True, in_variables=['BC_sum','SO2_sum', 'CH4_sum'], scenarios=["historical","ssp370"],climate_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"], seq_len=12, num_ensembles=1, output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=False)
     #for (i,j) in ds:
         #print("i:", i.shape)
         #print("j:", j.shape)
+    print(ds)
     print(len(ds))
+    #in_len, out_len = len(ds)
+    #print(in_len, out_len)
 
-    for i,(x,y) in enumerate(ds):
-        print(i)
+    for i,(x,y,index) in enumerate(ds):
+        print("iteration",i)
+    #    print("x", x.shape)
+    #    print("y", y.shape)
+        print("model index", index)
