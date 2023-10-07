@@ -1,8 +1,7 @@
 from pathlib import Path
 import os
+
 # Data constants
-
-
 LON = 96
 LAT = 144
 NUM_LEVELS = 1

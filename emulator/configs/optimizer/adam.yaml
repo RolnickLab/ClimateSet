@@ -1,4 +1,5 @@
 name: "adam"
+is_filtered: false
 lr: 2e-4
 weight_decay: 1e-6
 eps: 1e-8

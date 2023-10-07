@@ -6,7 +6,7 @@ defaults:
   - trainer: debug.yaml
   - model: unet.yaml
   - datamodule: climate.yaml
-
+  - decoder: null
   - callbacks: default.yaml  # or use wandb.yaml for wandb suppport
   - logger: wandb # set logger here or use command line (e.g. `python run.py logger=wandb`)
 
@@ -29,9 +29,12 @@ defaults:
   # default optimizer is Adam
   #- override optimizer@model.optimizer: adam.yaml
 
+
 model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
+  super_emulation: False
+  super_decoder: False
   #finetune: True
   #pretrained_run_id: "3u0ys0d5"
   #pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt" #/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/emulator/${pretrained_run_id}/checkpoints/

@@ -1,0 +1,64 @@
+
+
+
+
+# @package _global_
+# to execute this experiment run:
+# python run.py experiment=example
+
+defaults:
+  - override /mode: exp.yaml
+  - override /trainer: default.yaml
+  - override /model: climax.yaml # put the desired model name here
+  - override /callbacks: default.yaml
+  - override /logger: wandb.yaml
+  - override /datamodule: climate_super.yaml # set to super emulation
+  - override /decoder: multihead_decoder.yaml # include multi-model decoder
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+# name of the run determines folder name in logs
+# can also be accessed by loggers
+name: "test super"
+
+
+seed: 12345
+
+trainer:
+  min_epochs: 1
+  max_epochs: 10
+  gradient_clip_val: 5
+
+model:
+  loss_function: "climax_lon_lat_rmse"
+  monitor: "val/llrmse_climax"
+  finetune: True
+  pretrained_run_id:  "bcvgpg4b"
+  pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/bcvgpg4b/checkpoints/epoch=8-step=180.ckpt"
+  pretrained_run_id_decoder: "xog84o5g"
+  pretrained_ckpt_dir_decoder: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/xog84o5g/checkpoints/epoch=8-step=180.ckpt"
+  optimizer: # need that for decoder
+    is_filtered: True
+ 
+
+datamodule: # overwrite what stuff to train on
+  out_var_ids: ['pr', 'tas']
+  seq_to_seq: True # determine the task setting
+  batch_size: 2
+  channels_last: True
+  eval_batch_size: 2
+  seq_len: 12
+  in_var_ids : ['BC_sum','SO2_sum', 'CH4_sum']
+  train_years: "2015-2020"
+  train_scenarios: ["historical", "ssp370"]
+  test_scenarios : ["ssp370"]
+  train_models : ["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"]
+  test_models: ["NorESM2-LM"]
+  #num_ensembles: 2
+  output_save_dir : '/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA'
+  #cmip6_data_dir: '/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/'
+ 
+logger:
+  wandb:
+    tags: ["test", "climax", "super_emulation", "decoder"] # set your tags here

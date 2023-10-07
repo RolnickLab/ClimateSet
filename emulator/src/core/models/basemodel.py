@@ -12,7 +12,7 @@ import torch
 
 from emulator.src.core.evaluation import evaluate_preds, evaluate_per_target_variable
 from emulator.src.utils.utils import get_loss_function, get_logger, to_DictConfig
-from emulator.src.utils.interface import reload_model_from_id
+#from emulator.src.utils.interface import reload_model_from_id
 from emulator.src.core.callbacks import PredictionPostProcessCallback
 from timm.optim import create_optimizer_v2
 
@@ -35,8 +35,11 @@ class BaseModel(LightningModule):
                  monitor: Optional[str] = None,
                  mode: str = "min",
                  finetune: bool = False, 
+                 super_emulation : bool = False,
+                 super_decoder: bool = False,
                  pretrained_run_id: Optional[Union[str, None]]= None, 
                  pretrained_ckpt_dir: Optional[Union[str, None]] = None,
+                 **kwargs
                  ):
         super().__init__()
 
@@ -50,10 +53,15 @@ class BaseModel(LightningModule):
         self.val_step_outputs=[]
 
         self.criterion = get_loss_function(loss_function)
-
+        self.super_emulation = super_emulation
+        self.log_text.info(f"Super Emulation: {self.super_emulation}")
+        self.super_decoder = super_decoder
+        self.log_text.info(f"Super Decoder: {self.super_decoder}")
+        
 
         if datamodule_config is not None:
             # get information from data config 
+            
             self._out_var_ids = datamodule_config.get('out_var_ids')
             self.num_levels = datamodule_config.get('num_levels')
             self.output_postprocesser = PredictionPostProcessCallback(variables=self._out_var_ids, sizes=self.num_levels)
@@ -63,6 +71,7 @@ class BaseModel(LightningModule):
         if not hasattr(self.hparams, 'mode') or self.hparams.mode is None:
             self.hparams.mode = 'min'
 
+        """ -> moved to interface
         if finetune:
             self.log_text.info("Finetuning")
             assert pretrained_run_id is not None , "Mode is finetune but no run id is given to load from."
@@ -72,6 +81,11 @@ class BaseModel(LightningModule):
                 pretrained_run_id, pretrained_ckpt_dir, allow_resume=False)
             self.log_text.warn("Loading pretrained model")
             self.model = base_model
+        """
+
+
+           
+
             
 
     @property
@@ -99,11 +113,17 @@ class BaseModel(LightningModule):
     def on_train_epoch_start(self) -> None:
         self._start_epoch_time = time.time()
 
-    def predict(self, X, *args, **kwargs):
+    def predict(self, X, idx, *args, **kwargs):
 
         # x (batch_size, time, lon, lat, num_features)
         # TODO if we want to apply any input normalization or other stuff we should do it here
-        preds = self(X)
+        # if idx is None or if we do not have a decoder
+        
+        if self.super_decoder:
+            assert idx is not None, "Super Decoder but model index is None"
+            preds = self(X, idx)
+        else:
+            preds = self(X)
 
         # TODO if we want to apply any output normalization we should do it here
         # else we will just return raw predictions
@@ -115,9 +135,14 @@ class BaseModel(LightningModule):
 
     def training_step(self, batch: Any, batch_idx: int):
 
-        X, Y = batch
+        if self.super_emulation:
+            X,Y, idx = batch
+        else: 
+            X, Y = batch
+            idx = None
 
-        preds = self.predict(X) # dict with keys being the output var ids
+        preds = self.predict(X, idx)
+         # dict with keys being the output var ids
         Y = self.output_postprocesser.split_vector_by_variable(Y) # split per var id #TODO: might need to remove that for other datamodule
 
         train_log = dict() # everything we want to log to wandb should go in here
@@ -161,9 +186,14 @@ class BaseModel(LightningModule):
 
 
     def _evaluation_step(self, batch: Any, batch_idx: int):
-
-        X,Y = batch
-        preds = self.predict(X)
+        
+        if self.super_emulation:
+            X,Y, idx = batch
+        else: 
+            X, Y = batch
+            idx = None
+        
+        preds = self.predict(X,idx)
         ret = {"targets": Y, "preds": preds}
 
         self.val_step_outputs.append(ret)
@@ -292,7 +322,7 @@ class BaseModel(LightningModule):
     def configure_optimizers(self):
 
         # configuring optimizer and lr schedul from dict configs 
-
+     
         if '_target_' in to_DictConfig(self.hparams.optimizer).keys():
             self.hparams.optimizer.name = str(self.hparams.optimizer._target_.split('.')[-1]).lower()
         if 'name' not in to_DictConfig(self.hparams.optimizer).keys():
@@ -301,8 +331,13 @@ class BaseModel(LightningModule):
 
         if hasattr(self, 'no_weight_decay'):
             self.log_text.info(f"Model has method no_weight_decay, which will be used.")
-        optim_kwargs = {k: v for k, v in self.hparams.optimizer.items() if k not in ['name', '_target_']}
-        optimizer = create_optimizer_v2(model_or_params=self, opt=self.hparams.optimizer.name, **optim_kwargs)
+        optim_kwargs = {k: v for k, v in self.hparams.optimizer.items() if k not in ['name', 'is_filtered','_target_']}
+        
+        if self.hparams.optimizer.is_filtered:
+            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.parameters()), **optim_kwargs)
+        else:
+            optimizer = create_optimizer_v2(model_or_params=self, opt=self.hparams.optimizer.name, **optim_kwargs)
+        
         self._init_lr = optimizer.param_groups[0]['lr']
 
         if self.hparams.scheduler is None:

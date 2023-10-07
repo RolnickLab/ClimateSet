@@ -12,32 +12,9 @@ from torch import default_generator, randperm
 from torch._utils import _accumulate
 from torch.utils.data.dataset import Subset
 import numpy as np
-from itertools import groupby
-
 
 from emulator.src.core.losses import RMSELoss, NRMSELoss_ClimateBench, NRMSELoss_g_ClimateBench, NRMSELoss_s_ClimateBench, LLweighted_MSELoss_Climax, LLweighted_RMSELoss_Climax, LLWeighted_RMSELoss_WheatherBench
 
-def get_years_list( years:str, give_list: Optional[bool] = False):
-            """
-            Get a string of type 20xx-21xx.
-            Split by - and return min and max years.
-            Can be used to split train and val.
-            
-            """
-            if len(years)!=9:
-                print("Years string must be in the format xxxx-yyyy eg. 2015-2100 with string length 9. Please check the year string.")
-                raise ValueError
-            splits = years.split('-')
-            min_year, max_year = int(splits[0]), int(splits[1])
-
-            if give_list:
-                return np.arange(min_year, max_year + 1, step=1) 
-            return min_year, max_year
-
-def all_equal(iterable):
-    g = groupby(iterable)
-    return next(g, True) and not next(g, False)
-    
 def to_DictConfig(obj: Optional[Union[List, Dict]]):
     if isinstance(obj, DictConfig):
         return obj

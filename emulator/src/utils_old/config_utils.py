@@ -111,10 +111,15 @@ def extras(config: DictConfig) -> None:
         if config.datamodule.get("pin_memory"):
             config.datamodule.pin_memory = False
 
+    if ("logger" in config.keys()) and config.logger.get("wandb"):
+        USE_WANDB=True
+    else:
+        USE_WANDB=False
+    
     # in case there is no logger
     if config.logger.get("name")=="none":
         USE_WANDB=False
-
+    print("USE WAND", USE_WANDB)
     if USE_WANDB:
         if not config.logger.wandb.get('id'):  # no wandb id has been assigned yet
             wandb_id = wandb.util.generate_id()
@@ -143,24 +148,8 @@ def check_config_values(config: DictConfig):
 
     # TODO: some check ups we might want can go heree
 
-    # super emulation
-    # datamodule has to be super emulaton
-    # superemulation flag hast to be set
-    # decodre hast to be specified
-    #if config.get('super_emulation') is True:
-    if config.datamodule.get('name')=='climate_super':
-        print("Super data loading")
-        
-        # we can do super emulation without a decoder
-        # if decoder is set check if test models are in train models
-        if config.get('decoder') is not None:
-            if config.datamodule.get('test_models') is not None:
-                for tm in config.datamodule.get('test_models'):
-                    assert tm in config.datamodule.get('train_models'), f"Multihead decoder is used but test model {tm} is not part of training set - no head created."
-        #assert config.decoder is not None, "Super emulation but Mulithead Decoder is None"
-    
 
-    if config.logger.get("wandb") and (config.logger.get("name")!="none"):
+    if config.logger.get("wandb"):
         if 'callbacks' in config and config.callbacks.get('model_checkpoint'):
             id_mdl = config.logger.wandb.get('id')
             d = config.callbacks.model_checkpoint.dirpath
@@ -239,7 +228,6 @@ def log_hyperparameters(
     
     params['dirs/work_dir'] = config.get('work_dir')
     params['dirs/ckpt_dir'] = config.get('ckpt_dir')
-
     if config.logger.get("name")=="none":
         params['dirs/wandb_save_dir'] = None
     else:
@@ -253,7 +241,6 @@ def log_hyperparameters(
         # this is just a trick to prevent trainer from logging hparams of model,
         # since we already did that above
         trainer.logger.log_hyperparams = no_op
-
 
 
 def save_hydra_config_to_wandb(config: DictConfig):

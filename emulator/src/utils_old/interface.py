@@ -13,7 +13,6 @@ from emulator.src.datamodules.dummy_datamodule import DummyDataModule
 from emulator.src.utils.utils import get_logger
 from emulator.src.utils.wandb_api import load_hydra_config_from_wandb, restore_model_from_wandb_cloud, get_wandb_ckpt_name
 import emulator.src.utils.config_utils as cfg_utils
-from emulator.src.core.models.decoder_wrapper import DecoderWrapper
 """
 In this file you can find helper functions to avoid model/data loading and reloading boilerplate code
 """
@@ -36,56 +35,16 @@ def get_model(config: DictConfig, **kwargs):
         #    config.normalizer, _recursive_=False,
         #    datamodule_config=config.datamodule,
         #)
-        #kwargs['output_normalizer'] = normalizer.output_normalizer   
-    
-    if config.datamodule.get('name')=='climate_super':
-        config.model['super_emulation'] = True # we load multiple models
-    if config.model.get('finetune') is True:
-        log.info("Finetuning")
-        assert config.model.get("pretrained_run_id") is not None , "Mode is finetune but no run id is given to load from."
-        assert config.model.get("pretrained_ckpt_dir") is not None , "Mode is finetune but no run id is given to load from."
-        # load pretrained model
-        model, _ = reload_model_from_id(
-                config.model.get("pretrained_run_id"), config.model.get("pretrained_ckpt_dir"), allow_resume=False)
-        log.warn("Loading pretrained Base model")
-
-        if config.get("decoder") is not None:
-   
-            if (config.model.get("pretrained_run_id_decoder") is not None) and (config.model.get("pretrained_ckpt_dir_decoder") is not None):
-                # reloading decoder 
-                log.warn("Loading pretrained Decoder")
-                model, _ = reload_model_from_id(
-                    config.model.get("pretrained_run_id_decoder"), config.model.get("pretrained_ckpt_dir_decoder"), allow_resume=False)
+        #kwargs['output_normalizer'] = normalizer.output_normalizer
         
         
-            else:
-                log.warn("Creating new Decoder")
-                multihead_decoder = hydra.utils.instantiate(config.decoder)
-                # only set to True when we have a decoder
-                model.hparams['super_decoder']=True
-           
-                model = DecoderWrapper(model, multihead_decoder, **model.hparams)
-        
-
-        # check if we are also finetuning a decoder 
-
-    else:
-        model = hydra.utils.instantiate(
-        config.model,
-        _recursive_=False,
-        datamodule_config=config.datamodule,
-        **kwargs
+    model = hydra.utils.instantiate(
+            config.model,
+            _recursive_=False,
+            datamodule_config=config.datamodule,
+            **kwargs
         )
 
-        if config.get("decoder") is not None:
-
-        
-            multihead_decoder = hydra.utils.instantiate(config.decoder)
-            # only set to True when we have a decoder
-            model.hparams['super_decoder']=True
-        
-            model = DecoderWrapper(model, multihead_decoder, **model.hparams)
-        
     return model
 
 
@@ -123,12 +82,11 @@ def get_model_and_data(config: DictConfig):
             trainer.fit(model=model, datamodule=datamodule)
     """
     data_module = get_datamodule(config)
-    model = get_model(config)
-    # model = hydra.utils.instantiate(
-    #     config.model, _recursive_=False,
-    #     datamodule_config=config.datamodule,
-    #     #output_normalizer=data_module.normalizer.output_normalizer,
-    # )
+    model = hydra.utils.instantiate(
+        config.model, _recursive_=False,
+        datamodule_config=config.datamodule,
+        #output_normalizer=data_module.normalizer.output_normalizer,
+    )
     return model, data_module
 
 
@@ -232,7 +190,8 @@ def reload_model_from_id(
 
     """
     run_path = f"{group}/{project}/{run_id}"
-    
+    print('THIS IS THE DIREC', str(direc))
+    log.info("given direc", str(direc))
     if os.path.isdir(os.path.join(direc, run_id)):
         saved_ckpts = [
             f for f in os.listdir(os.path.join(direc, run_id)) if f.endswith(".ckpt")
