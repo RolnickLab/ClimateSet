@@ -71,7 +71,7 @@ class TokenizedBase(nn.Module):
                     qkv_bias=True,
                     drop_path=dpr[i],
                     norm_layer=nn.LayerNorm
-                ) #drop=drop rate #DEPRECATED - clarify if we wanna use proj_drop or attn_drop
+                ) 
                 for i in range(depth)
             ]
         )
@@ -80,7 +80,7 @@ class TokenizedBase(nn.Module):
 
     def create_channel_embedding(self, learnable, dim):
         channel_embed = nn.Parameter(torch.zeros(1, len(self.in_vars), dim), requires_grad=learnable)
-        # TODO: create a mapping from var --> idx
+        # create a mapping from var --> idx
         channel_map = {}
         idx = 0
         for var in self.in_vars:
@@ -169,8 +169,3 @@ class TokenizedBase(nn.Module):
     def forward(self, x):
         pass
 
-
-# model = TokenizedMAE(depth=4, decoder_depth=2).cuda()
-# x = torch.randn(2, 3, 128, 256).cuda()
-# loss, pred, mask = model(x)
-# print (loss)

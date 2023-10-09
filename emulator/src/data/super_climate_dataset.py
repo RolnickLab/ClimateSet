@@ -16,15 +16,6 @@ from emulator.src.utils.utils import get_logger, all_equal
 from emulator.src.data.constants import LON, LAT, SEQ_LEN, INPUT4MIPS_TEMP_RES, CMIP6_TEMP_RES, INPUT4MIPS_NOM_RES, CMIP6_NOM_RES, DATA_DIR, OPENBURNING_MODEL_MAPPING, NO_OPENBURNING_VARS, AVAILABLE_MODELS_FIRETYPE
 log = get_logger()
 
-# I think we should have 2 dataset classes, one for input4mips and one for cmip6 (as the latter is model dependent)
-# Also, we should create separate datasets for testing and training and validation, to make the splitting easier
-"""
-- base data set: implements copy to slurm, get item etc pp
-- cmip6 data set: model wise
-- input4mips data set: same per model
-
-- from datamodule create one of these per train/test/val
-"""
 
 class SuperClimateDataset(torch.utils.data.Dataset):
         """
@@ -34,17 +25,17 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         """
         def __init__(self,
             years: Union[int,str] = "2015-2020", 
-            mode: str = "train+val", # Train or test maybe # deprecated
-            input4mips_data_dir: Optional[str] = DATA_DIR,  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
-            cmip6_data_dir: Optional[str] = DATA_DIR, #'/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/',#DATA_DIR,
-            output_save_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_savedata', #'/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',#'/home/venka97/scratch/causal_savedata',
+            mode: str = "train+val", 
+            input4mips_data_dir: Optional[str] = DATA_DIR,  
+            cmip6_data_dir: Optional[str] = DATA_DIR, 
+            output_save_dir: Optional[str] = DATA_DIR,
             climate_models: List[str] = ['NorESM2-LM','EC-Earth3-Veg-LR'], 
             num_ensembles: Union[List[int],int] = 1, # 1 for first ensemble, -1 for all
             scenarios: Union[List[str], str] = ['ssp126','ssp370','ssp585'],
             historical_years: Union[Union[int, str], None] = "1950-1955",
             out_variables: Union[str, List[str]] = 'pr',
             in_variables: Union[str, List[str]] = ['BC_sum','SO2_sum', 'CH4_sum', 'CO2_sum'],
-            seq_to_seq: bool = True, #TODO: implement if false
+            seq_to_seq: bool = True,
             seq_len: int = 12,
             channels_last: bool = False,
             load_data_into_mem: bool = True, # Keeping this true be default for now
@@ -91,15 +82,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
             
             self.n_years = len(self.years) + len(self.historical_years) if 'historical' in self.scenarios else len(self.years)
     
-            # if model to num is None, create
-            # DEPRECATED - using the model names in getitem
-            """
-            if model_to_model_num is None:
-                model_to_model_num = dict()
-                for i,m in enumerate(climate_models):
-                    model_to_model_num[m]=i 
-            self.model_to_model_num=model_to_model_num
-            """
 
             # we need to create a mapping from climate model to respective input4mips ds (because openburning specs might differ)
             self.openburning_specs=[OPENBURNING_MODEL_MAPPING[climate_model] if climate_model in  AVAILABLE_MODELS_FIRETYPE else OPENBURNING_MODEL_MAPPING["other"] for climate_model in climate_models]
@@ -115,11 +97,11 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                     seq_len=seq_len,
                     data_dir=input4mips_data_dir,
                 )
+            
             # creates list of input4mips (one per unique openburning spec)
             self.input4mips_ds = dict()
             for spec in set(self.openburning_specs):
                 self.input4mips_ds[spec] = Input4MipsDataset(variables=in_variables, openburning_specs=spec, **ds_kwargs)
-
 
             # we create one CMIP6 dataset per model-ensemble member pair for easier iteration
             self.cmip6_ds_model = []
@@ -133,7 +115,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                  
                 cmip6_ds_model_member = []
                 # get ensemble dir list
-                root_dir = os.path.join(cmip6_data_dir, "targets/CMIP6")
+                root_dir = os.path.join(cmip6_data_dir, "outputs/CMIP6")
                 if isinstance(climate_model, str):
                     root_dir = os.path.join(root_dir, climate_model)
 
@@ -141,7 +123,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                     ensembles = os.listdir(root_dir)
                     ensemble_dir =  [os.path.join(root_dir, ensembles[0])] # Taking first ensemble member
                 else:
-                    print("Multiple ensembles", num_ensembles)
                     ensemble_dir = []
                     ensembles = os.listdir(root_dir)
                     for i,folder in enumerate(ensembles):
@@ -150,7 +131,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                             break
                             
                 for em in ensemble_dir:
-                    # data dir = ensemble dir
                     # create on ds for each ensemble member
                     cmip6_ds_model_member.append(CMIP6Dataset(data_dir=em, climate_model=climate_model, openburning_specs=openburning_specs, variables=out_variables,**ds_kwargs))
                 
@@ -170,23 +150,14 @@ class SuperClimateDataset(torch.utils.data.Dataset):
             lenghts_model[0][0]=0
             index = np.cumsum(lenghts_model).reshape(lenghts_model.shape)
             self.index_shifts = index
-            print("Index shifts", self.index_shifts)
-            print("Models", climate_models)
-            print("historical years", historical_years)
-           
-
         
-        # this operates variable vise now.... #TODO: sizes for input4mips / adapt to mulitple vars
+        # this operates variable vise now.... 
         def load_into_mem(self, paths: List[List[str]], num_vars, channels_last=True, seq_to_seq=True, seq_len=12): #-> np.ndarray():
            
             array_list =[]
-           
-            
             for vlist in paths:
-              
                 temp_data = xr.open_mfdataset(vlist, concat_dim='time', combine='nested').compute() #.compute is not necessary but eh, doesn't hurt
                 temp_data = temp_data.to_array().to_numpy() 
-                #print("temp_data shape", temp_data.shape) # years*seq_len*num_sceenarios*num_ensembles
                 array_list.append(temp_data)
             temp_data = np.concatenate(array_list, axis=0)
             
@@ -199,7 +170,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                 # multiply with scenario num an dseq len to get correct shape
                 new_shape_one=new_num_years*len(self.scenarios)
                 assert new_shape_one*seq_len > temp_data.shape[1], f"New sequence lenght {seq_len} greater than available years {temp_data.shape[1]}!"
-                print(f"New sequence lenght: {seq_len} Dropping {temp_data.shape[1]-(new_shape_one*seq_len)} years")
+                print(f"New sequence length: {seq_len} Dropping {temp_data.shape[1]-(new_shape_one*seq_len)} years")
                 temp_data=temp_data[:,:(new_shape_one*seq_len),:]
                 
                 
@@ -340,7 +311,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
 
 
         def get_mean_std(self, data):
-            # DATA shape (examples, seq_len, vars, lon, lat) or DATA shape (examples, seq_len, vars, lon, lat)
+            # shape (examples, seq_len, vars, lon, lat) or DATA shape (examples, seq_len, vars, lon, lat)
 
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0)
@@ -399,10 +370,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                 
             return stats_data     
 
-        #def climate_model_index_to_num(self, index):
-        #    # getting overall model num from internal index (test set might contain additional models)
-        #    return self.model_to_model_num[ self.climate_models[index]]
-        
         def increment_cimp6_index(self):
            
             # if exceeded member reset member index to 0
@@ -434,7 +401,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                 self.cmip6_member_index=0
             # get climate model index
             # shift indexd (for models and members)
-            # 1. deal with multiple models
+            # deal with multiple models
             # if current iteration longer than the models ds, increment model index
             if (index-self.index_shifts[self.cmip6_model_index][self.cmip6_member_index]) > self.cmip6_ds_model[self.cmip6_model_index][self.cmip6_member_index].length-1:
                 self.increment_cimp6_index()
@@ -454,7 +421,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                 X = raw_Xs
                 Y = raw_Ys
             else:
-                #if self.in
                 #TO-DO: Need to write Normalizer transform and To-Tensor transform
                 # Doing norm and to-tensor per-instance here. 
                 #X_norm = self.input_transforms(self.X[index]) 
@@ -463,14 +429,9 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                 Y = raw_Ys
 
             # convert cmip model index to overall model num
-            #model_num = self.climate_model_index_to_num(self.cmip6_model_index)
             model_id = self.climate_models[self.cmip6_model_index]
             # return which climate model index the batch belongs to
             return X,Y, model_id
-
-        # @property
-        # def name(self):
-        #     return self._name.upper()
 
         def __str__(self):
             s = f" Super Emulator dataset: {len(self.climate_models)} climate models with {self.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
@@ -497,29 +458,16 @@ class SuperClimateDataset(torch.utils.data.Dataset):
 
 class CMIP6Dataset(SuperClimateDataset):
     """ 
-    
-    Use first ensemble member for now 
-    Option to use multile ensemble member later
-    Give option for which variable to use
-    Load 3 scenarios for train/val: Take this as a list
-    Process and save this as .npz in $SLURM_TMPDIR
-    Load these in train/val/test Dataloader functions
-    Keep one scenario for testing
-    # Target shape (85 * 12, 1, 144, 96) # ! * num_scenarios!!
+    Super CMIP6 Dataset. Containing data for multiple climate models and potentially multiple ensemble members.
+    Iiterating overy every member-model pair.
     """
     def __init__( # inherits all the stuff from Base
             self,
             data_dir, # dir leading to a specific ensemble member
             years: Union[int,str], 
             historical_years: Union[int,str],
-            #mode: str = "train", # Train or test maybe # deprecated
-            #data_dir: Optional[str] = '/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/',#DATA_DIR,
-            #output_save_dir: Optional[str] = '/home/venka97/scratch/causal_savedata',
             climate_model: str = 'NorESM2-LM',
-            #num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             scenarios: List[str] = ['ssp126','ssp370','ssp585'],
-            #train_experiments: List[str] = ['ssp126','ssp370','ssp585'],
-            #test_experiments: Union[str, List[str]] = ['ssp245'],
             variables: List[str] = ['pr'],
             mode: str = 'train',
             output_save_dir: str = "",
@@ -527,13 +475,11 @@ class CMIP6Dataset(SuperClimateDataset):
             seq_to_seq: bool = True,
             seq_len: int = 12,
             *args, **kwargs,
-            #load_data_into_mem: bool = True, # Keeping this true be default for now
     ):
 
         self.mode = mode
         self.output_save_dir = output_save_dir
-        #self.root_dir = os.path.join(data_dir, "targets/CMIP6")
-        #self.output_save_dir = output_save_dir
+   
         self.input_nc_files = []
         self.output_nc_files = []
 
@@ -551,36 +497,6 @@ class CMIP6Dataset(SuperClimateDataset):
             seq_to_seq=seq_to_seq,
             seq_len=seq_len
         )
-     
-        '''
-        #TO-DO: This is just getting the list of .nc files for targets. Put this logic in a function and get input list as well.
-        # In a function, we can call CausalDataset() instance for train and test separately to load the data
-
-        if isinstance(climate_model, str):
-            self.root_dir = os.path.join(self.root_dir, climate_model)
-        else:
-            # Logic for multiple climate models, not sure how to load/create dataset yet
-            log.warn("Data loader not yet implemented for multiple climate models.")
-            raise NotImplementedError
-
-        if num_ensembles == 1:
-            ensembles = os.listdir(self.root_dir)
-            self.ensemble_dir =  [os.path.join(self.root_dir, ensembles[0])] # Taking first ensemble member
-        else:
-            print("Multiple ensembles", num_ensembles)
-            self.ensemble_dir = []
-            ensembles = os.listdir(self.root_dir)
-            for i,folder in enumerate(ensembles):
-                self.ensemble_dir.append(os.path.join(self.root_dir, folder)) # Taking multiple ensemble members
-                if i==(num_ensembles-1):
-                    break # if num_ensemble ==-1 we take all
-            # log.warn("Data loader not yet implemented for mulitple ensemble members.")
-            # raise NotImplementedError
-        '''
-
-        # Split the data here using n_years if needed,
-        # else do random split logic here
-
 
         # Check here if os.path.isfile($SCRATCH/data.npz) exists
         # if it does, use self._reload data(path)
@@ -599,11 +515,6 @@ class CMIP6Dataset(SuperClimateDataset):
             self.Data = self.normalize_data(self.Data, stats)
 
         else:
-            # Add code here for adding files for input nc data
-            # Similar to the loop below for output files
-
-            # Got all the files paths at this point, now open and merge
-
             # List of output files
             files_per_var=[]
             for var in variables:
@@ -624,7 +535,7 @@ class CMIP6Dataset(SuperClimateDataset):
                                 print("No files for this climate model, ensemble member, var, year ,scenario:", climate_model, data_dir.split('/')[-1],var, y, exp)
                                 print("Exiting! Please fix the data issue.")
                                 exit(0)
-                            # loads all years! implement plitting
+                            # loads all years! implement splitting
                             output_nc_files += files
                 files_per_var.append(output_nc_files)
 
@@ -642,8 +553,6 @@ class CMIP6Dataset(SuperClimateDataset):
                     stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
-                    #
-                    #stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
                     print("WROTE STATISTICS", save_file_name)
 
@@ -656,17 +565,11 @@ class CMIP6Dataset(SuperClimateDataset):
                 stats = self.load_dataset_statistics(stats_fname, mode=self.mode, mips='cmip6')
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
-            #self.input_path = self.save_data_into_disk(self.raw_data_input, self.mode, 'input')
             self.data_path = self.save_data_into_disk(self.raw_data, fname, output_save_dir)
 
-            #self.copy_to_slurm(self.input_path)
             self.copy_to_slurm(self.data_path)
 
             self.Data = self.norm_data
-            # self.Data = self._reload_data(self.data_path)
-            
-
-            # Now X and Y is ready for getitem
         self.length=self.Data.shape[0]
 
     def __getitem__(self, index):
@@ -697,7 +600,7 @@ class Input4MipsDataset(SuperClimateDataset):
         self.channels_last=channels_last
 
         self.mode = mode
-        self.root_dir = os.path.join(data_dir, "input_alternate/input4mips")
+        self.root_dir = os.path.join(data_dir, "inputs/input4mips")
         self.output_save_dir = output_save_dir
         self.input_nc_files = []
         self.output_nc_files = []
@@ -717,13 +620,10 @@ class Input4MipsDataset(SuperClimateDataset):
         
         historical_openburning, ssp_openburning = openburning_specs
 
-        # Split the data here using n_years if needed,
-        # else do random split logic here
         fname = self.get_save_name_from_kwargs(mode=mode, file='input', kwargs=fname_kwargs)
 
         # Check here if os.path.isfile($SCRATCH/data.npz) exists #TODO: check if exists on slurm
         # if it does, use self._reload data(path)
-
         if os.path.isfile(os.path.join(output_save_dir, fname)): # we first need to get the name here to test that...
             self.data_path=os.path.join(output_save_dir, fname)
             print("path exists, reloading")
@@ -749,7 +649,7 @@ class Input4MipsDataset(SuperClimateDataset):
                         var_dir = os.path.join(self.root_dir, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
 
                 output_nc_files=[]
-                for exp in scenarios: # TODO: implement getting by years! also sub seletction for historical years
+                for exp in scenarios: 
                     
                     if var in NO_OPENBURNING_VARS:
                         filter_path_by=''
@@ -768,7 +668,6 @@ class Input4MipsDataset(SuperClimateDataset):
                         output_nc_files += files
                 files_per_var.append(output_nc_files)
 
-            #self.raw_data_input = self.load_data_into_mem(self.input_nc_files) #currently don't have input paths etc
             self.raw_data = self.load_into_mem(files_per_var, num_vars=len(variables), channels_last=self.channels_last, seq_to_seq=True ,seq_len=seq_len) # we always want the full sequence for input4mips
 
             if self.mode == 'train' or self.mode == 'train+val':
@@ -783,8 +682,6 @@ class Input4MipsDataset(SuperClimateDataset):
                     stat1, stat2 = self.get_dataset_statistics(self.raw_data, self.mode, mips='cmip6')
                     stats = {'mean': stat1, 'std': stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
-                    #
-#                    stats_fname = self.get_save_name_from_kwargs(mode=mode, file='statistics', kwargs=fname_kwargs)
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
@@ -799,14 +696,8 @@ class Input4MipsDataset(SuperClimateDataset):
 
             self.copy_to_slurm(self.data_path)
 
-            # Call _reload_data here with self.input_path and self.output_path
-            # self.X = self._reload_data(input_path)
             self.Data = self.norm_data
-            # self.Data = self._reload_data(self.data_path)
-            # Write a normalize transform to calculate mean and std
-            # Either normalized whole array here or per instance getitem, that maybe faster
-
-            # Now X and Y is ready for getitem
+         
             
         self.length=self.Data.shape[0]
 
@@ -815,8 +706,8 @@ class Input4MipsDataset(SuperClimateDataset):
 
 
 if __name__=="__main__":
-    #ds = ClimateDataset(seq_to_seq=True, seq_len=12, climate_models=['NorESM2-LM','EC-Earth3-Veg-LR','NorESM2-LM'], num_ensembles=1, output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=True)
-    ds = SuperClimateDataset(seq_to_seq=True, in_variables=['BC_sum','SO2_sum', 'CH4_sum'], scenarios=["historical","ssp370"],climate_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"], seq_len=12, num_ensembles=1, output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=False)
+   
+    ds = SuperClimateDataset(seq_to_seq=True, in_variables=['BC_sum','SO2_sum', 'CH4_sum'], scenarios=["historical","ssp370"],climate_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"], seq_len=12, num_ensembles=1, channels_last=False)
     #for (i,j) in ds:
         #print("i:", i.shape)
         #print("j:", j.shape)

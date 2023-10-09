@@ -239,7 +239,7 @@ class ClimateDataset(torch.utils.data.Dataset):
 
 
         def get_mean_std(self, data):
-            # DATA shape (years*scenarios, seq, vars, lon, lat)
+            # data shape (years*scenarios, seq, vars, lon, lat)
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0)
             else: 
@@ -255,10 +255,10 @@ class ClimateDataset(torch.utils.data.Dataset):
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0)
             else:
-                data = np.moveaxis(data, 2, 0) #DATA shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) easier to calulate statistics
-            vars_max = np.max(data, axis=(1, 2, 3, 4)) #sDATA shape (258, 12, 4, 96, 144)
+                data = np.moveaxis(data, 2, 0) # shape (258, 12, 4, 96, 144) -> (4, 258, 12, 96, 144) easier to calulate statistics
+            vars_max = np.max(data, axis=(1, 2, 3, 4)) # shape (258, 12, 4, 96, 144)
             vars_min = np.min(data, axis=(1, 2, 3, 4))
-            vars_max = np.expand_dims(vars_max, (1, 2, 3, 4)) # Shape of mean & std (4, 1, 1, 1, 1)
+            vars_max = np.expand_dims(vars_max, (1, 2, 3, 4)) # shape of mean & std (4, 1, 1, 1, 1)
             vars_min= np.expand_dims(vars_min, (1, 2, 3, 4))
             return vars_min, vars_max
 
@@ -271,7 +271,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             if self.channels_last:
                 data = np.moveaxis(data, -1, 0) # vars from last to 0 (num_vars, years, seq_len, lon, lat)
             else:
-                data = np.moveaxis(data, 2, 0) #DATA shape (years, seq_len, num_vars, lon, lat) -> (num_vars, years, seq_len, lon, lat) 
+                data = np.moveaxis(data, 2, 0) # shape (years, seq_len, num_vars, lon, lat) -> (num_vars, years, seq_len, lon, lat) 
             
             print("mean", stats['mean'].shape, 'std', stats['std'].shape)
             norm_data = (data - stats['mean'])/(stats['std'])
@@ -318,10 +318,6 @@ class ClimateDataset(torch.utils.data.Dataset):
 
             return X,Y
 
-        # @property
-        # def name(self):
-        #     return self._name.upper()
-
         def __str__(self):
             s = f" {self.name} dataset: {self.n_years} years used, with a total size of {len(self)} examples."
             return s
@@ -335,7 +331,8 @@ class ClimateDataset(torch.utils.data.Dataset):
 
 class CMIP6Dataset(ClimateDataset):
     """ 
-
+    CMIP6 Dataset. Containing data for single climate models but potentially multiple ensemble members.
+    Iiterating overy every member.
     """
     def __init__( # inherits all the stuff from Base
             self,
@@ -425,7 +422,7 @@ class CMIP6Dataset(ClimateDataset):
                             var_dir = os.path.join(em, exp, var, f'{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}') 
                             files = glob.glob(var_dir + f'/*.nc', recursive=True)
                             if len(files)==0:
-                                print("No files for this ensemble member,y,scenario", exp, y, em)
+                                print("No files for this scenario, year, ensemble member pairing:", exp, y, em)
                                 exit(0)
                             # loads all years!
                             output_nc_files += files
@@ -473,9 +470,9 @@ class CMIP6Dataset(ClimateDataset):
 
 class Input4MipsDataset(ClimateDataset):
     """ 
-    Loads all scenarios for a given var.
+    Loads all scenarios for a given variable.
     """
-    def __init__( # inherits all the stuff from Base
+    def __init__(
             self,
             years: Union[int,str], 
             historical_years: Union[int,str],
@@ -596,7 +593,7 @@ class Input4MipsDataset(ClimateDataset):
 
 if __name__=="__main__":
     # FGOALS-g3 MPI-ESM1-2-HR
-    ds = ClimateDataset(seq_to_seq=True, in_variables=['BC_sum','SO2_sum', 'CH4_sum'], scenarios=["historical","ssp370"],climate_model="MPI-ESM1-2-HR", seq_len=12, num_ensembles=2, output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=False)
+    ds = ClimateDataset(seq_to_seq=True, in_variables=['BC_sum','SO2_sum', 'CH4_sum'], scenarios=["historical","ssp370"],climate_model="MPI-ESM1-2-HR", seq_len=12, num_ensembles=2, channels_last=False)
     #for (i,j) in ds:
         #print("i:", i.shape)
         #print("j:", j.shape)

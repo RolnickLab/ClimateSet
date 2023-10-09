@@ -29,7 +29,7 @@ model:
   monitor: "val/llrmse_climax"
   finetune: False
   pretrained_run_id:  "3u0ys0d5"
-  pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
+  pretrained_ckpt_dir: "home/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
 
 datamodule: # overwrite what stuff to train on
    in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']

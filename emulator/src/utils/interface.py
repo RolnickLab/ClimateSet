@@ -6,9 +6,6 @@ import torch
 from omegaconf import DictConfig
 import wandb
 
-#from climart.data_transform.normalization import Normalizer
-
-
 from emulator.src.datamodules.dummy_datamodule import DummyDataModule
 from emulator.src.utils.utils import get_logger
 from emulator.src.utils.wandb_api import load_hydra_config_from_wandb, restore_model_from_wandb_cloud, get_wandb_ckpt_name
@@ -67,8 +64,7 @@ def get_model(config: DictConfig, **kwargs):
                 model = DecoderWrapper(model, multihead_decoder, **model.hparams)
         
 
-        # check if we are also finetuning a decoder 
-
+    # check if we are also finetuning a decoder 
     else:
         model = hydra.utils.instantiate(
         config.model,
@@ -124,11 +120,7 @@ def get_model_and_data(config: DictConfig):
     """
     data_module = get_datamodule(config)
     model = get_model(config)
-    # model = hydra.utils.instantiate(
-    #     config.model, _recursive_=False,
-    #     datamodule_config=config.datamodule,
-    #     #output_normalizer=data_module.normalizer.output_normalizer,
-    # )
+    
     return model, data_module
 
 
@@ -210,8 +202,8 @@ def reload_model_from_config_and_ckpt(
 def reload_model_from_id(
     run_id: str,
     direc: str = None,
-    group="causalpaca",  # ecc-mila7',
-    project="emulator",  #'ClimART',
+    group="causalpaca", 
+    project="emulator",
     override_kwargs: Sequence[str] = None,
     allow_resume: bool = True,
 ):
@@ -265,12 +257,6 @@ def reload_model_from_id(
         best_model_path = restore_model_from_wandb_cloud(run_path)
 
     config = load_hydra_config_from_wandb(run_path, override_kwargs)
-
-    # Making sure vital arguments are integers (dirty fix of an interanl error)
-    #config["trainer"]["min_epochs"] = int(config["trainer"]["min_epochs"])
-    #config["trainer"]["max_epochs"] = int(config["trainer"]["max_epochs"])
-    #config.datamodule["batch_size"] = int(config.datamodule["batch_size"])
-    #config.datamodule["eval_batch_size"] = int(config.datamodule["eval_batch_size"])
 
     if not (allow_resume):
         config.logger["wandb"]["resume"] = False

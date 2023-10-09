@@ -70,24 +70,6 @@ class BaseModel(LightningModule):
             self.hparams.monitor = f'val/llrmse_climax' 
         if not hasattr(self.hparams, 'mode') or self.hparams.mode is None:
             self.hparams.mode = 'min'
-
-        """ -> moved to interface
-        if finetune:
-            self.log_text.info("Finetuning")
-            assert pretrained_run_id is not None , "Mode is finetune but no run id is given to load from."
-            assert pretrained_ckpt_dir is not None , "Mode is finetune but no run id is given to load from."
-            # load pretrained model
-            base_model, _ = reload_model_from_id(
-                pretrained_run_id, pretrained_ckpt_dir, allow_resume=False)
-            self.log_text.warn("Loading pretrained model")
-            self.model = base_model
-        """
-
-
-           
-
-            
-
     @property
     def n_params(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
@@ -106,7 +88,6 @@ class BaseModel(LightningModule):
 
 
     def on_train_start(self) -> None:
-        # TODO: do we want to do or log anything?
         self.log_text.info("Starting Training")
 
 
@@ -117,6 +98,7 @@ class BaseModel(LightningModule):
 
         # x (batch_size, time, lon, lat, num_features)
         # TODO if we want to apply any input normalization or other stuff we should do it here
+        
         # if idx is None or if we do not have a decoder
         
         if self.super_decoder:
@@ -149,16 +131,13 @@ class BaseModel(LightningModule):
 
         loss = 0
 
-        #  Loop over output variable to comput loss seperateley!!!
+        #  Loop over output variable to compute loss seperateley!!!
         for out_var in self._out_var_ids:
             loss_per_var = self.criterion(preds[out_var], Y[out_var])
-            #self.log_text.info(f"Loss for {out_var}: {loss_per_var}")
             if torch.isnan(loss_per_var).sum()>0:
                 exit(0)
             loss += loss_per_var
             train_log[f'train/{out_var}/loss']=loss_per_var
-
-            # TODO: clarify what else consituetes the loss + allow weighting per variable 
             # any additional losses can be computed, logged and added to the loss here
 
         # Average Loss over vars
@@ -264,11 +243,8 @@ class BaseModel(LightningModule):
         self.log_text.info(f"in test epoch end len outputs {len(outputs)}")
 
         # test statistisc per test set
-        #for i, test_subset_outputs in enumerate(outputs):
         for i, split_name in enumerate(self.trainer.datamodule.test_set_names):
-            #split_name = self.trainer.datamodule.test_set_names[i]
             self.log_text.info(f"Testing on {split_name}")
-            #test_subset_outputs = self._evaluation_get_preds(test_subset_outputs[i])
             test_subset_outputs = self._evaluation_get_preds(outputs[i])
 
             Y_test, preds_test = test_subset_outputs['targets'], test_subset_outputs['preds']
@@ -279,7 +255,6 @@ class BaseModel(LightningModule):
     
             self.log_dict({**test_stats, 'epoch': self.current_epoch}, prog_bar=False)
 
-        # TODO: do we want to put sth else in the main tests stats?
         self.log_dict({**main_test_stats, 'epoch': self.current_epoch}, prog_bar=False)
         self.test_step_outputs.clear()
         return main_test_stats
@@ -312,7 +287,6 @@ class BaseModel(LightningModule):
         return self._evaluation_step(batch, batch_idx)
 
     def on_predict_epoch_end(self, results: List[Any]) -> Dict[int, Dict[str, Dict[str, np.ndarray]]]:
-        # TODO: might be depricated -> instead of getting results, we might need to collect them oursevels like in test and val
         return self.aggregate_predictions(results)
 
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = None):
@@ -348,7 +322,7 @@ class BaseModel(LightningModule):
             scheduler_params = to_DictConfig(self.hparams.scheduler)
             scheduler = hydra.utils.instantiate(scheduler_params, optimizer=optimizer)
 
-        # TODO: what metric to monitor for training
+        #  what metric to monitor for training
         if not hasattr(self.hparams, 'monitor') or self.hparams.monitor is None:
             self.hparams.monitor = f'val/rmse'
         if not hasattr(self.hparams, 'mode') or self.hparams.mode is None:

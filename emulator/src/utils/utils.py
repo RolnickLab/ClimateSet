@@ -136,7 +136,7 @@ def no_op(*args, **kwargs):
 
 def random_split(dataset, lengths,
                  generator=default_generator):
-    r"""
+    """
     Randomly split a dataset into non-overlapping new datasets of given lengths.
 
     If a list of fractions that sum up to 1 is given,

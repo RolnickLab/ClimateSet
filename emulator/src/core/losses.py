@@ -3,8 +3,6 @@ import torch.nn as nn
 import logging 
 import gpytorch
 
-# somehow cannot import that..
-#from emulator.src.utils.utils import get_logger, diff_max_min
 from pytorch_lightning.utilities import rank_zero_only
 
 # import problems from utils
@@ -252,54 +250,7 @@ class LLweighted_RMSELoss_Climax(nn.Module):
         error = torch.sqrt(error)
 
         return error
-
-''' deprected 
-class NRMSE_Loss(nn.Module):
-    """ deprecated
-    NRMSE: normalized RMSE
-    Different options for normalization: mean, std, max-min, quantiles...
-    Different options for aspect to normalize over: features, grid... 
-
-    """
-
-    def __init__(self, aspect: str = "grid", noramlization: str = "mean",  ):
-        super().__init__()
-        self.rmse = RMSELoss(reduction='none')
-         
-        self.aspect = aspect
-        self.normalization = noramlization
-         # if channels last shape (batch_size, seq_len, lon, lat, features) else (batch_size, seq_len, features, lon, lat)
-       
-        self.lat_idx=-1
-        self.feat_idx=-3
-        if aspect=='grid':
-            self.dim=(self.lat_idx, self.lat_idx-1)
-        elif aspect=='feature':
-            self.dim=(self.feat_idx)
-        else:
-            log.warn(f"Aspect {aspect} not supported.")
-            raise ValueError 
-
-        if noramlization=="mean":
-            self.normalization_fn=torch.mean
-        elif noramlization=="std":
-            self.normalization_fn=torch.std
-        elif noramlization=="min_max":
-            self.normalization_fn=diff_max_min
-        else:
-            log.warn(f"Normalization method {noramlization} not supported")
-            raise ValueError
-
-
-
-    def forward(self,pred,y):
-       
-        normalization_factor = self.normalization_fn(y, self.dim)
-        nrmse = (self.rmse(pred, y).mean(dim=self.dim) / normalization_factor).mean()
-
-        return nrmse
-'''
-
+    
 if __name__=="__main__":
 
     batch_size=16

@@ -13,6 +13,7 @@ log = get_logger()
 
 class DummyDataModule(LightningDataModule):
     """
+    This is a Dummy Class for testing purposes.
     ----------------------------------------------------------------------------------------------------------
     A DataModule implements 5 key methods:
         - prepare_data (things to do on 1 GPU/TPU, not on every GPU/TPU in distributed mode)
@@ -112,12 +113,6 @@ class DummyDataModule(LightningDataModule):
             inputs=torch.rand(size=(self.hparams.size, self.hparams.seq_len, len(self.hparams.in_var_ids), self.hparams.lon, self.hparams.lat))
             targets=torch.ones(size=(self.hparams.size, self.out_seq_len, len(self.hparams.out_var_ids), self.hparams.lon, self.hparams.lat))
 
-        #targets={}
-        #for var in self.hparams.out_var_ids:
-        #    targets[var]=torch.rand(size=(self.hparams.size, self.hparams.seq_len, self.hparams.lon, self.hparams.lat)).cuda()
-        #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        #inputs, targets = inputs.to(device), targets.to(device)
         inputs=inputs.cuda()
         targets=targets.cuda()
         dataset= torch.utils.data.TensorDataset(inputs, targets)

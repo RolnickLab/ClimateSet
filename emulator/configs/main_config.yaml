@@ -35,31 +35,11 @@ model:
   monitor: "val/llrmse_climax"
   super_emulation: False
   super_decoder: False
-  #finetune: True
-  #pretrained_run_id: "3u0ys0d5"
-  #pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt" #/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/emulator/${pretrained_run_id}/checkpoints/
- 
+
 datamodule:
   batch_size: 4
    
-# TODO make a yaml file for normalization
-# normalizer:
-#   _target_: climart.data_transform.normalization.Normalizer
-#   input_normalization: "z"
-#   output_normalization: "z"
-#   spatial_normalization_in:  False
-#   spatial_normalization_out: False
-#   log_scaling: False
-#   data_dir: ${datamodule.data_dir}
-#   verbose: ${verbose}
-# path to original working directory
-# hydra hijacks working directory by changing it to the new log directory
-# so it's useful to have this path as a special variable
-# https://hydra.cc/docs/next/tutorials/basic/running_your_app/working_directory
 work_dir: ${hydra:runtime.cwd}  # {oc.env:ENV_VAR} allows to get environment variable ENV_VAR
-
-# TODO consider making yaml files for the metrics?
-#val_metric: "val/${target_var_id:heating_rate, ${datamodule.target_type}}/rmse"
 
 # path to checkpoints
 ckpt_dir: ${work_dir}/checkpoints/
@@ -88,3 +68,20 @@ seed: 42
 
 # name of the run, should be used along with experiment mode
 name: "default"
+
+
+# TODO make a yaml file for normalization
+# normalizer:
+#   _target_: climart.data_transform.normalization.Normalizer
+#   input_normalization: "z"
+#   output_normalization: "z"
+#   spatial_normalization_in:  False
+#   spatial_normalization_out: False
+#   log_scaling: False
+#   data_dir: ${datamodule.data_dir}
+#   verbose: ${verbose}
+# path to original working directory
+# hydra hijacks working directory by changing it to the new log directory
+# so it's useful to have this path as a special variable
+# https://hydra.cc/docs/next/tutorials/basic/running_your_app/working_directory
+

@@ -5,10 +5,7 @@ import torch
 from pytorch_lightning import LightningModule
 from emulator.src.core.models.climax.tokenized_vit_continuous import TokenizedViTContinuous
 from emulator.src.core.models.basemodel import BaseModel
-#from src.utils.lr_scheduler import LinearWarmupCosineAnnealingLR
-#from src.utils.metrics import (lat_weighted_acc, lat_weighted_mse,
-#                               lat_weighted_mse_val, lat_weighted_nrmse,
-#                               lat_weighted_rmse, mse)
+
 from emulator.src.utils.pos_embed import (interpolate_channel_embed,
                                  interpolate_pos_embed)
 from emulator.src.utils.utils import get_logger
@@ -73,7 +70,7 @@ class ClimaX(BaseModel):
         mlp_ratio: float =4.0,
         init_mode: str ="xavier",
         freeze_encoder: bool =False,
-        no_time_aggregation: bool = False, # not(seq_to_seq)
+        no_time_aggregation: bool = False,
         datamodule_config: DictConfig = None,
         pretrained_path: str = None,
         region_info = None, # TODO: maybe later we could actually include that
@@ -183,53 +180,6 @@ class ClimaX(BaseModel):
 
     def get_patch_size(self):
         return self.model.patch_size
-  
-"""
-    def validation_step(self, batch: Any, batch_idx: int):
-        x, y, lead_times, variables, out_variables, region_info = batch
-        pred_steps = 1
-        pred_range = self.pred_range
-
-        days = [int(pred_range / 24)]
-        steps = [1]
-
-        if self.model.climate_modeling:
-            metrics = [lat_weighted_mse_val, lat_weighted_rmse]
-        else:
-            metrics = [lat_weighted_mse_val, lat_weighted_rmse, lat_weighted_acc]
-
-        all_loss_dicts, _ = self.model.rollout(
-            x,
-            y,
-            lead_times,
-            variables,
-            out_variables,
-            region_info,
-            pred_steps,
-            metrics,
-            self.denormalization,
-            lat=self.lat,
-            log_steps=steps,
-            log_days=days,
-            clim=self.val_clim
-        )
-
-        loss_dict = {}
-        for d in all_loss_dicts:
-            for k in d.keys():
-                loss_dict[k] = d[k]
-
-        for var in loss_dict.keys():
-            self.log(
-                "val/" + var,
-                loss_dict[var],
-                on_step=False,
-                on_epoch=True,
-                prog_bar=False,
-                sync_dist=True,
-            )
-        return loss_dict
-"""
 
 if __name__=="__main__":
     

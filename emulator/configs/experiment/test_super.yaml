@@ -35,9 +35,9 @@ model:
   monitor: "val/llrmse_climax"
   finetune: True
   pretrained_run_id:  "bcvgpg4b"
-  pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/bcvgpg4b/checkpoints/epoch=8-step=180.ckpt"
+  pretrained_ckpt_dir: "home/causalpaca/emulator/emulator/bcvgpg4b/checkpoints/epoch=8-step=180.ckpt"
   pretrained_run_id_decoder: "xog84o5g"
-  pretrained_ckpt_dir_decoder: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/xog84o5g/checkpoints/epoch=8-step=180.ckpt"
+  pretrained_ckpt_dir_decoder: "home/causalpaca/emulator/emulator/xog84o5g/checkpoints/epoch=8-step=180.ckpt"
   optimizer: # need that for decoder
     is_filtered: True
  

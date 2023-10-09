@@ -21,6 +21,7 @@ num_heads: 16
 mlp_ratio: 4
 init_mode: "small"
 freeze_encoder: False
+channels_last: ${datamodule.channels_last}
 pretrained_path: ${work_dir}/emulator/src/core/models/climax/pretrained_checkpoints/ClimaX-5.625deg.ckpt
 no_time_aggregation: ${datamodule.seq_to_seq} # if seq_to_seq -> no time aggregation
 

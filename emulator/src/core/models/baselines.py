@@ -6,7 +6,6 @@ import torch.nn as nn
 from omegaconf import DictConfig
 from torch import Tensor
 
-#from esem import gp_model #ClimateBench GP
 import segmentation_models_pytorch as smp
 from torch.autograd import Variable
 import numpy as np

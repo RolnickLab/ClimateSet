@@ -51,9 +51,8 @@ class SuperClimateDataModule(LightningDataModule):
             verbose: bool = True,
             seed: int = 11,
             seq_len: int = SEQ_LEN_MAPPING[TEMP_RES],
-            input4mips_data_dir: Optional[str] = DATA_DIR,  #'/home/venka97/scratch/causalpaca/data/',#'/home/venka97/scratch/causalpaca/data/CMIP6/',
-            cmip6_data_dir: Optional[str] =  DATA_DIR, #'/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/',#DATA_DIR,
-            output_save_dir: Optional[str] ='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA',
+            data_dir: Optional[str] = DATA_DIR, 
+            output_save_dir: Optional[str] = DATA_DIR,
             num_ensembles: int = 1, # 1 for first ensemble, -1 for all
             lon:int = LON,
             lat: int = LAT,
@@ -77,14 +76,9 @@ class SuperClimateDataModule(LightningDataModule):
             self.test_models=train_models
         else:
             self.test_models=test_models
-        print("Test models", self.test_models)
+       
         # get unique models to have correct model numbers in all sets (train/val + test)
         all_models = set(self.train_models+self.test_models)
-       
-
-        #for m in self.test_models:
-        #    assert m in self.train_models, f"Test model {m} not in train models {train_models}!"
-    
         self.output_save_dir = output_save_dir
         # The following makes all args available as, e.g., self.hparams.batch_size
         self.save_hyperparameters(ignore=["input_transform", "normalizer"])
@@ -97,7 +91,7 @@ class SuperClimateDataModule(LightningDataModule):
         self._data_test: Optional[List[SuperClimateDataset]] = None
         self._data_predict: Optional[List[SuperClimateDataset]] = None
         self.test_set_names: Optional[List[str]] = [f"{scenario}_{model}" for scenario in test_scenarios for model in self.test_models]
-        print("TEST SET NAMES", self.test_set_names)
+        print("Test Set names", self.test_set_names)
 
 
         self._data_train = None
@@ -125,41 +119,32 @@ class SuperClimateDataModule(LightningDataModule):
             channels_last = self.hparams.channels_last,
             seq_to_seq = self.hparams.seq_to_seq,
             seq_len = self.hparams.seq_len,
-            input4mips_data_dir = self.hparams.input4mips_data_dir, 
-            cmip6_data_dir= self.hparams.cmip6_data_dir,
+            data_dir = self.hparams.data_dir, 
             #input_transform = None, # TODO: implement
             #input_normalization = None, #TODO: implement
             #output_transform = None,
             #output_normalization = None,
         )
-        # create datasets 
-        # assign to vars
-       
-        # create one with testign scenarios
-
-        # Training set:
-        #if stage == "fit" or stage is None:
-        #    self._data_train = train_ds
-        # Validation set
+        
+        # Train and Validation
         if stage in ['fit', 'validate', None]:
          
             # create one big training dataset with all training scenarios
             # then split it to assighn data train and data val
             full_ds = SuperClimateDataset(years=self.hparams.train_years, historical_years=self.hparams.train_historical_years, mode='train+val', scenarios=self.hparams.train_scenarios, climate_models=self.train_models, load_data_into_mem=self.hparams.load_train_into_mem, **dataset_kwargs)
-            print("Got DS! lenght: ", len(full_ds))
             fractions=[1-+self.hparams.val_split, self.hparams.val_split]    
             ds_list = random_split(full_ds, lengths=fractions)
             train_ds, val_ds = ds_list
-            print("Got DS! split train val lenght: ", len(train_ds), len(val_ds))
             self._data_train = full_ds
-            self._data_val = full_ds #TODO figure out split
+            self._data_val = full_ds #TODO: fix splitting 
+
         # Test sets:
         if stage == "test" or stage is None:
             self._data_test = [SuperClimateDataset(years=self.hparams.test_years, mode='test', scenarios=test_scenario, climate_models=[test_model], load_data_into_mem=self.hparams.load_test_into_mem, **dataset_kwargs) for test_scenario in self.hparams.test_scenarios for test_model in self.test_models]
             
         # Prediction set:
         if stage == "predict":
-            # just choosing at random here
+            print("Prediction Set not yet implemented. Using Test Set.")
             self._data_predict = self._data_test
 
     
@@ -176,8 +161,6 @@ class SuperClimateDataModule(LightningDataModule):
     def _shared_eval_dataloader_kwargs(self) -> dict:
         return dict(**self._shared_dataloader_kwargs(), batch_size=self.hparams.eval_batch_size, shuffle=False)
 
-    # Probably we also just want a list of Train Dataloaders not just a single one so we can swith sets in our memory
-    # resulting tensors sizes: 
     # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
     # y: (batch_size, sequence_length, lon, lat, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lon, lat)
     def train_dataloader(self):
@@ -209,8 +192,8 @@ class SuperClimateDataModule(LightningDataModule):
 
 
 if __name__=="__main__":
-    #SuperClimateDataset(seq_to_seq=True, in_variables=['BC_sum','SO2_sum', 'CH4_sum'], scenarios=["historical","ssp370"],climate_models=["MPI-ESM1-2-HR","MPI-ESM1-2-HR"], seq_len=12, num_ensembles=2, output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=False)
-    dm = SuperClimateDataModule(seq_to_seq=True, seq_len=12, in_var_ids=['BC_sum','SO2_sum', 'CH4_sum'], train_years="2015-2020", train_scenarios=["historical", "ssp370"], test_scenarios=["ssp370"], train_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"], output_save_dir='/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA', channels_last=False)
+
+    dm = SuperClimateDataModule(seq_to_seq=True, seq_len=12, in_var_ids=['BC_sum','SO2_sum', 'CH4_sum'], train_years="2015-2020", train_scenarios=["historical", "ssp370"], test_scenarios=["ssp370"], train_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"], channels_last=False)
     dm.setup('fit')
     dm.setup('test')
-    #dm.setup('test')
+  

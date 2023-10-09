@@ -31,9 +31,9 @@ model:
   monitor: "val/llrmse_climax"
   finetune: False 
   pretrained_run_id:  "bcvgpg4b"
-  pretrained_ckpt_dir: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/bcvgpg4b/checkpoints/epoch=8-step=180.ckpt"
+  pretrained_ckpt_dir: "home/causalpaca/emulator/emulator/bcvgpg4b/checkpoints/epoch=8-step=180.ckpt"
   pretrained_run_id_decoder: "xog84o5g"
-  pretrained_ckpt_dir_decoder: "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/xog84o5g/checkpoints/epoch=8-step=180.ckpt"
+  pretrained_ckpt_dir_decoder: "home/causalpaca/emulator/emulator/xog84o5g/checkpoints/epoch=8-step=180.ckpt"
   optimizer: # need that for decoder
     is_filtered: True
  
@@ -51,10 +51,7 @@ datamodule: # overwrite what stuff to train on
   test_scenarios : ["ssp245"]
   train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
   test_models: ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
-  #num_ensembles: 2
-  output_save_dir : '/home/mila/v/venkatesh.ramesh/scratch/causalpaca/emulator/DATA'
-  #cmip6_data_dir: '/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/'
- 
+
 logger:
   wandb:
     tags: ["climax", "super_emulation", "larger_decoder", "6_models"] # set your tags here

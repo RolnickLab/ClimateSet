@@ -156,13 +156,10 @@ def load_hydra_config_from_wandb(
     ), f"{config.logger.wandb.id} != {run.id}. \nFull Hydra config: {config}"
     return config
 
-
-# new
-
 def reload_checkpoint_from_wandb(
     run_id: str,
     group: str = "causalpaca", 
-    project: str = "emulator",  # ClimART',
+    project: str = "emulator", 
     epoch: Union[str, int] = None,
     override_key_value: Union[Sequence[str], dict] = None,
     local_checkpoint_path: str = None,
@@ -211,7 +208,6 @@ def reload_checkpoint_from_wandb(
             config, best_model_fname, **reload_kwargs
         )
     except RuntimeError as e:
-        # print_config(config.model, fields='all')
         raise RuntimeError(
             f"You have probably changed the model code, making it incompatible with older model "
             f"versions. Tried to reload the model ckpt for run.id={run_id} from {best_model_path}.\n"
@@ -385,8 +381,7 @@ def groupby(
     grouped_df = df.groupby([group_by], as_index=False)
     agg_metrics = {m: ["mean", "std"] for m in metrics}
     agg_remain_intact = {c: "first" for c in keep_columns}
-    # cols = [group_by] + keep_columns + metrics + ['id']
-    # print(df[cols].isna().any())
+  
     stats = grouped_df.agg({**agg_metrics, **agg_remain_intact})
     stats.columns = [
         (f"{c[0]}/{c[1]}" if c[1] in ["mean", "std"] else c[0]) for c in stats.columns
@@ -415,7 +410,6 @@ def get_wandb_filters_dict_list_from_list(filters_list) -> dict:
         if isinstance(f, str):
             f = str_to_run_pre_filter[f.lower()]
         filters_wandb.append(f)
-        # filters_wandb = {**filters_wandb, **f}
     return filters_wandb
 
 
@@ -423,8 +417,8 @@ def get_best_model_config(
     metric: str = "best_val/NRMSE_sd",
     mode: str = "min",
     filters: Union[str, List[Union[Callable, str]]] = "has_finished",
-    group: str = "causalpaca",  # "ecc-mila7",
-    project: str = "emulator",  # ClimART',
+    group: str = "causalpaca", 
+    project: str = "emulator", 
     wandb_api=None,
     topk: int = 1,
 ) -> dict:
@@ -444,8 +438,8 @@ def get_best_model_config(
 
 def get_run_ids_for_hyperparams(
     hyperparams: dict,
-    group: str = "causalpaca",  # "ecc-mila7",
-    project: str = "emulator",  # ClimART',
+    group: str = "causalpaca", 
+    project: str = "emulator", 
     wandb_api=None,
 ) -> List[str]:
     runs = filter_wandb_runs(

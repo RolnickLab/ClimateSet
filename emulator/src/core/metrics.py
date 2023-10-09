@@ -5,7 +5,6 @@ log = get_logger()
 
 # all functions assuming input dimensions (batch_size / N, time, lon, lat)
 
-
 def MSE(preds: np.ndarray, y: np.ndarray):
     return np.mean((preds-y)**2)
 
@@ -28,7 +27,6 @@ def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool=True):
         weights=np.cos(np.arange(y.shape[-1]))
        
     # nrmses = sqrt((weights * (x_mean_t -y_mean_n_t)**2))_mean_s / ((weights*y)_mean_s)_mean_t_n
-    # TODO: clarify with duncan why not mean over n with x..
     nrmse_s = np.sqrt(weighted_global_mean( (preds.mean(axis=(0,1))-y.mean(axis=(0,1)) )**2,weights)) / weighted_global_mean(y,weights).mean(axis=(0,1))
 
     return nrmse_s
@@ -40,8 +38,6 @@ def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool=True):
     Spatial normalized weighted RMSE taken from Climate Bench. 
     Weigting to account for decreasing grid size towards the pole.
     """
-    #log.info("in cb nrmse g")
-    #log.info(f"prads main {preds.mean()}")
     # weighting to account for decreasing grid-cell area towards pole
     # lattitude weights
     if deg2rad:
@@ -51,25 +47,19 @@ def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool=True):
 
 
    
-    # nrmseg = sqrt(((x - ( (weights * y_mean_t)_mean_s)**2)_mean_t )  ) / ((weights*y)_mean_s)_mean_t_n
+   
     denom = weighted_global_mean(y,weights).mean(axis=(0,1))
 
-    # I guess denom is not alowed to be zero!
-    
-    
-    #if np.isnan(denom).sum()>0:
-    #    log.info("denom is nan")
+    # denom is not alowed to be zero!
     if np.any(preds==0):
-        #log.warn("predictions contains zeros!! adding epsilon")
+        log.warn("predictions contains zeros!! adding epsilon")
         preds[preds==0]+=1e-6
    
-    # TODO: clarify with duncan when to mean over samples for predsictions? before or after sqrt?
     under_sqrt=((weighted_global_mean(preds.mean(axis=0), weights) - weighted_global_mean(y.mean(axis=0), weights))**2).mean(axis=0)
     if np.isnan(under_sqrt).sum()>0:
         log.info("under sqrt is nan")
     nrmse_g = np.sqrt( (weighted_global_mean(preds.mean(axis=0), weights) - weighted_global_mean(y.mean(axis=0), weights)**2).mean(axis=(0)) ) / denom
-    #if np.isnan(nrmse_g).sum()>0:
-    #    log.info("error is nan") 
+ 
     return nrmse_g
 
 

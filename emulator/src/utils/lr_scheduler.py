@@ -24,7 +24,6 @@ class LinearWarmupCosineAnnealingLR(_LRScheduler):
     def __init__(
         self,
         optimizer: Optimizer,
-        #optimizer_specs: Dict,
         warmup_epochs: int,
         max_epochs: int,
         warmup_start_lr: float = 0.0,
@@ -44,8 +43,6 @@ class LinearWarmupCosineAnnealingLR(_LRScheduler):
         self.max_epochs = max_epochs
         self.warmup_start_lr = warmup_start_lr
         self.eta_min = eta_min
-
-        # TODO: create optimizer class with dict specs
 
         super().__init__(optimizer, last_epoch)
 

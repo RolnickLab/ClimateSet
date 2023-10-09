@@ -30,7 +30,7 @@ model:
   finetune: False
   
   pretrained_run_id: null # eg "3u0ys0d5"
-  pretrained_ckpt_dir: null # e.g "/network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
+  pretrained_ckpt_dir: null # e.g "/home/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
 
 datamodule: # overwrite what stuff to train on
    in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']

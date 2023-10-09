@@ -35,20 +35,3 @@ class DecoderWrapper(BaseModel):
         out = out.nan_to_num()
         
         return out
-
-    '''
-    def configure_optimizers(self):
-        """
-        Configure optimizers and learning rate schedulers for training process.
-        Calls the BaseModel method, but overwrite with an Adam optimizer which
-        filters out parameters with requires_grad=False. Allows for freezing
-        and unfreezing of parameters.
-        """
-        self.log_text.info("in configure otpimizer decoder wrapper")
-        opt_lr_dict = super().configure_optimizers()
-        self.log_text.info(opt_lr_dict)
-        optim_kwargs = {k: v for k, v in self.hparams.optimizer.items() if k not in ['name', '_target_']}
-        optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.parameters()), **optim_kwargs)
-        opt_lr_dict["optimizer"] = optimizer
-        return opt_lr_dict
-    '''

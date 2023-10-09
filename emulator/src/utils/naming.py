@@ -29,15 +29,6 @@ def get_detailed_name(config) -> str: # TODO: adjust that to our liking
     s += f"{config.model.optimizer.get('lr')}lr_"
     if config.model.optimizer.get('weight_decay') > 0:
         s += f"{config.model.optimizer.get('weight_decay')}wd_"
-
-    #hdims = config.model.get('hidden_dims')
-    #if all([h == hdims[0] for h in hdims]):
-    #    hdims = f"{hdims[0]}x{len(hdims)}"
-    #else:
-    #    hdims = str(hdims)
-    #s += f"{hdims}h"  # &{net_params['out_dim']}oDim"
-    # if not params['shuffle']:
-    #    s += 'noShuffle_'
     s += f"{config.get('seed')}seed"
 
     return s.replace('None', '')
@@ -46,7 +37,6 @@ def get_detailed_name(config) -> str: # TODO: adjust that to our liking
 def get_group_name(config) -> str:
     s = get_name_for_hydra_config_class(config.model)
     s = s.lower().replace('net', '').replace('_', '').replace("causalpaca", "").replace("with", "+").upper()
- 
 
     #if config.normalizer.get('spatial_normalization_in') and config.normalizer.get('spatial_normalization_out'):
     #    s += '+spatialNormed'

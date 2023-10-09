@@ -35,16 +35,6 @@ class MultiHeadDecoder(nn.Module):
         self.heads.to(self.device)
         
         
-    
-    """
-    def forward(self, x, head_num):
-        # assumes single head_num
-        self.set_active_head(head_num)
-        head = self.heads[head_num]
-        out = head(x)
-        return out
-    """
-
     def forward(self, x, model_ids):
         # model ids (str) may be multiple (batch_size, 1)
 
@@ -57,8 +47,8 @@ class MultiHeadDecoder(nn.Module):
 
         # creaty empty tensor of output shape
         y = torch.empty(x.shape[0], x.shape[1], self.num_output_vars, x.shape[-2], x.shape[-1]).to(self.device)
-        # fill in values by uniqe head
         
+        # fill in values by uniqe head
         for i,h in enumerate(head_nums):
             y[i,:]=self.heads[h](x[i,:])
         

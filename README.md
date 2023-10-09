@@ -70,41 +70,49 @@ We ran 3 different configurations of experiments:
 Here are some example to recreate single emulator experimnts for NorESM2-LM.
 
 ```python
-python emulator/run.py experiment=single_emulator/unet/NorESM2-LM_unet_tas+pr_run-01.yaml seed=3423
+python emulator/run.py experiment=single_emulator/unet/NorESM2-LM_unet_tas+pr_run-01.yaml logger=none seed=3423
 ```
 
 This will train the U-Net model on NorESM2-LM dataset. To change some of the parameters of the experiment, you can use hydra to override them. For eg. to run with different experiment seed:
 
 ```python
-python emulator/run.py experiment=single_emulator/unet/NorESM2-LM_unet_tas+pr_run-01.yaml seed=22201
+python emulator/run.py experiment=single_emulator/unet/NorESM2-LM_unet_tas+pr_run-01.yaml logger=none seed=22201
 ```
 
 For running experiments with other models, here are some example commands:
 
 ```python
-python emulator/run.py experiment=single_emulator/climax/NorESM2-LM_climax_tas+pr_run-01.yaml seed=3423
+python emulator/run.py experiment=single_emulator/climax/NorESM2-LM_climax_tas+pr_run-01.yaml logger=none seed=3423
 ```
 
 ```python
-python emulator/run.py experiment=single_emulator/climax_frozen/NorESM2-LM_climax_tas+pr_run-01.yaml seed=3423
+python emulator/run.py experiment=single_emulator/climax_frozen/NorESM2-LM_climax_tas+pr_run-01.yaml logger=none seed=3423
 ```
 
 ```python
-python emulator/run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_tas+pr_run-01.yaml seed=3423
+python emulator/run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_tas+pr_run-01.yaml logger=none seed=3423
 ```
 
 For climax & climax_frozen models, we will need to use a different requirements file to create another environment.
 
-For the single-emulator experiments, we example templates for a couple of climate models for each ml model in ```configs/experiment/single_emulator```  and for fine-tuning experimnts, the configs can be found in ```configs/experiment/finetuning_emulator```.
+For the single-emulator experiments, we proide configs for each ml model in ```configs/experiment/single_emulator```  and for fine-tuning experimnts, the configs can be found in ```configs/experiment/finetuning_emulator```.
 
 For finetuning, we need to fill in ```pretrained_run_id``` and ```pretrained_ckpt_dir``` in the config files for resuming the experiments.
 
 An example command for finetuning would look like this:
 ```python
-python run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423
+python run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423 logger=none
 ```
 
-## Reloading pretrained checkpoints
+For the superemulation experiments, we provide the configs of our experiments in ```configs/experiment/superemulator```. Nothe that here, dataloiding is changed slightly to the superemulator infrastructure and a decoder must be set.
+
+An example command to run a superemulaton experiment would look like this:
+
+```python
+python run.py experiment=superemulator/superemulator_climax.yaml seed=3423 logger=none
+```
+
+## Reloading your own pretrained checkpoints
 
 Similar to the fine-tuning experiments you can load, fine-tune and test preexisting models by adjusting the following parameters in the respective experiment config:
 

@@ -69,8 +69,6 @@ class TokenizedViTContinuous(TokenizedBase):
        
         # --------------------------------------------------------------------------
         # Decoder: either a linear or non linear prediction head
-        #self.head = nn.Linear(embed_dim, img_size[0]*img_size[1])
-        
         # --------------------------------------------------------------------------
         for s in img_size:
             assert (s%patch_size)==0, "Grid sizes must be  divisible by patch size."
@@ -86,27 +84,17 @@ class TokenizedViTContinuous(TokenizedBase):
                 for i in range(decoder_depth):
                     self.head.append(nn.Linear(embed_dim, embed_dim))
                     self.head.append(nn.GELU())
-            self.head.append(nn.Linear(embed_dim, len(self.out_vars) * patch_size**2)) #TODO: only supported if image size is divisizle by path size
-            #self.head.append(nn.Linear(embed_dim, len(self.out_vars)*img_size[0] * img_size[1]))
+            self.head.append(nn.Linear(embed_dim, len(self.out_vars) * patch_size**2))
             self.head = nn.Sequential(*self.head)
        
         self.time_query = nn.Parameter(torch.zeros(1, 1, embed_dim), requires_grad=True)
 
-        # self.lead_time_embed = nn.Sequential(
-        #     nn.Linear(embed_dim, embed_dim),
-        #     nn.GELU(),
-        #     nn.Linear(embed_dim, embed_dim),
-        # )
         self.lead_time_embed = nn.Linear(1, embed_dim)
 
       
         self.initialize_weights()
 
         if freeze_encoder:
-            # self.token_embed.requires_grad_(False)
-            # self.channel_embed.requires_grad_(False)
-            # self.pos_embed.requires_grad_(False)
-            # self.blocks.requires_grad_(False)
             for name, p in self.blocks.named_parameters():
                 name = name.lower()
                 if 'norm' in name:
@@ -228,28 +216,7 @@ class TokenizedViTContinuous(TokenizedBase):
             x = x.reshape(b,t, len(self.out_vars), self.img_size[0], self.img_size[1]) # B T C H W
             
         return x
-
-    ''' deprecated 
-    def forward_loss(self, y, pred, variables, out_variables, metric, lat, region_info : Optional[Union[Dict, NoneType]]=None):  # metric is a list
-        """
-        y: [B, C, H, W]
-        pred: [B, L, C*p*p]
-        """
-        min_h, max_h = region_info['min_h'], region_info['max_h']
-        min_w, max_w = region_info['min_w'], region_info['max_w']
-        # pred = self.unpatchify(pred, max_h - min_h + 1, max_w - min_w + 1)  # B, C, H, W
-        y = y[:, :, min_h:max_h+1, min_w:max_w+1]
-        lat = lat[min_h:max_h+1]
-
-        # if not climate_modeling (weather forecasting), then out varibles = a subset of in variables
-        # only compute loss over the variables in out_variables
-        if not self.climate_modeling:
-            out_var_ids = self.get_channel_ids(out_variables)
-            pred = pred[:, out_var_ids]
-
-        return [m(pred, y, out_variables, lat) for m in metric], pred
-    '''
-
+    
     def forward(self, x, lead_times, region_info : Optional[Union[Dict, None]]=None): 
         # x: N, T, C, H, W
         # y: N, 1/T, C, H, W
