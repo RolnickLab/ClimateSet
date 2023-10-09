@@ -1,4 +1,3 @@
-
 import logging
 from omegaconf import DictConfig, OmegaConf
 
@@ -15,29 +14,42 @@ import numpy as np
 from itertools import groupby
 
 
-from emulator.src.core.losses import RMSELoss, NRMSELoss_ClimateBench, NRMSELoss_g_ClimateBench, NRMSELoss_s_ClimateBench, LLweighted_MSELoss_Climax, LLweighted_RMSELoss_Climax, LLWeighted_RMSELoss_WheatherBench
+from emulator.src.core.losses import (
+    RMSELoss,
+    NRMSELoss_ClimateBench,
+    NRMSELoss_g_ClimateBench,
+    NRMSELoss_s_ClimateBench,
+    LLweighted_MSELoss_Climax,
+    LLweighted_RMSELoss_Climax,
+    LLWeighted_RMSELoss_WheatherBench,
+)
 
-def get_years_list( years:str, give_list: Optional[bool] = False):
-            """
-            Get a string of type 20xx-21xx.
-            Split by - and return min and max years.
-            Can be used to split train and val.
-            
-            """
-            if len(years)!=9:
-                print("Years string must be in the format xxxx-yyyy eg. 2015-2100 with string length 9. Please check the year string.")
-                raise ValueError
-            splits = years.split('-')
-            min_year, max_year = int(splits[0]), int(splits[1])
 
-            if give_list:
-                return np.arange(min_year, max_year + 1, step=1) 
-            return min_year, max_year
+def get_years_list(years: str, give_list: Optional[bool] = False):
+    """
+    Get a string of type 20xx-21xx.
+    Split by - and return min and max years.
+    Can be used to split train and val.
+
+    """
+    if len(years) != 9:
+        print(
+            "Years string must be in the format xxxx-yyyy eg. 2015-2100 with string length 9. Please check the year string."
+        )
+        raise ValueError
+    splits = years.split("-")
+    min_year, max_year = int(splits[0]), int(splits[1])
+
+    if give_list:
+        return np.arange(min_year, max_year + 1, step=1)
+    return min_year, max_year
+
 
 def all_equal(iterable):
     g = groupby(iterable)
     return next(g, True) and not next(g, False)
-    
+
+
 def to_DictConfig(obj: Optional[Union[List, Dict]]):
     if isinstance(obj, DictConfig):
         return obj
@@ -64,7 +76,15 @@ def get_logger(name=__name__, level=logging.INFO) -> logging.Logger:
 
     # this ensures all logging levels get marked with the rank zero decorator
     # otherwise logs would get multiplied for each GPU process in multi-GPU setup
-    for level in ("debug", "info", "warning", "error", "exception", "fatal", "critical"):
+    for level in (
+        "debug",
+        "info",
+        "warning",
+        "error",
+        "exception",
+        "fatal",
+        "critical",
+    ):
         setattr(logger, level, rank_zero_only(getattr(logger, level)))
 
     return logger
@@ -74,16 +94,33 @@ def get_activation_function(name: str, functional: bool = False, num: int = 1):
     name = name.lower().strip()
 
     def get_functional(s: str) -> Optional[Callable]:
-        return {"softmax": F.softmax, "relu": F.relu, "tanh": torch.tanh, "sigmoid": torch.sigmoid,
-                "identity": nn.Identity(),
-                None: None, 'swish': F.silu, 'silu': F.silu, 'elu': F.elu, 'gelu': F.gelu, 'prelu': nn.PReLU(),
-                }[s]
+        return {
+            "softmax": F.softmax,
+            "relu": F.relu,
+            "tanh": torch.tanh,
+            "sigmoid": torch.sigmoid,
+            "identity": nn.Identity(),
+            None: None,
+            "swish": F.silu,
+            "silu": F.silu,
+            "elu": F.elu,
+            "gelu": F.gelu,
+            "prelu": nn.PReLU(),
+        }[s]
 
     def get_nn(s: str) -> Optional[Callable]:
-        return {"softmax": nn.Softmax(dim=1), "relu": nn.ReLU(), "tanh": nn.Tanh(), "sigmoid": nn.Sigmoid(),
-                "identity": nn.Identity(), 'silu': nn.SiLU(), 'elu': nn.ELU(), 'prelu': nn.PReLU(),
-                'swish': nn.SiLU(), 'gelu': nn.GELU(),
-                }[s]
+        return {
+            "softmax": nn.Softmax(dim=1),
+            "relu": nn.ReLU(),
+            "tanh": nn.Tanh(),
+            "sigmoid": nn.Sigmoid(),
+            "identity": nn.Identity(),
+            "silu": nn.SiLU(),
+            "elu": nn.ELU(),
+            "prelu": nn.PReLU(),
+            "swish": nn.SiLU(),
+            "gelu": nn.GELU(),
+        }[s]
 
     if num == 1:
         return get_functional(name) if functional else get_nn(name)
@@ -91,33 +128,59 @@ def get_activation_function(name: str, functional: bool = False, num: int = 1):
         return [get_nn(name) for _ in range(num)]
 
 
-def get_loss_function(name, reduction='mean'): #TODO: include further paremeters
-    name = name.lower().strip().replace('-', '_')
-    if name in ['l1', 'mae', "mean_absolute_error"]:
+def get_loss_function(name, reduction="mean"):  # TODO: include further paremeters
+    name = name.lower().strip().replace("-", "_")
+    if name in ["l1", "mae", "mean_absolute_error"]:
         loss = nn.L1Loss(reduction=reduction)
-    elif name in ['l2', 'mse', "mean_squared_error"]:
+    elif name in ["l2", "mse", "mean_squared_error"]:
         # TODO: clarify with time dimension
         loss = nn.MSELoss(reduction=reduction)
-    elif name in ['rmse', "root_mean_squared_error"]:
+    elif name in ["rmse", "root_mean_squared_error"]:
         loss = RMSELoss(reduction=reduction)
-    elif name in ['nrmse_g_cb', "weighted_nrmse_global", "weighted_normalized_root_mean_squared_error_global", "climate_bench_nrmse_global"]:
+    elif name in [
+        "nrmse_g_cb",
+        "weighted_nrmse_global",
+        "weighted_normalized_root_mean_squared_error_global",
+        "climate_bench_nrmse_global",
+    ]:
         loss = NRMSELoss_g_ClimateBench()
-    elif name in ['nrmse_s_cb', "weighted_nrmse_spatial", "weighted_normalized_root_mean_squared_error_spatial", "climate_bench_nrmse_spatial"]:
+    elif name in [
+        "nrmse_s_cb",
+        "weighted_nrmse_spatial",
+        "weighted_normalized_root_mean_squared_error_spatial",
+        "climate_bench_nrmse_spatial",
+    ]:
         loss = NRMSELoss_s_ClimateBench()
-    elif name in ['nrmse_cb', "weighted_nrmse", "weighted_normalized_root_mean_squared_error", "climate_bench_nrmse"]:
+    elif name in [
+        "nrmse_cb",
+        "weighted_nrmse",
+        "weighted_normalized_root_mean_squared_error",
+        "climate_bench_nrmse",
+    ]:
         loss = NRMSELoss_ClimateBench()
-    elif name in ['llrmse_wb', "longitude_latitude_weighted_root_mean_squared_error_wheather_ench", "wheather_bench_lon_lat_rmse" ]:
+    elif name in [
+        "llrmse_wb",
+        "longitude_latitude_weighted_root_mean_squared_error_wheather_ench",
+        "wheather_bench_lon_lat_rmse",
+    ]:
         loss = LLWeighted_RMSELoss_WheatherBench()
-    elif name in ['llrmse_cx', "longitude_latitude_weighted_root_mean_squared_error_climax", "climax_lon_lat_rmse",]:
+    elif name in [
+        "llrmse_cx",
+        "longitude_latitude_weighted_root_mean_squared_error_climax",
+        "climax_lon_lat_rmse",
+    ]:
         loss = LLweighted_RMSELoss_Climax()
-    elif name in ['llmse_cx', "longitude_latitude_weighted_mean_squared_error_climax", "climax_lon_lat_mse",]:
+    elif name in [
+        "llmse_cx",
+        "longitude_latitude_weighted_mean_squared_error_climax",
+        "climax_lon_lat_mse",
+    ]:
         loss = LLweighted_MSELoss_Climax()
-    
 
-    elif name in ['smoothl1', 'smooth']:
+    elif name in ["smoothl1", "smooth"]:
         loss = nn.SmoothL1Loss(reduction=reduction)
     else:
-        raise ValueError(f'Unknown loss function {name}')
+        raise ValueError(f"Unknown loss function {name}")
     return loss
 
 
@@ -133,9 +196,7 @@ def no_op(*args, **kwargs):
     pass
 
 
-
-def random_split(dataset, lengths,
-                 generator=default_generator):
+def random_split(dataset, lengths, generator=default_generator):
     """
     Randomly split a dataset into non-overlapping new datasets of given lengths.
 
@@ -175,26 +236,35 @@ def random_split(dataset, lengths,
         lengths = subset_lengths
         for i, length in enumerate(lengths):
             if length == 0:
-                warnings.warn(f"Length of split at index {i} is 0. "
-                              f"This might result in an empty dataset.")
+                warnings.warn(
+                    f"Length of split at index {i} is 0. "
+                    f"This might result in an empty dataset."
+                )
 
     # Cannot verify that dataset is Sized
-    if sum(lengths) != len(dataset):    # type: ignore[arg-type]
-        raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
+    if sum(lengths) != len(dataset):  # type: ignore[arg-type]
+        raise ValueError(
+            "Sum of input lengths does not equal the length of the input dataset!"
+        )
 
     indices = randperm(sum(lengths), generator=generator).tolist()  # type: ignore[call-overload]
-    return [Subset(dataset, indices[offset - length : offset]) for offset, length in zip(_accumulate(lengths), lengths)]
+    return [
+        Subset(dataset, indices[offset - length : offset])
+        for offset, length in zip(_accumulate(lengths), lengths)
+    ]
 
-def diff_max_min(x,dim):
-    return torch.max(x,dim=dim)-torch.min(x,dim=dim)
 
-def diff_max_min_np(x,dim):
-    return np.max(x,axis=dim)-np.min(x,axis=dim)
+def diff_max_min(x, dim):
+    return torch.max(x, dim=dim) - torch.min(x, dim=dim)
+
+
+def diff_max_min_np(x, dim):
+    return np.max(x, axis=dim) - np.min(x, axis=dim)
 
 
 def weighted_global_mean(input, weights):
-    # weitghs * input summed over lon lat / lon+lat    
-    return np.mean(input*weights, axis=(-1,-2))
+    # weitghs * input summed over lon lat / lon+lat
+    return np.mean(input * weights, axis=(-1, -2))
 
 
 def get_epoch_ckpt_or_last(ckpt_files: List[str], epoch: int = None):
@@ -221,5 +291,6 @@ def get_epoch_ckpt_or_last(ckpt_files: List[str], epoch: int = None):
         model_ckpt_filename = model_ckpt_filename[0]
     return model_ckpt_filename
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     print("hallo")

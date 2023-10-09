@@ -27,11 +27,11 @@ class DecoderWrapper(BaseModel):
 
         if self.channels_last:
             out = out.permute((0, 1, 4, 2, 3))
-       
+
         out = self.multihead_decoder(out, model_num)
 
         if self.channels_last:
             out = out.permute((0, 1, 3, 4, 2))
         out = out.nan_to_num()
-        
+
         return out

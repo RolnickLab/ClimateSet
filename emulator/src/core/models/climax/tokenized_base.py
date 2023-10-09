@@ -1,4 +1,3 @@
-
 # All rights reserved.
 
 # This source code is licensed under the license found in the
@@ -11,8 +10,10 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from emulator.src.utils.pos_embed import (get_1d_sincos_pos_embed_from_grid,
-                                 get_2d_sincos_pos_embed)
+from emulator.src.utils.pos_embed import (
+    get_1d_sincos_pos_embed_from_grid,
+    get_2d_sincos_pos_embed,
+)
 from timm.models.vision_transformer import Block, PatchEmbed, trunc_normal_
 
 
@@ -32,7 +33,7 @@ class TokenizedBase(nn.Module):
         mlp_ratio=4.0,
         init_mode="xavier",  # xavier or small
         in_vars=["pr", "tas"],
-        channel_agg="mean"
+        channel_agg="mean",
     ):
         super().__init__()
 
@@ -43,25 +44,38 @@ class TokenizedBase(nn.Module):
 
         # separate linear layers to embed each token, which is 1xpxp
         self.token_embeds = nn.ModuleList(
-            [PatchEmbed(img_size, patch_size, 1, embed_dim) for i in range(len(in_vars))]
+            [
+                PatchEmbed(img_size, patch_size, 1, embed_dim)
+                for i in range(len(in_vars))
+            ]
         )
         self.num_patches = self.token_embeds[0].num_patches
 
         # positional embedding and channel embedding
-        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches, embed_dim), requires_grad=learn_pos_emb)
-        self.channel_embed, self.channel_map = self.create_channel_embedding(learn_pos_emb, embed_dim)
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, self.num_patches, embed_dim), requires_grad=learn_pos_emb
+        )
+        self.channel_embed, self.channel_map = self.create_channel_embedding(
+            learn_pos_emb, embed_dim
+        )
 
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         if channel_agg == "mean":
             self.channel_agg = None
         elif channel_agg == "attention":
-            self.channel_agg = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
-            self.channel_query = nn.Parameter(torch.zeros(1, 1, embed_dim), requires_grad=True)
+            self.channel_agg = nn.MultiheadAttention(
+                embed_dim, num_heads, batch_first=True
+            )
+            self.channel_query = nn.Parameter(
+                torch.zeros(1, 1, embed_dim), requires_grad=True
+            )
         else:
             raise NotImplementedError
 
-        dpr = [x.item() for x in torch.linspace(0, drop_path, depth)]  # stochastic depth decay rule
+        dpr = [
+            x.item() for x in torch.linspace(0, drop_path, depth)
+        ]  # stochastic depth decay rule
         self.blocks = nn.ModuleList(
             [
                 Block(
@@ -70,8 +84,8 @@ class TokenizedBase(nn.Module):
                     mlp_ratio,
                     qkv_bias=True,
                     drop_path=dpr[i],
-                    norm_layer=nn.LayerNorm
-                ) 
+                    norm_layer=nn.LayerNorm,
+                )
                 for i in range(depth)
             ]
         )
@@ -79,7 +93,9 @@ class TokenizedBase(nn.Module):
         # --------------------------------------------------------------------------
 
     def create_channel_embedding(self, learnable, dim):
-        channel_embed = nn.Parameter(torch.zeros(1, len(self.in_vars), dim), requires_grad=learnable)
+        channel_embed = nn.Parameter(
+            torch.zeros(1, len(self.in_vars), dim), requires_grad=learnable
+        )
         # create a mapping from var --> idx
         channel_map = {}
         idx = 0
@@ -96,7 +112,7 @@ class TokenizedBase(nn.Module):
         ids = self.get_channel_ids(vars)
         return channel_emb[:, ids, :]
 
-    def initialize_weights(self ):
+    def initialize_weights(self):
         # initialization
         # initialize pos_emb and channel_emb
         pos_embed = get_2d_sincos_pos_embed(
@@ -109,7 +125,9 @@ class TokenizedBase(nn.Module):
         channel_embed = get_1d_sincos_pos_embed_from_grid(
             self.channel_embed.shape[-1], np.arange(len(self.in_vars))
         )
-        self.channel_embed.data.copy_(torch.from_numpy(channel_embed).float().unsqueeze(0))
+        self.channel_embed.data.copy_(
+            torch.from_numpy(channel_embed).float().unsqueeze(0)
+        )
 
         for i in range(len(self.token_embeds)):
             w = self.token_embeds[i].proj.weight.data
@@ -145,7 +163,9 @@ class TokenizedBase(nn.Module):
         noise = torch.rand(N, L, device=x.device)  # noise in [0, 1]
 
         # sort noise for each sample
-        ids_shuffle = torch.argsort(noise, dim=1)  # ascend: small is keep, large is remove
+        ids_shuffle = torch.argsort(
+            noise, dim=1
+        )  # ascend: small is keep, large is remove
         ids_restore = torch.argsort(ids_shuffle, dim=1)
 
         # keep the first subset
@@ -168,4 +188,3 @@ class TokenizedBase(nn.Module):
 
     def forward(self, x):
         pass
-

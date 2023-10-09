@@ -9,7 +9,9 @@ from torch.utils.data import DataLoader
 import torch
 
 from emulator.src.utils.utils import get_logger, random_split
+
 log = get_logger()
+
 
 class DummyDataModule(LightningDataModule):
     """
@@ -29,34 +31,36 @@ class DummyDataModule(LightningDataModule):
     """
 
     def __init__(
-            self,
-            in_var_ids: List[str] = ["BC", "CO2", "CH4", "SO2"],
-            out_var_ids: List[str] = ['pr', 'tas'],
-            train_years: List[str] = ["2020" , "2030", "2040"],
-            test_years: List[str] = ["2040"], # do we want to implement keeping only certain years for testing?
-            seq_len: int = 10,
-            seq_to_seq: bool = True, #if true maps from T->T else from T->1
-            lon: int = 32,
-            lat: int = 32,
-            num_levels: int = 1,
-            channels_last: bool = True, # wheather variables come last our after sequence lenght
-            train_scenarios: List[str] = ["historical", "ssp126"],
-            test_scenarios: List[str] = ["ssp345"],
-            val_scenarios: List[str] = ["ssp119"],
-            train_models: List[str] = ["NorESM5"],
-            val_models: List[str] = ["NorESM5"],
-            test_models: List[str] = ["CanESM5"],
-            batch_size: int = 16,
-            eval_batch_size: int = 64,
-            num_workers: int = 0,
-            pin_memory: bool = False,
-            load_train_into_mem: bool = False,
-            load_test_into_mem: bool = False,
-            load_valid_into_mem: bool = True,
-            verbose: bool = True,
-            seed: int = 11,
-            #input_transform: Optional[AbstractTransform] = None,
-            #normalizer: Optional[Normalizer] = None,
+        self,
+        in_var_ids: List[str] = ["BC", "CO2", "CH4", "SO2"],
+        out_var_ids: List[str] = ["pr", "tas"],
+        train_years: List[str] = ["2020", "2030", "2040"],
+        test_years: List[str] = [
+            "2040"
+        ],  # do we want to implement keeping only certain years for testing?
+        seq_len: int = 10,
+        seq_to_seq: bool = True,  # if true maps from T->T else from T->1
+        lon: int = 32,
+        lat: int = 32,
+        num_levels: int = 1,
+        channels_last: bool = True,  # wheather variables come last our after sequence lenght
+        train_scenarios: List[str] = ["historical", "ssp126"],
+        test_scenarios: List[str] = ["ssp345"],
+        val_scenarios: List[str] = ["ssp119"],
+        train_models: List[str] = ["NorESM5"],
+        val_models: List[str] = ["NorESM5"],
+        test_models: List[str] = ["CanESM5"],
+        batch_size: int = 16,
+        eval_batch_size: int = 64,
+        num_workers: int = 0,
+        pin_memory: bool = False,
+        load_train_into_mem: bool = False,
+        load_test_into_mem: bool = False,
+        load_valid_into_mem: bool = True,
+        verbose: bool = True,
+        seed: int = 11,
+        # input_transform: Optional[AbstractTransform] = None,
+        # normalizer: Optional[Normalizer] = None,
     ):
         """
         Args:
@@ -66,7 +70,7 @@ class DummyDataModule(LightningDataModule):
             seq_to_seq (bool): If true maps from seq_len to seq_len else from seq_len to- 1.
             lon (int): Longitude of grid.
             lat (int): Latitude of grid.
-            
+
             batch_size (int): Batch size for the training dataloader
             eval_batch_size (int): Batch size for the test and validation dataloader's
             num_workers (int): Dataloader arg for higher efficiency
@@ -76,15 +80,14 @@ class DummyDataModule(LightningDataModule):
         super().__init__()
         # The following makes all args available as, e.g., self.hparams.batch_size
         self.save_hyperparameters(ignore=["input_transform", "normalizer"])
-        #self.input_transform = input_transform  # self.hparams.input_transform
-        #self.normalizer = normalizer
+        # self.input_transform = input_transform  # self.hparams.input_transform
+        # self.normalizer = normalizer
 
         self._data_train = None
         self._data_val = None
         self._data_test = None
         self._data_predict = None
         self.log_text = get_logger()
-       
 
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.
@@ -96,7 +99,7 @@ class DummyDataModule(LightningDataModule):
 
         train, test, val = None, None, None
 
-        # here we need to figure out how to create the dataset / implement the dataset class 
+        # here we need to figure out how to create the dataset / implement the dataset class
         # probably sequence of scenario-model pairs only load to memory what fits
 
         # assign to vars
@@ -105,7 +108,7 @@ class DummyDataModule(LightningDataModule):
         if stage == "fit" or stage is None:
             self._data_train = train
         # Validation set
-        if stage in ['fit', 'validate', None]:
+        if stage in ["fit", "validate", None]:
             self._data_val = val
         # Test sets:
         if stage == "test" or stage is None:
@@ -115,7 +118,6 @@ class DummyDataModule(LightningDataModule):
             # just choosing at random here
             self._data_predict = val
 
-    
     def on_before_batch_transfer(self, batch, dataloader_idx):
         return batch
 
@@ -123,14 +125,21 @@ class DummyDataModule(LightningDataModule):
         return batch
 
     def _shared_dataloader_kwargs(self) -> dict:
-        shared_kwargs = dict(num_workers=int(self.hparams.num_workers), pin_memory=self.hparams.pin_memory)
+        shared_kwargs = dict(
+            num_workers=int(self.hparams.num_workers),
+            pin_memory=self.hparams.pin_memory,
+        )
         return shared_kwargs
 
     def _shared_eval_dataloader_kwargs(self) -> dict:
-        return dict(**self._shared_dataloader_kwargs(), batch_size=self.hparams.eval_batch_size, shuffle=False)
+        return dict(
+            **self._shared_dataloader_kwargs(),
+            batch_size=self.hparams.eval_batch_size,
+            shuffle=False,
+        )
 
     # Probably we also just want a list of Train Dataloaders not just a single one so we can swith sets in our memory
-    # resulting tensors sizes: 
+    # resulting tensors sizes:
     # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
     # y: (batch_size, sequence_length, lon, lat, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lon, lat)
     def train_dataloader(self):
@@ -142,24 +151,24 @@ class DummyDataModule(LightningDataModule):
         )
 
     def val_dataloader(self):
-        return DataLoader(
-            dataset=self._data_val,
-            **self._shared_eval_dataloader_kwargs()
-        ) if self._data_val is not None else None
+        return (
+            DataLoader(dataset=self._data_val, **self._shared_eval_dataloader_kwargs())
+            if self._data_val is not None
+            else None
+        )
 
     def test_dataloader(self) -> List[DataLoader]:
-        return [DataLoader(
-            dataset=self._data_test,
-            **self._shared_eval_dataloader_kwargs()
-        ) for _ in self.test_set_names]
+        return [
+            DataLoader(dataset=self._data_test, **self._shared_eval_dataloader_kwargs())
+            for _ in self.test_set_names
+        ]
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
-        return [DataLoader(
-            dataset=self._data_val,
-            **self._shared_eval_dataloader_kwargs()
-        ) if self._data_val is not None else None]
+        return [
+            DataLoader(dataset=self._data_val, **self._shared_eval_dataloader_kwargs())
+            if self._data_val is not None
+            else None
+        ]
 
-
-
-    dm=DummyDataModule()
-    dm.setup('fit')
+    dm = DummyDataModule()
+    dm.setup("fit")

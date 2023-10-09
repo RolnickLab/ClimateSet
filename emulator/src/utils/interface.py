@@ -8,13 +8,19 @@ import wandb
 
 from emulator.src.datamodules.dummy_datamodule import DummyDataModule
 from emulator.src.utils.utils import get_logger
-from emulator.src.utils.wandb_api import load_hydra_config_from_wandb, restore_model_from_wandb_cloud, get_wandb_ckpt_name
+from emulator.src.utils.wandb_api import (
+    load_hydra_config_from_wandb,
+    restore_model_from_wandb_cloud,
+    get_wandb_ckpt_name,
+)
 import emulator.src.utils.config_utils as cfg_utils
 from emulator.src.core.models.decoder_wrapper import DecoderWrapper
+
 """
 In this file you can find helper functions to avoid model/data loading and reloading boilerplate code
 """
 log = get_logger()
+
 
 def get_model(config: DictConfig, **kwargs):
     """
@@ -23,65 +29,72 @@ def get_model(config: DictConfig, **kwargs):
     Returns:
         The model that you can directly use to train with pytorch-lightning
     """
-    #if config.get('normalizer'):
-        # This can be a bit redundant with get_datamodule (normalizer is instantiated twice), but it is better to be
-        # sure that the output_normalizer is used by the model in cases where pytorch-lightning is not used.
-        # By default if you use pytorch-lightning, the correct output_normalizer is passed to the model before training,
-        # even without the below
-        
-        #normalizer: Normalizer = hydra.utils.instantiate(
-        #    config.normalizer, _recursive_=False,
-        #    datamodule_config=config.datamodule,
-        #)
-        #kwargs['output_normalizer'] = normalizer.output_normalizer   
-    
-    if config.datamodule.get('name')=='climate_super':
-        config.model['super_emulation'] = True # we load multiple models
-    if config.model.get('finetune') is True:
+    # if config.get('normalizer'):
+    # This can be a bit redundant with get_datamodule (normalizer is instantiated twice), but it is better to be
+    # sure that the output_normalizer is used by the model in cases where pytorch-lightning is not used.
+    # By default if you use pytorch-lightning, the correct output_normalizer is passed to the model before training,
+    # even without the below
+
+    # normalizer: Normalizer = hydra.utils.instantiate(
+    #    config.normalizer, _recursive_=False,
+    #    datamodule_config=config.datamodule,
+    # )
+    # kwargs['output_normalizer'] = normalizer.output_normalizer
+
+    if config.datamodule.get("name") == "climate_super":
+        config.model["super_emulation"] = True  # we load multiple models
+    if config.model.get("finetune") is True:
         log.info("Finetuning")
-        assert config.model.get("pretrained_run_id") is not None , "Mode is finetune but no run id is given to load from."
-        assert config.model.get("pretrained_ckpt_dir") is not None , "Mode is finetune but no run id is given to load from."
+        assert (
+            config.model.get("pretrained_run_id") is not None
+        ), "Mode is finetune but no run id is given to load from."
+        assert (
+            config.model.get("pretrained_ckpt_dir") is not None
+        ), "Mode is finetune but no run id is given to load from."
         # load pretrained model
         model, _ = reload_model_from_id(
-                config.model.get("pretrained_run_id"), config.model.get("pretrained_ckpt_dir"), allow_resume=False)
+            config.model.get("pretrained_run_id"),
+            config.model.get("pretrained_ckpt_dir"),
+            allow_resume=False,
+        )
         log.warn("Loading pretrained Base model")
 
         if config.get("decoder") is not None:
-   
-            if (config.model.get("pretrained_run_id_decoder") is not None) and (config.model.get("pretrained_ckpt_dir_decoder") is not None):
-                # reloading decoder 
+            if (config.model.get("pretrained_run_id_decoder") is not None) and (
+                config.model.get("pretrained_ckpt_dir_decoder") is not None
+            ):
+                # reloading decoder
                 log.warn("Loading pretrained Decoder")
                 model, _ = reload_model_from_id(
-                    config.model.get("pretrained_run_id_decoder"), config.model.get("pretrained_ckpt_dir_decoder"), allow_resume=False)
-        
-        
+                    config.model.get("pretrained_run_id_decoder"),
+                    config.model.get("pretrained_ckpt_dir_decoder"),
+                    allow_resume=False,
+                )
+
             else:
                 log.warn("Creating new Decoder")
                 multihead_decoder = hydra.utils.instantiate(config.decoder)
                 # only set to True when we have a decoder
-                model.hparams['super_decoder']=True
-           
-                model = DecoderWrapper(model, multihead_decoder, **model.hparams)
-        
+                model.hparams["super_decoder"] = True
 
-    # check if we are also finetuning a decoder 
+                model = DecoderWrapper(model, multihead_decoder, **model.hparams)
+
+    # check if we are also finetuning a decoder
     else:
         model = hydra.utils.instantiate(
-        config.model,
-        _recursive_=False,
-        datamodule_config=config.datamodule,
-        **kwargs
+            config.model,
+            _recursive_=False,
+            datamodule_config=config.datamodule,
+            **kwargs,
         )
 
         if config.get("decoder") is not None:
-
-        
             multihead_decoder = hydra.utils.instantiate(config.decoder)
             # only set to True when we have a decoder
-            model.hparams['super_decoder']=True
-        
+            model.hparams["super_decoder"] = True
+
             model = DecoderWrapper(model, multihead_decoder, **model.hparams)
-        
+
     return model
 
 
@@ -93,16 +106,16 @@ def get_datamodule(config: DictConfig) -> DummyDataModule:
         A datamodule that you can directly use to train pytorch-lightning models
     """
     # First we instantiate our normalization preprocesser, then our datamodule, and finally the model
-    #normalizer: Normalizer = hydra.utils.instantiate(
+    # normalizer: Normalizer = hydra.utils.instantiate(
     #    config.normalizer,
     #    datamodule_config=config.datamodule,
     #    _recursive_=False
-    #)
+    # )
 
     data_module: DummyDataModule = hydra.utils.instantiate(
         config.datamodule,
-        #input_transform=config.model.get("input_transform"),
-        #normalizer=normalizer
+        # input_transform=config.model.get("input_transform"),
+        # normalizer=normalizer
     )
 
     return data_module
@@ -120,14 +133,16 @@ def get_model_and_data(config: DictConfig):
     """
     data_module = get_datamodule(config)
     model = get_model(config)
-    
+
     return model, data_module
 
 
-def reload_model_from_config_and_ckpt(config: DictConfig, model_path: str, load_datamodule: bool = True):
+def reload_model_from_config_and_ckpt(
+    config: DictConfig, model_path: str, load_datamodule: bool = True
+):
     model, data_module = get_model_and_data(config)
     # Reload model
-    model_state = torch.load(model_path)['state_dict']
+    model_state = torch.load(model_path)["state_dict"]
     model.load_state_dict(model_state)
     if load_datamodule:
         return model, data_module
@@ -138,7 +153,7 @@ def reload_model_from_config_and_ckpt(
     config: DictConfig,
     model_path: str,
     device: Optional[torch.device] = None,
-    load_datamodule: bool = False
+    load_datamodule: bool = False,
 ) -> Dict[str, Any]:
     """Load a model as defined by ``config.model`` and reload its weights from ``model_path``.
 
@@ -170,10 +185,10 @@ def reload_model_from_config_and_ckpt(
     """
     # First we instantiate our normalization preprocesser, then our datamodule, and finally the model
 
-    #normalizer: Normalizer = hydra.utils.instantiate(
+    # normalizer: Normalizer = hydra.utils.instantiate(
     #    config.normalizer, datamodule_config=config.datamodule, _recursive_=False
-    #)
-    normalizer=None #TODO: we might want to ahve normalizers
+    # )
+    normalizer = None  # TODO: we might want to ahve normalizers
 
     if load_datamodule:
         data_module = hydra.utils.instantiate(
@@ -181,7 +196,8 @@ def reload_model_from_config_and_ckpt(
             input_transform=config.model.get("input_transform"),
             normalizer=normalizer,
         )
-    else: data_module=None
+    else:
+        data_module = None
 
     # model, data_module = get_model_and_data(config)
     model = get_model(config)
@@ -202,7 +218,7 @@ def reload_model_from_config_and_ckpt(
 def reload_model_from_id(
     run_id: str,
     direc: str = None,
-    group="causalpaca", 
+    group="causalpaca",
     project="emulator",
     override_kwargs: Sequence[str] = None,
     allow_resume: bool = True,
@@ -224,7 +240,7 @@ def reload_model_from_id(
 
     """
     run_path = f"{group}/{project}/{run_id}"
-    
+
     if os.path.isdir(os.path.join(direc, run_id)):
         saved_ckpts = [
             f for f in os.listdir(os.path.join(direc, run_id)) if f.endswith(".ckpt")
@@ -238,7 +254,7 @@ def reload_model_from_id(
             checkpoint_path = os.path.join(direc, f"{run_id}/{saved_ckpts[0]}")
     else:
         checkpoint_path = direc
-    
+
     print("Checkpoint path:", checkpoint_path)
 
     if checkpoint_path is not None:  # local loading
@@ -265,11 +281,13 @@ def reload_model_from_id(
     if allow_resume:
         cfg_utils.extras(config)
 
-    reloaded = reload_model_from_config_and_ckpt(config, best_model_path, load_datamodule=False)
+    reloaded = reload_model_from_config_and_ckpt(
+        config, best_model_path, load_datamodule=False
+    )
     model = reloaded["model"]
 
     return model, config.datamodule
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     print("hello")

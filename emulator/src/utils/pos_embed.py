@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import math
 
+
 # --------------------------------------------------------
 # 2D sine-cosine position embedding
 # References:
@@ -39,7 +40,7 @@ def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
 
     emb = np.concatenate([emb_h, emb_w], axis=1)  # (H*W, D)
     return emb
- 
+
 
 def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
     """
@@ -84,7 +85,9 @@ def get_1d_sincos_pos_embed_from_grid_pytorch(embed_dim, pos, dtype=torch.float3
     return emb
 
 
-def get_1d_sincos_pos_embed_from_grid_pytorch_stable(dim, timesteps, dtype=torch.float32, max_period=10000):
+def get_1d_sincos_pos_embed_from_grid_pytorch_stable(
+    dim, timesteps, dtype=torch.float32, max_period=10000
+):
     """
     Create sinusoidal timestep embeddings.
     Arguments:
@@ -118,24 +121,35 @@ def interpolate_pos_embed(model, checkpoint_model, new_size=(64, 128)):
         orig_num_patches = pos_embed_checkpoint.shape[-2]
         patch_size = model.patch_size
         w_h_ratio = 2
-        orig_h = int((orig_num_patches // w_h_ratio)**0.5)
+        orig_h = int((orig_num_patches // w_h_ratio) ** 0.5)
         orig_w = w_h_ratio * orig_h
         orig_size = (orig_h, orig_w)
         new_size = (new_size[0] // patch_size, new_size[1] // patch_size)
         # print (orig_size)
         # print (new_size)
         if orig_size[0] != new_size[0]:
-            print("Interpolate PEs from %dx%d to %dx%d" % (orig_size[0], orig_size[1], new_size[0], new_size[1]))
-            pos_tokens = pos_embed_checkpoint.reshape(-1, orig_size[0], orig_size[1], embedding_size).permute(0, 3, 1, 2)
+            print(
+                "Interpolate PEs from %dx%d to %dx%d"
+                % (orig_size[0], orig_size[1], new_size[0], new_size[1])
+            )
+            pos_tokens = pos_embed_checkpoint.reshape(
+                -1, orig_size[0], orig_size[1], embedding_size
+            ).permute(0, 3, 1, 2)
             new_pos_tokens = torch.nn.functional.interpolate(
-                pos_tokens, size=(new_size[0], new_size[1]), mode="bicubic", align_corners=False
+                pos_tokens,
+                size=(new_size[0], new_size[1]),
+                mode="bicubic",
+                align_corners=False,
             )
             new_pos_tokens = new_pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
             checkpoint_model["net.pos_embed"] = new_pos_tokens
+
 
 def interpolate_channel_embed(checkpoint_model, new_len):
     if "net.channel_embed" in checkpoint_model:
         channel_embed_checkpoint = checkpoint_model["net.channel_embed"]
         old_len = channel_embed_checkpoint.shape[1]
         if new_len <= old_len:
-            checkpoint_model["net.channel_embed"] = channel_embed_checkpoint[:, :new_len]
+            checkpoint_model["net.channel_embed"] = channel_embed_checkpoint[
+                :, :new_len
+            ]

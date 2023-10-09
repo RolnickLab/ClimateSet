@@ -10,21 +10,22 @@ from omegaconf import DictConfig, OmegaConf, open_dict
 
 
 from emulator.src.utils.naming import get_group_name, get_detailed_name
-from emulator.src.utils.utils import no_op, get_logger 
+from emulator.src.utils.utils import no_op, get_logger
 
 log = get_logger(__name__)
 
+
 def print_config(
-        config,
-        fields: Union[str, Sequence[str]] = (
-                "datamodule",
-                "model",
-                "trainer",
-                # "callbacks",
-                # "logger",
-                "seed",
-        ),
-        resolve: bool = True,
+    config,
+    fields: Union[str, Sequence[str]] = (
+        "datamodule",
+        "model",
+        "trainer",
+        # "callbacks",
+        # "logger",
+        "seed",
+    ),
+    resolve: bool = True,
 ) -> None:
     """Prints content of DictConfig using Rich library and its tree structure.
 
@@ -37,7 +38,10 @@ def print_config(
         resolve (bool, optional): Whether to resolve reference fields of DictConfig.
     """
     import importlib
-    if not importlib.util.find_spec("rich") or not importlib.util.find_spec("omegaconf"):
+
+    if not importlib.util.find_spec("rich") or not importlib.util.find_spec(
+        "omegaconf"
+    ):
         # no pretty printing
         return
     import rich.syntax
@@ -46,7 +50,7 @@ def print_config(
     style = "dim"
     tree = rich.tree.Tree(":gear: CONFIG", style=style, guide_style=style)
     if isinstance(fields, str):
-        if fields.lower() == 'all':
+        if fields.lower() == "all":
             fields = config.keys()
         else:
             fields = [fields]
@@ -78,7 +82,7 @@ def extras(config: DictConfig) -> None:
     log = get_logger()
 
     ## Create working dir if it does not exist yet
-    #if config.get('work_dir'):
+    # if config.get('work_dir'):
     #    os.makedirs(name=config.get("work_dir"), exist_ok=True)
 
     # disable python warnings if <config.ignore_warnings=True>
@@ -93,7 +97,9 @@ def extras(config: DictConfig) -> None:
 
     # force debugger friendly configuration if <config.trainer.fast_dev_run=True>
     if config.trainer.get("fast_dev_run"):
-        log.info("Forcing debugger friendly configuration! <config.trainer.fast_dev_run=True>")
+        log.info(
+            "Forcing debugger friendly configuration! <config.trainer.fast_dev_run=True>"
+        )
         # Debuggers don't like GPUs or multiprocessing
         if config.trainer.get("gpus"):
             config.trainer.gpus = 0
@@ -105,63 +111,86 @@ def extras(config: DictConfig) -> None:
     # force multi-gpu friendly configuration if <config.trainer.accelerator=ddp>
     accelerator = config.trainer.get("accelerator")
     if accelerator in ["ddp", "ddp_spawn", "dp", "ddp2"]:
-        log.info(f"Forcing ddp friendly configuration! <config.trainer.accelerator={accelerator}>")
+        log.info(
+            f"Forcing ddp friendly configuration! <config.trainer.accelerator={accelerator}>"
+        )
         if config.datamodule.get("num_workers"):
             config.datamodule.num_workers = 0
         if config.datamodule.get("pin_memory"):
             config.datamodule.pin_memory = False
 
-
     if ("logger" in config.keys()) and config.logger.get("wandb"):
-        USE_WANDB=True
+        USE_WANDB = True
     else:
-        USE_WANDB=False
-        
+        USE_WANDB = False
+
     # in case there is no logger
-    if config.logger.get("name")=="none":
-        USE_WANDB=False
+    if config.logger.get("name") == "none":
+        USE_WANDB = False
 
     if USE_WANDB:
-        if not config.logger.wandb.get('id'):  # no wandb id has been assigned yet
+        if not config.logger.wandb.get("id"):  # no wandb id has been assigned yet
             wandb_id = wandb.util.generate_id()
             config.logger.wandb.id = wandb_id
         else:
-            log.info(f" This experiment config already has a wandb run ID = {config.logger.wandb.id}")
-        if not config.logger.wandb.get('group'):  # no wandb group has been assigned yet
+            log.info(
+                f" This experiment config already has a wandb run ID = {config.logger.wandb.id}"
+            )
+        if not config.logger.wandb.get("group"):  # no wandb group has been assigned yet
             group_name = get_group_name(config)
-            config.logger.wandb.group = group_name if len(group_name) < 128 else group_name[:128]
-        config.logger.wandb.name = get_detailed_name(config) + '_' + time.strftime('%Hh%Mm_on_%b_%d') + '_' + config.logger.wandb.id
+            config.logger.wandb.group = (
+                group_name if len(group_name) < 128 else group_name[:128]
+            )
+        config.logger.wandb.name = (
+            get_detailed_name(config)
+            + "_"
+            + time.strftime("%Hh%Mm_on_%b_%d")
+            + "_"
+            + config.logger.wandb.id
+        )
 
     check_config_values(config)
     if USE_WANDB:
         wandb_kwargs = {
-            k: config.logger.wandb.get(k) for k in ['id', 'project', 'entity', 'name', 'group',
-                                                    'tags', 'notes', 'reinit', 'mode', 'resume']
+            k: config.logger.wandb.get(k)
+            for k in [
+                "id",
+                "project",
+                "entity",
+                "name",
+                "group",
+                "tags",
+                "notes",
+                "reinit",
+                "mode",
+                "resume",
+            ]
         }
-        wandb_kwargs['dir'] = config.logger.wandb.get('save_dir')
+        wandb_kwargs["dir"] = config.logger.wandb.get("save_dir")
         wandb.init(**wandb_kwargs)
         log.info(f"Wandb kwargs: {wandb_kwargs}")
         save_hydra_config_to_wandb(config)
 
 
 def check_config_values(config: DictConfig):
-
     # super emulation
     # datamodule has to be super emulaton
     # superemulation flag hast to be set
     # decoder hast to be specified
-    if config.datamodule.get('name')=='climate_super':
+    if config.datamodule.get("name") == "climate_super":
         print("Super data loading")
-        
-        # we can do super emulation without a decoder
+
+        #  we can do super emulation without a decoder
         # if decoder is set check if test models are in train models
-        if config.get('decoder') is not None:
-            if config.datamodule.get('test_models') is not None:
-                for tm in config.datamodule.get('test_models'):
-                    assert tm in config.datamodule.get('train_models'), f"Multihead decoder is used but test model {tm} is not part of training set - no head created."
-    if config.logger.get("wandb") and (config.logger.get("name")!="none"):
-        if 'callbacks' in config and config.callbacks.get('model_checkpoint'):
-            id_mdl = config.logger.wandb.get('id')
+        if config.get("decoder") is not None:
+            if config.datamodule.get("test_models") is not None:
+                for tm in config.datamodule.get("test_models"):
+                    assert tm in config.datamodule.get(
+                        "train_models"
+                    ), f"Multihead decoder is used but test model {tm} is not part of training set - no head created."
+    if config.logger.get("wandb") and (config.logger.get("name") != "none"):
+        if "callbacks" in config and config.callbacks.get("model_checkpoint"):
+            id_mdl = config.logger.wandb.get("id")
             d = config.callbacks.model_checkpoint.dirpath
             if id_mdl is not None:
                 with open_dict(config):
@@ -171,12 +200,15 @@ def check_config_values(config: DictConfig):
                     log.info(f" Model checkpoints will be saved in: {new_dir}")
     else:
         if config.save_config_to_wandb:
-            log.warning(" `save_config_to_wandb`=True but no wandb logger was found.. config will not be saved!")
+            log.warning(
+                " `save_config_to_wandb`=True but no wandb logger was found.. config will not be saved!"
+            )
         config.save_config_to_wandb = False
 
 
 def get_all_instantiable_hydra_modules(config, module_name: str):
     from hydra.utils import instantiate as hydra_instantiate
+
     modules = []
     if module_name in config:
         for _, module_config in config[module_name].items():
@@ -186,11 +218,11 @@ def get_all_instantiable_hydra_modules(config, module_name: str):
 
 
 def log_hyperparameters(
-        config,
-        model: pl.LightningModule,
-        data_module: pl.LightningDataModule,
-        trainer: pl.Trainer,
-        callbacks: List[pl.Callback],
+    config,
+    model: pl.LightningModule,
+    data_module: pl.LightningDataModule,
+    trainer: pl.Trainer,
+    callbacks: List[pl.Callback],
 ) -> None:
     """This method controls which parameters from Hydra config are saved by Lightning loggers.
     Credits go to: https://github.com/ashleve/lightning-hydra-template
@@ -207,24 +239,28 @@ def log_hyperparameters(
         return new_dict
 
     params = dict()
-    if 'seed' in config:
-        params['seed'] = config['seed']
-    if 'model' in config:
-        params['model'] = config['model']
+    if "seed" in config:
+        params["seed"] = config["seed"]
+    if "model" in config:
+        params["model"] = config["model"]
 
     # Remove redundant keys or those that are not important to know after training -- feel free to edit this!
-    params["datamodule"] = copy_and_ignore_keys(config["datamodule"], 'pin_memory', 'num_workers')
-    params['model'] = copy_and_ignore_keys(config['model'], 'optimizer', 'scheduler')
-    #params['normalizer'] = config['normalizer']
+    params["datamodule"] = copy_and_ignore_keys(
+        config["datamodule"], "pin_memory", "num_workers"
+    )
+    params["model"] = copy_and_ignore_keys(config["model"], "optimizer", "scheduler")
+    # params['normalizer'] = config['normalizer']
     params["trainer"] = copy_and_ignore_keys(config["trainer"])
     # encoder, optims, and scheduler as separate top-level key
-    params['optim'] = config['model']['optimizer']
-    params['scheduler'] = config['model']['scheduler'] if 'scheduler' in config['model'] else None
+    params["optim"] = config["model"]["optimizer"]
+    params["scheduler"] = (
+        config["model"]["scheduler"] if "scheduler" in config["model"] else None
+    )
 
     if "callbacks" in config:
-        if 'model_checkpoint' in config['callbacks']:
+        if "model_checkpoint" in config["callbacks"]:
             params["model_checkpoint"] = copy_and_ignore_keys(
-                config["callbacks"]['model_checkpoint'], 'save_top_k'
+                config["callbacks"]["model_checkpoint"], "save_top_k"
             )
 
     # save number of model parameters
@@ -235,15 +271,18 @@ def log_hyperparameters(
     params["model/params_not_trainable"] = sum(
         p.numel() for p in model.parameters() if not p.requires_grad
     )
-    
-    params['dirs/work_dir'] = config.get('work_dir')
-    params['dirs/ckpt_dir'] = config.get('ckpt_dir')
 
-    if config.logger.get("name")=="none":
-        params['dirs/wandb_save_dir'] = None
+    params["dirs/work_dir"] = config.get("work_dir")
+    params["dirs/ckpt_dir"] = config.get("ckpt_dir")
+
+    if config.logger.get("name") == "none":
+        params["dirs/wandb_save_dir"] = None
     else:
-        params['dirs/wandb_save_dir'] = config.logger.wandb.save_dir if (
-            config.get('logger') and config.logger.get('wandb')) else None
+        params["dirs/wandb_save_dir"] = (
+            config.logger.wandb.save_dir
+            if (config.get("logger") and config.logger.get("wandb"))
+            else None
+        )
 
         # send hparams to all loggers
         trainer.logger.log_hyperparams(params)
@@ -254,10 +293,11 @@ def log_hyperparameters(
         trainer.logger.log_hyperparams = no_op
 
 
-
 def save_hydra_config_to_wandb(config: DictConfig):
-    if config.get('save_config_to_wandb'):
-        log.info(f"Hydra config will be saved to WandB as hydra_config.yaml and in wandb run_dir: {wandb.run.dir}")
+    if config.get("save_config_to_wandb"):
+        log.info(
+            f"Hydra config will be saved to WandB as hydra_config.yaml and in wandb run_dir: {wandb.run.dir}"
+        )
         # files in wandb.run.dir folder get directly uploaded to wandb
         with open(os.path.join(wandb.run.dir, "hydra_config.yaml"), "w") as fp:
             OmegaConf.save(config, f=fp.name, resolve=True)
@@ -267,18 +307,20 @@ def save_hydra_config_to_wandb(config: DictConfig):
 def get_config_from_hydra_compose_overrides(overrides: list) -> DictConfig:
     import hydra
     from hydra.core.global_hydra import GlobalHydra
+
     overrides = list(set(overrides))
-    if '-m' in overrides:
-        overrides.remove('-m')  # if multiruns flags are mistakenly in overrides
+    if "-m" in overrides:
+        overrides.remove("-m")  # if multiruns flags are mistakenly in overrides
     hydra.initialize(config_path="../../configs")
     try:
         config = hydra.compose(config_name="main_config", overrides=overrides)
     finally:
-        GlobalHydra.instance().clear()   # always clean up global hydra
+        GlobalHydra.instance().clear()  # always clean up global hydra
     return config
 
 
 def get_model_from_hydra_compose_overrides(overrides: list):
     from emulator.src.utils.interface import get_model
+
     cfg = get_config_from_hydra_compose_overrides(overrides)
     return get_model(cfg)

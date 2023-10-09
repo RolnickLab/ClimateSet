@@ -18,24 +18,31 @@ def run_model(config: DictConfig):
 
     log.info("Running model")
     if config.get("print_config"):
-        cfg_utils.print_config(config, fields='all')
+        cfg_utils.print_config(config, fields="all")
 
     emulator_model, data_module = get_model_and_data(config)
     log.info("Got model")
 
     # Init Lightning callbacks and loggers
-    callbacks = cfg_utils.get_all_instantiable_hydra_modules(config, 'callbacks')
-    loggers = cfg_utils.get_all_instantiable_hydra_modules(config, 'logger')
+    callbacks = cfg_utils.get_all_instantiable_hydra_modules(config, "callbacks")
+    loggers = cfg_utils.get_all_instantiable_hydra_modules(config, "logger")
 
     # Init Lightning trainer
     trainer: pl.Trainer = hydra_instantiate(
-        config.trainer, callbacks=callbacks, logger=loggers,  # , deterministic=True
+        config.trainer,
+        callbacks=callbacks,
+        logger=loggers,  # , deterministic=True
     )
 
     # Send some parameters from config to all lightning loggers
     log.info("Logging hyperparameters to the PyTorch Lightning loggers.")
-    cfg_utils.log_hyperparameters(config=config, model=emulator_model, data_module=data_module, trainer=trainer,
-                                  callbacks=callbacks)
+    cfg_utils.log_hyperparameters(
+        config=config,
+        model=emulator_model,
+        data_module=data_module,
+        trainer=trainer,
+        callbacks=callbacks,
+    )
 
     trainer.fit(model=emulator_model, datamodule=data_module)
 
@@ -43,9 +50,9 @@ def run_model(config: DictConfig):
 
     # Testing:
     if config.get("test_after_training"):
-        trainer.test(datamodule=data_module, ckpt_path='best')
+        trainer.test(datamodule=data_module, ckpt_path="best")
 
-    if config.get('logger') and config.logger.get("wandb"):
+    if config.get("logger") and config.logger.get("wandb"):
         wandb.finish()
 
     # log.info("Reloading model from checkpoint based on best validation stat.")

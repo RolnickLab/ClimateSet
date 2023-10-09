@@ -121,7 +121,7 @@ def load_hydra_config_from_wandb(
             # also wandb-metadata.json is unexpected (was likely overwritten)
     overrides += [
         f"logger.wandb.id={run.id}",
-        #f"logger.wandb.entity={run.entity}",
+        # f"logger.wandb.entity={run.entity}",
         f"logger.wandb.project={run.project}",
         f"logger.wandb.tags={run.tags}",
         f"logger.wandb.group={run.group}",
@@ -156,10 +156,11 @@ def load_hydra_config_from_wandb(
     ), f"{config.logger.wandb.id} != {run.id}. \nFull Hydra config: {config}"
     return config
 
+
 def reload_checkpoint_from_wandb(
     run_id: str,
-    group: str = "causalpaca", 
-    project: str = "emulator", 
+    group: str = "causalpaca",
+    project: str = "emulator",
     epoch: Union[str, int] = None,
     override_key_value: Union[Sequence[str], dict] = None,
     local_checkpoint_path: str = None,
@@ -217,7 +218,6 @@ def reload_checkpoint_from_wandb(
         best_model_fname
     ) else None  # delete the downloaded ckpt
     return {**reloaded_model_data, "config": config}
-
 
 
 def reupload_run_history(run):
@@ -381,7 +381,7 @@ def groupby(
     grouped_df = df.groupby([group_by], as_index=False)
     agg_metrics = {m: ["mean", "std"] for m in metrics}
     agg_remain_intact = {c: "first" for c in keep_columns}
-  
+
     stats = grouped_df.agg({**agg_metrics, **agg_remain_intact})
     stats.columns = [
         (f"{c[0]}/{c[1]}" if c[1] in ["mean", "std"] else c[0]) for c in stats.columns
@@ -417,8 +417,8 @@ def get_best_model_config(
     metric: str = "best_val/NRMSE_sd",
     mode: str = "min",
     filters: Union[str, List[Union[Callable, str]]] = "has_finished",
-    group: str = "causalpaca", 
-    project: str = "emulator", 
+    group: str = "causalpaca",
+    project: str = "emulator",
     wandb_api=None,
     topk: int = 1,
 ) -> dict:
@@ -438,8 +438,8 @@ def get_best_model_config(
 
 def get_run_ids_for_hyperparams(
     hyperparams: dict,
-    group: str = "causalpaca", 
-    project: str = "emulator", 
+    group: str = "causalpaca",
+    project: str = "emulator",
     wandb_api=None,
 ) -> List[str]:
     runs = filter_wandb_runs(
@@ -490,5 +490,5 @@ def filter_wandb_runs(
     return runs
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     print("hello")

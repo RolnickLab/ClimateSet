@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+
 class Normalize_z:
     """Normalize a tensor image with mean and standard deviation.
 
@@ -10,16 +11,16 @@ class Normalize_z:
     """
 
     def __init__(self, stats_path):
-
         self.mean_in = np.expand_dims(mean_in, axis=(1, 1, 1))
         self.std_in = np.expand_dims(std_in, axis=(1, 1, 1))
         self.eps = 1e-9
 
     def __call__(self, X, y):
-        X_norm = (X - self.mean_in)/(self.std_in + self.eps)
-        y_norm = (y - self.mean_out)/(self.std_out + self.eps)
+        X_norm = (X - self.mean_in) / (self.std_in + self.eps)
+        y_norm = (y - self.mean_out) / (self.std_out + self.eps)
 
         return X_norm, y_norm
+
 
 class Normalize_minmax:
     """Normalize a tensor image with mean and standard deviation.
@@ -29,7 +30,7 @@ class Normalize_minmax:
         std (tuple): standard deviations for each variable.
     """
 
-    def __init__(self, min_pr = 0.0 , max_pr = 0.0, min_t = 0.0 , max_t = 0.0):
+    def __init__(self, min_pr=0.0, max_pr=0.0, min_t=0.0, max_t=0.0):
         self.min_pr = min_pr
         self.max_pr = max_pr
         self.min_t = min_t
