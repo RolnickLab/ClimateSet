@@ -1,0 +1,152 @@
+model:
+  loss_function: climax_lon_lat_rmse
+  monitor: val/llrmse_climax
+  super_emulation: true
+  super_decoder: false
+  optimizer:
+    name: adam
+    is_filtered: true
+    lr: 0.0002
+    weight_decay: 1.0e-06
+    eps: 1.0e-08
+  _target_: emulator.src.core.models.baselines.UNet
+  in_var_ids:
+  - BC_sum
+  - SO2_sum
+  - CO2_sum
+  - CH4_sum
+  out_var_ids:
+  - pr
+  - tas
+  seq_to_seq: true
+  seq_len: 12
+  activation_function: null
+  encoder_name: vgg11
+  channels_last: false
+  scheduler:
+    _target_: torch.optim.lr_scheduler.ExponentialLR
+    gamma: 0.98
+  finetune: false
+  pretrained_run_id: bcvgpg4b
+  pretrained_ckpt_dir: /network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/bcvgpg4b/checkpoints/epoch=8-step=180.ckpt
+  pretrained_run_id_decoder: xog84o5g
+  pretrained_ckpt_dir_decoder: /network/scratch/c/charlotte.lange/causalpaca/emulator/emulator/xog84o5g/checkpoints/epoch=8-step=180.ckpt
+datamodule:
+  batch_size: 2
+  _target_: emulator.src.datamodules.super_climate_datamodule.SuperClimateDataModule
+  in_var_ids:
+  - BC_sum
+  - SO2_sum
+  - CO2_sum
+  - CH4_sum
+  out_var_ids:
+  - pr
+  - tas
+  seq_to_seq: true
+  channels_last: false
+  eval_batch_size: 2
+  train_historical_years: 1950-1955
+  test_years: 2015-2100
+  train_years: 2015-2020
+  val_split: 0.1
+  train_scenarios:
+  - ssp126
+  - ssp370
+  - ssp585
+  test_scenarios:
+  - ssp245
+  train_models:
+  - MPI-ESM1-2-HR
+  - AWI-CM-1-1-MR
+  - NorESM2-LM
+  - FGOALS-f3-L
+  - EC-Earth3
+  - BCC-CSM2-MR
+  test_models:
+  - MPI-ESM1-2-HR
+  - AWI-CM-1-1-MR
+  - NorESM2-LM
+  - FGOALS-f3-L
+  - EC-Earth3
+  - BCC-CSM2-MR
+  num_ensembles: 1
+  num_workers: 0
+  pin_memory: false
+  load_train_into_mem: true
+  load_test_into_mem: true
+  verbose: true
+  seed: 11
+  output_save_dir: /home/mila/v/venkatesh.ramesh/scratch/causalpaca/emulator/DATA
+  seq_len: 12
+  lon: 96
+  lat: 144
+  num_levels: 1
+  name: climate_super
+work_dir: /network/scratch/v/venkatesh.ramesh/causalpaca/emulator
+ckpt_dir: /network/scratch/v/venkatesh.ramesh/causalpaca/emulator/checkpoints/
+log_dir: /network/scratch/v/venkatesh.ramesh/causalpaca/emulator/logs/
+print_config: true
+ignore_warnings: true
+test_after_training: true
+save_config_to_wandb: true
+verbose: true
+seed: 99
+name: superemulator
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: gpu
+  devices: auto
+  min_epochs: 1
+  max_epochs: 100
+  gradient_clip_val: 5
+  num_sanity_val_steps: 0
+decoder:
+  _target_: emulator.src.core.models.multihead_decoder.MultiHeadDecoder
+  in_var_ids:
+  - BC_sum
+  - SO2_sum
+  - CO2_sum
+  - CH4_sum
+  out_var_ids:
+  - pr
+  - tas
+  train_models:
+  - MPI-ESM1-2-HR
+  - AWI-CM-1-1-MR
+  - NorESM2-LM
+  - FGOALS-f3-L
+  - EC-Earth3
+  - BCC-CSM2-MR
+  test_models:
+  - MPI-ESM1-2-HR
+  - AWI-CM-1-1-MR
+  - NorESM2-LM
+  - FGOALS-f3-L
+  - EC-Earth3
+  - BCC-CSM2-MR
+  n_layers: 2
+  hidden_dim: 32
+callbacks: {}
+logger:
+  wandb:
+    _target_: pytorch_lightning.loggers.wandb.WandbLogger
+    name: superemulatorUNet_adam_2bs_0.0002lr_1e-06wd_99seed_16h39m_on_Aug_24_r54vb4a1
+    tags:
+    - unet
+    - super_emulation
+    - decoder
+    - 6_models
+    notes: '...'
+    project: emulator
+    group: causalpaca
+    resume: allow
+    reinit: true
+    mode: online
+    save_dir: /network/scratch/v/venkatesh.ramesh/causalpaca/emulator/
+    offline: false
+    id: r54vb4a1
+    log_model: false
+    prefix: ''
+    job_type: train
+experiment_mode: true
+local: {}

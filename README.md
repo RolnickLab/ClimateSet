@@ -59,7 +59,7 @@ python run.py experiment=test # will run whatever is specified by the configs/ex
 You can make use of the [experiment template](emulator/configs/experiment/templatte.yaml).
 
 
-## Reproduce experiments
+## Reproducing experiments
 We provide some experiment configs in ```emulator/configs/experiment``` to recreate some of our models.
 
 We ran 3 different configurations of experiments:
@@ -95,7 +95,7 @@ python emulator/run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_t
 
 For climax & climax_frozen models, we will need to use a different requirements file to create another environment.
 
-For the single-emulator experiments, we proide configs for each ml model in ```configs/experiment/single_emulator```  and for fine-tuning experimnts, the configs can be found in ```configs/experiment/finetuning_emulator```.
+For the single-emulator experiments, we proide configs for each ml model in ```emulator/configs/experiment/single_emulator```  and for fine-tuning experimnts, the configs can be found in ```emulator/configs/experiment/finetuning_emulator```.
 
 For finetuning, we need to fill in ```pretrained_run_id``` and ```pretrained_ckpt_dir``` in the config files for resuming the experiments.
 
@@ -104,12 +104,37 @@ An example command for finetuning would look like this:
 python run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423 logger=none
 ```
 
-For the superemulation experiments, we provide the configs of our experiments in ```configs/experiment/superemulator```. Nothe that here, dataloiding is changed slightly to the superemulator infrastructure and a decoder must be set.
+For the superemulation experiments, we provide the configs of our experiments in ```emulator/configs/experiment/superemulator```. Nothe that here, dataloiding is changed slightly to the superemulator infrastructure and a decoder must be set.
 
 An example command to run a superemulaton experiment would look like this:
 
 ```python
 python run.py experiment=superemulator/superemulator_climax.yaml seed=3423 logger=none
+```
+## Reloading our trained models
+
+We provide all our trained models from the experiments mentioned in the paper which are stored in ```pretrained_models```.
+If you wish to load an existing models, choose an experiment configuration, meaning superemulation, single-emulation or fine-tuning and a desired machine learning model. For each combinaiton you will have a choice of experiments running with different seeds. In each folder, the exact information of what data and other parameter were used, see the ```hydra_config.yaml```.
+
+Once you selected a model, decide whether you want to adjust or freeze the model weights and extract the run id and the path of the checkpoint you want to load.
+
+For example, you choose to reload a ClimaX model from a single emulator experiment running on NorESM-LM data. Choose a respective folder, eg. ```/pretrained_models/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/``` and pick on of the run ids e.g. ```0ltetwu3```.
+In the respective folder you will find one or more checkpoints stored in a ```checkpoints``` folder. Choose one and copy that path location, e.g. ```pretrained_models/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/0ltetwu3/checkpoints/epoch=49-step=2950.ckpt```.
+
+To retrain this model (thus fine-tuning), pass on the following arguments and the experiment config to run, or alternativeley, create a new config setting these parameters:
+
+```yaml
+# In your experiment_name.yml
+model:
+  finetune: True # allow further training or freeze if set to False
+  pretrained_run_id: "0ltetwu3" 
+  pretrained_ckpt_dir: "pretrained_models/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/0ltetwu3/checkpoints/epoch=49-step=2950.ckpt"
+```
+
+You can also override the parameters directly when running (but pay attention, strings containing equal signs need to be put in double quotes!):
+
+```python
+python emulator/run.py  experiment=single_emulator/climax/NorESM2-LM_climax_tas+pr_run-01 logger=none model.pretrained_run_id="0ltetwu3" model.pretrained_ckpt_dir='"pretrained_models/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/0ltetwu3/checkpoints/epoch=49-step=2950.ckpt"' model.finetune=True
 ```
 
 ## Reloading your own pretrained checkpoints
@@ -123,8 +148,6 @@ model:
     pretrained_run_id: "" #eg "3u0ys0d5"
     pretrained_ckpt_dir: "" # eg. "causalpaca/emulator/emulator/ne8oyt48/checkpoints/epoch=49-step=2950.ckpt"
  ```
-
-We are currently in the process of backing up all of our models used for the paper and will provide the pretrained checkpoints publicly as far as possible. Please feel free to reach out to us if you want to work with the repository and are in need of pretrained models.
 
 ## Logging locally
 To run your model locally can either use no logger at all or tell the wandb logger to log your experiments offline you will need to overwrite the default logger (wandb) and set it to offline:

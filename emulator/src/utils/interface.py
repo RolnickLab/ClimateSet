@@ -255,9 +255,8 @@ def reload_model_from_id(
     else:
         checkpoint_path = direc
 
-    print("Checkpoint path:", checkpoint_path)
-
     if checkpoint_path is not None:  # local loading
+        print("Loading checkpoint from local.")
         if checkpoint_path.endswith(".ckpt"):
             best_model_path = checkpoint_path
         else:
@@ -285,6 +284,8 @@ def reload_model_from_id(
         config, best_model_path, load_datamodule=False
     )
     model = reloaded["model"]
+
+    print("Got reloaded model.")
 
     return model, config.datamodule
 

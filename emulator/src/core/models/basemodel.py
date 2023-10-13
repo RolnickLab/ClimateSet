@@ -7,6 +7,7 @@ import time
 from typing import Optional, List, Any, Dict, Tuple, Union
 
 from omegaconf import DictConfig
+import omegaconf
 from pytorch_lightning import LightningModule
 import torch
 
@@ -341,15 +342,20 @@ class BaseModel(LightningModule):
             for k, v in self.hparams.optimizer.items()
             if k not in ["name", "is_filtered", "_target_"]
         }
-
-        if self.hparams.optimizer.is_filtered:
-            optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, self.parameters()), **optim_kwargs
-            )
-        else:
+        try:
+            if self.hparams.optimizer.is_filtered is not None and self.hparams.optimizer.is_filtered:
+                optimizer = torch.optim.Adam(
+                    filter(lambda p: p.requires_grad, self.parameters()), **optim_kwargs
+                )
+            else:
+                optimizer = create_optimizer_v2(
+                    model_or_params=self, opt=self.hparams.optimizer.name, **optim_kwargs
+                )
+        except omegaconf.errors.ConfigAttributeError:
+            # attribute does not exist (reloading old models)
             optimizer = create_optimizer_v2(
-                model_or_params=self, opt=self.hparams.optimizer.name, **optim_kwargs
-            )
+                    model_or_params=self, opt=self.hparams.optimizer.name, **optim_kwargs
+                )
 
         self._init_lr = optimizer.param_groups[0]["lr"]
 
