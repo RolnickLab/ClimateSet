@@ -1,9 +1,0 @@
-xarray
-torch
-dask
-wandb
-hydra-core
-segmentation-models-pytorch
-netCDF4
-pytorch-lightning==1.8.3
-gpytorch
