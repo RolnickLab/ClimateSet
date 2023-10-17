@@ -39,15 +39,21 @@ To work with ClimaX, you will need to download the pretrained checkpoints from t
 bash download_climax_checkpoints.sh
 ```
 
-# Running a model
+## Running a model
+
+Please note that you will have to run everything without logger (including logger=none) at every command, or instead configure logging to your own wandb project or set up other logging methods. For that, please see the section on [logging](#logging).
+
+### Train from scratch
 
 To run the model, edit the [main config](emulator/configs/main_config.yaml) to fit what you want to run. 
 Executing the run.py script plain will use the main config. 
 
 The [configs folder](emulator/configs/) serves as a blueprint, listing all the modules available. To get a better understanding of our codebases structure please refer to the section on [Structure](#structure) 
 
+
+
 ```python
-python run.py # will run with configs/main_config.yml
+python run.py logger=none # will run with configs/main_config.yml
 ```
 
 To exectute one of the preset experiments or to run your own experiments you can create and pass on experiment configs:
@@ -59,7 +65,7 @@ python run.py experiment=test # will run whatever is specified by the configs/ex
 You can make use of the [experiment template](emulator/configs/experiment/templatte.yaml).
 
 
-## Reproducing experiments
+### Reproducing experiments
 We provide some experiment configs in ```emulator/configs/experiment``` to recreate some of our models.
 
 We ran 3 different configurations of experiments:
@@ -111,14 +117,25 @@ An example command to run a superemulaton experiment would look like this:
 ```python
 python run.py experiment=superemulator/superemulator_climax.yaml seed=3423 logger=none
 ```
-## Reloading our trained models
+### Reloading our trained models
 
-We provide all our trained models from the experiments mentioned in the paper which are stored in ```pretrained_models```.
-If you wish to load an existing models, choose an experiment configuration, meaning superemulation, single-emulation or fine-tuning and a desired machine learning model. For each combinaiton you will have a choice of experiments running with different seeds. In each folder, the exact information of what data and other parameter were used, see the ```hydra_config.yaml```.
+We provide some of our trained models from the experiments, including only superemulator experiments and single_emulator experiments performed on NorESM2-LM data. Checkpoints from all our models accumulate to a large amount of data and we are still working on making these available in a practical fashion. Please reach out to out if you wish to obtain pretrained checkpoints from any other experiment not included in this subset.
+
+
+#### Downloading pretrained checkpoints
+
+For downloading, run the provided shell script which will cretate a folder called ```pretrained_models_small``` where all checkpoints will be stored in.
+```bash
+bash download_pretrained_models_small.sh
+```
+
+
+#### Running with pretrained checkpoints
+If you wish to load an existing models, choose an experiment configuration, meaning superemulation, single-emulation or fine-tuning and a desired maallchine learning model. For each combinaiton you will have a choice of experiments running with different seeds. In each folder, the exact information of what data and other parameter were used, see the ```hydra_config.yaml```.
 
 Once you selected a model, decide whether you want to adjust or freeze the model weights and extract the run id and the path of the checkpoint you want to load.
 
-For example, you choose to reload a ClimaX model from a single emulator experiment running on NorESM-LM data. Choose a respective folder, eg. ```/pretrained_models/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/``` and pick on of the run ids e.g. ```0ltetwu3```.
+For example, you choose to reload a ClimaX model from a single emulator experiment running on NorESM-LM data. Choose a respective folder, eg. ```/pretrained_models_small/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/``` and pick on of the run ids e.g. ```0ltetwu3```.
 In the respective folder you will find one or more checkpoints stored in a ```checkpoints``` folder. Choose one and copy that path location, e.g. ```pretrained_models/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/0ltetwu3/checkpoints/epoch=49-step=2950.ckpt```.
 
 To retrain this model (thus fine-tuning), pass on the following arguments and the experiment config to run, or alternativeley, create a new config setting these parameters:
@@ -137,7 +154,7 @@ You can also override the parameters directly when running (but pay attention, s
 python emulator/run.py  experiment=single_emulator/climax/NorESM2-LM_climax_tas+pr_run-01 logger=none model.pretrained_run_id="0ltetwu3" model.pretrained_ckpt_dir='"pretrained_models/single_emulator/ClimaX/NorESM2-LM_climax_run1_single_emulator_tas+pr/0ltetwu3/checkpoints/epoch=49-step=2950.ckpt"' model.finetune=True
 ```
 
-## Reloading your own pretrained checkpoints
+### Reloading your own pretrained checkpoints
 
 Similar to the fine-tuning experiments you can load, fine-tune and test preexisting models by adjusting the following parameters in the respective experiment config:
 
@@ -149,7 +166,11 @@ model:
     pretrained_ckpt_dir: "" # eg. "causalpaca/emulator/emulator/ne8oyt48/checkpoints/epoch=49-step=2950.ckpt"
  ```
 
-## Logging locally
+
+## Codebase
+### Logging
+
+#### Logging locally
 To run your model locally can either use no logger at all or tell the wandb logger to log your experiments offline you will need to overwrite the default logger (wandb) and set it to offline:
 
 Option 1: Setting loger to none
@@ -169,7 +190,8 @@ logger:
         offline: True
  ```
 
-## Logging to wandb
+
+#### Logging to wandb
 
 To run with logging to wandb, you can simply use the wandb logger overwriting the project and group with your project and group and set offline to False (default).
 
@@ -181,10 +203,12 @@ logger:
         group: "YOUR_GROUP"
         offline: False #default
  ```
-## How to add new models
-You can add new models in `emulator/src/core/models`. Each model should inherit from the Basemodel class you can find in `basemodel.py`. Add a new config file for your model in `emulator/config/models/`.
 
-## Structure
+#### Other logging methods
+
+To set up other logging methods, create a new [logging config](emulator/configs/logger/) pointing to either a preimplemented class or a self-implemented class inheriting from a pytorch-lightning logger.
+
+### Structure
 
 The codebase is divided in two main parts, [configs](emulator/configs/) and [src](emulator/src/).
 The *configs* folder provides parameterization for all the modules and experiments possible within the code provided in *src*.
@@ -195,5 +219,13 @@ Within *src*, *core* includes all the code for the training and testing pipeline
 
 ![Visualization of the codebase](./diagram.svg)
 
+### How to add new models
+You can add new models in `emulator/src/core/models`. Each model should inherit from the Basemodel class you can find in `basemodel.py`. Add a new config file for your model in `emulator/config/models/`.
+
+### How to work with the dataset only
+If you wish to build your own training pipeline and just wish to make use of the dataset structure, please consider the dataset classes for either [single emulation](emulator/src/data/climate_dataset.py) or [superemulation](emulator/src/data/super_climate_dataset.py) and their respective configs ( [single](emulator/configs/datamodule/climate.yaml) and [super](emulator/configs/datamodule/climate_super.yaml).
+
+For interfacing with pytorch lightning please consider the [single](emulator/src/datamodules/climate_datamodule.py) and [super](emulator/src/datamodules/super_climate_datamodule.py) emulation datamodules.
+---
 
 The repository is inspired by [ClimART](https://github.com/RolnickLab/climart/tree/main) and PL+Hydra template implementation [ashleve/lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template)
