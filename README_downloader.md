@@ -1,6 +1,6 @@
 # ***ClimateSet*** - : A Large-Scale Climate Model Dataset for Machine Learning
 
-## Official implementation for the data downloader & processor
+## Official implementation for the data downloader
 
 Abstract: *Climate models have been key for assessing the impact of climate change and simulating future climate scenarios depending on humanity’s socioeconomic choices.
 
@@ -10,8 +10,16 @@ We showcase the potential of our dataset by using it as a benchmark for ML-based
 
 ## Usage 
 ### Create an enviroment
-1. Create a new conda environment ```python >=3.10``` and activate it.
-2. Install the libraries mentioned in ```requirements.txt``` with ```pip install -r requirements.txt```.
+
+To setup the environment for the downloader, we use python>=3.10. 
+
+Follow the following steps to create the environment:
+
+```bash
+python -m venv env_downloader
+source env_downloader/bin/activate
+pip install -r requirements_downloader.txt
+```
 
 ### Downloader
 
@@ -33,6 +41,10 @@ The following parameters for the downloader are the default:
     data_dir: str = os.path.join(ROOT_DIR, "data"),
     max_ensemble_members: int = 10, # if -1 take all available models
     ensemble_members: List[str] = None # preferred ensemble members used, if None not considered
+    overwrite=False,  # flag if files should be overwritten
+    download_biomassburning=True,  # get biomassburning data for input4mips
+    download_metafiles=True,  # get input4mips meta files
+
 ```
 
 To run the downloader, create a config in which you specify what models you want to download data for. If no model is given, we assume you only want to download "input4mips" data.
@@ -45,12 +57,6 @@ To run the downloader with this default example, excecute the following command:
  ``` 
 
 Feel free to change create new configs to change the variables and experiments being downloaded.
-
-
-
-### Preprocessor
-(3. Install CDO. )-> preprocessor only
-https://code.mpimet.mpg.de/projects/cdo/wiki/Anaconda
 
 
 ## Development
