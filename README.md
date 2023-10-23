@@ -52,13 +52,6 @@ To run the downloader with this default example, excecute the following command:
 
 Feel free to change create new configs to change the variables and experiments being downloaded.
 
-
-
-### Preprocessor
-(3. Install CDO. )-> preprocessor only
-https://code.mpimet.mpg.de/projects/cdo/wiki/Anaconda
-
-
 ## Development
 
 This repository is currently under active development and you may encounter bugs with some functionality. 
