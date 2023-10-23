@@ -10,8 +10,14 @@ We showcase the potential of our dataset by using it as a benchmark for ML-based
 
 ## Usage 
 ### Create an enviroment
-1. Create a new conda environment ```python >=3.10``` and activate it.
-2. Install the libraries mentioned in ```requirements.txt``` with ```pip install -r requirements.txt```.
+
+To install an adequate requrimenet, please make sure to run a python enviroment with ```python>=3.10``` containing all our requirede (requirements)[requirements_downloader.txt]:
+
+```bash
+python -m venv env_downloader
+source env_downloader/bin/activate
+pip install -r requirements_downloader.txt
+ ``` 
 
 ### Downloader
 
