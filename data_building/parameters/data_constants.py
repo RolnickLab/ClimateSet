@@ -12,3 +12,10 @@ META_ENDINGS_PRC = [
     "_percentage_TEMF",
 ]
 META_ENDINGS_SHAR = ["_openburning_share"]
+
+LON_LAT_TO_GRID_SIZE = {
+    (720,360): "25_km",
+    (360,720): "25_km",
+    (96, 144): "250_km",
+    (144,96): "250_km"
+}

@@ -13,9 +13,12 @@ from typing import Dict, Any, Tuple, Union, Optional, Callable
 
 class AbstractTransform(ABC):
     def __init__(self, exp_type: str):
-        input_output_dimensions = {'spatial_dim': None, 'input_dim': None} #get_data_dims(exp_type=exp_type) #TODO
-        self.spatial_input_dim: Dict[str, int] = input_output_dimensions['spatial_dim']
-        self.input_dim: Dict[str, int] = input_output_dimensions['input_dim']
+        input_output_dimensions = {
+            "spatial_dim": None,
+            "input_dim": None,
+        }  # get_data_dims(exp_type=exp_type) #TODO
+        self.spatial_input_dim: Dict[str, int] = input_output_dimensions["spatial_dim"]
+        self.input_dim: Dict[str, int] = input_output_dimensions["input_dim"]
 
     @property
     def output_dim(self) -> Union[int, Dict[str, int]]:
@@ -30,7 +33,7 @@ class AbstractTransform(ABC):
 
     @property
     def save_transformed_data(self) -> bool:
-        """ If True and numpy arrays are stored (in fast Dataset class, as .npz),
+        """If True and numpy arrays are stored (in fast Dataset class, as .npz),
         the data is stored in transformed form.
         """
         return True
@@ -44,7 +47,9 @@ class AbstractTransform(ABC):
             If the transform returns a dict of str -> array, output_dim should be a dict str -> int, that
                 described the number of features for each key in the transformed output.
         """
-        raise NotImplementedError(f"spatial_output_dim is not implemented by {self.__class__}")
+        raise NotImplementedError(
+            f"spatial_output_dim is not implemented by {self.__class__}"
+        )
 
     def transform(self, X: Dict[str, np.ndarray]) -> Any:
         """
@@ -70,7 +75,9 @@ class AbstractTransform(ABC):
                 }
         to the form the model will use/receive it in forward.
         """
-        raise NotImplementedError(f"batched_transform is not implemented by {self.__class__}")
+        raise NotImplementedError(
+            f"batched_transform is not implemented by {self.__class__}"
+        )
 
 
 class IdentityTransform(AbstractTransform):

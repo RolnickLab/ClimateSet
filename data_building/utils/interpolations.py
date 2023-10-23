@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 # see data/mother_data/utils/aggregations.py
 # same thing, just other interpolation methods
 
+
 ### ABSTRACT CLASS #############################################################
 class Interpolation(ABC):
     def __init__(self, var_path: Path, store_path: Path):
@@ -49,18 +50,20 @@ class Interpolation(ABC):
 # Inverse Distance weighted [new for me]
 # Kriging [new for me]
 
+
 class LinearInterpolation(Interpolation):
-    """ Make a linear interpolation
-    """
+    """Make a linear interpolation"""
+
     def interpolate(self):
         raise NotImplementedError
+
 
 class NearestNeighborInterpolation(Interpolation):
-    """ Make a nearest neighbor interpolation
-    """
+    """Make a nearest neighbor interpolation"""
+
     def interpolate(self):
         raise NotImplementedError
 
+
 class PolynomialInterpolation(Interpolation):
-    """
-    """
+    """ """

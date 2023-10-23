@@ -49,11 +49,11 @@ The following parameters for the downloader are the default:
 
 To run the downloader, create a config in which you specify what models you want to download data for. If no model is given, we assume you only want to download "input4mips" data.
 You can override any of the downloader kwargs in this onfig.
-For example, see this [example downloader config](configs/downloader/default_config.yaml).
+For example, see this [example downloader config](data_building/configs/downloader/default_config.yaml).
 To run the downloader with this default example, excecute the following command:
 
  ```bash
- python -m data_building.builders.downloader --cfg configs/downloader/default_config.yaml
+ python -m data_building.builders.downloader --cfg data_building/configs/downloader/default_config.yaml
  ``` 
 
 Feel free to change create new configs to change the variables and experiments being downloaded.

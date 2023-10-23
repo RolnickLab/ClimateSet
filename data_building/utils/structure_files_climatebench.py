@@ -6,10 +6,29 @@ import xarray as xr
 
 from data_building.parameters.esgf_server_constants import RES_TO_CHUNKSIZE
 
-parser = argparse.ArgumentParser(description="Restructure Input4MIPs data from ClimateBench for our file structure.")
-parser.add_argument("-i", "--source", type=str, help="Where the downloaded Input4MIPs data can be found.", required=True)
-parser.add_argument("-s", "--store", type=str, help="Where to store the newly structured files (in causalpaca).", required=True)
-parser.add_argument("-o", "--overwrite", action="store_true", help="If data storage path should be overwritten.")
+parser = argparse.ArgumentParser(
+    description="Restructure Input4MIPs data from ClimateBench for our file structure."
+)
+parser.add_argument(
+    "-i",
+    "--source",
+    type=str,
+    help="Where the downloaded Input4MIPs data can be found.",
+    required=True,
+)
+parser.add_argument(
+    "-s",
+    "--store",
+    type=str,
+    help="Where to store the newly structured files (in causalpaca).",
+    required=True,
+)
+parser.add_argument(
+    "-o",
+    "--overwrite",
+    action="store_true",
+    help="If data storage path should be overwritten.",
+)
 # duncan_path="/home/charlie/Documents/MILA/causalpaca/data/climate_bench_inputs/" # source of duncan data
 # data_dir_parent="/home/charlie/Documents/MILA/causalpaca/data/data/" # to store
 # duncan_path="/home/julia/LargeFiles/climate_bench_inputs/" # source of duncan data
@@ -18,7 +37,6 @@ parser.add_argument("-o", "--overwrite", action="store_true", help="If data stor
 
 
 def extract_target_mip_exp_name(filename: str, target_mip: str):
-
     """Helper function extracting the target experiment name from a given file name and the target's umbrella MIP.
     supported target mips: "CMIP" "ScenarioMIP", "DAMIP", "AerChemMIP"
 
@@ -57,7 +75,7 @@ def extract_target_mip_exp_name(filename: str, target_mip: str):
 
 # for file in duncan data
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # handle argparser
     # print("hello")
     # print(len(parser[0]))
@@ -70,24 +88,22 @@ if __name__ == '__main__':
 
     for f in os.listdir(duncan_path):
         print(f)
-        if f.split('.')[-1]=='csv':
-
-            continue # unwanted csv files
+        if f.split(".")[-1] == "csv":
+            continue  #  unwanted csv files
         # extract inoframiton from file_name (var, experiment)
-        fl=f.split("_")
+        fl = f.split("_")
         print(fl)
-        variable=fl[0]
-        variable=variable.replace(" ", "_").replace("-", "_")
-        project="input4mips"
-        if variable=="co2mass":
+        variable = fl[0]
+        variable = variable.replace(" ", "_").replace("-", "_")
+        project = "input4mips"
+        if variable == "co2mass":
             # save to cmip file structure
-            project="CMIP6"
-            ex="co2mass_Amon_NorESM2-LM_abrupt-4xCO2_r1i1p1f1_gm_009101-010012.nc"
-            model=fl[2]
-            experiment=fl[3]
-            ensemble_member=fl[4]
-            grid_label=fl[5]
-
+            project = "CMIP6"
+            ex = "co2mass_Amon_NorESM2-LM_abrupt-4xCO2_r1i1p1f1_gm_009101-010012.nc"
+            model = fl[2]
+            experiment = fl[3]
+            ensemble_member = fl[4]
+            grid_label = fl[5]
 
         else:
             target_mip = fl[3]
@@ -113,7 +129,6 @@ if __name__ == '__main__':
             print("Something is wrong with the file. Skipping.")
             continue
 
-
         years = np.unique(ds.time.dt.year.to_numpy())
         print(f"Data covering years: {years[0]} to {years[-1]}")
 
@@ -124,7 +139,6 @@ if __name__ == '__main__':
                 out_dir = f"{project}/{model}/{ensemble_member}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
 
             else:
-
                 out_dir = f"{project}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
 
             # Check whether the specified path exists or not
@@ -132,7 +146,6 @@ if __name__ == '__main__':
             isExist = os.path.exists(path)
 
             if not isExist:
-
                 # Create a new directory because it does not exist
                 os.makedirs(path)
                 print("The new directory is created!")
@@ -150,12 +163,11 @@ if __name__ == '__main__':
             if (not overwrite) and os.path.isfile(outfile):
                 print(f"File {outfile} already exists, skipping.")
             else:
-
                 print("Selecting specific year ", y)
                 try:
                     ds_y = ds.sel(time=y)
                 except ValueError:
-                    continue # some very strange data
+                    continue  # some very strange data
 
                 print(ds_y)
 

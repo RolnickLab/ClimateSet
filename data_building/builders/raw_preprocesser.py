@@ -6,7 +6,7 @@ import xarray as xr
 import netCDF4 as nc
 
 from pathlib import Path
-from email.policy import default # TODO are we using this???
+from email.policy import default  # TODO are we using this???
 
 from data_building.parameters.esgf_server_constants import RES_TO_CHUNKSIZE
 from data_building.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
@@ -77,7 +77,8 @@ class RawProcesser:
     def process(self, corrupt_files, check_time=True):
         """Makes all the first and prior processing steps.
 
-        TODO:single-model mode so far, deal with different models?(in storing hierachy)"""
+        TODO:single-model mode so far, deal with different models?(in storing hierachy)
+        """
 
         if not self.processed_flag:
             i = 0
@@ -89,12 +90,10 @@ class RawProcesser:
                 print(project)
                 # part 1:
                 if project == "input4mips":
-
                     for experiment in os.listdir(self.source + "/" + project):
                         for var in os.listdir(
                             self.source + "/" + project + "/" + experiment
                         ):
-
                             # for each var the resolution should be consistent
 
                             for i, nom_res in enumerate(
@@ -108,7 +107,6 @@ class RawProcesser:
                                     + var
                                 )
                             ):
-
                                 for freq in os.listdir(
                                     self.source
                                     + "/"
@@ -120,7 +118,6 @@ class RawProcesser:
                                     + "/"
                                     + nom_res
                                 ):
-
                                     for y in os.listdir(
                                         self.source
                                         + "/"
@@ -134,7 +131,6 @@ class RawProcesser:
                                         + "/"
                                         + freq
                                     ):
-
                                         file_dir = (
                                             self.source
                                             + "/"
@@ -222,7 +218,6 @@ class RawProcesser:
                                         isExist = os.path.exists(path)
 
                                         if not isExist:
-
                                             # Create a new directory because it does not exist
                                             os.makedirs(path)
                                             print("The new directory is created!", path)
@@ -255,13 +250,11 @@ class RawProcesser:
                     # continue
 
                     for model in os.listdir(self.source + "/" + project):
-
                         print("model", model)
 
                         for ensemble_member in os.listdir(
                             self.source + "/" + project + "/" + model
                         ):
-
                             for experiment in os.listdir(
                                 self.source
                                 + "/"
@@ -429,7 +422,6 @@ class RawProcesser:
                                                 isExist = os.path.exists(path)
 
                                                 if not isExist:
-
                                                     # Create a new directory because it does not exist
                                                     os.makedirs(path)
                                                     print(
@@ -484,7 +476,6 @@ class RawProcesser:
                                                 isExist = os.path.exists(path)
 
                                                 if not isExist:
-
                                                     # Create a new directory because it does not exist
                                                     os.makedirs(path)
                                                     print(
@@ -512,7 +503,6 @@ class RawProcesser:
         return ds
 
     def check_corruptness(self, file_dir, file_name, chunksize, var, check_time=True):
-
         try:
             data = xr.open_dataset(file_dir + file_name, chunks=chunksize)
 
@@ -592,7 +582,6 @@ class RawProcesser:
 
         # iterate over each var in the folder, checks if units per var are consistent
         for project in os.listdir(self.source):
-
             # part 1:
             if project == "input4mips":
                 print("input4mips")
@@ -601,7 +590,6 @@ class RawProcesser:
                     for var in os.listdir(
                         self.source + "/" + project + "/" + experiment
                     ):
-
                         # for each var the resolution should be consistent
 
                         for i, nom_res in enumerate(
@@ -615,7 +603,6 @@ class RawProcesser:
                                 + var
                             )
                         ):
-
                             for freq in os.listdir(
                                 self.source
                                 + "/"
@@ -627,7 +614,6 @@ class RawProcesser:
                                 + "/"
                                 + nom_res
                             ):
-
                                 for y in os.listdir(
                                     self.source
                                     + "/"
@@ -641,7 +627,6 @@ class RawProcesser:
                                     + "/"
                                     + freq
                                 ):
-
                                     file_dir = (
                                         self.source
                                         + "/"
@@ -745,13 +730,11 @@ class RawProcesser:
                 print("cmip6")
                 continue
                 for model in os.listdir(self.source + "/" + project):
-
                     print("model", model)
 
                     for ensemble_member in os.listdir(
                         self.source + "/" + project + "/" + model
                     ):
-
                         for experiment in os.listdir(
                             self.source
                             + "/"
@@ -907,7 +890,6 @@ class RawProcesser:
 
                                             # if first unit extraction, check if there is a default unit given
                                             if var_default_unit == "":
-
                                                 print(
                                                     f"Found unit: {unit} for var: {var}. Attempt to synchronize."
                                                 )

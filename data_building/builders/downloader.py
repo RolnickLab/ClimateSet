@@ -24,6 +24,7 @@ from data_building.parameters.data_constants import (
     DATA_CSV,
     META_ENDINGS_PRC,
     META_ENDINGS_SHAR,
+    LON_LAT_TO_GRID_SIZE,
 )
 from data_building.parameters.esm_params import VARS, SCENARIOS
 from data_building.utils.helper_funcs import get_keys_from_value, get_MIP
@@ -357,6 +358,16 @@ class Downloader:
                             )
                             continue
 
+                        if nominal_resolution=='none':
+                            try:
+                                # check if we really have no nomianl resolution
+                                lon_lat = (ds.lat_bnds.lat.shape[0],ds.lon_bnds.lon.shape[0])
+                                print(lon_lat)
+                                nominal_resolution=LON_LAT_TO_GRID_SIZE[lon_lat]
+                                print(f"Found nominal resolution: {nominal_resolution}")          
+                            except:     
+                                pass
+
                         years = np.unique(ds.time.dt.year.to_numpy())
                         print(f"Data covering years: {years[0]} to {years[-1]}")
 
@@ -492,7 +503,7 @@ class Downloader:
 
                 for y in years:
                     y = str(y)
-                    out_dir = f"historic_biomassburning/{variable_save}/{nominal_resolution}/{frequency}/{y}/"
+                    out_dir = f"historic-biomassburning/{variable_save}/{nominal_resolution}/{frequency}/{y}/"
 
                     # Check whether the specified path exists or not
                     path = os.path.join(self.meta_dir_parent, out_dir)
@@ -667,6 +678,16 @@ class Downloader:
                         )
                         continue
 
+
+                    if nominal_resolution=='none':
+                        try:
+                            # check if we really have no nomianl resolution
+                            lon_lat = (ds.lat_bnds.lat.shape[0],ds.lon_bnds.lon.shape[0])
+                            print(lon_lat)
+                            nominal_resolution=LON_LAT_TO_GRID_SIZE[lon_lat]
+                            print(f"Found nominal resolution: {nominal_resolution}")          
+                        except:     
+                            pass
                     years = np.unique(ds.time.dt.year.to_numpy())
                     print(f"Data covering years: {years[0]} to {years[-1]}")
 
@@ -815,8 +836,12 @@ class Downloader:
 
         """
         for v in self.raw_vars:
+            if v.endswith('openburning'):
+                institution_id="IAMC"
+            else:
+                institution_id="PNNL-JGCRI"
             print(f"Downloading data for variable: {v} \n \n ")
-            self.download_raw_input_single_var(v)
+            self.download_raw_input_single_var(v, institution_id=institution_id)
 
         # if download historical + openburining
         if self.download_biomass_burning & ("historical" in self.experiments):

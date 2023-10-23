@@ -8,7 +8,7 @@ import xarray as xr
 from data_building.parameters.esgf_server_constants import RES_TO_CHUNKSIZE
 
 
-#path to folder where data downloaded with a wget script is located
+# path to folder where data downloaded with a wget script is located
 esgf_path = "/home/charlie/Documents/MILA/causalpaca/data/mother_data/all_input4mips/"
 
 # path to where sorted raw data should be stored -> seperation for years and brought into desired hierachy for further preprocessing with our pipeline
@@ -19,7 +19,6 @@ overwrite = False
 
 
 def extract_target_mip_exp_name(filename: str, target_mip: str):
-
     """Helper function extracting the target experiment name from a given file name and the target's umbrella MIP.
     supported target mips: "CMIP" "ScenarioMIP", "DAMIP", "AerChemMIP"
 
@@ -49,8 +48,8 @@ def extract_target_mip_exp_name(filename: str, target_mip: str):
         if "lowNTCF" in filename:
             experiment = experiment + "_lowNTTCF"
 
-    elif int(year_end)<2016:
-            experiment='historical'
+    elif int(year_end) < 2016:
+        experiment = "historical"
     else:
         print("WARNING: unknown target mip", target_mip)
         experiment = "None"
@@ -65,10 +64,10 @@ if __name__ == "__main__":
         print(f)
         if f.split(".")[-1] == "csv":
             continue  # skip unwanted csv files
-        elif f.split('.')[-1] == 'sh':
-            continue #skip unwanted bash scripts
-        elif f.split('.')[-1] == 'status':
-            continue #skip unwanted bash scripts
+        elif f.split(".")[-1] == "sh":
+            continue  # skip unwanted bash scripts
+        elif f.split(".")[-1] == "status":
+            continue  # skip unwanted bash scripts
         # extract inoframiton from file_name (var, experiment)
         fl = f.split("_")
         print(fl)
@@ -96,11 +95,8 @@ if __name__ == "__main__":
         print("Variable: ", variable)
         print("Experiment: ", experiment)
 
-
         try:
-            ds = xr.open_dataset(
-                esgf_path + f, engine="netcdf4"
-            )
+            ds = xr.open_dataset(esgf_path + f, engine="netcdf4")
         except OSError:
             print("Something is wrong with the file. Skipping.")
             continue
@@ -112,7 +108,6 @@ if __name__ == "__main__":
         print("Nominal resolution: ", nominal_resolution)
         print("Frequency: ", frequency)
         print("Grid Label: ", grid_label)
-
 
         chunksize = RES_TO_CHUNKSIZE[frequency]
 
@@ -126,7 +121,6 @@ if __name__ == "__main__":
                 out_dir = f"{project}/{model}/{ensemble_member}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
 
             else:
-
                 out_dir = f"{project}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
 
             # Check whether the specified path exists or not
@@ -134,7 +128,6 @@ if __name__ == "__main__":
             isExist = os.path.exists(path)
 
             if not isExist:
-
                 # Create a new directory because it does not exist
                 os.makedirs(path)
                 print("The new directory is created!")
@@ -152,13 +145,11 @@ if __name__ == "__main__":
             if (not overwrite) and os.path.isfile(outfile):
                 print(f"File {outfile} already exists, skipping.")
             else:
-
                 print("Selecting specific year ", y)
                 try:
                     ds_y = ds.sel(time=y)
                 except ValueError:
                     continue  # some very strange data
-
 
                 print("Writing file")
                 print(outfile)

@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import List, Tuple, Dict
 
-#from data_generation.generators.mother_data import *
+# from data_generation.generators.mother_data import *
 from data_building.parameters.esm_params import MOTHER_PARAMS
 from data_building.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_DATA
 
@@ -17,11 +17,23 @@ from data_building.parameters.data_paths import RAW_DATA, PROCESSED_DATA, LOAD_D
 # ATTENTION
 # during aggregation: take care of units and how they change (should be handled within raw_preprocesser)
 
-def birth(models: List[str], scenarios: List[str], years: List[int],
-        in_vars: List[str], out_vars: List[str], resolutions: Tuple[int, int, int, int],
-        grid: str, aggregations: Dict[str, str], interpolations: Dict[str, str],
-        raw_path: Path, res_path: Path, load_path: Path, **kwargs):
-    """ Creates the initial climate data that is needed. Starts downloader,
+
+def birth(
+    models: List[str],
+    scenarios: List[str],
+    years: List[int],
+    in_vars: List[str],
+    out_vars: List[str],
+    resolutions: Tuple[int, int, int, int],
+    grid: str,
+    aggregations: Dict[str, str],
+    interpolations: Dict[str, str],
+    raw_path: Path,
+    res_path: Path,
+    load_path: Path,
+    **kwargs
+):
+    """Creates the initial climate data that is needed. Starts downloader,
     makes initial preprocessing and default resolution processing. Data can
     afterwards be loaded via Loader() or run.py. Prints if process was successful.
 
@@ -44,9 +56,9 @@ def birth(models: List[str], scenarios: List[str], years: List[int],
     # DOWNLOAD DATA
     print("Starting to download data ...")
     # init downloader
-    #downloader = Downloader()
+    # downloader = Downloader()
     # execute downloader
-    #downloader.download_from_model()
+    # downloader.download_from_model()
     print("... data was downloaded successfully.")
 
     # PREPROCESS DATA
@@ -68,16 +80,15 @@ def birth(models: List[str], scenarios: List[str], years: List[int],
     print("... data is now available in the right resolutions.")
     print("\nClimate data is now available in {}.".format("/TO/DO/"))
 
+
 # params (dict): Dictionary containing parameters (stored in mother_params.py)
 #     such as resolutions, variables, grid type, years and aggregation type.
 # paths (dict): where the data is stored: raw data, preprocessed data and
 #     data that can be immediately loaded
-if __name__ == '__main__':
+if __name__ == "__main__":
     # load mother_params
 
     # and put all of this into birth()
-    birth(**MOTHER_PARAMS,
-        raw_path = RAW_DATA,
-        res_path = PROCESSED_DATA,
-        load_path = LOAD_DATA
+    birth(
+        **MOTHER_PARAMS, raw_path=RAW_DATA, res_path=PROCESSED_DATA, load_path=LOAD_DATA
     )

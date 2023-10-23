@@ -1,0 +1,5 @@
+#models: ["NorESM2-LM"]
+downloader_kwargs:
+  vars: ["CO_em_SOLID_BIOFUEL_anthro"]
+  experiments: ["historical","ssp126", "ssp245", "ssp370", "ssp585"]
+  

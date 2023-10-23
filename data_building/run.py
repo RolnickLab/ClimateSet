@@ -11,10 +11,10 @@
 # prints out regularly which files have been created or were loaded now
 
 # --> interaction with the user:
-    # many checks
-    # let them decide
-    # inform waht needs to be processed and downloaded for their request
-    # generators and loaders are started from here
+# many checks
+# let them decide
+# inform waht needs to be processed and downloaded for their request
+# generators and loaders are started from here
 
 # NOTE
 # this is more of a tutorial - all generators and loaders can be created individually by user
