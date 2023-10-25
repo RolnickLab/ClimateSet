@@ -1,0 +1,6 @@
+models: ["EC-Earth3"]
+downloader_kwargs:
+  vars: ["psl"]
+  experiments: ["historical","ssp126", "ssp245", "ssp370", "ssp585"]
+  max_ensemble_members: -1
+  
