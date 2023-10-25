@@ -9,5 +9,5 @@ pint
 tqdm
 matplotlib
 h5py
-#zipfile 
+zipfile 
 PyYAML
