@@ -3,7 +3,13 @@
 RAW_DATA
 PROCESSED_DATA
 tmp/*
-
+logs/*
+*.out
+*.nc
+internal
+data
+pretrained_models
+Climateset_DATA
 # deprecated files
 deprecated/
 notes/

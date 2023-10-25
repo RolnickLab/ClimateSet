@@ -280,8 +280,8 @@ class DataLoader:
 
         # read out dimensions
         n = data.shape[0]
-        t = .data.shape[1]
-        d = .data.shape[2]
+        t = data.shape[1]
+        d = data.shape[2]
         # flatten out grid cells
         data = np.reshape(data, (n, t, d, -1))
         d_x = data.shape[-1]

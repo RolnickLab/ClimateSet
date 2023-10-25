@@ -2,6 +2,7 @@ import pandas as pd
 
 DATA_CSV = pd.read_csv("data_building/parameters/selected_scenariosMIPs.csv")
 
+EMISSIONS_ENDINGS = ["_em_openburning", "_em_anthro", "_em_AIR_anthro"]
 
 META_ENDINGS_PRC = [
     "_percentage_AGRI",
@@ -14,8 +15,8 @@ META_ENDINGS_PRC = [
 META_ENDINGS_SHAR = ["_openburning_share"]
 
 LON_LAT_TO_GRID_SIZE = {
-    (720,360): "25_km",
-    (360,720): "25_km",
+    (720, 360): "25_km",
+    (360, 720): "25_km",
     (96, 144): "250_km",
-    (144,96): "250_km"
+    (144, 96): "250_km",
 }

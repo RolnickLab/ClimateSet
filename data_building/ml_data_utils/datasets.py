@@ -209,12 +209,8 @@ class Causalpaca_HdF5_Dataset(
         return s
 
     def __len__(self):
-<<<<<<< HEAD
-        return self.size
-=======
         # for both parts, lenght is determined by to number of cmip combinations * number of available years
         return self.dataset_size_model
->>>>>>> de68991b0fad47c296aa565d6c39032a22072a5c
 
     def __getitem__(self, item=None) -> (Tuple[Dict[str, Tensor], Dict[str, Tensor]]):
 

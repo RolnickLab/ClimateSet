@@ -25,6 +25,7 @@ from data_building.parameters.data_constants import (
     META_ENDINGS_PRC,
     META_ENDINGS_SHAR,
     LON_LAT_TO_GRID_SIZE,
+    EMISSIONS_ENDINGS,
 )
 from data_building.parameters.esm_params import VARS, SCENARIOS
 from data_building.utils.helper_funcs import get_keys_from_value, get_MIP
@@ -56,6 +57,7 @@ class Downloader:
         overwrite=False,  # flag if files should be overwritten
         download_biomassburning=True,  # get biomassburning data for input4mips
         download_metafiles=True,  # get input4mips meta files
+        plain_emission_vars=True,  # specifies if plain variabsle for emissions data are given and rest is inferred or if variables are specified
     ):
         """Init method for the Downloader
         params:
@@ -150,23 +152,47 @@ class Downloader:
                     f"WARNING: unknown source type for var {v}. Not supported. Skipping."
                 )
 
-        # get plain input4mips vars = biomass vars for historical
-        self.biomass_vars = list(set([v.split("_")[0] for v in self.raw_vars]))
-        # remove biomass vars from normal raw vars list
-        for b in self.biomass_vars:
-            try:
-                self.raw_vars.remove(b)
-            except:
-                pass
-        self.download_biomass_burning = download_biomassburning
+        if plain_emission_vars:
+            # plain vars are biomass vars
+            self.biomass_vars = self.raw_vars
+            self.meta_vars_percentage = [
+                l + b for l in self.biomass_vars if l != "CO2" for b in META_ENDINGS_PRC
+            ]
+            self.meta_vars_share = [
+                l + b
+                for l in self.biomass_vars
+                if l != "CO2"
+                for b in META_ENDINGS_SHAR
+            ]
 
-        self.meta_vars_percentage = [
-            l + b for l in self.biomass_vars if l != "CO2" for b in META_ENDINGS_PRC
-        ]
-        self.meta_vars_share = [
-            l + b for l in self.biomass_vars if l != "CO2" for b in META_ENDINGS_SHAR
-        ]
+            # create var names from emissions
+            self.raw_vars = [v + e for v in self.raw_vars for e in EMISSIONS_ENDINGS]
+            # be careful with CO2
+            if "CO2_em_openburning" in self.raw_vars:
+                self.raw_vars.remove("CO2_em_openburning")
+        else:
+            # get plain input4mips vars = biomass vars for historical
+            self.biomass_vars = list(set([v.split("_")[0] for v in self.raw_vars]))
+            # remove biomass vars from normal raw vars list
+            for b in self.biomass_vars:
+                try:
+                    self.raw_vars.remove(b)
+                except:
+                    pass
+            self.download_biomass_burning = download_biomassburning
+
+            self.meta_vars_percentage = [
+                l + b for l in self.biomass_vars if l != "CO2" for b in META_ENDINGS_PRC
+            ]
+            self.meta_vars_share = [
+                l + b
+                for l in self.biomass_vars
+                if l != "CO2"
+                for b in META_ENDINGS_SHAR
+            ]
+
         self.download_metafiles = download_metafiles
+        self.download_biomass_burning = download_biomassburning
 
         print(f"Raw variables to download: {self.raw_vars}")
         print(f"Model predicted vars to download: {self.model_vars}")
@@ -358,14 +384,20 @@ class Downloader:
                             )
                             continue
 
-                        if nominal_resolution=='none':
+                        if nominal_resolution == "none":
                             try:
                                 # check if we really have no nomianl resolution
-                                lon_lat = (ds.lat_bnds.lat.shape[0],ds.lon_bnds.lon.shape[0])
-                                print(lon_lat)
-                                nominal_resolution=LON_LAT_TO_GRID_SIZE[lon_lat]
-                                print(f"Found nominal resolution: {nominal_resolution}")          
-                            except:     
+
+                                # first compute degree by looking at the longitude increment
+                                degree = abs(ds.lon[0].item() - ds.lon[1].item())
+                                # in principal lon and lat should be the same, however, this is just an approximation
+                                # same approximation used by climate modeling centers
+                                # information is just for informing the structure, resolution will be checked in preprocessing
+                                nominal_resolution = int(degree * 100)
+                                print(
+                                    f"Infering nominal resolution: {nominal_resolution}"
+                                )
+                            except:
                                 pass
 
                         years = np.unique(ds.time.dt.year.to_numpy())
@@ -678,16 +710,22 @@ class Downloader:
                         )
                         continue
 
+                        if nominal_resolution == "none":
+                            try:
+                                # check if we really have no nomianl resolution
 
-                    if nominal_resolution=='none':
-                        try:
-                            # check if we really have no nomianl resolution
-                            lon_lat = (ds.lat_bnds.lat.shape[0],ds.lon_bnds.lon.shape[0])
-                            print(lon_lat)
-                            nominal_resolution=LON_LAT_TO_GRID_SIZE[lon_lat]
-                            print(f"Found nominal resolution: {nominal_resolution}")          
-                        except:     
-                            pass
+                                # first compute degree by looking at the longitude increment
+                                degree = abs(ds.lon[0].item() - ds.lon[1].item())
+                                # in principal lon and lat should be the same, however, this is just an approximation
+                                # same approximation used by climate modeling centers
+                                # information is just for informing the structure, resolution will be checked in preprocessing
+                                nominal_resolution = int(degree * 100)
+                                print(
+                                    f"Infering nominal resolution: {nominal_resolution}"
+                                )
+                            except:
+                                pass
+
                     years = np.unique(ds.time.dt.year.to_numpy())
                     print(f"Data covering years: {years[0]} to {years[-1]}")
 
@@ -708,7 +746,7 @@ class Downloader:
                             out_dir = f"{project}/{experiment}/{variable}/{nominal_resolution}/{frequency}/{y}/"
                             out_name = f"{project}_{experiment}_{variable}_{nominal_resolution}_{frequency}_{grid_label}_{y}.nc"
                             path = os.path.join(self.data_dir_parent, out_dir)
-                       
+
                         os.makedirs(path, exist_ok=True)
                         outfile = path + out_name
 
@@ -836,10 +874,10 @@ class Downloader:
 
         """
         for v in self.raw_vars:
-            if v.endswith('openburning'):
-                institution_id="IAMC"
+            if v.endswith("openburning"):
+                institution_id = "IAMC"
             else:
-                institution_id="PNNL-JGCRI"
+                institution_id = "PNNL-JGCRI"
             print(f"Downloading data for variable: {v} \n \n ")
             self.download_raw_input_single_var(v, institution_id=institution_id)
 
@@ -853,7 +891,9 @@ class Downloader:
             for v in self.meta_vars_percentage:
                 # percentage are historic and have no scenarios
                 print(f"Downloading meta precentage data for variable: {v} \n \n ")
-                self.download_meta_historic_biomassburning_single_var(variable=v, institution_id="VUA")
+                self.download_meta_historic_biomassburning_single_var(
+                    variable=v, institution_id="VUA"
+                )
             for v in self.meta_vars_share:
                 print(
                     f"Downloading meta obenburning share data for variable: {v} \n \n "

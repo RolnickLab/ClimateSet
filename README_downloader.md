@@ -44,20 +44,33 @@ The following parameters for the downloader are the default:
     overwrite=False,  # flag if files should be overwritten
     download_biomassburning=True,  # get biomassburning data for input4mips
     download_metafiles=True,  # get input4mips meta files
+    plain_emission_vars=True, # specifies if plain variabsle for emissions data are given and rest is inferred or if variables are specified
 
 ```
 
 To run the downloader, create a config in which you specify what models you want to download data for. If no model is given, we assume you only want to download "input4mips" data.
 You can override any of the downloader kwargs in this onfig.
-For example, see this [example downloader config](data_building/configs/downloader/default_config.yaml).
+As an example, to download the filese needed to create the core dataset, see this [example downloader config](data_building/configs/downloader/core_dataset.yaml).
 To run the downloader with this default example, excecute the following command:
 
  ```bash
- python -m data_building.builders.downloader --cfg data_building/configs/downloader/default_config.yaml
+ python -m data_building.builders.downloader --cfg data_building/configs/downloader/core_dataset.yaml
  ``` 
 
 Feel free to change create new configs to change the variables and experiments being downloaded.
 
+Per default, will expect plain variable names for the emissions variables for esier usage and will infer other variable names for building the full dataset. For example, passing on ```BC``` will dowlnoad data for ```BC_em_anthro```,  ```BC_em_AIR_anthro``` and ```BC_em_openburning```, and if biomassburning (```BC```) and percentage files if desired.
+If you wish to change this behavior and be specific about what variables to download, pass on ```plain_emission_vars: False``` in your config.
+
+Per default, the downloader will create two subfolders in your specified directory, one named ```raw``` containing unprocessed ```input4mips``` and ```CMIP6``` files and one named ```meta``` containing files concerning fire emission data and othter files needed to achieve consistent preprocessing emission data. 
+
+Per default, the downloader will create a structure that already specifies most of the needed meta information of each file like nominal resolution, temporal resolution, experiment, source etc. Please do not change this structure if you wish to be using the preprocessing module out of the box.
+
+#### Available Variables
+
+To check what CMIP6 variables are available, you can refer to this (table)[data_building/data_glossary/mappings/variableid2tableid.csv] in our data glossary mapping long variable names to ids and units. Please use the ids to prompt the downloader.
+
+We provide more detailed information on all variables available to our example model ```NorESM2-LM``` in our (data glossary)[data_building/data_glossary/] as well with a collection of (helpful links)[data_building/data_glossary/helpful_links.txt] to get you started.
 
 ## Development
 
