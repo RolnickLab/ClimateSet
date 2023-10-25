@@ -8,49 +8,13 @@ The machine learning (ML) community has taken an increased interest in supportin
 
 We showcase the potential of our dataset by using it as a benchmark for ML-based climate emulation. We gain new insights about the performance and generalization capabilities of the different ML models by analyzing them across different climate models. Furthermore, the dataset is used to train an ML model on all 36 climate models, i.e. not only one specific climate model but the entire CMIP6 archive is emulated. With this, we can quickly project new climate scenarios capturing the inter-model variability of climate models - similar to the “averaged climate scenarios” provided to policymakers. We believe ClimateSet will create the basis needed for the ML community to tackle climate model related tasks at scale.*
 
-## Usage 
-### Create an enviroment
+This repositorcy contains 2 independent pathways: Databuilding and emulation.
 
-To install an adequate requrimenet, please make sure to run a python enviroment with ```python>=3.10``` containing all our requirede (requirements)[requirements_downloader.txt]:
+### Data Building
+If you wish to create an individual climate dataset or extend the core dataset provided by ClimateSet please refer to (downloader)[README_downloader.md) and (preprocessor)[README_preprocessor.md] pages for further information.
 
-```bash
-python -m venv env_downloader
-source env_downloader/bin/activate
-pip install -r requirements_downloader.txt
- ``` 
-
-### Downloader
-
-To ownload data, you can run the downloader module with a desired config specifying what climate models, experiments and variables you want to download data for.
-You can also specify a list of ensemble members or a maximum number of ensemble members per climate model. 
-
-The following parameters for the downloader are the default:
-
-```python
-    experiments: List[str] = [
-            "historical",
-            "ssp370",
-            "hist-GHG",
-            "piControl",
-            "ssp434",
-            "ssp126",
-        ],  # sub-selection of ClimateBench default
-    vars: List[str] = ["tas", "pr", "SO2", "BC"],
-    data_dir: str = os.path.join(ROOT_DIR, "data"),
-    max_ensemble_members: int = 10, # if -1 take all available models
-    ensemble_members: List[str] = None # preferred ensemble members used, if None not considered
-```
-
-To run the downloader, create a config in which you specify what models you want to download data for. If no model is given, we assume you only want to download "input4mips" data.
-You can override any of the downloader kwargs in this onfig.
-For example, see this [example downloader config](configs/downloader/default_config.yaml).
-To run the downloader with this default example, excecute the following command:
-
- ```bash
- python -m data_building.builders.downloader --cfg configs/downloader/default_config.yaml
- ``` 
-
-Feel free to change create new configs to change the variables and experiments being downloaded.
+### Emulation
+if you wish to set up your own experiments, reproduce our benchmarks on the core dateset or your individual dataset, please refer to the (emulatior)[README_emulator.md] page for further information.
 
 ## Development
 
