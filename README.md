@@ -14,7 +14,7 @@ This repositorcy contains 2 independent pathways: Databuilding and emulation.
 If you wish to create an individual climate dataset or extend the core dataset provided by ClimateSet please refer to [downloader](README_downloader.md) and [preprocessor](README_preprocessor.md) pages for further information.
 
 ### Emulation
-if you wish to set up your own experiments, reproduce our benchmarks on the core dateset or your individual dataset, please refer to the [emulatior](README_emulator.md) page for further information.
+if you wish to set up your own experiments, reproduce our benchmarks on the core dateset or your individual dataset, please refer to the [emulator](README_emulator.md) page for further information.
 
 ## Development
 
