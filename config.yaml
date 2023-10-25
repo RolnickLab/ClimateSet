@@ -1,4 +1,0 @@
-dataset:
-  vars: ["CO2_em_anthro", "CO2_em_AIR_anthro"]
-  experiments: ["ssp126", "ssp245", "ssp370", "ssp585"]
-  data_csv: "databuilding/selected_scenariosMIPs.csv"
