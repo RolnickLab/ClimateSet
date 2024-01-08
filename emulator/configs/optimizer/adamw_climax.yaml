@@ -1,0 +1,7 @@
+name: "adamw"
+is_filtered: false
+lr: 0.0005
+#beta_1: 0.9
+#beta_2: 0.999
+#etas: $(0.9, 0.999)$
+weight_decay: 1e-5

@@ -1,0 +1,8 @@
+_target_: emulator.src.core.models.multihead_decoder.MultiHeadDecoder
+
+in_var_ids: ${datamodule.in_var_ids}
+out_var_ids: ${datamodule.out_var_ids}
+train_models: ${datamodule.train_models}
+test_models: ${datamodule.test_models}
+n_layers: 2
+hidden_dim: 32

@@ -1,0 +1,5 @@
+models: ["NorESM2-LM"]
+downloader_kwargs:
+  vars: ["CO_em_openburning","CH4_em_anthro", "CH4_em_AIR_anthro","CO2_em_anthro","CO2_em_AIR_anthro", "CO2", "CH4"]
+  experiments: ["historical","ssp126", "ssp245", "ssp370", "ssp585"]
+  download_biomassburning: True
