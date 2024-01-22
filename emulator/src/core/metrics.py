@@ -22,10 +22,12 @@ def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True)
 
     # weighting to account for decreasing grid-cell area towards pole
     # lattitude weights
+    lat_size = y.shape[-1]
+    lats = np.linspace(-90, 90, lat_size)
     if deg2rad:
-        weights = np.cos((np.pi * np.arange(y.shape[-1])) / 180)
+        weights = np.cos((np.pi * lats) / 180)
     else:
-        weights = np.cos(np.arange(y.shape[-1]))
+        weights = np.cos(lats)
 
     # nrmses = sqrt((weights * (x_mean_t -y_mean_n_t)**2))_mean_s / ((weights*y)_mean_s)_mean_t_n
     nrmse_s = np.sqrt(
@@ -44,10 +46,13 @@ def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True)
     """
     # weighting to account for decreasing grid-cell area towards pole
     # lattitude weights
+    lat_size = y.shape[-1]
+    lats = np.linspace(-90, 90, lat_size)
     if deg2rad:
-        weights = np.cos((np.pi * np.arange(y.shape[-1])) / 180)
+        weights = np.cos((np.pi * lats) / 180)
     else:
-        weights = np.cos(np.arange(y.shape[-1]))
+        weights = np.cos(lats)
+
 
     denom = weighted_global_mean(y, weights).mean(axis=(0, 1))
 
@@ -97,8 +102,11 @@ def LLWeighted_RMSE_WheatherBench(preds: np.ndarray, y: np.ndarray):
     rmse = mean over forecasts and time of np.sqrt( mean over lon lat L(lat_j)*)MSE(preds, y)
     weights = cos(latitude)/cos(latitude).mean()
     """
+    lat_size = y.shape[-1]
+    lats = np.linspace(-90, 90, lat_size)
+    
 
-    weights = (np.cos(np.arange(y.shape[-1])) / np.cos(np.arange(y.shape[-1]))).mean()
+    weights = (np.cos(lats) / np.cos(lats)).mean()
 
     rmse = np.sqrt(np.mean(weights * ((preds - y) ** 2), axis=(-1, -2))).mean()
 
@@ -117,10 +125,12 @@ def LLweighted_MSE_Climax(
     """
 
     # lattitude weights
+    lat_size = y.shape[-1]
+    lats = np.linspace(-90, 90, lat_size)
     if deg2rad:
-        weights = np.cos((np.pi * np.arange(y.shape[-1])) / 180)
+        weights = np.cos((np.pi * lats) / 180)
     else:
-        weights = np.cos(np.arange(y.shape[-1]))
+        weights = np.cos(lats)
 
     # they normalize the weights first
     weights = weights / weights.mean()
@@ -144,10 +154,12 @@ def LLweighted_RMSE_Climax(
     """
 
     # lattitude weights
+    lat_size = y.shape[-1]
+    lats = np.linspace(-90, 90, lat_size)
     if deg2rad:
-        weights = np.cos((np.pi * np.arange(y.shape[-1])) / 180)
+        weights = np.cos((np.pi * lats) / 180)
     else:
-        weights = np.cos(np.arange(y.shape[-1]))
+        weights = np.cos(lats)
 
     # they normalize the weights first
     weights = weights / weights.mean()

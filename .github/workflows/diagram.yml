@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+name: create diagram
+=======
 name: Create diagram
+>>>>>>> f6291ff9afa023b7888456d700119b5c25816b48
 on:
   workflow_dispatch: {}
   push:
@@ -13,6 +17,11 @@ jobs:
       - name: Update diagram
         uses: githubocto/repo-visualizer@main
         with:
+<<<<<<< HEAD
+          excluded_paths: "ignore,.github,causal, data, prepare_data.py, requirements.txt, test.txt, tests.py, .circleci"
+          
+=======
           max_depth: 7
           excluded_globs: "frontend/*.spec.js;**/*.{png,jpg};**/!(*.module).ts/**/*.{txt,md}"
           excluded_paths: ".esg, .circleci, emulator/logs, ignore,.github, causal, causalpaca2, data_building, deprecated, env39, notebooks, diagram.svg, download_cliateset.sh, requirements.txt, requirements2.txt, requirements37.txt, requirements_data.txt, setup.sh, tests.py"
+>>>>>>> f6291ff9afa023b7888456d700119b5c25816b48

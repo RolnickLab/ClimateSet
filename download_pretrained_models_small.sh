@@ -1,6 +1,6 @@
 
 echo "Downloading pretrained models' checkpoints..."
-curl https://object-arbutus.cloud.computecanada.ca/causalpaca/pretrained_models_small.tar.gz --output pretrained_modelss_small.tar.gz
+curl https://object-arbutus.cloud.computecanada.ca/causalpaca/pretrained_models_small.tar.gz --output pretrained_models_small.tar.gz
 
 echo "Done. Finished downloading the compressed files, now extracting!"
 

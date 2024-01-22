@@ -95,10 +95,12 @@ class NRMSELoss_s_ClimateBench(nn.Module):
     def forward(self, pred, y):
         # weighting to account for decreasing grid-cell area towards pole
         # lattitude weights
+        lat_size = y.shape[-1]
+        lats = torch.linspace(-90, 90, lat_size)
         if self.deg2rad:
-            weights = torch.cos((torch.pi * torch.arange(y.shape[-1])) / 180)
+            weights = torch.cos((torch.pi * lats) / 180)
         else:
-            weights = torch.cos(torch.arange(y.shape[-1]))
+            weights = torch.cos(lats)
         weights = weights.to(device)
 
         # nrmses = sqrt((weights * (x_mean_t -y_mean_n_t)**2))_mean_s / ((weights*y)_mean_s)_mean_t_n
