@@ -15,7 +15,7 @@ from emulator.src.data.constants import (
     NUM_LEVELS,
     DATA_DIR,
 )
-from emulator.src.utils.utils import get_logger, random_split
+from emulator.src.utils.utils import get_logger, random_split, random_split_super
 
 log = get_logger()
 
@@ -96,8 +96,8 @@ class SuperClimateDataModule(LightningDataModule):
         # self.input_transform = input_transform  # self.hparams.input_transform
         # self.normalizer = normalizer
 
-        self._data_train: Optional[SuperClimateDataset] = None
-        self._data_val: Optional[SuperClimateDataset] = None
+        self._data_train_val: Optional[SuperClimateDataset] = None
+        # self._data_val: Optional[SuperClimateDataset] = None
         self._data_test: Optional[List[SuperClimateDataset]] = None
         self._data_predict: Optional[List[SuperClimateDataset]] = None
         self.test_set_names: Optional[List[str]] = [
@@ -119,7 +119,7 @@ class SuperClimateDataModule(LightningDataModule):
         pass
 
     def setup(self, stage: Optional[str] = None):
-        """Load data. Set internal variables: self._data_train, self._data_val, self._data_test."""
+        """Load data. Set internal variables: self._data_train_val, self._data_test."""
 
         # shared for all
         dataset_kwargs = dict(
@@ -140,7 +140,7 @@ class SuperClimateDataModule(LightningDataModule):
         # Train and Validation
         if stage in ["fit", "validate", None]:
             # create one big training dataset with all training scenarios
-            #  then split it to assighn data train and data val
+            #  then split it to assign data train and data val
             full_ds = SuperClimateDataset(
                 years=self.hparams.train_years,
                 historical_years=self.hparams.train_historical_years,
@@ -148,13 +148,13 @@ class SuperClimateDataModule(LightningDataModule):
                 scenarios=self.hparams.train_scenarios,
                 climate_models=self.train_models,
                 load_data_into_mem=self.hparams.load_train_into_mem,
+                val_split=self.hparams.val_split,
                 **dataset_kwargs,
             )
-            fractions = [1 - +self.hparams.val_split, self.hparams.val_split]
-            ds_list = random_split(full_ds, lengths=fractions)
-            train_ds, val_ds = ds_list
-            self._data_train = full_ds
-            self._data_val = full_ds  # TODO: fix splitting
+
+            # datasets have internal representations of val indexs, set mode when calling dataloaders
+            self._data_train = full_ds.set_mode(train=True)
+            self._data_val = full_ds.set_mode(train=False)
 
         # Test sets:
         if stage == "test" or stage is None:
@@ -165,6 +165,7 @@ class SuperClimateDataModule(LightningDataModule):
                     scenarios=test_scenario,
                     climate_models=[test_model],
                     load_data_into_mem=self.hparams.load_test_into_mem,
+                    val_split=0,  # no split in testing
                     **dataset_kwargs,
                 )
                 for test_scenario in self.hparams.test_scenarios
@@ -199,6 +200,7 @@ class SuperClimateDataModule(LightningDataModule):
     # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
     # y: (batch_size, sequence_length, lon, lat, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lon, lat)
     def train_dataloader(self):
+        # self._data_train_val.set_mode(train=True)
         return DataLoader(
             dataset=self._data_train,
             batch_size=self.hparams.batch_size,
@@ -207,6 +209,7 @@ class SuperClimateDataModule(LightningDataModule):
         )
 
     def val_dataloader(self):
+        # self._data_train_val.set_mode(train=False)
         return (
             DataLoader(dataset=self._data_val, **self._shared_eval_dataloader_kwargs())
             if self._data_val is not None
@@ -221,8 +224,10 @@ class SuperClimateDataModule(LightningDataModule):
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         return [
-            DataLoader(dataset=self._data_val, **self._shared_eval_dataloader_kwargs())
-            if self._data_val is not None
+            DataLoader(
+                dataset=self._data_predict, **self._shared_eval_dataloader_kwargs()
+            )
+            if self._data_predict is not None
             else None
         ]
 
@@ -239,4 +244,4 @@ if __name__ == "__main__":
         channels_last=False,
     )
     dm.setup("fit")
-    dm.setup("test")
+    # dm.setup("test")

@@ -6,7 +6,7 @@ import pickle
 import shutil
 import zipfile
 from typing import Dict, Optional, List, Callable, Tuple, Union
-
+import copy
 import numpy as np
 import xarray as xr
 import torch
@@ -63,6 +63,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         input_normalization="z-norm",  # TODO: implement
         output_transform=None,
         output_normalization="z-norm",
+        val_split: float = 0.1,
         *args,
         **kwargs,
     ):
@@ -182,22 +183,52 @@ class SuperClimateDataset(torch.utils.data.Dataset):
 
             self.cmip6_ds_model.append(cmip6_ds_model_member)
 
-        # for index shift we need the cum sum of the lenghts
-        lenghts_model = []
+        # for index shift we need the cum sum of the lengths
+        lengths_model = []
         for model in self.cmip6_ds_model:
             lengths_member = []
             for member in model:
                 lengths_member.append(member.length)
-            lenghts_model.append(lengths_member)
+            lengths_model.append(lengths_member)
 
-        lenghts_model = np.asarray(lenghts_model)
+        lengths_model = np.asarray(lengths_model)
         # roll by one to get the correct shift
-        lenghts_model = np.roll(lenghts_model, 1)
-        lenghts_model[0][0] = 0
-        index = np.cumsum(lenghts_model).reshape(lenghts_model.shape)
+        lengths_model = np.roll(lengths_model, 1)
+        lengths_model[0][0] = 0
+        index = np.cumsum(lengths_model).reshape(lengths_model.shape)
         self.index_shifts = index
 
-    # this operates variable vise now....
+        # compute val/train indexes based on fraction
+        total_length = self.get_initial_length()
+        if mode=='test':
+            # no split in testing
+            print("no split in testing")
+            self.val_indexes=[]
+            self.reset_val_index=None
+            self.mode="test"
+            self.train_indexes=np.arange(total_length)
+            self.reset_train_index=0
+        else:
+            self.val_indexes=np.sort(np.random.choice(total_length, int(np.round(val_split*total_length)), replace=False))
+            self.reset_val_index=self.val_indexes[0]
+            self.train_indexes=np.delete(np.arange(total_length), self.val_indexes)
+            self.reset_train_index=self.train_indexes[0]
+            print("val indexes", self.val_indexes, "reset", self.reset_val_index)
+            print("train_indexes", self.train_indexes, "reset", self.reset_train_index)
+            self.mode="train" # by default use train indexes
+
+
+    def set_mode(self, train: bool = False):
+
+        if train:
+            log.info("Setting to train.")
+            self.mode='train'
+        else:
+            log.info("Setting to val.")
+            self.mode='val'
+        return copy.deepcopy(self)
+
+    # this operates variable vise now...
     def load_into_mem(
         self,
         paths: List[List[str]],
@@ -217,7 +248,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
 
         if seq_len != SEQ_LEN:
             print(
-                "Choosing a sequence lenght greater or lesser than the data sequence lenght."
+                "Choosing a sequence length greater or lesser than the data sequence length."
             )
             new_num_years = int(
                 np.floor(temp_data.shape[1] / seq_len / len(self.scenarios))
@@ -228,7 +259,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
             new_shape_one = new_num_years * len(self.scenarios)
             assert (
                 new_shape_one * seq_len > temp_data.shape[1]
-            ), f"New sequence lenght {seq_len} greater than available years {temp_data.shape[1]}!"
+            ), f"New sequence length {seq_len} greater than available years {temp_data.shape[1]}!"
             print(
                 f"New sequence length: {seq_len} Dropping {temp_data.shape[1]-(new_shape_one*seq_len)} years"
             )
@@ -470,10 +501,33 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         return self.openburning_specs[index]
 
     def __getitem__(self, index):  # Dict[str, Tensor]):
-        # check that everything is reset if index is zero (starting again)
-        if index == 0:
-            self.cmip6_model_index = 0
-            self.cmip6_member_index = 0
+     
+        # check mode and reset the index
+        if self.mode=='train':   
+            index=self.train_indexes[index]
+            # check that everything is reset if index is zero (starting again)
+        
+            if index == self.reset_train_index:
+                
+                self.cmip6_model_index = 0
+                self.cmip6_member_index = 0
+          
+        elif self.mode=='val':
+            index=self.val_indexes[index]
+            # check that everything is reset if index is zero (starting again)
+            if index == self.reset_val_index:
+
+                self.cmip6_model_index = 0
+                self.cmip6_member_index = 0
+        elif self.mode=='test':
+            # no need to reset in testing
+            index=index
+        else:
+            print("Unknown Mode. Must be 'train' or 'val'")
+            print(self.model)
+            raise ValueError
+
+      
         # get climate model index
         # shift indexd (for models and members)
         # deal with multiple models
@@ -519,27 +573,37 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         s = f" Super Emulator dataset: {len(self.climate_models)} climate models with {self.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
         return s
 
-    def __len__(self):
-        # len is lenght of ds times lenght of each individual
-        in_lenghts = [
+    def get_initial_length(self):
+        # len is length of ds times length of each individual
+        in_lengths = [
             self.input4mips_ds[spec].length for spec in self.openburning_specs
         ]
         assert all_equal(
-            in_lenghts
-        ), f"input4mip datasets do not have the same lenght for each openburning spec!"
+            in_lengths
+        ), f"input4mip datasets do not have the same length for each openburning spec!"
 
         for i, m in enumerate(self.cmip6_ds_model):
-            # lenghts per model member pair
-            out_lenghts = [ds.length for ds in m]
+            # lengths per model member pair
+            out_lengths = [ds.length for ds in m]
 
             # cmip must be num_ensemble members times input4mips
 
-            assert in_lenghts[0] * self.num_ensembles[i] == np.sum(
-                out_lenghts
-            ), f"CMIP6 must be num_ensembles times the lenght of input4mips. Got {np.sum(out_lenghts)} and {in_lenghts[0]}"
+            assert in_lengths[0] * self.num_ensembles[i] == np.sum(
+                out_lengths
+            ), f"CMIP6 must be num_ensembles times the length of input4mips. Got {np.sum(out_lengths)} and {in_lengths[0]}"
 
-        # total lenght includes ensemble members so taking output lenght
-        return np.sum(out_lenghts) * len(self.cmip6_ds_model)
+        # total length includes ensemble members so taking output length
+        return np.sum(out_lengths) * len(self.cmip6_ds_model)
+    
+    def __len__(self):
+        if self.mode=='train' or self.mode=='test':
+            return len(self.train_indexes)
+        elif self.mode=='val':
+            return len(self.val_indexes)
+        else:
+            print("Unknown mode.", self.mode)
+            raise ValueError
+
 
 
 class CMIP6Dataset(SuperClimateDataset):
@@ -859,10 +923,11 @@ if __name__ == "__main__":
     ds = SuperClimateDataset(
         seq_to_seq=True,
         in_variables=["BC_sum", "SO2_sum", "CH4_sum"],
-        scenarios=["historical", "ssp370"],
+        scenarios=["ssp126", "ssp370"],
         climate_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"],
         seq_len=12,
         num_ensembles=1,
+        years="2015-2021",
         channels_last=False,
     )
     # for (i,j) in ds:
