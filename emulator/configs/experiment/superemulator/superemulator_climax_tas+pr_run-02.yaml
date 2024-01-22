@@ -24,7 +24,7 @@ seed: 99 #42 #7
 trainer:
   min_epochs: 1
   max_epochs: 100
-  gradient_clip_val: 5
+  #gradient_clip_val: 5
 
 model:
   loss_function: "climax_lon_lat_rmse"
@@ -46,7 +46,7 @@ datamodule: # overwrite what stuff to train on
   eval_batch_size: 2
   seq_len: 12
   in_var_ids : ['BC_sum','SO2_sum', 'CO2_sum', 'CH4_sum']
-  train_years: "2015-2020"
+  train_years: "2015-2100"
   train_scenarios: ["ssp126", "ssp370", "ssp585"]
   test_scenarios : ["ssp245"]
   train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
@@ -54,4 +54,4 @@ datamodule: # overwrite what stuff to train on
 
 logger:
   wandb:
-    tags: ["climax", "super_emulation", "larger_decoder", "6_models"] # set your tags here
+    tags: ["climax", "super_emulation", "larger_decoder", "6_models", "run2"] # set your tags here
