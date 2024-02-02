@@ -11,7 +11,7 @@ We showcase the potential of our dataset by using it as a benchmark for ML-based
 This repositorcy contains 2 independent pathways: Databuilding and emulation.
 
 ### Data Building
-If you wish to create an individual climate dataset or extend the core dataset provided by ClimateSet please refer to [downloader](README_downloader.md) and [preprocessor](README_preprocessor.md) pages for further information.
+The code for creating an individual dataset or extending the core dataset is still under active development to improve usability and efficiency and will be uploaded as soon as possilbe. If you have any questions, plese do not hesitatet to contact us.
 
 ### Emulation
 if you wish to set up your own experiments, reproduce our benchmarks on the core dateset or your individual dataset, please refer to the [emulator](README_emulator.md) page for further information.
