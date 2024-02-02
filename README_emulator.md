@@ -28,6 +28,7 @@ Follow the following steps to create the environment:
 python -m venv env_emulator
 source env_emulator/bin/activate
 pip install -r requirements.txt
+cd emulator # swithc into the emulator folder to perform the emulator setup
 pip install -e .
 ```
 
@@ -38,6 +39,18 @@ To work with ClimaX, you will need to download the pretrained checkpoints from t
 ```bash
 bash download_climax_checkpoints.sh
 ```
+
+### Pythonpath
+It might be the case that the python variable has to be modified to contain the root folder of the ClimateSet project in order for the emulator to work. Like this:
+
+```bash
+export PYTHONPATH=/home/user/myproject #ClimateSet project for example
+```
+
+You can check it the successfull setting using:
+```bash
+echo $PYTHONPATH
+```bash
 
 ## Running a model
 
