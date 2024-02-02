@@ -137,9 +137,11 @@ We provide some of our trained models from the experiments, including only super
 
 #### Downloading pretrained checkpoints
 
-For downloading, run the provided shell script which will cretate a folder called ```pretrained_models_small``` where all checkpoints will be stored in.
+For downloading, run the provided shell script which will cretate a folder called ```pretrained_models``` where all checkpoints will be stored in.
+You may uncomment experiments or models from the full list to only download a small subselection.
+Be aware that the folder containing pretrained ClimaX checkpoints for the super emulator experiment is quite large (14Gb) and will take quite some time to download.
 ```bash
-bash download_pretrained_models_small.sh
+bash download_pretrained_models.sh
 ```
 
 
