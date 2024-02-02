@@ -75,7 +75,7 @@ To exectute one of the preset experiments or to run your own experiments you can
 python run.py experiment=test # will run whatever is specified by the configs/experiment/test.yml file
 ```
 
-You can make use of the [experiment template](emulator/configs/experiment/templatte.yaml).
+You can make use of the [experiment template](emulator/configs/experiment/template.yaml).
 
 
 ### Reproducing experiments
