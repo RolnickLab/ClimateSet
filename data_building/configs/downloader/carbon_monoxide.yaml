@@ -1,5 +1,0 @@
-models: ["NorESM2-LM"]
-downloader_kwargs:
-  vars: ["CO_em_anthro", "CO_em_AIR_anthro", "CO_em_openburning"]
-  experiments: ["ssp126", "ssp245", "ssp370", "ssp585"]
-  
