@@ -5,8 +5,15 @@ Here we provide a quick documentation on installation, setup and a quickstart gu
 
 ## Getting started
 ### Getting the data
-To download and store the preprocessed dataset ready for training locally, execute the following command:
+The preprocessed dataset is available on [hugginface](https://huggingface.co/datasets/climateset/causalpaca). You can opt to download the entire dataset or pick only specific climate models for targets. Please note that the core dataset only entails two variables (pr & tas) and is only available in a single resouliton that was used for the benchmarking. We will release code to preprocess other variables and other resolutions shortly and will also update the data repository in the future.
 
+To download the entire dataset, you can make use of the provided python script:
+```python
+python download_climateset.py
+```
+If you wish to download only specific climate model data, please refer to the instructions on [hugginface](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
+
+If you happen to be inside of Canada and wish to download the data in a different way, you can also make use of the provided bash script. Please note that this option is very slow for users located outside of Canada.
 ```bash
 bash download_climateset.sh
 ```
