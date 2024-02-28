@@ -147,6 +147,12 @@ We provide some of our trained models from the experiments, including only super
 All our pretrained models for the paper are hosted on [huggingface](https://huggingface.co/climateset/causalpaca_models). Please refer to the documentation there to download either all pretrained models or only pick checkpoints for a specific experimental setting. After the download, the checkpoints should be storeed in a folder called ```pretrained_models```.
 Be aware that the folder containing pretrained ClimaX checkpoints for the super emulator experiment is quite large (14Gb) and will take quite some time to download.
 
+To download all available checkpoints, you can make use of the provided python script:
+```python
+python download_pretrained_models.py
+```
+If you wish to download only specific climate model data, please refer to the instructions on [hugginface](https://huggingface.co/climateset/causalpaca_models/blob/main/README.md).
+
 For users located inside of Canada, you may also use the provided bash script to download the models. Please be aware that this option works outside of Canada to, but download speeds will be very slow.
 
 ```bash
