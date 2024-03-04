@@ -15,7 +15,7 @@ If you wish to download only specific climate model data, please refer to the in
 
 If you happen to be inside of Canada and wish to download the data in a different way, you can also make use of the provided bash script. Please note that this option is very slow for users located outside of Canada.
 ```bash
-bash download_climateset.sh
+bash download_climateset.sh 
 ```
 
 #### Note that this by default only downloads NorESM2-LM data. To download data for all climate models, please uncomment the line with the for loop.
@@ -29,13 +29,23 @@ To setup the environment for causalpaca, we use ```python>=3.10```. There are tw
 To create the environment used for training unet & convlstm models, use [requirements](requirements.txt) and climax related experiments, use [requirements_climax](requirements_climax.txt).
 
 
-Follow the following steps to create the environment:
+Follow the following steps to create the environment for non-windows users:
 
 ```python
 python -m venv env_emulator
 source env_emulator/bin/activate
 pip install -r requirements.txt
 cd emulator # swithc into the emulator folder to perform the emulator setup
+pip install -e .
+```
+
+For windows users: 
+
+```python
+python -m venv env_emulator
+env_emulator/Scripts/activate
+pip install -r requirements.txt
+cd emulator # switch into the emulator folder to perform the emulator setup
 pip install -e .
 ```
 
@@ -50,14 +60,25 @@ bash download_climax_checkpoints.sh
 ### Pythonpath
 It might be the case that the python variable has to be modified to contain the root folder of the ClimateSet project in order for the emulator to work. Like this:
 
+Non-Windows users: 
+
 ```bash
-export PYTHONPATH=/home/user/myproject #ClimateSet project for example
+#input the path to the Climateset folder
+export PYTHONPATH=/home/user/myproject 
+
+#Check for success with: 
+echo $PYTHONPATH
 ```
 
-You can check it the successfull setting using:
+Windows users: 
 ```bash
-echo $PYTHONPATH
-```bash
+#input the path to the Climateset folder
+$env:PYTHONPATH = "home/user/myproject"
+
+#Check for success with: 
+echo $env:PYTHONPATH
+```
+
 
 ## Running a model
 
@@ -70,11 +91,17 @@ Executing the run.py script plain will use the main config.
 
 The [configs folder](emulator/configs/) serves as a blueprint, listing all the modules available. To get a better understanding of our codebases structure please refer to the section on [Structure](#structure) 
 
-
+r
 
 ```python
+# starting inside the emulutar folder:
 python run.py logger=none # will run with configs/main_config.yml
 ```
+>IF you get an error telling you something like "No supported gpu backend found!": [Install cuda and download torch with cuda enabled for the specific cuda version you downloaded (different for linux/windows users)](https://pytorch.org/get-started/locally/) something like: 
+```bash
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
 
 To exectute one of the preset experiments or to run your own experiments you can create and pass on experiment configs:
 
