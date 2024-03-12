@@ -6,7 +6,7 @@ import os
 # Path of the directory where the data will be downloaded in your local machine
 local_directory = os.path.join(os.getcwd(), 'Climateset_DATA')
 
-repo_id = "climateset/causalpaca"
+repo_id = "climateset/climateset"
 repo_type = "dataset"
 
 #snapshot_download(...) function will download the entire dataset from the HuggingFace Repository. This takes while.
