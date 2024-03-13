@@ -1,5 +1,4 @@
 # Emulation
-test
 
 This branch contains the code for running the climate model emulation benchmark experiments on the core ClimateSet data. 
 Here we provide a quick documentation on installation, setup and a quickstart guide to reproduce our experiments.
