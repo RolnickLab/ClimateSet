@@ -1,0 +1,25 @@
+tags,val/llrmse_climax,test/ssp245_NorESM2-LM/pr/llrmse_climax,test/ssp245_NorESM2-LM/tas/llrmse_climax,test/ssp245_NorESM2-LM/llrmse_climax,test/ssp245_NorESM2-LM/pr/mse,test/ssp245_NorESM2-LM/tas/mse,test/ssp245_NorESM2-LM/mse,test/ssp245_NorESM2-LM/pr/rmse,test/ssp245_NorESM2-LM/tas/rmse,test/ssp245_NorESM2-LM/rmse,test/ssp245_NorESM2-LM/pr/llrmse_wheather_bench,test/ssp245_NorESM2-LM/tas/llrmse_wheather_bench,test/ssp245_NorESM2-LM/llrmse_wheather_bench
+"['NorESM2-LM_AWI-CM-1-1-MR', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.023,0.023,0.0,0.014,0.013,0.027,0.02,0.021,0.041,0.018,0.018,0.037
+"['NorESM2-LM_AWI-CM-1-1-MR', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.009,0.01,0.0,0.004,0.005,0.009,0.006,0.007,0.014,0.006,0.007,0.012
+"['NorESM2-LM_AWI-CM-1-1-MR', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.0,0.0,0.001
+"['NorESM2-LM_AWI-CM-1-1-MR', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.0,0.001,0.002,0.0,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.002,0.002
+"['NorESM2-LM_BCC-CSM2-MR', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.01,0.009,0.0,0.003,0.003,0.006,0.005,0.004,0.009,0.004,0.003,0.006
+"['NorESM2-LM_BCC-CSM2-MR', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.013,0.011,0.0,0.007,0.006,0.013,0.011,0.01,0.02,0.01,0.009,0.019
+"['NorESM2-LM_BCC-CSM2-MR', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"['NorESM2-LM_BCC-CSM2-MR', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.0,0.007,0.005,0.0,0.004,0.003,0.007,0.006,0.004,0.01,0.005,0.003,0.008
+"['NorESM2-LM_EC-Earth3', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.018,0.018,0.0,0.012,0.012,0.024,0.016,0.016,0.032,0.016,0.016,0.031
+"['NorESM2-LM_EC-Earth3', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.02,0.02,0.0,0.011,0.011,0.022,0.017,0.017,0.035,0.016,0.016,0.033
+"['NorESM2-LM_EC-Earth3', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.003,0.003,0.0,0.002,0.002,0.003,0.004,0.004,0.007,0.003,0.003,0.006
+"['NorESM2-LM_EC-Earth3', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.0,0.009,0.011,0.0,0.007,0.008,0.014,0.011,0.013,0.024,0.006,0.007,0.013
+"['NorESM2-LM_FGOALS-f3-L', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.013,0.012,0.0,0.007,0.006,0.013,0.01,0.01,0.021,0.01,0.01,0.021
+"['NorESM2-LM_FGOALS-f3-L', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.003,0.005,0.0,0.003,0.003,0.006,0.004,0.005,0.009,0.004,0.005,0.01
+"['NorESM2-LM_FGOALS-f3-L', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.001,0.001,0.0,0.0,0.0,0.001,0.001,0.001,0.002,0.001,0.001,0.002
+"['NorESM2-LM_FGOALS-f3-L', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.0,0.004,0.004,0.0,0.003,0.003,0.006,0.005,0.006,0.011,0.007,0.006,0.013
+"['NorESM2-LM_LM_NorESM2-LM', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"['NorESM2-LM_MPI-ESM1-2-HR', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.006,0.009,0.0,0.004,0.005,0.009,0.005,0.006,0.011,0.004,0.005,0.009
+"['NorESM2-LM_MPI-ESM1-2-HR', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.01,0.01,0.0,0.006,0.005,0.011,0.01,0.009,0.019,0.009,0.008,0.017
+"['NorESM2-LM_MPI-ESM1-2-HR', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.0,0.0,0.001
+"['NorESM2-LM_MPI-ESM1-2-HR', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.0,0.017,0.015,0.0,0.009,0.008,0.016,0.016,0.015,0.031,0.015,0.013,0.028
+"['NorESM2-LM_NorESM2-LM', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.005,0.006,0.0,0.002,0.003,0.005,0.004,0.005,0.009,0.003,0.004,0.008
+"['NorESM2-LM_NorESM2-LM', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.0,0.019,0.019,0.0,0.009,0.009,0.017,0.013,0.013,0.027,0.011,0.011,0.023
+"['NorESM2-LM_NorESM2-LM', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.0,0.006,0.007,0.0,0.003,0.004,0.007,0.006,0.007,0.013,0.006,0.007,0.012

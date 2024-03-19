@@ -1,0 +1,25 @@
+tags,val/llrmse_climax,test/ssp245_NorESM2-LM/pr/llrmse_climax,test/ssp245_NorESM2-LM/tas/llrmse_climax,test/ssp245_NorESM2-LM/llrmse_climax,test/ssp245_NorESM2-LM/pr/mse,test/ssp245_NorESM2-LM/tas/mse,test/ssp245_NorESM2-LM/mse,test/ssp245_NorESM2-LM/pr/rmse,test/ssp245_NorESM2-LM/tas/rmse,test/ssp245_NorESM2-LM/rmse,test/ssp245_NorESM2-LM/pr/llrmse_wheather_bench,test/ssp245_NorESM2-LM/tas/llrmse_wheather_bench,test/ssp245_NorESM2-LM/llrmse_wheather_bench
+"['NorESM2-LM_AWI-CM-1-1-MR', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.365,0.351,0.003,0.118,0.109,0.227,0.343,0.33,0.673,0.325,0.312,0.637
+"['NorESM2-LM_AWI-CM-1-1-MR', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.001,0.346,0.335,0.003,0.105,0.098,0.204,0.324,0.313,0.638,0.314,0.303,0.617
+"['NorESM2-LM_AWI-CM-1-1-MR', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.22,0.208,0.002,0.042,0.038,0.079,0.204,0.194,0.399,0.199,0.188,0.387
+"['NorESM2-LM_AWI-CM-1-1-MR', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.001,0.325,0.302,0.002,0.094,0.082,0.176,0.306,0.287,0.593,0.291,0.273,0.563
+"['NorESM2-LM_BCC-CSM2-MR', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.368,0.354,0.003,0.12,0.111,0.231,0.346,0.334,0.68,0.328,0.315,0.643
+"['NorESM2-LM_BCC-CSM2-MR', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.001,0.337,0.321,0.003,0.106,0.097,0.203,0.325,0.312,0.637,0.315,0.302,0.616
+"['NorESM2-LM_BCC-CSM2-MR', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.291,0.277,0.002,0.077,0.07,0.148,0.278,0.265,0.543,0.261,0.249,0.51
+"['NorESM2-LM_BCC-CSM2-MR', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.001,0.353,0.327,0.003,0.109,0.096,0.205,0.33,0.309,0.64,0.312,0.292,0.603
+"['NorESM2-LM_EC-Earth3', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.399,0.385,0.003,0.138,0.128,0.266,0.371,0.358,0.729,0.348,0.336,0.684
+"['NorESM2-LM_EC-Earth3', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.001,0.343,0.329,0.003,0.105,0.097,0.202,0.324,0.311,0.635,0.313,0.3,0.614
+"['NorESM2-LM_EC-Earth3', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.262,0.247,0.002,0.06,0.053,0.113,0.244,0.231,0.475,0.234,0.221,0.455
+"['NorESM2-LM_EC-Earth3', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.002,0.319,0.302,0.002,0.09,0.081,0.172,0.301,0.285,0.585,0.278,0.263,0.54
+"['NorESM2-LM_FGOALS-f3-L', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.341,0.327,0.003,0.102,0.095,0.197,0.32,0.308,0.627,0.304,0.292,0.596
+"['NorESM2-LM_FGOALS-f3-L', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.001,0.342,0.32,0.003,0.104,0.092,0.196,0.322,0.303,0.625,0.31,0.292,0.602
+"['NorESM2-LM_FGOALS-f3-L', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.256,0.242,0.002,0.057,0.051,0.108,0.238,0.226,0.464,0.229,0.217,0.445
+"['NorESM2-LM_FGOALS-f3-L', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.002,0.306,0.283,0.002,0.083,0.073,0.156,0.289,0.27,0.559,0.271,0.254,0.525
+"['NorESM2-LM_LM_NorESM2-LM', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.292,0.278,0.002,0.077,0.071,0.148,0.278,0.266,0.544,0.262,0.25,0.512
+"['NorESM2-LM_MPI-ESM1-2-HR', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.427,0.412,0.003,0.163,0.153,0.316,0.404,0.391,0.795,0.373,0.359,0.732
+"['NorESM2-LM_MPI-ESM1-2-HR', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.001,0.317,0.304,0.002,0.09,0.082,0.172,0.299,0.287,0.586,0.288,0.276,0.564
+"['NorESM2-LM_MPI-ESM1-2-HR', 'conv_lstm', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.229,0.218,0.002,0.046,0.041,0.087,0.213,0.203,0.417,0.207,0.197,0.404
+"['NorESM2-LM_MPI-ESM1-2-HR', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.001,0.284,0.266,0.002,0.073,0.065,0.138,0.27,0.255,0.525,0.258,0.243,0.5
+"['NorESM2-LM_NorESM2-LM', 'climax', 'finetuning_emulator', 'run2', 'tas+pr']",0.002,0.325,0.311,0.002,0.094,0.087,0.181,0.307,0.294,0.601,0.292,0.28,0.572
+"['NorESM2-LM_NorESM2-LM', 'climax_frozen', 'finetuning_emulator', 'run2', 'tas+pr']",0.001,0.37,0.353,0.003,0.114,0.106,0.22,0.338,0.325,0.663,0.32,0.308,0.628
+"['NorESM2-LM_NorESM2-LM', 'finetuning_emulator', 'run2', 'tas+pr', 'unet']",0.001,0.309,0.291,0.002,0.085,0.076,0.161,0.291,0.276,0.567,0.28,0.265,0.545
