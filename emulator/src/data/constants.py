@@ -13,10 +13,13 @@ INPUT4MIPS_NOM_RES = "map_250_km"
 CMIP6_NOM_RES = "250_km"  # TODO: not allow different resolutions
 SEQ_LEN_MAPPING = {"mon": 12}
 
-DATA_DIR = os.path.join(
-    Path(__file__).absolute().parent.parent.parent.parent, "Climateset_DATA"
-)  # os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
+# DATA_DIR = os.path.join(
+#     Path(__file__).absolute().parent.parent.parent.parent, "Climateset_DATA"
+# )  # os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
 # Model : (historical_obe_files, future_obe_files)
+DATA_DIR = os.path.join(
+    Path(__file__).absolute().parent.parent.parent.parent.parent, "scratch/Climateset_DATA"
+)
 
 # Available models
 AVAILABLE_MODELS_FIRETYPE = [

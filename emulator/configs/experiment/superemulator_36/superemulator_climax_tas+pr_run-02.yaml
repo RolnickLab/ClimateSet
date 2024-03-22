@@ -23,6 +23,7 @@ run:
 
 name: ${run.exp_num}_${model.model_name}_${run.name}_
 
+
 seed: 99 #42 #7
 
 trainer:
@@ -54,9 +55,9 @@ datamodule: # overwrite what stuff to train on
   train_years: "2015-2100"
   train_scenarios: ["ssp126", "ssp370", "ssp585"]
   test_scenarios : ["ssp245"]
-  train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
-  test_models: ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  test_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
 
 logger:
   wandb:
-    tags: ["climax", "super_emulation", "larger_decoder", "6_models", "run2","baseline"] # set your tags here
+    tags: ["climax", "super_emulation", "larger_decoder", "36_models", "run2","baseline"] # set your tags here

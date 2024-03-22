@@ -8,6 +8,10 @@ from pytorch_lightning import seed_everything
 import emulator.src.utils.config_utils as cfg_utils
 from emulator.src.utils.interface import get_model_and_data
 from emulator.src.utils.utils import get_logger
+from pytorch_lightning.profilers import PyTorchProfiler
+from datetime import datetime
+from torch.profiler import profile, record_function, ProfilerActivity
+
 
 
 def run_model(config: DictConfig):
@@ -20,16 +24,29 @@ def run_model(config: DictConfig):
     if config.get("print_config"):
         cfg_utils.print_config(config, fields="all")
 
+
+    
     emulator_model, data_module = get_model_and_data(config)
-    log.info("Got model")
+    log.info(f"Got model - {config.name}")
+    c = datetime.now()
+    # Displays Time
+    current_time = c.strftime('%H:%M:%S')
+
+    profiler = None
+    if config.get("pyprofile"):
+        profiler = PyTorchProfiler(dirpath="logs/profiles",filename=f"Basetest-{config.name}-Basetest-{current_time}",activities=[ProfilerActivity.CPU],
+            profile_memory=True, record_shapes=True)
+        
+    log.info(config.name)
 
     # Init Lightning callbacks and loggers
     callbacks = cfg_utils.get_all_instantiable_hydra_modules(config, "callbacks")
     loggers = cfg_utils.get_all_instantiable_hydra_modules(config, "logger")
-
+    
     # Init Lightning trainer
     trainer: pl.Trainer = hydra_instantiate(
         config.trainer,
+        profiler=profiler,
         callbacks=callbacks,
         logger=loggers,  # , deterministic=True
     )
@@ -43,8 +60,10 @@ def run_model(config: DictConfig):
         trainer=trainer,
         callbacks=callbacks,
     )
+    
 
     trainer.fit(model=emulator_model, datamodule=data_module)
+
 
     cfg_utils.save_hydra_config_to_wandb(config)
 

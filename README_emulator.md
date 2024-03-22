@@ -95,7 +95,7 @@ r
 
 ```python
 # starting inside the emulutar folder:
-python run.py logger=none # will run with configs/main_config.yml
+python emulator/run.py logger=none # will run with configs/main_config.yml
 ```
 >IF you get an error telling you something like "No supported gpu backend found!": [Install cuda and download torch with cuda enabled for the specific cuda version you downloaded (different for linux/windows users)](https://pytorch.org/get-started/locally/) something like: 
 ```bash
@@ -119,6 +119,8 @@ We ran 3 different configurations of experiments:
 - *single emulator*: A single ML-model - climate-model pairing.
 - *finetuning emulator*: A single ML-model that was pretrained on one climate-model and fine-tuned on another.
 - *super emulator*: A single ML-model that was trained on multiple climate-models.
+
+#### Single Emulator 
 
 Here are some example to recreate single emulator experimnts for NorESM2-LM.
 
@@ -148,6 +150,8 @@ python emulator/run.py experiment=single_emulator/convlstm/NorESM2-LM_convlstm_t
 
 For climax & climax_frozen models, we will need to use a different requirements file to create another environment.
 
+#### Finetuning
+
 For the single-emulator experiments, we proide configs for each ml model in ```emulator/configs/experiment/single_emulator```  and for fine-tuning experimnts, the configs can be found in ```emulator/configs/experiment/finetuning_emulator```.
 
 For finetuning, we need to fill in ```pretrained_run_id``` and ```pretrained_ckpt_dir``` in the config files for resuming the experiments.
@@ -157,12 +161,13 @@ An example command for finetuning would look like this:
 python run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423 logger=none
 ```
 
-For the superemulation experiments, we provide the configs of our experiments in ```emulator/configs/experiment/superemulator```. Nothe that here, dataloiding is changed slightly to the superemulator infrastructure and a decoder must be set.
+#### Superemulator 
+For the superemulation experiments, we provide the configs of our experiments in ```emulator/configs/experiment/superemulator```. Note that here, dataloding is changed slightly to the superemulator infrastructure and a decoder must be set.
 
 An example command to run a superemulaton experiment would look like this:
-
+Replace modelname.yaml with the respective modelname (for example superemulator_climax_frozen_tas+pr_run-02), see ```emulator/configs/experiment/superemulator```
 ```python
-python run.py experiment=superemulator/superemulator_climax.yaml seed=3423 logger=none
+python run.py experiment=superemulator/modelname.yaml seed=3423 logger=none
 ```
 ### Reloading our trained models
 

@@ -7,3 +7,5 @@ segmentation-models-pytorch
 netCDF4
 pytorch-lightning
 gpytorch
+codecarbon
+torch_tb_profiler

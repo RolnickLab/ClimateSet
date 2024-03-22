@@ -15,7 +15,8 @@ from emulator.src.data.constants import (
     NUM_LEVELS,
     DATA_DIR,
 )
-from emulator.src.utils.utils import get_logger, random_split, random_split_super
+from emulator.src.utils.utils import get_logger
+#, random_split, random_split_super
 
 log = get_logger()
 
@@ -89,7 +90,7 @@ class SuperClimateDataModule(LightningDataModule):
             self.test_models = test_models
 
         # get unique models to have correct model numbers in all sets (train/val + test)
-        all_models = set(self.train_models + self.test_models)
+        # all_models = set(self.train_models + self.test_models)
         self.output_save_dir = output_save_dir
         # The following makes all args available as, e.g., self.hparams.batch_size
         self.save_hyperparameters(ignore=["input_transform", "normalizer"])

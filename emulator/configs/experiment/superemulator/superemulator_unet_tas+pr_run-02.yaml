@@ -16,7 +16,12 @@ defaults:
 
 # name of the run determines folder name in logs
 # can also be accessed by loggers
-name: "superemulator"
+run: 
+  exp_num: "03" # serial number of experiment
+  name: baseline # a short 1-2 word description of the experiment
+  comment: "baseline"
+
+name: ${run.exp_num}_${model.model_name}_${run.name}_
 
 
 seed: 99 #42 #7
@@ -27,6 +32,7 @@ trainer:
   #gradient_clip_val: 5
 
 model:
+  model_name: unet
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
   finetune: False 
@@ -51,9 +57,13 @@ datamodule: # overwrite what stuff to train on
   test_scenarios : ["ssp245"]
   #train_models : ['AWI-CM-1-1-MR', 'BCC-CSM2-MR', 'CAMS-CSM1-0', 'CAS-ESM2-0', 'CESM2', 'CESM2-WACCM', 'CMCC-CM2-SR5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'EC-Earth3', 'EC-Earth3-Veg', 'EC-Earth3-Veg-LR', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-LM', 'NorESM2-MM', 'TaiESM1'] #["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
   #test_models: ['AWI-CM-1-1-MR', 'BCC-CSM2-MR', 'CAMS-CSM1-0', 'CAS-ESM2-0', 'CESM2', 'CESM2-WACCM', 'CMCC-CM2-SR5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'EC-Earth3', 'EC-Earth3-Veg', 'EC-Earth3-Veg-LR', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-LM', 'NorESM2-MM', 'TaiESM1'] #["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
-  train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
-  test_models: ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  #train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  #train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","BCC-CSM2-MR"]
+  test_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","BCC-CSM2-MR"]
+
 
 logger:
   wandb:
-    tags: ["unet", "super_emulation", "decoder", "6_models", "run2"] # set your tags here
+    tags: ["unet", "super_emulation", "decoder", "6_models", "run2","baseline"] # set your tags here
+#   tags: ["unet", "super_emulation", "decoder", "6_models", "run2"] # set your tags here
