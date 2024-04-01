@@ -33,7 +33,7 @@ trainer:
 model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
-  finetune: True
+  finetune: False
   pretrained_run_id:  "bcvgpg4b"
   pretrained_ckpt_dir: "home/causalpaca/emulator/emulator/bcvgpg4b/checkpoints/epoch=8-step=180.ckpt"
   pretrained_run_id_decoder: "xog84o5g"
@@ -55,9 +55,6 @@ datamodule: # overwrite what stuff to train on
   test_scenarios : ["ssp370"]
   train_models : ["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"]
   test_models: ["NorESM2-LM"]
-  #num_ensembles: 2
-  output_save_dir : '/home/mila/c/charlotte.lange/scratch/causalpaca/emulator/DATA'
-  #cmip6_data_dir: '/home/mila/v/venkatesh.ramesh/scratch/causal_data/dl_fromcc/'
  
 logger:
   wandb:
