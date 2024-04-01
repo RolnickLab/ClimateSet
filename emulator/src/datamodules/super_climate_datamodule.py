@@ -15,10 +15,9 @@ from emulator.src.data.constants import (
     NUM_LEVELS,
     DATA_DIR,
 )
-from emulator.src.utils.utils import get_logger, random_split, random_split_super
+from emulator.src.utils.utils import get_logger
 
 log = get_logger()
-
 
 class SuperClimateDataModule(LightningDataModule):
     """

@@ -95,7 +95,7 @@ r
 
 ```python
 # starting inside the emulutar folder:
-python run.py logger=none # will run with configs/main_config.yml
+pythonemulator/run.py logger=none # will run with configs/main_config.yml
 ```
 >IF you get an error telling you something like "No supported gpu backend found!": [Install cuda and download torch with cuda enabled for the specific cuda version you downloaded (different for linux/windows users)](https://pytorch.org/get-started/locally/) something like: 
 ```bash
@@ -106,7 +106,7 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 To exectute one of the preset experiments or to run your own experiments you can create and pass on experiment configs:
 
 ```python
-python run.py experiment=test # will run whatever is specified by the configs/experiment/test.yml file
+pythonemulator/run.py experiment=test # will run whatever is specified by the configs/experiment/test.yml file
 ```
 
 You can make use of the [experiment template](emulator/configs/experiment/template.yaml).
@@ -154,7 +154,7 @@ For finetuning, we need to fill in ```pretrained_run_id``` and ```pretrained_ckp
 
 An example command for finetuning would look like this:
 ```python
-python run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423 logger=none
+pythonemulator/run.py experiment=finetuning_emulator/climax/NorESM2-LM_FGOALS-f3-L_climax_tas+pr_run-01.yaml seed=3423 logger=none
 ```
 
 For the superemulation experiments, we provide the configs of our experiments in ```emulator/configs/experiment/superemulator```. Nothe that here, dataloiding is changed slightly to the superemulator infrastructure and a decoder must be set.
@@ -162,7 +162,7 @@ For the superemulation experiments, we provide the configs of our experiments in
 An example command to run a superemulaton experiment would look like this:
 
 ```python
-python run.py experiment=superemulator/superemulator_climax.yaml seed=3423 logger=none
+pythonemulator/run.py experiment=superemulator/superemulator_climax_tas+pr_run-02.yaml seed=3423 logger=none
 ```
 ### Reloading our trained models
 
