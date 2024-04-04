@@ -20,7 +20,6 @@ from emulator.src.utils.utils import get_logger
 
 log = get_logger()
 
-
 class SuperClimateDataModule(LightningDataModule):
     """
     ----------------------------------------------------------------------------------------------------------
