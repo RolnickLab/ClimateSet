@@ -16,6 +16,7 @@ train_models:  ["NorESM2-LM"]
 num_ensembles: 1
 num_workers:  0
 pin_memory: False
+emissions_tracker: True
 load_train_into_mem: True
 load_test_into_mem:  True
 verbose: True

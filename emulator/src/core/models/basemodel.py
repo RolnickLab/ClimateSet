@@ -98,14 +98,14 @@ class BaseModel(LightningModule):
     def on_train_start(self) -> None:
         self.log_text.info("Starting Training")
         print("Emission tracker: ",self.track_emissions)
-        if(self.track_emissions):
-            self.tot_co2_emission = 0
+        # if(self.track_emissions):
+        #     self.tracker = EmissionsTracker()
+        #     self.tot_co2_emission = 0
 
 
     def on_train_epoch_start(self) -> None:
-        if(self.track_emissions):
-            self.tracker = EmissionsTracker()
-            self.tracker.start()
+        # if(self.track_emissions):
+        #     self.tracker.start()
         self._start_epoch_time = time.time()
 
     def predict(self, X, idx, *args, **kwargs):
@@ -183,9 +183,9 @@ class BaseModel(LightningModule):
 
     def on_train_epoch_end(self):
         train_time = time.time() - self._start_epoch_time
-        if(self.track_emissions):
-            self.tot_co2_emission += self.tracker.stop()
-            self.log("co2_emission", self.tot_co2_emission)
+        # if(self.track_emissions):
+        #     self.tot_co2_emission += self.tracker.stop()
+        #     self.log("co2_emission", self.tot_co2_emission)
         self.log_dict({"epoch": self.current_epoch, "time/train": train_time})
 
     def _evaluation_step(self, batch: Any, batch_idx: int):

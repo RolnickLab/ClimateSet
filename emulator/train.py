@@ -11,6 +11,7 @@ from emulator.src.utils.utils import get_logger
 from pytorch_lightning.profilers import PyTorchProfiler
 from datetime import datetime
 from torch.profiler import profile, record_function, ProfilerActivity
+from codecarbon import EmissionsTracker
 
 
 
@@ -61,10 +62,13 @@ def run_model(config: DictConfig):
         callbacks=callbacks,
     )
     
-
+    tracker = EmissionsTracker()
+    tracker.start()
     trainer.fit(model=emulator_model, datamodule=data_module)
+    emissions: float = tracker.stop()
+    log.info(f"Total emissions: {emissions} kg")
 
-
+    cfg_utils.save_emissions_to_wandb(config, emissions)
     cfg_utils.save_hydra_config_to_wandb(config)
 
     # Testing:

@@ -59,6 +59,7 @@ class SuperClimateDataModule(LightningDataModule):
         num_workers: int = 0,
         pin_memory: bool = False,
         load_train_into_mem: bool = True,
+        emissions_tracker:bool = False,
         load_test_into_mem: bool = True,
         verbose: bool = True,
         seed: int = 11,
@@ -107,7 +108,7 @@ class SuperClimateDataModule(LightningDataModule):
             for model in self.test_models
         ]
         print("Test Set names", self.test_set_names)
-
+        self.emissions_tracker = self.hparams.emissions_tracker
         self._data_train = None
         self._data_val = None
         self._data_test = None

@@ -1,5 +1,5 @@
 # Change the directory where the data will be downloaded below
-data_dir="Climateset_DATA"
+data_dir="/home/mila/f/felix-andreas.nahrstedt/scratch/Climateset_DATA"
 mkdir -p ${data_dir}/inputs
 mkdir -p ${data_dir}/outputs
 

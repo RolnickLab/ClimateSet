@@ -15,6 +15,7 @@ test_scenarios: ["ssp245"]
 train_models:  ["NorESM2-LM"]
 test_models: null
 num_ensembles: 1
+emissions_tracker: True
 num_workers:  0
 pin_memory: False
 load_train_into_mem: True

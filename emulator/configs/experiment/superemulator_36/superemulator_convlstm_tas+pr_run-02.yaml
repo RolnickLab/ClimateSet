@@ -17,7 +17,7 @@ defaults:
 # name of the run determines folder name in logs
 # can also be accessed by loggers
 run: 
-  exp_num: "03" # serial number of experiment
+  exp_num: "04" # serial number of experiment
   name: baseline # a short 1-2 word description of the experiment
   comment: "baseline"
 
