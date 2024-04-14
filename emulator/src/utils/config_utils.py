@@ -303,15 +303,10 @@ def save_hydra_config_to_wandb(config: DictConfig):
             OmegaConf.save(config, f=fp.name, resolve=True)
         wandb.save(os.path.join(wandb.run.dir, "hydra_config.yaml"))
 
-def save_emissions_to_wandb(config: DictConfig, emissions: List):
+def save_emissions_to_wandb(config: DictConfig, emissions: float):
     if config.get('datamodule').get('emissions_tracker'):
-        log.info(
-            f"Emissions will be saved to WandB as emissions.csv and in wandb run_dir: {wandb.run.dir}"
-        )
-        # files in wandb.run.dir folder get directly uploaded to wandb
-        with open(os.path.join(wandb.run.dir, "emissions.csv"), "w") as fp:
-            emissions.to_csv(fp.name)
-        wandb.save(os.path.join(wandb.run.dir, "emissions.csv"))
+        log.info(f"Saving emissions to WandB")
+        wandb.log({"emissions": emissions})
 
 
 def get_config_from_hydra_compose_overrides(overrides: list) -> DictConfig:

@@ -18,6 +18,7 @@ from codecarbon import EmissionsTracker
 def run_model(config: DictConfig):
     seed_everything(config.seed, workers=True)
     log = get_logger(__name__)
+    emissions_tracker_enabled = config.get('datamodule', {}).get('emissions_tracker', False)
     log.info("In run model")
     cfg_utils.extras(config)
 
@@ -61,12 +62,16 @@ def run_model(config: DictConfig):
         trainer=trainer,
         callbacks=callbacks,
     )
-    
-    tracker = EmissionsTracker()
-    tracker.start()
+
+
+    emissionTracker = EmissionsTracker() if emissions_tracker_enabled else None
+    if emissionTracker:
+        emissionTracker.start()
+
     trainer.fit(model=emulator_model, datamodule=data_module)
-    emissions: float = tracker.stop()
-    log.info(f"Total emissions: {emissions} kg")
+
+    emissions = emissionTracker.stop() if emissions_tracker_enabled else 0
+        
 
     cfg_utils.save_emissions_to_wandb(config, emissions)
     cfg_utils.save_hydra_config_to_wandb(config)

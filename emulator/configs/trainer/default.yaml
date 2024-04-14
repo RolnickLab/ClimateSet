@@ -1,6 +1,6 @@
 _target_: pytorch_lightning.Trainer
 
-gpus: 1
+#gpus: 1
 accelerator: "gpu"
 devices: "auto"
 

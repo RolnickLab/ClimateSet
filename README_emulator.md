@@ -14,6 +14,15 @@ python download_climateset.py
 If you wish to download only specific climate model data, please refer to the instructions on [hugginface](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
 
 If you happen to be inside of Canada and wish to download the data in a different way, you can also make use of the provided bash script. Please note that this option is very slow for users located outside of Canada.
+
+# SET YOU DATASET PATH adn download dataset
+
+in 
+- constants.py as well as in the
+-  download_climateset.sh, 
+set the path to where you want your dataset to be downloaded.
+Then execute: 
+
 ```bash
 bash download_climateset.sh 
 ```
