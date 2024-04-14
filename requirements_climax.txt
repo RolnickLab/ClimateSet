@@ -1,5 +1,5 @@
 xarray
-torch
+torch==2.2
 dask
 wandb
 hydra-core
@@ -9,3 +9,4 @@ pytorch-lightning==1.8.3
 gpytorch
 codecarbon
 torch_tb_profiler
+torchvision

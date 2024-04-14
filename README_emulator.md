@@ -104,7 +104,7 @@ r
 
 ```python
 # starting inside the emulutar folder:
-pythonemulator/run.py logger=none # will run with configs/main_config.yml
+python emulator/run.py logger=none # will run with configs/main_config.yml
 ```
 >IF you get an error telling you something like "No supported gpu backend found!": [Install cuda and download torch with cuda enabled for the specific cuda version you downloaded (different for linux/windows users)](https://pytorch.org/get-started/locally/) something like: 
 ```bash
@@ -115,7 +115,7 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 To exectute one of the preset experiments or to run your own experiments you can create and pass on experiment configs:
 
 ```python
-pythonemulator/run.py experiment=test # will run whatever is specified by the configs/experiment/test.yml file
+python emulator/run.py experiment=test # will run whatever is specified by the configs/experiment/test.yml file
 ```
 
 You can make use of the [experiment template](emulator/configs/experiment/template.yaml).
