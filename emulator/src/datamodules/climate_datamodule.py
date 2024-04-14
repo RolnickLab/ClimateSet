@@ -55,6 +55,7 @@ class ClimateDataModule(LightningDataModule):
         test_models: Union[List[str], None] = None,
         batch_size: int = 16,
         eval_batch_size: int = 64,
+        emissions_tracker:bool = False,
         num_workers: int = 0,
         pin_memory: bool = False,
         load_train_into_mem: bool = True,
@@ -100,7 +101,7 @@ class ClimateDataModule(LightningDataModule):
             for scenario in test_scenarios
             for model in self.test_models
         ]
-
+        self.emissions_tracker = self.hparams.emissions_tracker
         print("Test Sets: ", self.test_set_names)
 
         self._data_train = None

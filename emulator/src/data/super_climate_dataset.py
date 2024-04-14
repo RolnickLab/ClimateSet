@@ -197,7 +197,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         lengths_model[0][0] = 0
         index = np.cumsum(lengths_model).reshape(lengths_model.shape)
         self.index_shifts = index
-
         # compute val/train indexes based on fraction
         total_length = self.get_initial_length()
         if mode=='test':
@@ -219,7 +218,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
 
 
     def set_mode(self, train: bool = False):
-
         if train:
             log.info("Setting to train.")
             self.mode='train'
@@ -578,6 +576,8 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         in_lengths = [
             self.input4mips_ds[spec].length for spec in self.openburning_specs
         ]
+        print("Val/Train all_equal test")
+
         assert all_equal(
             in_lengths
         ), f"input4mip datasets do not have the same length for each openburning spec!"

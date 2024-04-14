@@ -5,6 +5,7 @@ import numpy as np
 import time
 
 from typing import Optional, List, Any, Dict, Tuple, Union
+from codecarbon import EmissionsTracker
 
 from omegaconf import DictConfig
 import omegaconf
@@ -17,6 +18,7 @@ from emulator.src.utils.utils import get_loss_function, get_logger, to_DictConfi
 # from emulator.src.utils.interface import reload_model_from_id
 from emulator.src.core.callbacks import PredictionPostProcessCallback
 from timm.optim import create_optimizer_v2
+
 
 
 class BaseModel(LightningModule):
@@ -50,6 +52,7 @@ class BaseModel(LightningModule):
         self.log_text = get_logger(__name__)
         self.log_text.info("Base Model init!")
 
+        self.track_emissions = datamodule_config.get("emissions_tracker")
         self.name = name
         self.verbose = verbose
         self.test_step_outputs = {}
@@ -94,8 +97,15 @@ class BaseModel(LightningModule):
 
     def on_train_start(self) -> None:
         self.log_text.info("Starting Training")
+        print("Emission tracker: ",self.track_emissions)
+        # if(self.track_emissions):
+        #     self.tracker = EmissionsTracker()
+        #     self.tot_co2_emission = 0
+
 
     def on_train_epoch_start(self) -> None:
+        # if(self.track_emissions):
+        #     self.tracker.start()
         self._start_epoch_time = time.time()
 
     def predict(self, X, idx, *args, **kwargs):
@@ -173,6 +183,9 @@ class BaseModel(LightningModule):
 
     def on_train_epoch_end(self):
         train_time = time.time() - self._start_epoch_time
+        # if(self.track_emissions):
+        #     self.tot_co2_emission += self.tracker.stop()
+        #     self.log("co2_emission", self.tot_co2_emission)
         self.log_dict({"epoch": self.current_epoch, "time/train": train_time})
 
     def _evaluation_step(self, batch: Any, batch_idx: int):

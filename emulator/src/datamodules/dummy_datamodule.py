@@ -33,6 +33,7 @@ class DummyDataModule(LightningDataModule):
 
     def __init__(
         self,
+        emissions_tracker:bool = False,
         in_var_ids: List[str] = ["BC", "CO2", "CH4", "SO2"],
         out_var_ids: List[str] = ["pr", "tas"],
         seq_len: int = 10,
@@ -86,6 +87,7 @@ class DummyDataModule(LightningDataModule):
         self._data_val = None
         self._data_test = None
         self._data_predict = None
+        self.emissions_tracker = self.hparams.emissions_tracker
         self.log_text = get_logger()
         self.test_set_names = test_set_names
         if seq_to_seq:

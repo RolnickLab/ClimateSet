@@ -16,7 +16,12 @@ defaults:
 
 # name of the run determines folder name in logs
 # can also be accessed by loggers
-name: "superemulator"
+run: 
+  exp_num: "04" # serial number of experiment
+  name: baseline # a short 1-2 word description of the experiment
+  comment: "baseline"
+
+name: ${run.exp_num}_${model.model_name}_${run.name}_
 
 
 seed: 99 #42 #7
@@ -27,6 +32,7 @@ trainer:
   #gradient_clip_val: 5
 
 model:
+  model_name: climax_frozen
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
   finetune: False 
@@ -54,4 +60,4 @@ datamodule: # overwrite what stuff to train on
  
 logger:
   wandb:
-    tags: ["climax_frozen", "super_emulation", "larger_decoder", "6_models", "run2"] # set your tags here
+    tags: ["climax_frozen", "super_emulation", "larger_decoder", "6_models", "run2","baseline"] # set your tags here

@@ -38,6 +38,8 @@ model:
 
 datamodule:
   batch_size: 4
+  # If you would like to track emissions using codecarbon
+  emissions_tracker: True 
    
 work_dir: ${hydra:runtime.cwd}  # {oc.env:ENV_VAR} allows to get environment variable ENV_VAR
 
@@ -49,6 +51,11 @@ log_dir: ${work_dir}/logs/
 
 # pretty print config at the start of the run using Rich library
 print_config: True
+
+# If you would like to profile with pytorch profiler
+pyprofile: False
+
+
 
 # disable python warnings if they annoy you
 ignore_warnings: True

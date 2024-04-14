@@ -7,4 +7,9 @@ segmentation-models-pytorch
 netCDF4
 pytorch-lightning==2.2.1
 gpytorch
+<<<<<<< HEAD
+codecarbon
+torch_tb_profiler
+=======
 torchvision
+>>>>>>> upstream/main

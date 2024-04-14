@@ -5,7 +5,7 @@
 defaults:
   - override /mode: exp.yaml
   - override /trainer: default.yaml
-  - override /model: conv_lstm.yaml # put the desired model name here
+  - override /model: unet.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
   - override /datamodule: climate_super.yaml # set to super emulation
@@ -23,6 +23,7 @@ run:
 
 name: ${run.exp_num}_${model.model_name}_${run.name}_
 
+
 seed: 99 #42 #7
 
 trainer:
@@ -31,7 +32,7 @@ trainer:
   #gradient_clip_val: 5
 
 model:
-  model_name: convlstm
+  model_name: unet
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
   finetune: False 
@@ -47,7 +48,7 @@ datamodule: # overwrite what stuff to train on
   out_var_ids: ['pr', 'tas']
   seq_to_seq: True # determine the task setting
   batch_size: 2
-  channels_last: False 
+  channels_last: False
   eval_batch_size: 2
   seq_len: 12
   in_var_ids : ['BC_sum','SO2_sum', 'CO2_sum', 'CH4_sum']
@@ -56,9 +57,13 @@ datamodule: # overwrite what stuff to train on
   test_scenarios : ["ssp245"]
   #train_models : ['AWI-CM-1-1-MR', 'BCC-CSM2-MR', 'CAMS-CSM1-0', 'CAS-ESM2-0', 'CESM2', 'CESM2-WACCM', 'CMCC-CM2-SR5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'EC-Earth3', 'EC-Earth3-Veg', 'EC-Earth3-Veg-LR', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-LM', 'NorESM2-MM', 'TaiESM1'] #["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
   #test_models: ['AWI-CM-1-1-MR', 'BCC-CSM2-MR', 'CAMS-CSM1-0', 'CAS-ESM2-0', 'CESM2', 'CESM2-WACCM', 'CMCC-CM2-SR5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'EC-Earth3', 'EC-Earth3-Veg', 'EC-Earth3-Veg-LR', 'FGOALS-f3-L', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'MPI-ESM1-2-HR', 'MRI-ESM2-0', 'NorESM2-LM', 'NorESM2-MM', 'TaiESM1'] #["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
-  train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
-  test_models: ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  #train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  #train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  test_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+  train_models : ["MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR","MPI-ESM1-2-HR", "AWI-CM-1-1-MR", "NorESM2-LM", "FGOALS-f3-L", "EC-Earth3", "BCC-CSM2-MR"]
+
 
 logger:
   wandb:
-    tags: ["conv_lstm", "super_emulation", "decoder", "6_models", "run2","baseline"] # set your tags here
+    tags: ["unet", "super_emulation", "decoder", "36_models", "run2","baseline"] # set your tags here
+#   tags: ["unet", "super_emulation", "decoder", "6_models", "run2"] # set your tags here

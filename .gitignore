@@ -13,7 +13,7 @@ Climateset_DATA
 # deprecated files
 deprecated/
 notes/
-
+emissions.csv
 # privacy files
 data_generation/parameters/credentials.txt
 
@@ -46,6 +46,11 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+emulator/logs
+emulator/wandb
+wandb/
+Slurm_Scripts/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -122,6 +127,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+env_emulator/
 .env
 .venv
 env/
