@@ -65,5 +65,5 @@ datamodule: # overwrite what stuff to train on
 
 logger:
   wandb:
-    tags: ["unet", "super_emulation", "decoder", "36_models", "run2",A100"] # set your tags here
+    tags: ["unet", "super_emulation", "decoder", "36_models", "run2","A100"] # set your tags here
 #   tags: ["unet", "super_emulation", "decoder", "6_models", "run2"] # set your tags here
