@@ -7,7 +7,7 @@ wandb:
   tags: []
   notes: "..."
   project: "emulator"
-  group: "causalpaca"
+  group: "Baseline"
   resume: "allow"
   reinit: True
   mode: online # disabled  # disabled for no wandb logging
