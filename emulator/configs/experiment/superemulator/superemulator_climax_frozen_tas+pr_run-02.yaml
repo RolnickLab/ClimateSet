@@ -60,4 +60,4 @@ datamodule: # overwrite what stuff to train on
  
 logger:
   wandb:
-    tags: ["climax_frozen", "super_emulation", "larger_decoder", "6_models", "run2","baseline"] # set your tags here
+    tags: ["climax_frozen", "super_emulation", "larger_decoder", "6_models", "run2","A100"] # set your tags here
