@@ -38,6 +38,7 @@ fi
 
 
 # 3. Create or Set Up Environment
+deactivate
 
 if [ -a env_old_emulator/bin/activate ]; then
 
