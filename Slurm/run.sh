@@ -14,7 +14,7 @@ sbatch Slurm/climax
 # sbatch Slurm/climax_36
 # sbatch Slurm/climax_frozen
 # sbatch Slurm/climax_frozen_36
-sbatch Slurm/convlstm
+#sbatch Slurm/convlstm
 # sbatch Slurm/convlstm_36
 # sbatch Slurm/unet
 # sbatch Slurm/unet_36

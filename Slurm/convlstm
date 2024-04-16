@@ -26,6 +26,7 @@ echo "Beginning experiment $EXP_NAME."
 
 module load python/3.10
 export PYTHONPATH=$(pwd)
+echo $PYTHONPATH
 
 # 2. Load DL Framework
 
