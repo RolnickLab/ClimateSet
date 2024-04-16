@@ -50,6 +50,7 @@ MANIFEST
 emulator/logs
 emulator/wandb
 wandb/
+Slurm_Scripts/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -153,7 +154,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# Checkpoints
-emulator/*/checkpoints/
-emulator/src/core/models/climax/pretrained_checkpoints/
