@@ -1,12 +1,10 @@
 #!/bin/bash
 
-# .
-
-#SBATCH --job-name="SC6-basetest-climax"
+#SBATCH --job-name="SC6-A100-basetest-climax"
 
 #SBATCH --nodes=1
 
-#SBATCH --gpus-per-node=rtx8000:1 # specify gpu
+#SBATCH --gpus-per-node=a100:1 --constraint="dgx&ampere" # specify gpu
 
 #SBATCH --ntasks-per-node=1
 
@@ -16,7 +14,7 @@
 
 #SBATCH --time=48:00:00                                  # set runtime
 
-#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-basetest-climax.out        # set log dir to home
+#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-A100-basetest-climax.out        # set log dir to home
 
 
 EXP_NAME=$1
@@ -28,7 +26,6 @@ echo "Beginning experiment $EXP_NAME."
 
 module load python/3.10
 export PYTHONPATH=$(pwd)
-echo $PYTHONPATH
 
 # 2. Load DL Framework
 
@@ -43,19 +40,19 @@ fi
 # 3. Create or Set Up Environment
 deactivate
 
-# if [ -a env_old_emulator/bin/activate ]; then
+if [ -a env_old_emulator/bin/activate ]; then
 
-#     source env_old_emulator/bin/activate
-#     echo "activated"
+    source env_old_emulator/bin/activate
+    echo "activated"
 
-# else
-    #python -m venv env_old_emulator
+else
+    python -m venv env_old_emulator
     source env_old_emulator/bin/activate
     #bash download_climateset.sh || { echo "Failed to run download_climateset.sh"; exit 1; }
     bash download_climax_checkpoints.sh || { echo "Failed to run download_climax_checkpoints.sh"; exit 1; }
     pip install -r requirements.txt || { echo "Failed to install requirements."; exit 1; }
     pip install pytorch-lightning==1.8.3  || { echo "Failed to install pytorch-lightning old version"; exit 1; }
-# fi
+fi
 
 echo $PYTHONPATH
 dir
@@ -72,7 +69,7 @@ srun  python emulator/run.py experiment=superemulator/superemulator_climax_tas+p
 
 
 # 9. Copy output to scratch
-#cp /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-basetest-climax_out.out 
+#cp /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-A100-basetest-climax_out.out 
 
 # 10. Experiment is finished
 
