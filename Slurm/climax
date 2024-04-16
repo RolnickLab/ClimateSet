@@ -46,7 +46,7 @@ deactivate
 #     echo "activated"
 
 # else
-    python -m venv env_old_emulator
+    #python -m venv env_old_emulator
     source env_old_emulator/bin/activate
     #bash download_climateset.sh || { echo "Failed to run download_climateset.sh"; exit 1; }
     bash download_climax_checkpoints.sh || { echo "Failed to run download_climax_checkpoints.sh"; exit 1; }
