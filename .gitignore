@@ -154,3 +154,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# checkpoints
+emulator/src/core/models/climax/pretrained_checkpoints/*.ckpt

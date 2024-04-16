@@ -49,7 +49,7 @@ else
     python -m venv env_old_emulator
     source env_old_emulator/bin/activate
     #bash download_climateset.sh || { echo "Failed to run download_climateset.sh"; exit 1; }
-    #bash download_climax_frozen_checkpoints.sh || { echo "Failed to run download_climax_frozen_checkpoints.sh"; exit 1; }
+    bash download_climax_frozen_checkpoints.sh || { echo "Failed to run download_climax_frozen_checkpoints.sh"; exit 1; }
     pip install -r requirements.txt || { echo "Failed to install requirements."; exit 1; }
     pip install pytorch-lightning==1.8.3  || { echo "Failed to install pytorch-lightning old version"; exit 1; }
 fi

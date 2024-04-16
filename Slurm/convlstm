@@ -41,18 +41,18 @@ fi
 # 3. Create or Set Up Environment
 deactivate
 
-# if [ -a env_new_emulator/bin/activate ]; then
+if [ -a env_new_emulator/bin/activate ]; then
 
-#     source env_new_emulator/bin/activate
-#     echo "activated"
+    source env_new_emulator/bin/activate
+    echo "activated"
 
-# else
-    #python -m venv env_new_emulator
+else
+    python -m venv env_new_emulator
     source env_new_emulator/bin/activate
     #bash download_climateset.sh || { echo "Failed to run download_climateset.sh"; exit 1; }
     pip install -r requirements.txt || { echo "Failed to install requirements."; exit 1; }
     pip install pytorch-lightning==2.2.2 || { echo "Failed to install pytorch-lightning old version"; exit 1; }
-# fi
+fi
 
 echo $PYTHONPATH
 dir
