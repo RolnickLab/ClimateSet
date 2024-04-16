@@ -17,9 +17,9 @@ defaults:
 # name of the run determines folder name in logs
 # can also be accessed by loggers
 run: 
-  exp_num: "04" # serial number of experiment
-  name: baseline # a short 1-2 word description of the experiment
-  comment: "baseline"
+  exp_num: "01" # serial number of experiment
+  name: BASELINE # a short 1-2 word description of the experiment
+  comment: "BASELINE"
 
 name: ${run.exp_num}_${model.model_name}_${run.name}_
 
@@ -62,4 +62,4 @@ datamodule: # overwrite what stuff to train on
 
 logger:
   wandb:
-    tags: ["conv_lstm", "super_emulation", "decoder", "36_models", "run2","baseline"] # set your tags here
+    tags: ["conv_lstm", "super_emulation", "decoder", "36_models", "run2","A100"] # set your tags here
