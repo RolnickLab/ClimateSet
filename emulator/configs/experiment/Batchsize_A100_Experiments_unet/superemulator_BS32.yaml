@@ -31,7 +31,7 @@ trainer:
   #gradient_clip_val: 5
 
 model:
-  model_name: convlstm
+  model_name: unet
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
   finetune: False 

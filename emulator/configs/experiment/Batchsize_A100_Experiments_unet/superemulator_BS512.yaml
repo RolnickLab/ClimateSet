@@ -17,7 +17,7 @@ defaults:
 # name of the run determines folder name in logs
 # can also be accessed by loggers
 run: 
-  exp_num: "BATCHSIZE32" # serial number of experiment
+  exp_num: "BATCHSIZE512" # serial number of experiment
   name: A100# a short 1-2 word description of the experiment
   comment: "A100"
 
@@ -31,7 +31,7 @@ trainer:
   #gradient_clip_val: 5
 
 model:
-  model_name: convlstm
+  model_name: unet
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
   finetune: False 
@@ -46,9 +46,9 @@ model:
 datamodule: # overwrite what stuff to train on
   out_var_ids: ['pr', 'tas']
   seq_to_seq: True # determine the task setting
-  batch_size: 32
+  batch_size: 512
   channels_last: False 
-  eval_batch_size: 32
+  eval_batch_size: 512
   seq_len: 12
   in_var_ids : ['BC_sum','SO2_sum', 'CO2_sum', 'CH4_sum']
   train_years: "2015-2100"

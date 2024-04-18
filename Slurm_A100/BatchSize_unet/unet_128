@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="BS32-SC6-A100-basetest-convlstm"
+#SBATCH --job-name="BS128-SC6-A100-basetest-unet"
 
 #SBATCH --nodes=1
 
@@ -14,7 +14,7 @@
 
 #SBATCH --time=00:30:00                                  # set runtime
 
-#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/BS32-SC6-A100-basetest-convlstm.out        # set log dir to home
+#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/BS128-SC6-A100-basetest-unet.out        # set log dir to home
 
 module load python/3.10
 export PYTHONPATH=$(pwd)
@@ -41,11 +41,11 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 # 8. Run Python
 export HYDRA_FULL_ERROR=1
 echo "Running python test.py ..."
-srun python emulator/run.py experiment=Batchsize_A100_Experiments/superemulator_convlstm_BS32.yaml seed=3423
+srun python emulator/run.py experiment=Batchsize_A100_Experiments_unet/superemulator_unet_BS128.yaml seed=3423
 
 
 # 9. Copy output to scratch
-#cp /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-A100-basetest-convlstm_out.out 
+#cp /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-A100-basetest-unet_out.out 
 
 # 10. Experiment is finished
 
