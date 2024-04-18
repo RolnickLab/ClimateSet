@@ -7,7 +7,7 @@ wandb:
   tags: []
   notes: "..."
   project: "emulator"
-  group: "A100"
+  group: "BATCHSIZE_ConvLSTM"
   resume: "allow"
   reinit: True
   mode: online # disabled  # disabled for no wandb logging
