@@ -11,8 +11,10 @@ import numpy as np
 import xarray as xr
 import torch
 from torch import Tensor
+from emulator.src.data.meta_information.facet_options_cmip6 import variable_id as cmip6_vars
+from emulator.src.data.meta_information.facet_options_input4mips import variable_id as input4mip_vars
 
-from emulator.src.utils.utils import get_logger, all_equal
+from emulator.src.utils.utils import get_logger, all_equal, map_variables_targetmip
 from emulator.src.data.constants import (
     LON,
     LAT,
@@ -79,6 +81,18 @@ class SuperClimateDataset(torch.utils.data.Dataset):
             out_variables = [out_variables]
         if isinstance(scenarios, str):
             scenarios = [scenarios]
+        self.num_in=len(in_variables)
+        self.num_out=len(out_variables)
+
+    
+        # remap in variables / out vars to input4mip and CMIP
+        # than in final get item, map back
+        in_variables_im, out_variables_im, x_indexes, y_indexes = map_variables_targetmip(in_variables, out_variables)
+        
+        
+        self.x_indexes=x_indexes
+        self.y_indexes=y_indexes
+        
 
         self.scenarios = scenarios
         self.climate_models = climate_models
@@ -134,7 +148,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         self.input4mips_ds = dict()
         for spec in set(self.openburning_specs):
             self.input4mips_ds[spec] = Input4MipsDataset(
-                variables=in_variables, openburning_specs=spec, **ds_kwargs
+                variables=in_variables_im, openburning_specs=spec, **ds_kwargs
             )
 
         # we create one CMIP6 dataset per model-ensemble member pair for easier iteration
@@ -176,7 +190,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
                         data_dir=em,
                         climate_model=climate_model,
                         openburning_specs=openburning_specs,
-                        variables=out_variables,
+                        variables=out_variables_im,
                         **ds_kwargs,
                     )
                 )
@@ -567,7 +581,51 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         # convert cmip model index to overall model num
         model_id = self.climate_models[self.cmip6_model_index]
         # return which climate model index the batch belongs to
-        return X, Y, model_id
+
+        # TODO: map x,y back to original x,y (ys may belong to xs and the other way around)
+    
+        if self.channels_last:
+            # 0,1,2 change the same, 3 changes according to var lenght
+            X_new=np.empty((X.shape[0], X.shape[1], X.shape[2], self.num_in), dtype=X.dtype)# same as X with different number of vars (according to original)
+            Y_new=np.empty((Y.shape[0], Y.shape[1], Y.shape[2], self.num_out), dtype=Y.dtype)
+       
+        else:
+            # 0,2,3, stay, 1 changes according to var length
+            X_new=np.empty((X.shape[0], self.num_in, X.shape[2], X.shape[3]), dtype=X.dtype)# same as X with different number of vars (according to original)
+            Y_new=np.empty((Y.shape[0], self.num_out, Y.shape[2], Y.shape[3]), dtype=Y.dtype)
+        
+    
+        for e,(t,ix) in enumerate(self.x_indexes):
+          
+            if t=="in":
+                if self.channels_last:
+                    X_new[:,:,:,e]=X[:,:,:,ix]
+                else:
+                    X_new[:,e,:,:]=X[:,ix,:,:]
+            elif t=="out":
+                if self.channels_last:
+                    X_new[:,:,:,e]=Y[:,:,:,ix]
+                else:
+                    X_new[:,e,:,:]=Y[:,ix,:,:]
+            else: 
+                raise ValueError(f"unknown type {t}")
+        for e,(t,ix) in enumerate(self.y_indexes):
+            if t=="in":
+                if self.channels_last:
+                    Y_new[:,:,:,e]=X[:,:,:,ix]
+                else:
+                    Y_new[:,e,:]=X[:,ix,:]
+            elif t=="out":
+                if self.channels_last:
+                    Y_new[:,:,:,e]=Y[:,:,:,ix]
+                else:
+                    Y_new[:,e,:]=Y[:,ix,:]
+            else: 
+                raise ValueError(f"unknown type {t}")
+  
+
+
+        return X_new, Y_new, model_id
 
     def __str__(self):
         s = f" Super Emulator dataset: {len(self.climate_models)} climate models with {self.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
@@ -922,13 +980,14 @@ class Input4MipsDataset(SuperClimateDataset):
 if __name__ == "__main__":
     ds = SuperClimateDataset(
         seq_to_seq=True,
-        in_variables=["BC_sum", "SO2_sum", "CH4_sum"],
+        in_variables=["BC_sum", "tas"],
+        out_variables=["pr"],
         scenarios=["ssp126", "ssp370"],
-        climate_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"],
-        seq_len=12,
+        climate_models=["MPI-ESM1-2-HR", "NorESM2-LM"],
+        #seq_len=12,
         num_ensembles=1,
         years="2015-2021",
-        channels_last=False,
+        channels_last=True,
     )
     # for (i,j) in ds:
     # print("i:", i.shape)
@@ -940,6 +999,6 @@ if __name__ == "__main__":
 
     for i, (x, y, index) in enumerate(ds):
         print("iteration", i)
-        #    print("x", x.shape)
-        #    print("y", y.shape)
+        print("x", x.shape)
+        print("y", y.shape)
         print("model index", index)

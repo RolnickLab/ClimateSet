@@ -12,7 +12,7 @@ import xarray as xr
 import torch
 from torch import Tensor
 
-from emulator.src.utils.utils import get_logger
+from emulator.src.utils.utils import get_logger, map_variables_targetmip
 from emulator.src.data.constants import (
     LON,
     LAT,
@@ -81,6 +81,14 @@ class ClimateDataset(torch.utils.data.Dataset):
         if isinstance(scenarios, str):
             scenarios = [scenarios]
 
+        # remap in variables / out vars to input4mip and CMIP
+        # than in final get item, map back
+        in_variables_im, out_variables_im, x_indexes, y_indexes = map_variables_targetmip(in_variables, out_variables)
+        
+        
+        self.x_indexes=x_indexes
+        self.y_indexes=y_indexes
+
         self.scenarios = scenarios
         self.num_ensembles = num_ensembles
 
@@ -123,12 +131,12 @@ class ClimateDataset(torch.utils.data.Dataset):
         )
         # creates on cmip and on input4mip dataset
         print("Creating input4mips...")
-        self.input4mips_ds = Input4MipsDataset(variables=in_variables, **ds_kwargs)
+        self.input4mips_ds = Input4MipsDataset(variables=in_variables_im, **ds_kwargs)
         print("Creating cmip6...")
         self.cmip6_ds = CMIP6Dataset(
             climate_model=climate_model,
             num_ensembles=num_ensembles,
-            variables=out_variables,
+            variables=out_variables_im,
             **ds_kwargs,
         )
 
