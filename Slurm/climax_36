@@ -36,7 +36,6 @@ if [[ $DL_FRAMEWORK == "torch" ]]; then
     
 fi
 
-
 # 3. Create or Set Up Environment
 deactivate
 

@@ -50,7 +50,6 @@ MANIFEST
 emulator/logs
 emulator/wandb
 wandb/
-Slurm_Scripts/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
