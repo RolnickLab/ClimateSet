@@ -7,7 +7,7 @@ wandb:
   tags: []
   notes: "..."
   project: "emulator"
-  group: "BATCHSIZE_UNET"
+  group: "Casalpaca"
   resume: "allow"
   reinit: True
   mode: online # disabled  # disabled for no wandb logging

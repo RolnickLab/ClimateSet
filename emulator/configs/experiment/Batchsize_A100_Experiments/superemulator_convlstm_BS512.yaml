@@ -18,7 +18,7 @@ defaults:
 # can also be accessed by loggers
 run: 
   exp_num: "BATCHSIZE512" # serial number of experiment
-  name: A100# a short 1-2 word description of the experiment
+  name: A100 # a short 1-2 word description of the experiment
   comment: "A100"
 
 name: ${run.exp_num}_${model.model_name}_${run.name}_

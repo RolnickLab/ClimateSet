@@ -12,7 +12,7 @@
 
 #SBATCH --mem-per-cpu=40G               # memory per node (4G per cpu-core is default)
 
-#SBATCH --time=48:00:00                                  # set runtime
+#SBATCH --time=2:00:00:00                                  # set runtime
 
 #SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/SC36-A100-basetest-climax_frozen.out        # set log dir to home
 
@@ -67,7 +67,7 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 # 8. Run Python
 
 echo "Running python test.py ..."
-srun python emulator/run.py experiment=superemulator_36/superemulator_climax_frozen_tas+pr_run-02.yaml seed=3423
+python emulator/run.py experiment=superemulator_36/superemulator_climax_frozen_tas+pr_run-02.yaml seed=3423
 
 
 # 9. Copy output to scratch

@@ -12,7 +12,7 @@
 
 #SBATCH --mem-per-cpu=16G               # memory per node (4G per cpu-core is default)
 
-#SBATCH --time=00:30:00                                  # set runtime
+#SBATCH --time=03:30:00                                  # set runtime
 
 #SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/BS32-SC6-A100-basetest-unet.out        # set log dir to home
 
@@ -41,7 +41,7 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 # 8. Run Python
 export HYDRA_FULL_ERROR=1
 echo "Running python test.py ..."
-srun python emulator/run.py experiment=Batchsize_A100_Experiments_unet/superemulator_unet_BS32.yaml seed=3423
+srun python emulator/run.py experiment=Batchsize_A100_Experiments_unet/superemulator_BS32.yaml seed=3423
 
 
 # 9. Copy output to scratch

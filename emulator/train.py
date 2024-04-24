@@ -69,10 +69,9 @@ def run_model(config: DictConfig):
         emissionTracker.start()
         
     trainer.fit(model=emulator_model, datamodule=data_module)
-
-    emissions:float = emissionTracker.stop() if emissions_tracker_enabled else 0
-        
-
+    if emissionTracker:
+        emissions:float = emissionTracker.stop()
+        log.info(f"Total emissions: {emissions} kgCO2")
     cfg_utils.save_emissions_to_wandb(config, emissions)
     cfg_utils.save_hydra_config_to_wandb(config)
 

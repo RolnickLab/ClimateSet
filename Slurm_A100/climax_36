@@ -61,13 +61,14 @@ cd $(pwd)
 
 export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-GPU communication by default. Set this variable to avoid timeout errors.
 # 6. Set Flags
+export HYDRA_FULL_ERROR=1
 
 
 
 
 # 8. Run Python
 
-echo "Running python test.py ..."
+echo "Running python run.py ..."
 srun python emulator/run.py experiment=superemulator_36/superemulator_climax_tas+pr_run-02.yaml seed=3423
 
 

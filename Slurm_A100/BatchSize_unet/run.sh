@@ -10,13 +10,13 @@ while true; do
 done
 
 
-sbatch Slurm_A100/BatchSize/unet_4
-sbatch Slurm_A100/BatchSize/unet_8
-sbatch Slurm_A100/BatchSize/unet_16
-sbatch Slurm_A100/BatchSize/unet_32
-sbatch Slurm_A100/BatchSize/unet_64
-sbatch Slurm_A100/BatchSize/unet_128
-sbatch Slurm_A100/BatchSize/unet_256
-sbatch Slurm_A100/BatchSize/unet_512
+sbatch Slurm_A100/BatchSize_unet/unet_4
+sbatch Slurm_A100/BatchSize_unet/unet_8
+sbatch Slurm_A100/BatchSize_unet/unet_16
+sbatch Slurm_A100/BatchSize_unet/unet_32
+sbatch Slurm_A100/BatchSize_unet/unet_64
+sbatch Slurm_A100/BatchSize_unet/unet_128
+sbatch Slurm_A100/BatchSize_unet/unet_256
+sbatch Slurm_A100/BatchSize_unet/unet_512
 
 echo "Success - Go sleep and see your results in the morning!"
