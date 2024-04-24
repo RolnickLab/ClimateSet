@@ -67,10 +67,10 @@ def run_model(config: DictConfig):
     emissionTracker = EmissionsTracker() if emissions_tracker_enabled else None
     if emissionTracker:
         emissionTracker.start()
-        
+
     trainer.fit(model=emulator_model, datamodule=data_module)
 
-    emissions:float = emissionTracker.stop() if emissions_tracker_enabled else 0
+    emissions = emissionTracker.stop() if emissions_tracker_enabled else 0
         
 
     cfg_utils.save_emissions_to_wandb(config, emissions)
