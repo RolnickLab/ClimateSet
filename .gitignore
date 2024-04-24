@@ -156,3 +156,5 @@ dmypy.json
 
 # checkpoints
 emulator/src/core/models/climax/pretrained_checkpoints/*.ckpt
+
+Slurm/
