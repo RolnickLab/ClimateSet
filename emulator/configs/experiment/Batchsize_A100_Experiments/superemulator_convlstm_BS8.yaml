@@ -61,6 +61,7 @@ datamodule: # overwrite what stuff to train on
 
 logger:
   wandb:
-    tags: ["conv_lstm", "super_emulation", "decoder", "6_models", "run2","A100"] # set your tags here
-    group: "Batchsize_A100_Experiments"
+    # tags: ["conv_lstm", "super_emulation", "decoder", "6_models", "run2","A100"] # set your tags here
+    tags: ["TEST"]
+    group: "Test-new dataset location"
 

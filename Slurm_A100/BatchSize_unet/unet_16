@@ -4,6 +4,8 @@
 
 #SBATCH --nodes=1
 
+#SBATCH --begin=now+60 
+
 #SBATCH --gpus-per-node=a100:1 --constraint="dgx&ampere"       # specify gpu
 
 #SBATCH --ntasks-per-node=1

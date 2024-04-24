@@ -4,13 +4,17 @@
 
 #SBATCH --nodes=1
 
-#SBATCH --gpus-per-node=a100:1 --constraint="dgx&ampere"       # specify gpu
+#SBATCH --begin=now
+
+#SBATCH --partition=main
+
+#SBATCH --gpus-per-node=rtx8000:1 # --constraint="dgx&ampere"       # specify gpu
 
 #SBATCH --ntasks-per-node=1
 
-#SBATCH --cpus-per-task=4       # cpu-cores per task (>1 if multi-threaded tasks)
+#SBATCH --cpus-per-task=1       # cpu-cores per task (>1 if multi-threaded tasks)
 
-#SBATCH --mem-per-cpu=16G               # memory per node (4G per cpu-core is default)
+#SBATCH --mem-per-cpu=3G               # memory per node (4G per cpu-core is default)
 
 #SBATCH --time=48:00:00                                  # set runtime
 
@@ -62,9 +66,9 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 
 
 # 8. Run Python
-export HYDRA_FULL_ERROR=1
+#export HYDRA_FULL_ERROR=1
 echo "Running python test.py ..."
-srun  python emulator/run.py experiment=superemulator/superemulator_convlstm_tas+pr_run-02.yaml seed=3423
+HYDRA_FULL_ERROR=1 python emulator/run.py experiment=superemulator/superemulator_convlstm_tas+pr_run-02.yaml seed=3423
 
 
 # 9. Copy output to scratch

@@ -121,7 +121,6 @@ class SuperClimateDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set internal variables: self._data_train_val, self._data_test."""
-
         # shared for all
         dataset_kwargs = dict(
             output_save_dir=self.hparams.output_save_dir,

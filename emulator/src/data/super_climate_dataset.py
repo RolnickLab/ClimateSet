@@ -36,7 +36,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
     Input4MIPS data is only loaded once (per desired fire-model as specified by the climate models)
 
     """
-
     def __init__(
         self,
         years: Union[int, str] = "2015-2020",
@@ -617,7 +616,7 @@ class CMIP6Dataset(SuperClimateDataset):
         data_dir,  # dir leading to a specific ensemble member
         years: Union[int, str],
         historical_years: Union[int, str],
-        climate_model: str = "NorESM2-LM",
+        climate_model: str = "NorESM2-LM
         scenarios: List[str] = ["ssp126", "ssp370", "ssp585"],
         variables: List[str] = ["pr"],
         mode: str = "train",
