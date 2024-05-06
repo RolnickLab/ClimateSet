@@ -616,7 +616,7 @@ class CMIP6Dataset(SuperClimateDataset):
         data_dir,  # dir leading to a specific ensemble member
         years: Union[int, str],
         historical_years: Union[int, str],
-        climate_model: str = "NorESM2-LM
+        climate_model: str = "NorESM2-LM",
         scenarios: List[str] = ["ssp126", "ssp370", "ssp585"],
         variables: List[str] = ["pr"],
         mode: str = "train",

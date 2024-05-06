@@ -34,7 +34,7 @@ class ClimateDataModule(LightningDataModule):
     split, transform and process the data
 
     Read the docs:
-        https://pytorch-lightning.readthedocs.io/en/latest/extensions/datamodules.html
+        https://lightning.ai/docs/pytorch/stable/data/datamodule.html
     """
 
     def __init__(

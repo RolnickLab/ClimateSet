@@ -1,4 +1,4 @@
-import pathlib 
+from pathlib import Path
 import os
 
 # Data constants
@@ -17,10 +17,10 @@ SEQ_LEN_MAPPING = {"mon": 12}
 #     Path(__file__).absolute().parent.parent.parent.parent, "Climateset_DATA"
 # )  # os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
 # Model : (historical_obe_files, future_obe_files)
-# DATA_DIR = os.path.join(
-#     Path(__file__).absolute().parent.parent.parent.parent.parent, "scratch/Climateset_DATA"
-# )
-DATA_DIR = pathlib.PurePath("/network/datasets/climateset/climateset")
+DATA_DIR = os.path.join(
+    Path(__file__).absolute().parent.parent.parent.parent.parent, "scratch/Climateset_DATA"
+)
+
 
 # Available models
 AVAILABLE_MODELS_FIRETYPE = [
