@@ -25,9 +25,9 @@ def evaluate_preds(Ytrue: np.ndarray, preds: np.ndarray):
 
     mse = MSE(preds, Ytrue)
     rmse = RMSE(preds, Ytrue)
-    nrmse_g_climate_bench = NRMSE_g_ClimateBench(preds, Ytrue)
-    nrmse_s_climate_bench = NRMSE_s_ClimateBench(preds, Ytrue)
-    nrmse_climate_bench = NRMSE_ClimateBench(preds, Ytrue)
+    #nrmse_g_climate_bench = NRMSE_g_ClimateBench(preds, Ytrue)
+    #nrmse_s_climate_bench = NRMSE_s_ClimateBench(preds, Ytrue)
+    #nrmse_climate_bench = NRMSE_ClimateBench(preds, Ytrue)
     llrmse_wheather_bench = LLWeighted_RMSE_WheatherBench(preds, Ytrue)
     llmse_climax = LLweighted_MSE_Climax(preds, Ytrue)
     llrmse_climax = LLweighted_RMSE_Climax(preds, Ytrue)
@@ -35,9 +35,9 @@ def evaluate_preds(Ytrue: np.ndarray, preds: np.ndarray):
     stats = {
         "mse": mse,
         "rmse": rmse,
-        "nrmse_s_climate_bench": nrmse_s_climate_bench,
-        "nrmse_g_climate_bench": nrmse_g_climate_bench,
-        "nrmse_climate_bench": nrmse_climate_bench,
+        #"nrmse_s_climate_bench": nrmse_s_climate_bench,
+        #"nrmse_g_climate_bench": nrmse_g_climate_bench,
+        #"nrmse_climate_bench": nrmse_climate_bench,
         "llrmse_wheather_bench": llrmse_wheather_bench,
         "llmse_climax": llmse_climax,
         "llrmse_climax": llrmse_climax,

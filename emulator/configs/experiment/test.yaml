@@ -27,9 +27,9 @@ trainer:
 model:
   loss_function: "climax_lon_lat_rmse"
   monitor: "val/llrmse_climax"
-  finetune: False
-  pretrained_run_id:  "3u0ys0d5"
-  pretrained_ckpt_dir: "home/causalpaca/emulator/emulator/3u0ys0d5/checkpoints/epoch=0-step=750.ckpt"
+  finetune: True
+  pretrained_run_id:  "92p39anv"
+  pretrained_ckpt_dir: "/home/mila/c/charlotte.lange/scratch/ClimateSet_Dev/emulator/92p39anv/checkpoints/epoch=1-step=1500.ckpt"
 
 datamodule: # overwrite what stuff to train on
    in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']
