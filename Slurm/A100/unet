@@ -64,7 +64,7 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 # 8. Run Python
 export HYDRA_FULL_ERROR=1
 echo "Running python test.py ..."
-srun  python emulator/run.py experiment=superemulator/superemulator_unet_tas+pr_run-02.yaml seed=3423
+srun  python emulator/run.py experiment=superemulator/superemulator_unet_tas+pr_run-02.yaml  seed=1234 # seed=3423
 
 
 # 9. Copy output to scratch

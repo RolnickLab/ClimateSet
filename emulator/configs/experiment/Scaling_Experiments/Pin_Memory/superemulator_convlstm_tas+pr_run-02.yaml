@@ -17,12 +17,12 @@ defaults:
 # name of the run determines folder name in logs
 # can also be accessed by loggers
 run: 
-  exp_num: "01" # serial number of experiment
+  exp_num: "02" # serial number of experiment
   name: Pin_Memory # a short 1-2 word description of the experiment
 
 name: ${run.exp_num}_${model.model_name}_${run.name}_
 
-seed: 99 #42 #7
+seed: 99 #7 #42 
 
 trainer:
   min_epochs: 1
@@ -62,4 +62,4 @@ datamodule: # overwrite what stuff to train on
 logger:
   wandb:
     tags: ["conv_lstm", "super_emulation", "decoder", "6_models", "Mixed Precision", "BFLOAT16", "run2","A100"] # set your tags here
-    group: "MPT"
+    group: "Pin_Memory"

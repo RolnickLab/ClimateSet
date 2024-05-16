@@ -17,13 +17,13 @@ defaults:
 # name of the run determines folder name in logs
 # can also be accessed by loggers
 run: 
-  exp_num: "01" # serial number of experiment
+  exp_num: "02" # serial number of experiment
   name: A100 # a short 1-2 word description of the experiment
   comment: "A100"
 
 name: ${run.exp_num}_${model.model_name}_${run.name}_
 
-seed: 99 #42 #7
+seed: 42 #99 #7
 
 trainer:
   min_epochs: 1

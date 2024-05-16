@@ -23,7 +23,7 @@ run:
 
 name: ${run.name}_${model.model_name}_${datamodule.batch_size}_
 
-seed: 99 #42 #7
+seed: 42 #99 #7
 
 trainer:
   min_epochs: 1

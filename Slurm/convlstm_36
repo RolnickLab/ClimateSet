@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="SC36-basetest-convlstm"
+#SBATCH --job-name="SC36-basetest-convlstm_02"
 
 #SBATCH --nodes=1
 
@@ -14,7 +14,7 @@
 
 #SBATCH --time=48:00:00                                  # set runtime
 
-#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/SC36-basetest-convlstm.out        # set log dir to home
+#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/SC36-basetest-convlstm_02.out        # set log dir to home
 
 
 EXP_NAME=$1
@@ -66,7 +66,7 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 # 8. Run Python
 
 echo "Running python test.py ..."
-srun python emulator/run.py experiment=superemulator_36/superemulator_convlstm_tas+pr_run-02.yaml seed=3423
+srun python emulator/run.py experiment=superemulator_36/superemulator_convlstm_tas+pr_run-02.yaml seed=1234 #seed=3423
 
 
 # 9. Copy output to scratch

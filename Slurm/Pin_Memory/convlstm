@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="SC6-basetest-convlstm"
+#SBATCH --job-name="SC6-pin_memorry-convlstm"
 
 #SBATCH --nodes=1
 
@@ -14,7 +14,7 @@
 
 #SBATCH --time=48:00:00                                  # set runtime
 
-#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-basetest-convlstm.out        # set log dir to home
+#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-pin_memorry-convlstm.out        # set log dir to home
 
 
 EXP_NAME=$1
@@ -64,11 +64,11 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 # 8. Run Python
 export HYDRA_FULL_ERROR=1
 echo "Running python test.py ..."
-srun  python emulator/run.py experiment=Scaling_Experiments/Pin_Memory/superemulator_convlstm_tas+pr_run-02.yaml seed=3423
+srun  python emulator/run.py experiment=Scaling_Experiments/Pin_Memory/superemulator_convlstm_tas+pr_run-02.yaml seed=1234
 
 
 # 9. Copy output to scratch
-#cp /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-basetest-convlstm_out.out 
+#cp /home/mila/f/felix-andreas.nahrstedt/Slurm/SC6-pin_memorry-convlstm_out.out 
 
 # 10. Experiment is finished
 
