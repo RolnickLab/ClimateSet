@@ -4,6 +4,8 @@
 
 #SBATCH --nodes=1
 
+#SBATCH --partition=long
+
 #SBATCH --gpus-per-node=rtx8000:1
 
 #SBATCH --ntasks-per-node=1

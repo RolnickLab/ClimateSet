@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#SBATCH --job-name="NW3-SC6-RTX8000-basetest-unet"
+#SBATCH --job-name="NW8-SC6-RTX8000-basetest-unet"
 
 #SBATCH --nodes=1
 
-#SBATCH --gpus-per-node=rtx8000:1
+#SBATCH --gpus-per-node=a100:1 --constraint="dgx&ampere"       # specify gpu
 
 #SBATCH --ntasks-per-node=1
 
@@ -14,7 +14,7 @@
 
 #SBATCH --time=03:30:00                                  # set runtime
 
-#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/NW3-SC6-RTX8000-basetest-unet.out        # set log dir to home
+#SBATCH -o /home/mila/f/felix-andreas.nahrstedt/Slurm/NW8-SC6-RTX8000-basetest-unet.out        # set log dir to home
 
 module load python/3.10
 export PYTHONPATH=$(pwd)
@@ -38,7 +38,7 @@ export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-G
 # 8. Run Python
 export HYDRA_FULL_ERROR=1
 echo "Running python test.py ..."
-srun python emulator/run.py experiment=Scaling_Experiments/Batchsize/RTX8000_Experiments_unet/superemulator_NW3.yaml  seed=1234 # seed=3423
+srun python emulator/run.py experiment=Scaling_Experiments/Num_Workers/convlstm/superemulator_NW8.yaml  seed=1234 # seed=3423
 
 
 # 9. Copy output to scratch

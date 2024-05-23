@@ -198,6 +198,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         self.index_shifts = index
         # compute val/train indexes based on fraction
         total_length = self.get_initial_length()
+
         if mode=='test':
             # no split in testing
             print("no split in testing")
@@ -498,7 +499,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         return self.openburning_specs[index]
 
     def __getitem__(self, index):  # Dict[str, Tensor]):
-     
+        
         # check mode and reset the index
         if self.mode=='train':   
             index=self.train_indexes[index]
@@ -521,7 +522,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
             index=index
         else:
             print("Unknown Mode. Must be 'train' or 'val'")
-            print(self.model)
+            print(self.mode)
             raise ValueError
 
       
@@ -549,7 +550,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         raw_Ys = self.cmip6_ds_model[self.cmip6_model_index][self.cmip6_member_index][
             input4mips_index
         ]
-
         if not self.load_data_into_mem:
             X = raw_Xs
             Y = raw_Ys
@@ -596,8 +596,10 @@ class SuperClimateDataset(torch.utils.data.Dataset):
     
     def __len__(self):
         if self.mode=='train' or self.mode=='test':
+            print("TRAIN")
             return len(self.train_indexes)
         elif self.mode=='val':
+            print("VAL")
             return len(self.val_indexes)
         else:
             print("Unknown mode.", self.mode)
@@ -915,6 +917,7 @@ class Input4MipsDataset(SuperClimateDataset):
         self.length = self.Data.shape[0]
 
     def __getitem__(self, index):
+        print(f"Index: {index} out of {self.__len__()}")
         return self.Data[index]
 
 

@@ -16,8 +16,8 @@ done
 # sbatch Slurm/convlstm
 # sbatch Slurm/unet
 # sbatch Slurm/climax_36
-sbatch Slurm/climax_frozen_36
-sbatch Slurm/convlstm_36
+# sbatch Slurm/climax_frozen_36
+# sbatch Slurm/convlstm_36
 # sbatch Slurm/unet_36
 
 # sbatch Slurm/Pin_Memory/climax
@@ -31,21 +31,21 @@ sbatch Slurm/convlstm_36
 # sbatch Slurm/BatchSize_climax/16
 # sbatch Slurm/BatchSize_climax/32
 
-sbatch Slurm/BatchSize_climax_frozen/4
-sbatch Slurm/BatchSize_climax_frozen/8
-sbatch Slurm/BatchSize_climax_frozen/16
-sbatch Slurm/BatchSize_climax_frozen/32
+# sbatch Slurm/BatchSize_climax_frozen/4
+# sbatch Slurm/BatchSize_climax_frozen/8
+# sbatch Slurm/BatchSize_climax_frozen/16
+# sbatch Slurm/BatchSize_climax_frozen/32
 
 # # # RUN 3
-sbatch Slurm/BatchSize_convlstm/4
-sbatch Slurm/BatchSize_convlstm/8
-sbatch Slurm/BatchSize_convlstm/16
-sbatch Slurm/BatchSize_convlstm/32
+# sbatch Slurm/BatchSize_convlstm/4
+# sbatch Slurm/BatchSize_convlstm/8
+# sbatch Slurm/BatchSize_convlstm/16
+# sbatch Slurm/BatchSize_convlstm/32
 
-sbatch Slurm/BatchSize_unet/4
-sbatch Slurm/BatchSize_unet/8
-sbatch Slurm/BatchSize_unet/16
-sbatch Slurm/BatchSize_unet/32
+# sbatch Slurm/BatchSize_unet/4
+# sbatch Slurm/BatchSize_unet/8
+# sbatch Slurm/BatchSize_unet/16
+# sbatch Slurm/BatchSize_unet/32
 
 # RUN 4 -- CHANGE THE GROUP NAME TO A100!!!
 # sbatch Slurm/A100/climax
@@ -54,7 +54,7 @@ sbatch Slurm/BatchSize_unet/32
 # sbatch Slurm/A100/unet
 
 
-
+#+ mpt für climax frozen 2x
 
 
 

@@ -200,7 +200,8 @@ class SuperClimateDataModule(LightningDataModule):
     # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
     # y: (batch_size, sequence_length, lon, lat, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lon, lat)
     def train_dataloader(self):
-        # self._data_train_val.set_mode(train=True)
+        print("Train_Mode: ",self._data_train.mode)
+        self._data_train.set_mode(train=True)
         return DataLoader(
             dataset=self._data_train,
             batch_size=self.hparams.batch_size,
@@ -209,7 +210,8 @@ class SuperClimateDataModule(LightningDataModule):
         )
 
     def val_dataloader(self):
-        # self._data_train_val.set_mode(train=False)
+        self._data_val.set_mode(train=False)
+        print("Val_Mode: ",self._data_val.mode)
         return (
             DataLoader(dataset=self._data_val, **self._shared_eval_dataloader_kwargs())
             if self._data_val is not None

@@ -4,7 +4,7 @@
 
 defaults:
   - override /mode: exp.yaml
-  - override /trainer: Defa.yaml
+  - override /trainer: MPT.yaml
   - override /model: climax_frozen.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
