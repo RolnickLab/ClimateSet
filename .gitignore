@@ -127,6 +127,8 @@ celerybeat.pid
 
 # Environments
 env_emulator/
+env_new_emulator/*
+env_old_emulator/*
 .env
 .venv
 env/
@@ -161,3 +163,6 @@ Slurm/*
 emulator/configs/experiment/Scaling_Experiments/*
 emulator/configs/experiment/Scaling_Experiments
 Slurm/
+
+# if you put data somewhere else
+emulator/src/data/constants.py

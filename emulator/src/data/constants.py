@@ -18,7 +18,7 @@ SEQ_LEN_MAPPING = {"mon": 12}
 # )  # os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
 # Model : (historical_obe_files, future_obe_files)
 DATA_DIR = os.path.join(
-    Path(__file__).absolute().parent.parent.parent.parent.parent, "/network/datasets/climateset/"
+    Path(__file__).absolute().parent.parent.parent.parent.parent, "scratch/Climateset_DATA"
 )
 print(DATA_DIR)
 

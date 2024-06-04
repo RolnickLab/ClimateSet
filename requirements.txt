@@ -1,5 +1,5 @@
 xarray
-torch==2.2
+torch==2.2.2
 dask
 wandb
 hydra-core

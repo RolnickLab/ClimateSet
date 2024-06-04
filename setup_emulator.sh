@@ -1,8 +1,8 @@
 #!/bin/bash
 # Copy: 
-source env_new_emulator/bin/activate 
-module load python/3.10
-export PYTHONPATH=$(pwd)
+# source env_new_emulator/bin/activate 
+# module load python/3.10
+# export PYTHONPATH=$(pwd)
 
 
 # Default values for flags
