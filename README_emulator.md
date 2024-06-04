@@ -40,15 +40,25 @@ To create the environment used for training unet & convlstm models, use [require
 
 Follow the following steps to create the environment for non-windows users:
 
+Not Climax: 
 ```python
-python -m venv env_emulator
-source env_emulator/bin/activate
+python -m venv env_new_emulator
+source env_new_emulator/bin/activate
 pip install -r requirements.txt
 cd emulator # swithc into the emulator folder to perform the emulator setup
 pip install -e .
 ```
 
-For windows users: 
+Climax: 
+```python
+python -m venv env_old_emulator
+source env_old_emulator/bin/activate
+pip install -r requirements_climax.txt
+cd emulator # swithc into the emulator folder to perform the emulator setup
+pip install -e .
+```
+
+For windows users do it in this manner: 
 
 ```python
 python -m venv env_emulator
@@ -73,7 +83,8 @@ Non-Windows users:
 
 ```bash
 #input the path to the Climateset folder
-export PYTHONPATH=/home/user/myproject 
+export PYTHONPATH=/home/user/myproject # Or export PYTHONPATH=$pwd if you are in the right directory
+ 
 
 #Check for success with: 
 echo $PYTHONPATH

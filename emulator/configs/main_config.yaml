@@ -38,6 +38,7 @@ model:
 
 datamodule:
   batch_size: 4
+  shuffle: False
   # If you would like to track emissions using codecarbon
   emissions_tracker: True 
    

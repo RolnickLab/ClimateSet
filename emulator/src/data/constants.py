@@ -20,6 +20,8 @@ SEQ_LEN_MAPPING = {"mon": 12}
 DATA_DIR = os.path.join(
     Path(__file__).absolute().parent.parent.parent.parent.parent, "scratch/Climateset_DATA"
 )
+print(DATA_DIR)
+
 
 # Available models
 AVAILABLE_MODELS_FIRETYPE = [
