@@ -22,6 +22,7 @@ DATA_DIR = os.path.join(
 )
 print(DATA_DIR)
 
+
 # Available models
 AVAILABLE_MODELS_FIRETYPE = [
     "CESM2-WACCM",

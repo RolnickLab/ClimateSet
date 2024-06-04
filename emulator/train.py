@@ -10,7 +10,7 @@ from emulator.src.utils.interface import get_model_and_data
 from emulator.src.utils.utils import get_logger
 from pytorch_lightning.profilers import PyTorchProfiler
 from datetime import datetime
-from torch.profiler import profile, record_function, ProfilerActivity
+from torch.profiler import profile, record_function, ProfilerActivity, tensorboard_trace_handler, schedule
 from codecarbon import EmissionsTracker
 
 
@@ -34,10 +34,13 @@ def run_model(config: DictConfig):
     # Displays Time
     current_time = c.strftime('%H:%M:%S')
 
+    
     profiler = None
+    checkpointing = True
     if config.get("pyprofile"):
-        profiler = PyTorchProfiler(dirpath="logs/profiles",filename=f"Basetest-{config.name}-Basetest-{current_time}",activities=[ProfilerActivity.CPU],
-            profile_memory=True, record_shapes=True)
+        checkpointing = False
+        profiler = PyTorchProfiler(dirpath="logs/profiles",filename=f"Pyprofile-{config.name}-Basetest-{current_time}",activities=[ProfilerActivity.CPU,ProfilerActivity.CUDA],
+            profile_memory=True, record_shapes=True, on_trace_ready=tensorboard_trace_handler("logs/profiles"), schedule=schedule(wait=1, warmup=1, active=3, repeat=2))
         
     log.info(config.name)
 
@@ -51,6 +54,7 @@ def run_model(config: DictConfig):
         profiler=profiler,
         callbacks=callbacks,
         logger=loggers,  # , deterministic=True
+        enable_checkpointing=checkpointing,
     )
 
     # Send some parameters from config to all lightning loggers
@@ -65,23 +69,28 @@ def run_model(config: DictConfig):
 
 
     emissionTracker = EmissionsTracker() if emissions_tracker_enabled else None
-    if emissionTracker:
+    if emissionTracker and not config.logger.get("name")=="none":
         emissionTracker.start()
 
     trainer.fit(model=emulator_model, datamodule=data_module)
-
-    emissions = emissionTracker.stop() if emissions_tracker_enabled else 0
-        
-
-    cfg_utils.save_emissions_to_wandb(config, emissions)
-    cfg_utils.save_hydra_config_to_wandb(config)
+    if emissionTracker and not config.logger.get("name")=="none":
+        print(config.logger.get("wandb"))
+        emissions:float = emissionTracker.stop()
+        log.info(f"Total emissions: {emissions} kgCO2")
+        cfg_utils.save_emissions_to_wandb(config, emissions)
+    
+    if(not config.logger.get("name")=="none"):
+        cfg_utils.save_hydra_config_to_wandb(config)
 
     # Testing:
-    if config.get("test_after_training"):
-        trainer.test(datamodule=data_module, ckpt_path="best")
+    if(not config.logger.get("name")=="none"):
+        if config.get("test_after_training"):
+            trainer.test(datamodule=data_module, ckpt_path="best")
 
-    if config.get("logger") and config.logger.get("wandb"):
-        wandb.finish()
+        if config.get("logger"):
+            wandb.finish()
+    
+    print("Finished")
 
     # log.info("Reloading model from checkpoint based on best validation stat.")
     # final_model = emulator_model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path,

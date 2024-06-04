@@ -11,8 +11,8 @@ import numpy as np
 import xarray as xr
 import torch
 from torch import Tensor
-from emulator.src.data.meta_information.facet_options_cmip6 import variable_id as cmip6_vars
-from emulator.src.data.meta_information.facet_options_input4mips import variable_id as input4mip_vars
+import threading
+
 
 from emulator.src.utils.utils import get_logger, all_equal, map_variables_targetmip
 from emulator.src.data.constants import (
@@ -28,19 +28,320 @@ from emulator.src.data.constants import (
     NO_OPENBURNING_VARS,
     AVAILABLE_MODELS_FIRETYPE,
 )
-
 log = get_logger()
+from abc import ABC, abstractmethod
 
+class ABC_Climate_Dataset(ABC, torch.utils.data.Dataset):
+    """
+    Abstract base class for climate datasets.
 
-class SuperClimateDataset(torch.utils.data.Dataset):
+    Attributes:
+        mode (str): Mode of the dataset, either 'train', 'val', or 'test'.
+    """
+
+    @abstractmethod
+    def __init__(self, mode: str = "train+val"):
+        """
+        Initializes the dataset with the given mode.
+
+        Args:
+            mode (str): Mode of the dataset, either 'train', 'val', or 'test'. Default is 'train+val'.
+        """
+        self.mode = mode
+
+    @abstractmethod
+    def __getitem__(self, index):
+        """Abstract method to get an item by index."""
+        pass
+
+    def get_save_name_from_kwargs(self, mode: str, file: str, kwargs: Dict) -> str:
+        """
+        Generates a save file name based on given mode, file type, and additional keyword arguments.
+
+        Args:
+            mode (str): Mode of the dataset.
+            file (str): File type.
+            kwargs (Dict): Additional arguments to include in the file name.
+
+        Returns:
+            str: Generated file name.
+        """
+        fname = ""
+
+        if file == "statistics":
+            # Only CMIP6
+            if "climate_model" in kwargs:
+                fname += kwargs["climate_model"] + "_"
+            if "num_ensembles" in kwargs:
+                fname += str(kwargs["num_ensembles"]) + "_"
+            # All variables
+            fname += "_".join(kwargs["variables"]) + "_"
+        else:
+            for k, v in kwargs.items():
+                if isinstance(v, list):
+                    fname += f"{k}_" + "_".join(map(str, v)) + "_"
+                else:
+                    fname += f"{k}_{v}_"
+
+        if file == "statistics":
+            fname += f"{mode}_{file}.npy"
+        else:
+            fname += f"{mode}_{file}.npz"
+
+        return fname
+
+    def _reload_data(self, fname: str):
+        """
+        Reloads data from a file.
+
+        Args:
+            fname (str): File name.
+
+        Returns:
+            The reloaded data.
+        """
+        try:
+            in_data = np.load(fname, allow_pickle=True)
+        except zipfile.BadZipFile as e:
+            log.warning(f"{fname} was not properly saved or has been corrupted.")
+            raise e
+
+        try:
+            in_files = in_data.files
+        except AttributeError:
+            return in_data
+
+        if len(in_files) == 1:
+            return in_data[in_files[0]]
+        else:
+            return {k: in_data[k] for k in in_files}
+
+    def load_dataset_statistics(self, fname: str, mode: str, mips: str):
+        """
+        Loads dataset statistics from a file.
+
+        Args:
+            fname (str): File name.
+            mode (str): Mode of the dataset.
+            mips (str): MIPS type.
+
+        Returns:
+            dict: Loaded statistics data.
+        """
+        if "train_" in fname:
+            fname = fname.replace("train", "train+val")
+        elif "test" in fname:
+            fname = fname.replace("test", "train+val")
+
+        stats_data = np.load(os.path.join(self.output_save_dir, fname), allow_pickle=True).item()
+        return stats_data
+
+    def normalize_data(self, data: np.ndarray, stats: dict, norm_type: str = "z-norm") -> np.ndarray:
+        """
+        Normalizes data using given statistics and normalization type.
+
+        Args:
+            data (np.ndarray): Data to normalize.
+            stats (dict): Statistics for normalization.
+            norm_type (str): Type of normalization. Default is 'z-norm'.
+
+        Returns:
+            np.ndarray: Normalized data.
+        """
+        if self.channels_last:
+            data = np.moveaxis(data, -1, 0)  # Move variables from last to first axis
+        else:
+            data = np.moveaxis(data, 2, 0)  # Move variables to first axis
+
+        norm_data = (data - stats["mean"]) / stats["std"]
+
+        if self.channels_last:
+            norm_data = np.moveaxis(norm_data, 0, -1)
+        else:
+            norm_data = np.moveaxis(norm_data, 0, 2)  # Switch back to original shape
+
+        return norm_data
+
+    def load_into_mem(
+        self, paths: List[List[str]], num_vars: int, channels_last: bool = True, 
+        seq_to_seq: bool = True, seq_len: int = 12
+    ) -> np.ndarray:
+        """
+        Loads dataset into memory.
+
+        Args:
+            paths (List[List[str]]): List of paths to the data files.
+            num_vars (int): Number of variables.
+            channels_last (bool): If True, channels are last. Default is True.
+            seq_to_seq (bool): If True, uses sequence-to-sequence format. Default is True.
+            seq_len (int): Length of the sequence. Default is 12.
+
+        Returns:
+            np.ndarray: Loaded data.
+        """
+        array_list = []
+        for vlist in paths:
+            temp_data = xr.open_mfdataset(vlist, concat_dim="time", combine="nested").compute()
+            temp_data = temp_data.to_array().to_numpy()
+            array_list.append(temp_data)
+        temp_data = np.concatenate(array_list, axis=0)
+
+        if seq_len != SEQ_LEN:
+            new_num_years = int(np.floor(temp_data.shape[1] / seq_len / len(self.scenarios)))
+            new_shape_one = new_num_years * len(self.scenarios)
+            assert new_shape_one * seq_len > temp_data.shape[1], (
+                f"New sequence length {seq_len} greater than available years {temp_data.shape[1]}!"
+            )
+            temp_data = temp_data[:, : (new_shape_one * seq_len), :]
+        else:
+            new_shape_one = int(temp_data.shape[1] / seq_len)
+
+        temp_data = temp_data.reshape(num_vars, new_shape_one, seq_len, LON, LAT)
+
+        if not seq_to_seq:
+            temp_data = temp_data[:, :, -1, :, :]  # Only take last time step
+            temp_data = np.expand_dims(temp_data, axis=2)
+
+        if channels_last:
+            temp_data = temp_data.transpose((1, 2, 3, 4, 0))
+        else:
+            temp_data = temp_data.transpose((1, 2, 0, 3, 4))
+
+        return temp_data
+
+    def write_dataset_statistics(self, fname: str, stats: dict) -> str:
+        """
+        Writes dataset statistics to a file.
+
+        Args:
+            fname (str): File name.
+            stats (dict): Statistics data.
+
+        Returns:
+            str: Path to the saved file.
+        """
+        np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)
+        return os.path.join(self.output_save_dir, fname)
+
+    def save_data_into_disk(self, data: np.ndarray, fname: str, output_save_dir: str) -> str:
+        """
+        Saves data into disk.
+
+        Args:
+            data (np.ndarray): Data to save.
+            fname (str): File name.
+            output_save_dir (str): Directory to save the file.
+
+        Returns:
+            str: Path to the saved file.
+        """
+        np.savez(os.path.join(output_save_dir, fname), data=data)
+        return os.path.join(output_save_dir, fname)
+
+    def copy_to_slurm(self, fname: str):
+        """
+        Copies data to SLURM directory.
+
+        Args:
+            fname (str): File name.
+        """
+        # TODO: Implement SLURM copy logic
+        pass
+
+    def get_dataset_statistics(self, data: np.ndarray, mode: str, norm_type: str = "z-norm", mips: str = "cmip6"):
+        """
+        Gets dataset statistics.
+
+        Args:
+            data (np.ndarray): Data to calculate statistics for.
+            mode (str): Mode of the dataset.
+            norm_type (str): Type of normalization. Default is 'z-norm'.
+            mips (str): MIPS type. Default is 'cmip6'.
+
+        Returns:
+            Tuple: Mean and standard deviation or min and max values.
+        """
+        if mode in ["train", "train+val"]:
+            if norm_type == "z-norm":
+                return self.get_mean_std(data)
+            elif norm_type == "minmax":
+                return self.get_min_max(data)
+            else:
+                print(f"Normalization of type {norm_type} has not been implemented!")
+        else:
+            print("In testing mode, skipping statistics calculations.")
+
+    def get_mean_std(self, data: np.ndarray):
+        """
+        Calculates mean and standard deviation of the data.
+
+        Args:
+            data (np.ndarray): Data to calculate statistics for.
+
+        Returns:
+            Tuple: Mean and standard deviation.
+        """
+        if self.channels_last:
+            data = np.moveaxis(data, -1, 0)
+        else:
+            data = np.moveaxis(data, 2, 0)
+        
+        vars_mean = np.mean(data, axis=(1, 2, 3, 4))
+        vars_std = np.std(data, axis=(1, 2, 3, 4))
+
+        vars_mean = np.expand_dims(vars_mean, (1, 2, 3, 4))
+        vars_std = np.expand_dims(vars_std, (1, 2, 3, 4))
+
+        return vars_mean, vars_std
+
+    def get_min_max(self, data: np.ndarray):
+        """
+        Calculates min and max values of the data.
+
+        Args:
+            data (np.ndarray): Data to calculate statistics for.
+
+        Returns:
+            Tuple: Min and max values.
+        """
+        if self.channels_last:
+            data = np.moveaxis(data, -1, 0)
+        else:
+            data = np.moveaxis(data, 2, 0)
+        
+        vars_max = np.max(data, axis=(1, 2, 3, 4))
+        vars_min = np.min(data, axis=(1, 2, 3, 4))
+
+        vars_max = np.expand_dims(vars_max, (1, 2, 3, 4))
+        vars_min = np.expand_dims(vars_min, (1, 2, 3, 4))
+
+        return vars_min, vars_max
+
+    def __len__(self) -> int:
+        """
+        Returns the length of the dataset based on the mode.
+
+        Returns:
+            int: Length of the dataset.
+        """
+        if self.mode == 'train' or self.mode == 'test':
+            return len(self.index_manager.train_indexes)
+        elif self.mode == 'val':
+            return len(self.index_manager.val_indexes)
+        else:
+            print(f"Unknown mode: {self.mode}")
+            raise ValueError
+    
+
+class SuperClimateDataset(ABC_Climate_Dataset):
     """
     Class to efficiently load data for multi-model multi-ensemble experiments.
     Input4MIPS data is only loaded once (per desired fire-model as specified by the climate models)
 
     """
-
     def __init__(
         self,
+        index_manager = None,
         years: Union[int, str] = "2015-2020",
         mode: str = "train+val",
         input4mips_data_dir: Optional[str] = DATA_DIR,
@@ -70,7 +371,7 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         **kwargs,
     ):
         super().__init__()
-
+        self.index_manager = index_manager
         self.output_save_dir = output_save_dir
         self.channels_last = channels_last
         self.load_data_into_mem = load_data_into_mem
@@ -95,12 +396,11 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         
 
         self.scenarios = scenarios
-        self.climate_models = climate_models
 
         if isinstance(num_ensembles, int):
-            self.num_ensembles = [num_ensembles] * len(climate_models)
+            self.index_manager.num_ensembles = [num_ensembles] * len(climate_models)
         else:
-            self.num_ensembles = num_ensembles
+            self.index_manager.num_ensembles = num_ensembles
 
         if isinstance(years, int):
             self.years = years
@@ -125,12 +425,6 @@ class SuperClimateDataset(torch.utils.data.Dataset):
         )
 
         # we need to create a mapping from climate model to respective input4mips ds (because openburning specs might differ)
-        self.openburning_specs = [
-            OPENBURNING_MODEL_MAPPING[climate_model]
-            if climate_model in AVAILABLE_MODELS_FIRETYPE
-            else OPENBURNING_MODEL_MAPPING["other"]
-            for climate_model in climate_models
-        ]
 
         ds_kwargs = dict(
             scenarios=scenarios,
@@ -144,244 +438,32 @@ class SuperClimateDataset(torch.utils.data.Dataset):
             data_dir=input4mips_data_dir,
         )
 
-        # creates list of input4mips (one per unique openburning spec)
-        self.input4mips_ds = dict()
-        for spec in set(self.openburning_specs):
-            self.input4mips_ds[spec] = Input4MipsDataset(
-                variables=in_variables_im, openburning_specs=spec, **ds_kwargs
-            )
-
-        # we create one CMIP6 dataset per model-ensemble member pair for easier iteration
-        self.cmip6_ds_model = []
-        self.cmip6_model_index = 0
-        self.cmip6_member_index = 0
-        self.input4mips_shift = 0
-
-        # switch out data directory
-        ds_kwargs.pop("data_dir")
-        for climate_model, num_ensembles, openburning_specs in zip(
-            self.climate_models, self.num_ensembles, self.openburning_specs
-        ):
-            cmip6_ds_model_member = []
-            # get ensemble dir list
-            root_dir = os.path.join(cmip6_data_dir, "outputs/CMIP6")
-            if isinstance(climate_model, str):
-                root_dir = os.path.join(root_dir, climate_model)
-
-            if num_ensembles == 1:
-                ensembles = os.listdir(root_dir)
-                ensemble_dir = [
-                    os.path.join(root_dir, ensembles[0])
-                ]  # Taking first ensemble member
-            else:
-                ensemble_dir = []
-                ensembles = os.listdir(root_dir)
-                for i, folder in enumerate(ensembles):
-                    ensemble_dir.append(
-                        os.path.join(root_dir, folder)
-                    )  # Taking multiple ensemble members
-                    if i == (num_ensembles - 1):
-                        break
-
-            for em in ensemble_dir:
-                # create on ds for each ensemble member
-                cmip6_ds_model_member.append(
-                    CMIP6Dataset(
-                        data_dir=em,
-                        climate_model=climate_model,
-                        openburning_specs=openburning_specs,
-                        variables=out_variables_im,
-                        **ds_kwargs,
-                    )
-                )
-
-            self.cmip6_ds_model.append(cmip6_ds_model_member)
-
-        # for index shift we need the cum sum of the lengths
-        lengths_model = []
-        for model in self.cmip6_ds_model:
-            lengths_member = []
-            for member in model:
-                lengths_member.append(member.length)
-            lengths_model.append(lengths_member)
-
-        lengths_model = np.asarray(lengths_model)
-        # roll by one to get the correct shift
-        lengths_model = np.roll(lengths_model, 1)
-        lengths_model[0][0] = 0
-        index = np.cumsum(lengths_model).reshape(lengths_model.shape)
-        self.index_shifts = index
         # compute val/train indexes based on fraction
-        total_length = self.get_initial_length()
-        if mode=='test':
-            # no split in testing
-            print("no split in testing")
-            self.val_indexes=[]
-            self.reset_val_index=None
-            self.mode="test"
-            self.train_indexes=np.arange(total_length)
-            self.reset_train_index=0
-        else:
-            self.val_indexes=np.sort(np.random.choice(total_length, int(np.round(val_split*total_length)), replace=False))
-            self.reset_val_index=self.val_indexes[0]
-            self.train_indexes=np.delete(np.arange(total_length), self.val_indexes)
-            self.reset_train_index=self.train_indexes[0]
-            print("val indexes", self.val_indexes, "reset", self.reset_val_index)
-            print("train_indexes", self.train_indexes, "reset", self.reset_train_index)
-            self.mode="train" # by default use train indexes
+        # First set to test, but generally it will be set to either Val or Training first and only if it is not set at all, it will be set to to test automatically
+        self.mode = "test"
+        self.val_indexes=[]
+        self.reset_val_index=None
+        self.train_indexes=np.arange(self.index_manager.total_length)
+        self.reset_train_index=0
 
 
-    def set_mode(self, train: bool = False):
-        if train:
+    def set_mode(self, train: bool = False, indexes=None,reset_index=None, test = False):
+        if test: 
+            if train: 
+                raise Exception("Train parametere should not be True when Test is True!")
+            pass
+        elif train:
             log.info("Setting to train.")
             self.mode='train'
+            if ((indexes is not None) and (reset_index is not None)): 
+                self.train_indexes = indexes
+                self.reset_train_index = reset_index
         else:
             log.info("Setting to val.")
             self.mode='val'
-        return copy.deepcopy(self)
-
-    # this operates variable vise now...
-    def load_into_mem(
-        self,
-        paths: List[List[str]],
-        num_vars,
-        channels_last=True,
-        seq_to_seq=True,
-        seq_len=12,
-    ):  # -> np.ndarray():
-        array_list = []
-        for vlist in paths:
-            temp_data = xr.open_mfdataset(
-                vlist, concat_dim="time", combine="nested"
-            ).compute()  # .compute is not necessary but eh, doesn't hurt
-            temp_data = temp_data.to_array().to_numpy()
-            array_list.append(temp_data)
-        temp_data = np.concatenate(array_list, axis=0)
-
-        if seq_len != SEQ_LEN:
-            print(
-                "Choosing a sequence length greater or lesser than the data sequence length."
-            )
-            new_num_years = int(
-                np.floor(temp_data.shape[1] / seq_len / len(self.scenarios))
-            )
-
-            # divide by scenario num and seq len, round
-            # multiply with scenario num an dseq len to get correct shape
-            new_shape_one = new_num_years * len(self.scenarios)
-            assert (
-                new_shape_one * seq_len > temp_data.shape[1]
-            ), f"New sequence length {seq_len} greater than available years {temp_data.shape[1]}!"
-            print(
-                f"New sequence length: {seq_len} Dropping {temp_data.shape[1]-(new_shape_one*seq_len)} years"
-            )
-            temp_data = temp_data[:, : (new_shape_one * seq_len), :]
-
-        else:
-            new_shape_one = int(temp_data.shape[1] / seq_len)
-
-        temp_data = temp_data.reshape(
-            num_vars, new_shape_one, seq_len, LON, LAT
-        )  # num_vars, num_scenarios*num_remainding_years, seq_len,lon,lat)
-
-        if seq_to_seq == False:
-            temp_data = temp_data[:, :, -1, :, :]  # only take last time step
-            temp_data = np.expand_dims(temp_data, axis=2)
-
-        if channels_last:
-            temp_data = temp_data.transpose((1, 2, 3, 4, 0))
-        else:
-            temp_data = temp_data.transpose((1, 2, 0, 3, 4))
-
-        return temp_data  # (years*num_scenarios, seq_len, vars, 96, 144)
-
-    def save_data_into_disk(
-        self, data: np.ndarray, fname: str, output_save_dir: str
-    ) -> str:
-        np.savez(os.path.join(output_save_dir, fname), data=data)
-        return os.path.join(output_save_dir, fname)
-
-    """
-        def get_save_name_from_kwargs(self, mode:str, file:str,kwargs: Dict):
-            fname =""
-                
-            for k in kwargs:
-                if isinstance(kwargs[k], List):
-                    fname+=f"{k}_"+"_".join(kwargs[k])+'_'
-                else:
-                    fname+=f"{k}_{kwargs[k]}_"
-
-            if file == 'statistics':
-                fname +=  '_' + file + '.npy'
-            else:
-                fname += mode + '_' + file + '.npz'
-            print(fname)
-            return fname
-        """
-
-    def get_save_name_from_kwargs(self, mode: str, file: str, kwargs: Dict):
-        fname = ""
-
-        if file == "statistics":
-            # only cmip 6
-            if "climate_model" in kwargs:
-                fname += kwargs["climate_model"] + "_"
-            if "num_ensembles" in kwargs:
-                fname += str(kwargs["num_ensembles"]) + "_"
-            # all
-            fname += (
-                "_".join(kwargs["variables"]) + "_"
-            )  # + '_' + kwargs['input_normalization']
-            # fname +=  '_' + file + '.npy'
-            # print(fname)
-
-        else:
-            for k in kwargs:
-                if isinstance(kwargs[k], List):
-                    fname += f"{k}_" + "_".join(kwargs[k]) + "_"
-                else:
-                    fname += f"{k}_{kwargs[k]}_"
-
-        if file == "statistics":
-            fname += mode + "_" + file + ".npy"
-        else:
-            fname += mode + "_" + file + ".npz"
-
-        print(fname)
-        return fname
-
-    def copy_to_slurm(self, fname):
-        pass
-        # Need to re-write this depending on which directory structure we want
-
-        # if 'SLURM_TMPDIR' in os.environ:
-        #     print('Copying the datato SLURM_TMPDIR')
-
-        #     input_dir = os.environ['SLURM_TMPDIR'] + '/input'
-        #     os.makedirs(os.path.dirname(in_dir), exist_ok=True)
-
-        #     shutil.copyfile(self.input_fname, input_dir)
-        #     self.input_path = h5_path_new_in
-
-        #     h5_path_new_out = os.environ['SLURM_TMPDIR'] + '/output_' + self._filename
-        #     shutil.copyfile(self._out_path, h5_path_new_out)
-        #     self._out_path = h5_path_new_out
-
-    def _reload_data(self, fname):
-        try:
-            in_data = np.load(fname, allow_pickle=True)
-        except zipfile.BadZipFile as e:
-            log.warning(f"{fname} was not properly saved or has been corrupted.")
-            raise e
-        try:
-            in_files = in_data.files
-        except AttributeError:
-            return in_data
-
-        if len(in_files) == 1:
-            return in_data[in_files[0]]
-        else:
-            return {k: in_data[k] for k in in_files}
+            if ((indexes is not None) and (reset_index is not None)): 
+                self.val_indexes = indexes
+                self.reset_val_index = reset_index
 
     def get_years_list(self, years: str, give_list: Optional[bool] = False):
         """
@@ -402,269 +484,59 @@ class SuperClimateDataset(torch.utils.data.Dataset):
             return np.arange(min_year, max_year + 1, step=1)
         return min_year, max_year
 
-    def get_dataset_statistics(self, data, mode, type="z-norm", mips="cmip6"):
-        if mode == "train" or mode == "train+val":
-            if type == "z-norm":
-                mean, std = self.get_mean_std(data)
-                return mean, std
-            elif type == "minmax":
-                min_val, max_val = self.get_min_max(data)
-                return min_val, max_val
-            else:
-                print("Normalizing of type {0} has not been implemented!".format(type))
-        else:
-            print("In testing mode, skipping statistics calculations.")
-
-    def get_mean_std(self, data):
-        # shape (examples, seq_len, vars, lon, lat) or DATA shape (examples, seq_len, vars, lon, lat)
-
-        if self.channels_last:
-            data = np.moveaxis(data, -1, 0)
-        else:
-            data = np.moveaxis(
-                data, 2, 0
-            )  # move vars to first axis, easier to calulate statistics
-        vars_mean = np.mean(data, axis=(1, 2, 3, 4))
-        vars_std = np.std(data, axis=(1, 2, 3, 4))
-        vars_mean = np.expand_dims(
-            vars_mean, (1, 2, 3, 4)
-        )  # Shape of mean & std (4, 1, 1, 1, 1)
-        vars_std = np.expand_dims(vars_std, (1, 2, 3, 4))
-        return vars_mean, vars_std
-
-    def get_min_max(self, data):
-        if self.channels_last:
-            data = np.moveaxis(data, -1, 0)
-        else:
-            data = np.moveaxis(
-                data, 2, 0
-            )  # move vars to front, easier to calulate statistics
-        vars_max = np.max(data, axis=(1, 2, 3, 4))
-        vars_min = np.min(data, axis=(1, 2, 3, 4))
-        vars_max = np.expand_dims(
-            vars_max, (1, 2, 3, 4)
-        )  # Shape of mean & std (vars, 1, 1, 1, 1)
-        vars_min = np.expand_dims(vars_min, (1, 2, 3, 4))
-        return vars_min, vars_max
-
-    def normalize_data(self, data, stats, type="z-norm"):
-        # Only implementing z-norm for now
-        # z-norm: (data-mean)/(std + eps); eps=1e-9
-        # min-max = (v - v.min()) / (v.max() - v.min())
-
-        print("Normalizing data...")
-        if self.channels_last:
-            data = np.moveaxis(
-                data, -1, 0
-            )  # vars from last to 0 (num_vars, years, seq_len, lon, lat)
-        else:
-            data = np.moveaxis(
-                data, 2, 0
-            )  # DATA shape (years, seq_len, num_vars, 96, 144) -> (num_vars, years, seq_len, 96, 144)
-
-        norm_data = (data - stats["mean"]) / (stats["std"])
-
-        if self.channels_last:
-            norm_data = np.moveaxis(norm_data, 0, -1)
-        else:
-            norm_data = np.moveaxis(
-                norm_data, 0, 2
-            )  # Switch back to (years, seq_len, num_vars, 96, 144)
-
-        return norm_data
-
-    def write_dataset_statistics(self, fname, stats):
-        np.save(os.path.join(self.output_save_dir, fname), stats, allow_pickle=True)
-        return os.path.join(self.output_save_dir, fname)
-
-    def load_dataset_statistics(self, fname, mode, mips):
-        if "train_" in fname:
-            fname = fname.replace("train", "train+val")
-        elif "test" in fname:
-            fname = fname.replace("test", "train+val")
-
-        stats_data = np.load(
-            os.path.join(self.output_save_dir, fname), allow_pickle=True
-        ).item()
-
-        return stats_data
-
-    def increment_cimp6_index(self):
-        # if exceeded member reset member index to 0
-        if self.cmip6_member_index + 1 >= len(
-            self.cmip6_ds_model[self.cmip6_model_index]
-        ):
-            # resetting member index
-            self.cmip6_member_index = 0
-
-            # if exceeded models rerest model index to 0
-            if self.cmip6_model_index + 1 >= len(self.cmip6_ds_model):
-                self.cmip6_model_index = 0
-
-            else:
-                # increment model index
-                self.cmip6_model_index += 1
-        else:
-            # increment member index
-            self.cmip6_member_index += 1
-
-    def model_index_to_spec(self, index):
-        # get correct openburning spec
-        return self.openburning_specs[index]
-
+    
     def __getitem__(self, index):  # Dict[str, Tensor]):
-     
         # check mode and reset the index
         if self.mode=='train':   
             index=self.train_indexes[index]
             # check that everything is reset if index is zero (starting again)
-        
+
             if index == self.reset_train_index:
-                
-                self.cmip6_model_index = 0
-                self.cmip6_member_index = 0
-          
+                self.index_manager.reset_index()
+        
         elif self.mode=='val':
+
             index=self.val_indexes[index]
             # check that everything is reset if index is zero (starting again)
             if index == self.reset_val_index:
-
-                self.cmip6_model_index = 0
-                self.cmip6_member_index = 0
+                self.index_manager.reset_index()
         elif self.mode=='test':
             # no need to reset in testing
             index=index
         else:
-            print("Unknown Mode. Must be 'train' or 'val'")
-            print(self.model)
             raise ValueError
-
+        
+        self.index_manager.increment_cmip6_index(index)
       
-        # get climate model index
-        # shift indexd (for models and members)
-        # deal with multiple models
-        # if current iteration longer than the models ds, increment model index
-        if (
-            index - self.index_shifts[self.cmip6_model_index][self.cmip6_member_index]
-        ) > self.cmip6_ds_model[self.cmip6_model_index][
-            self.cmip6_member_index
-        ].length - 1:
-            self.increment_cimp6_index()
+        Y = self.index_manager.get_raw_ys(index)
+        X = self.index_manager.get_raw_xs(index)
 
-        # access data in input4mips and cmip6 datasets
-        # get correct input4mips set
-        input4mips_spec_index = self.model_index_to_spec(self.cmip6_model_index)
 
-        # for input4mips we need an index shift (dependent on num ensembles and num models)
-        input4mips_index = (
-            index - self.index_shifts[self.cmip6_model_index][self.cmip6_member_index]
-        )
-
-        raw_Xs = self.input4mips_ds[input4mips_spec_index][input4mips_index]
-        raw_Ys = self.cmip6_ds_model[self.cmip6_model_index][self.cmip6_member_index][
-            input4mips_index
-        ]
-
-        if not self.load_data_into_mem:
-            X = raw_Xs
-            Y = raw_Ys
-        else:
-            # TO-DO: Need to write Normalizer transform and To-Tensor transform
-            # Doing norm and to-tensor per-instance here.
-            # X_norm = self.input_transforms(self.X[index])
-            # Y_norm = self.output_transforms(self.Y[index])
-            X = raw_Xs
-            Y = raw_Ys
 
         # convert cmip model index to overall model num
-        model_id = self.climate_models[self.cmip6_model_index]
+        model_id = self.index_manager.climate_models[self.index_manager.cmip6_model_index]
         # return which climate model index the batch belongs to
-
-        # TODO: map x,y back to original x,y (ys may belong to xs and the other way around)
-    
-        if self.channels_last:
-            # 0,1,2 change the same, 3 changes according to var lenght
-            X_new=np.empty((X.shape[0], X.shape[1], X.shape[2], self.num_in), dtype=X.dtype)# same as X with different number of vars (according to original)
-            Y_new=np.empty((Y.shape[0], Y.shape[1], Y.shape[2], self.num_out), dtype=Y.dtype)
-       
-        else:
-            # 0,2,3, stay, 1 changes according to var length
-            X_new=np.empty((X.shape[0], self.num_in, X.shape[2], X.shape[3]), dtype=X.dtype)# same as X with different number of vars (according to original)
-            Y_new=np.empty((Y.shape[0], self.num_out, Y.shape[2], Y.shape[3]), dtype=Y.dtype)
-        
-    
-        for e,(t,ix) in enumerate(self.x_indexes):
-          
-            if t=="in":
-                if self.channels_last:
-                    X_new[:,:,:,e]=X[:,:,:,ix]
-                else:
-                    X_new[:,e,:,:]=X[:,ix,:,:]
-            elif t=="out":
-                if self.channels_last:
-                    X_new[:,:,:,e]=Y[:,:,:,ix]
-                else:
-                    X_new[:,e,:,:]=Y[:,ix,:,:]
-            else: 
-                raise ValueError(f"unknown type {t}")
-        for e,(t,ix) in enumerate(self.y_indexes):
-            if t=="in":
-                if self.channels_last:
-                    Y_new[:,:,:,e]=X[:,:,:,ix]
-                else:
-                    Y_new[:,e,:]=X[:,ix,:]
-            elif t=="out":
-                if self.channels_last:
-                    Y_new[:,:,:,e]=Y[:,:,:,ix]
-                else:
-                    Y_new[:,e,:]=Y[:,ix,:]
-            else: 
-                raise ValueError(f"unknown type {t}")
-  
-
-
-        return X_new, Y_new, model_id
+        return X, Y, model_id
 
     def __str__(self):
-        s = f" Super Emulator dataset: {len(self.climate_models)} climate models with {self.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
+        s = f" Super Emulator dataset: {len(self.index_manager.climate_models)} climate models with {self.index_manager.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
         return s
 
-    def get_initial_length(self):
-        # len is length of ds times length of each individual
-        in_lengths = [
-            self.input4mips_ds[spec].length for spec in self.openburning_specs
-        ]
-        print("Val/Train all_equal test")
-
-        assert all_equal(
-            in_lengths
-        ), f"input4mip datasets do not have the same length for each openburning spec!"
-
-        for i, m in enumerate(self.cmip6_ds_model):
-            # lengths per model member pair
-            out_lengths = [ds.length for ds in m]
-
-            # cmip must be num_ensemble members times input4mips
-
-            assert in_lengths[0] * self.num_ensembles[i] == np.sum(
-                out_lengths
-            ), f"CMIP6 must be num_ensembles times the length of input4mips. Got {np.sum(out_lengths)} and {in_lengths[0]}"
-
-        # total length includes ensemble members so taking output length
-        return np.sum(out_lengths) * len(self.cmip6_ds_model)
     
     def __len__(self):
         if self.mode=='train' or self.mode=='test':
             return len(self.train_indexes)
         elif self.mode=='val':
             return len(self.val_indexes)
+        # elif self.mode=='train+val':
+        #     return self.get_initial_length()
         else:
             print("Unknown mode.", self.mode)
             raise ValueError
 
 
 
-class CMIP6Dataset(SuperClimateDataset):
+class CMIP6Dataset(ABC_Climate_Dataset):
     """
     Super CMIP6 Dataset. Containing data for multiple climate models and potentially multiple ensemble members.
     Iiterating overy every member-model pair.
@@ -712,7 +584,6 @@ class CMIP6Dataset(SuperClimateDataset):
         fname = self.get_save_name_from_kwargs(
             mode=mode, file="target", kwargs=fname_kwargs
         )
-
         if os.path.isfile(
             os.path.join(output_save_dir, fname)
         ):  # we first need to get the name here to test that...
@@ -771,13 +642,12 @@ class CMIP6Dataset(SuperClimateDataset):
                 seq_to_seq=seq_to_seq,
                 seq_len=seq_len,
             )
-
             if self.mode == "train" or self.mode == "train+val":
                 stats_fname = self.get_save_name_from_kwargs(
                     mode=mode, file="statistics", kwargs=fname_kwargs
                 )
 
-                if os.path.isfile(stats_fname):
+                if os.path.isfile(fname):
                     print("Stats file already exists! Loading from memory.")
                     stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
@@ -815,8 +685,11 @@ class CMIP6Dataset(SuperClimateDataset):
     def __getitem__(self, index):
         return self.Data[index]
 
+    def __len__(self):
+        return len(self.Data)
 
-class Input4MipsDataset(SuperClimateDataset):
+
+class Input4MipsDataset(ABC_Climate_Dataset):
     """
     Loads all scenarios for a given var / for all vars
     """
@@ -976,29 +849,32 @@ class Input4MipsDataset(SuperClimateDataset):
     def __getitem__(self, index):
         return self.Data[index]
 
+    def __len__(self):
+        return len(self.Data)
+
 
 if __name__ == "__main__":
-    ds = SuperClimateDataset(
-        seq_to_seq=True,
-        in_variables=["BC_sum", "tas"],
-        out_variables=["pr"],
-        scenarios=["ssp126", "ssp370"],
-        climate_models=["MPI-ESM1-2-HR", "NorESM2-LM"],
-        #seq_len=12,
-        num_ensembles=1,
-        years="2015-2021",
-        channels_last=True,
-    )
-    # for (i,j) in ds:
-    # print("i:", i.shape)
-    # print("j:", j.shape)
-    print(ds)
-    print(len(ds))
-    # in_len, out_len = len(ds)
-    # print(in_len, out_len)
+    print("dataset_loaded")
+    # ds = SuperClimateDataset(
+    #     seq_to_seq=True,
+    #     in_variables=["BC_sum", "SO2_sum", "CH4_sum"],
+    #     scenarios=["ssp126", "ssp370"],
+    #     climate_models=["MPI-ESM1-2-HR", "GFDL-ESM4", "NorESM2-LM"],
+    #     seq_len=12,
+    #     num_ensembles=1,
+    #     years="2015-2021",
+    #     channels_last=False,
+    # )
+    # # for (i,j) in ds:
+    # # print("i:", i.shape)
+    # # print("j:", j.shape)
+    # print(ds)
+    # print(len(ds))
+    # # in_len, out_len = len(ds)
+    # # print(in_len, out_len)
 
-    for i, (x, y, index) in enumerate(ds):
-        print("iteration", i)
-        print("x", x.shape)
-        print("y", y.shape)
-        print("model index", index)
+    # for i, (x, y, index) in enumerate(ds):
+    #     print("iteration", i)
+    #     #    print("x", x.shape)
+    #     #    print("y", y.shape)
+    #     print("model index", index)

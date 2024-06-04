@@ -111,7 +111,6 @@ class BaseModel(LightningModule):
     def predict(self, X, idx, *args, **kwargs):
         # x (batch_size, time, lon, lat, num_features)
         # TODO if we want to apply any input normalization or other stuff we should do it here
-
         # if idx is None or if we do not have a decoder
 
         if self.super_decoder:
@@ -186,6 +185,7 @@ class BaseModel(LightningModule):
         # if(self.track_emissions):
         #     self.tot_co2_emission += self.tracker.stop()
         #     self.log("co2_emission", self.tot_co2_emission)
+        print("HERE")
         self.log_dict({"epoch": self.current_epoch, "time/train": train_time})
 
     def _evaluation_step(self, batch: Any, batch_idx: int):

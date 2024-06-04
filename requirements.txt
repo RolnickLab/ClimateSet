@@ -1,11 +1,11 @@
 xarray
-torch==2.2.0
+torch==2.2
 dask
 wandb
 hydra-core
 segmentation-models-pytorch
 netCDF4
-pytorch-lightning==2.2.1
+pytorch-lightning==2.2.3
 gpytorch
 codecarbon
 torch_tb_profiler
