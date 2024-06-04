@@ -157,3 +157,5 @@ dmypy.json
 # Checkpoints
 emulator/*/checkpoints/
 emulator/src/core/models/climax/pretrained_checkpoints/
+Slurm/*
+emulator/configs/experiment/Scaling_Experiments/*

@@ -69,25 +69,28 @@ def run_model(config: DictConfig):
 
 
     emissionTracker = EmissionsTracker() if emissions_tracker_enabled else None
-    if emissionTracker and config.logger.get("wandb"):
+    if emissionTracker and not config.logger.get("name")=="none":
         emissionTracker.start()
         
     trainer.fit(model=emulator_model, datamodule=data_module)
-    if emissionTracker and config.logger.get("wandb"):
+    if emissionTracker and not config.logger.get("name")=="none":
+        print(config.logger.get("wandb"))
         emissions:float = emissionTracker.stop()
         log.info(f"Total emissions: {emissions} kgCO2")
         cfg_utils.save_emissions_to_wandb(config, emissions)
     
-    if(config.logger.get("wandb")):
+    if(not config.logger.get("name")=="none"):
         cfg_utils.save_hydra_config_to_wandb(config)
 
     # Testing:
-    if(config.logger.get("wandb")):
+    if(not config.logger.get("name")=="none"):
         if config.get("test_after_training"):
             trainer.test(datamodule=data_module, ckpt_path="best")
 
         if config.get("logger"):
             wandb.finish()
+    
+    print("Finished")
 
     # log.info("Reloading model from checkpoint based on best validation stat.")
     # final_model = emulator_model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path,

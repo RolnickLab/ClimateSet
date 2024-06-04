@@ -17,11 +17,11 @@ defaults:
 # name of the run determines folder name in logs
 # can also be accessed by loggers
 run: 
-  exp_num: "NW2" # serial number of experiment
-  name: NW2 #a short 1-2 word description of the experiment
+  exp_num: "01" # serial number of experiment
+  name: NW #a short 1-2 word description of the experiment
   comment: "A100"
 
-name: ${run.name}_${model.model_name}_${datamodule.batch_size}_
+name: ${run.name}_${datamodule.num_workers}_${model.model_name}_${datamodule.batch_size}_
 
 seed: 42 #99 #7
 
@@ -46,6 +46,7 @@ model:
 datamodule: # overwrite what stuff to train on
   pin_memory: True
   num_workers: 2
+  persistent_workers: True
   out_var_ids: ['pr', 'tas']
   seq_to_seq: True # determine the task setting
   batch_size: 8
@@ -64,6 +65,6 @@ datamodule: # overwrite what stuff to train on
 logger:
   wandb:
     # tags: ["conv_lstm", "super_emulation", "decoder", "6_models", "run2","RTX8000"] # set your tags here
-    tags: ["TEST"]
+    tags: ['Num_Worker','2_Worker']
     group: ${run.name}_${model.model_name} 
 

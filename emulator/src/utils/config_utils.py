@@ -105,8 +105,10 @@ def extras(config: DictConfig) -> None:
             config.trainer.gpus = 0
         if config.datamodule.get("pin_memory"):
             config.datamodule.pin_memory = False
+            print("SET PIN_MEMORY to FALSE")
         if config.datamodule.get("num_workers"):
             config.datamodule.num_workers = 0
+            print("SET NUM_WORKERS to 0")
 
     # force multi-gpu friendly configuration if <config.trainer.accelerator=ddp>
     accelerator = config.trainer.get("accelerator")
@@ -116,8 +118,12 @@ def extras(config: DictConfig) -> None:
         )
         if config.datamodule.get("num_workers"):
             config.datamodule.num_workers = 0
+            print("SET NUM_WORKERS to 0")
         if config.datamodule.get("pin_memory"):
             config.datamodule.pin_memory = False
+            print("SET PIN_MEMORY to FALSE")
+
+
 
     if ("logger" in config.keys()) and config.logger.get("wandb"):
         USE_WANDB = True

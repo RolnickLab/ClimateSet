@@ -34,11 +34,14 @@ cd $(pwd)
 
 export NCCL_BLOCKING_WAIT=1 #Pytorch Lightning uses the NCCL backend for inter-GPU communication by default. Set this variable to avoid timeout errors.
 
-
+# Get a unique port for this job based on the job ID
+# export MASTER_PORT=$(expr 10000 + $(echo -n $SLURM_JOBID | tail -c 4))
+# export MASTER_ADDR="127.0.0.1"
+rsync /home/mila/f/felix-andreas.nahrstedt/scratch/Climateset_DATA $SLURM_TMPDIR
 # 8. Run Python
 export HYDRA_FULL_ERROR=1
 echo "Running python test.py ..."
-srun python emulator/run.py experiment=Scaling_Experiments/Num_Workers/convlstm/superemulator_NW0.yaml  seed=1234 # seed=3423
+srun python emulator/run.py experiment=Scaling_Experiments/Num_Workers/convlstm/superemulator_NW0.yaml  seed=3423 # seed=1234
 
 
 # 9. Copy output to scratch
