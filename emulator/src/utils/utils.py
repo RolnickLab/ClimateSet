@@ -11,6 +11,8 @@ from torch import default_generator, randperm
 from torch._utils import _accumulate
 from torch.utils.data.dataset import Subset
 import numpy as np
+from emulator.src.data.meta_information.facet_options_cmip6 import variable_id as cmip6_vars
+from emulator.src.data.meta_information.facet_options_input4mips import variable_id as input4mips_vars
 from itertools import groupby
 
 
@@ -291,6 +293,38 @@ def get_epoch_ckpt_or_last(ckpt_files: List[str], epoch: int = None):
         model_ckpt_filename = model_ckpt_filename[0]
     return model_ckpt_filename
 
+def map_variables_targetmip(in_variables, out_variables):
+        in_variables_im=[]
+        out_variables_im=[]
+        x_indexes=[]
+        y_indexes=[]
+
+        for var in in_variables:
+            # if variable in input4mips
+            
+            if (var in cmip6_vars) or (var.split('_')[0] in cmip6_vars):
+                out_variables_im.append(var)
+                x_indexes.append(("out", len(out_variables_im)-1))
+            elif (var in input4mips_vars) or (var.split('_')[0] in input4mips_vars):
+                in_variables_im.append(var)
+                x_indexes.append(("in", len(in_variables_im)-1))
+            else:
+                print(f"Unknown variable: {var}")
+                exit(0)
+        for var in out_variables:
+            # if variable input4mips
+            
+            if (var in cmip6_vars) or (var.split('_')[0] in cmip6_vars):
+                out_variables_im.append(var)
+                y_indexes.append(("out", len(out_variables_im)-1))
+            elif (var in input4mips_vars) or (var.split('_')[0] in input4mips_vars):
+                in_variables_im.append(var)
+                y_indexes.append(("in", len(in_variables_im)-1))
+            else:
+                print(f"Unknown variable: {var}")
+                exit(0)
+        
+        return in_variables_im, out_variables_im, x_indexes, y_indexes
 
 if __name__ == "__main__":
     print("hallo")

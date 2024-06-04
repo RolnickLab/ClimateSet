@@ -4,10 +4,10 @@ RAW_DATA
 PROCESSED_DATA
 tmp/*
 logs/*
+runs/*
 *.out
 *.nc
-internal
-data
+#data
 pretrained_models
 Climateset_DATA
 # deprecated files
