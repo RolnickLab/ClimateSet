@@ -1,18 +1,32 @@
-# Emulation
+# ClimateSet Emulation
 
 This repository contains the code for running the climate model emulation benchmark experiments on the core ClimateSet data. 
-Here we provide documentation on installation, setup, and a quickstart guide to reproduce our experiments.
+Here we provide documentation on installation, setup, and a quickstart guide to reproduce our experiments and run your own experiments.
+
+
+**Important information:**
+- [Website](https://climateset.github.io/)
+- [Publication on ArXiv](https://arxiv.org/abs/2311.03721)
+- [Core dataset on HuggingFace](https://huggingface.co/datasets/climateset/climateset)
+- [Pre-trained models on HuggingFace](https://huggingface.co/climateset/causalpaca_models)
+- [Readthedocs](https://climateset.readthedocs.io/en/latest/index.html) *(Contains some basic intro and explanations regarding climate modeling. More technical information will follow.)*
+- **Dataset Extension Pipeline**: Currently under active development. Python package expected to be released in January 2025.
+
+
+This repository is currently under active development and you may encounter bugs with some functionality. 
+Any feedback, extensions & suggestions are welcome!
+
 
 ## Getting started
 ### Downloading the core dataset
-The preprocessed dataset is available on [huggingface](https://huggingface.co/datasets/climateset/causalpaca). You can opt to download the entire dataset or pick only specific climate models for targets. Please note that the core dataset entrails 1) two variables (precipitation (pr) & temperature (tas)), 2) 250 km nominal resolution, and 3) monthly data. This is the data that was used for the benchmarking. We will release code to preprocess other variables and other resolutions in a separate Python package and will update the huggingface data periodically.
+The preprocessed dataset is available on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca). You can opt to download the entire dataset or pick only specific climate models for targets. Please note that the core dataset entrails 1) two variables (precipitation (pr) & temperature (tas)), 2) 250 km nominal resolution, and 3) monthly data. This is the data that was used for the benchmarking. We will release code to preprocess other variables and other resolutions in a separate Python package and will update the HuggingFace data periodically.
 
-#### Huggingface
+#### HuggingFace
 To download the entire dataset, you can make use of the provided Python script:
 ```bash
 python download_climateset_huggingface.py
 ```
-If you wish to download only specific climate model data, please refer to the instructions on [hugginface](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
+If you wish to download only specific climate model data, please refer to the instructions on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
 
 #### Arbutus / DRAC
 If you happen to be in Canada, you can also download the dataset via Arbutus (DRAC - Digital Research Alliance of Canada). Please note that this option is very slow for users located outside of Canada. We recommend this option mostly for users who are working directly on DRAC anyway.
@@ -197,14 +211,14 @@ We provide some of our trained models from the experiments, including only super
 
 #### Downloading pre-trained checkpoints
 
-All our pre-trained models for the paper are hosted on [huggingface](https://huggingface.co/climateset/causalpaca_models). Please refer to the documentation there to download either all pre-trained models or only pick checkpoints for a specific experimental setting. After the download, the checkpoints should be stored in a folder called ```pretrained_models```.
+All our pre-trained models for the paper are hosted on [HuggingFace](https://huggingface.co/climateset/causalpaca_models). Please refer to the documentation there to download either all pre-trained models or only pick checkpoints for a specific experimental setting. After the download, the checkpoints should be stored in a folder called ```pretrained_models```.
 Be aware that the folder containing pre-trained ClimaX checkpoints for the super emulator experiment is quite large (14Gb) and will take quite some time to download.
 
 To download all available checkpoints, you can make use of the provided Python script:
 ```python
 python download_pretrained_models_huggingface.py
 ```
-If you wish to download only specific climate model data, please refer to the instructions on [hugginface](https://huggingface.co/climateset/causalpaca_models/blob/main/README.md).
+If you wish to download only specific climate model data, please refer to the instructions on [HuggingFace](https://huggingface.co/climateset/causalpaca_models/blob/main/README.md).
 
 For users located in Canada, you may also use the provided bash script to download the models. Please be aware that this option works outside of Canada, but download speeds will be very slow.
 
@@ -313,6 +327,23 @@ You can add new models in `emulator/src/core/models`. Each model should inherit 
 If you wish to build your own training pipeline and just wish to make use of the dataset structure, please consider the dataset classes for either [single emulation](emulator/src/data/climate_dataset.py) or [superemulation](emulator/src/data/super_climate_dataset.py) and their respective configs ( [single](emulator/configs/datamodule/climate.yaml) and [super](emulator/configs/datamodule/climate_super.yaml).
 
 For interfacing with pytorch lightning please consider the [single](emulator/src/datamodules/climate_datamodule.py) and [super](emulator/src/datamodules/super_climate_datamodule.py) emulation datamodules.
+
+## How to cite this repo
+
+```
+@inproceedings{Kaltenborn2023ClimateSet,
+ author = {Kaltenborn, Julia and Lange, Charlotte and Ramesh, Venkatesh and Brouillard, Philippe and Gurwicz, Yaniv and Nagda, Chandni and Runge, Jakob and Nowack, Peer and Rolnick, David},
+ booktitle = {Advances in Neural Information Processing Systems},
+ editor = {A. Oh and T. Naumann and A. Globerson and K. Saenko and M. Hardt and S. Levine},
+ pages = {21757--21792},
+ publisher = {Curran Associates, Inc.},
+ title = {ClimateSet: A Large-Scale Climate Model Dataset for Machine Learning},
+ url = {https://proceedings.neurips.cc/paper_files/paper/2023/file/44a6769fe6c695f8dfb347c649f7c9f0-Paper-Datasets_and_Benchmarks.pdf},
+ volume = {36},
+ year = {2023}
+}
+```
+
 ---
 
 The repository is inspired by [ClimART](https://github.com/RolnickLab/climart/tree/main) and PL+Hydra template implementation [ashleve/lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template)
