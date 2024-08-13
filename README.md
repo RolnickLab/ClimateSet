@@ -24,7 +24,7 @@ The preprocessed dataset is available on [HuggingFace](https://huggingface.co/da
 #### HuggingFace
 To download the entire dataset, you can make use of the provided Python script:
 ```bash
-python download_climateset_huggingface.py
+python scripts/download_climateset_huggingface.py
 ```
 If you wish to download only specific climate model data, please refer to the instructions on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
 
@@ -34,11 +34,11 @@ If you happen to be in Canada, you can also download the dataset via Arbutus (DR
 ##### 1. Setting your dataset path
 Set the path where you want your dataset to be downloaded in:
 - `constants.py` AND
-- `download_climateset_arbutus.sh`
+- `scripts/download_climateset_arbutus.sh`
 
 ##### 2. Download the data via bash script
 ```bash
-bash download_climateset_arbutus.sh 
+bash scripts/download_climateset_arbutus.sh 
 ```
 *Please note that this by default only downloads NorESM2-LM data. To download data for all climate models, please uncomment the line with the for loop.*
 
@@ -86,7 +86,7 @@ pip install -e .
 To work with ClimaX, you will need to download the pre-trained checkpoints from the original release and place them in the correct folder. To do so, execute the following command:
 
 ```bash
-bash download_climax_checkpoints.sh
+bash scripts/download_climax_checkpoints.sh
 ```
 
 ### Pythonpath
@@ -215,15 +215,16 @@ All our pre-trained models for the paper are hosted on [HuggingFace](https://hug
 Be aware that the folder containing pre-trained ClimaX checkpoints for the super emulator experiment is quite large (14Gb) and will take quite some time to download.
 
 To download all available checkpoints, you can make use of the provided Python script:
-```python
-python download_pretrained_models_huggingface.py
+
+```bash
+python scripts/download_pretrained_models_huggingface.py
 ```
 If you wish to download only specific climate model data, please refer to the instructions on [HuggingFace](https://huggingface.co/climateset/causalpaca_models/blob/main/README.md).
 
 For users located in Canada, you may also use the provided bash script to download the models. Please be aware that this option works outside of Canada, but download speeds will be very slow.
 
 ```bash
-bash download_pretrained_models_arbutus.sh
+bash scripts/download_pretrained_models_arbutus.sh
 ```
 
 
