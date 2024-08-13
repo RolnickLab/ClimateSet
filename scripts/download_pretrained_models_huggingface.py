@@ -1,5 +1,5 @@
-from huggingface_hub import hf_hub_download
-
+from huggingface_hub import snapshot_download #hf_hub_download
+import os
 
 # Path of the directory where the checkpoints will be downloaded in your local machine
 local_directory = os.path.join(os.getcwd(), 'pretrained_models')
