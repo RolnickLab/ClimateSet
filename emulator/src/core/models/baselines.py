@@ -108,8 +108,8 @@ class CNNLSTM_ClimateBench(BaseModel):
 
     def __init__(
         self,
-        lon, # TODO Change order of lon lat
         lat,
+        lon,
         in_var_ids,
         out_var_ids,
         num_conv_filters: int = 20,
@@ -262,8 +262,8 @@ class UNet(BaseModel):
         self,
         in_var_ids: List[str],
         out_var_ids: List[str],
-        longitude: int = 32, # TODO change order of longitude and latitude
         latitude: int = 32,
+        longitude: int = 32, 
         activation_function: Union[
             str, callable, None
         ] = None,  # activation after final convolution
@@ -407,8 +407,8 @@ if __name__ == "__main__":
         out_vars,
         seq_to_seq=seq_to_seq,
         seq_len=in_time,
-        longitude=lon, # TODO change order here too
         latitude=lat,
+        longitude=lon,
         channels_last=channels_last,
     )
     # lstm = CNNLSTM_ClimateBench(in_var_ids=in_vars, out_var_ids=out_vars, seq_len=in_time, seq_to_seq=seq_to_seq, channels_last=channels_last, lat=lat, lon=lon)
