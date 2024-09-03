@@ -2,8 +2,8 @@ from pathlib import Path
 import os
 
 # Data constants
-LON = 96
-LAT = 144
+LON = 144 # updated longitude after fix
+LAT = 96 # updated latitude after fix
 NUM_LEVELS = 1
 SEQ_LEN = 12
 INPUT4MIPS_TEMP_RES = "mon"
@@ -13,14 +13,18 @@ INPUT4MIPS_NOM_RES = "map_250_km"
 CMIP6_NOM_RES = "250_km"  # TODO: not allow different resolutions
 SEQ_LEN_MAPPING = {"mon": 12}
 
-# DATA_DIR = os.path.join(
-#     Path(__file__).absolute().parent.parent.parent.parent, "Climateset_DATA"
-# )  # os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
-# Model : (historical_obe_files, future_obe_files)
+# LOCAL when you download dataset in main dir
 DATA_DIR = os.path.join(
-    Path(__file__).absolute().parent.parent.parent.parent.parent, "scratch/Climateset_DATA"
-)
-print(DATA_DIR)
+    Path(__file__).absolute().parent.parent.parent.parent, "Climateset_DATA"
+)  # os.path.join(os.getcwd(), 'Climateset_DATA') # set path to local data
+#Model : (historical_obe_files, future_obe_files)
+
+# ON MILA CLUSTER
+# DATA_DIR = os.path.join(
+#     Path(__file__).absolute().parent.parent.parent.parent.parent, "scratch/Climateset_DATA"
+# )
+
+print("Path to data directory used here: ", DATA_DIR)
 
 
 # Available models

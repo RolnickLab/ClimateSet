@@ -22,8 +22,8 @@ load_test_into_mem:  True
 verbose: True
 seed: 11
 seq_len: 12
-lon: 96
-lat: 144
+lon: 144 # corrected longitude after fix
+lat: 96  # corrected latitude after fix
 num_levels: 1
 #input_transform: Optional[AbstractTransform] = None,
 #normalizer: Optional[Normalizer] = None,
