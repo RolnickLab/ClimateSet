@@ -14,8 +14,8 @@ from torch import Tensor
 
 from emulator.src.utils.utils import get_logger, map_variables_targetmip
 from emulator.src.data.constants import (
-    LON,
     LAT,
+    LON,
     SEQ_LEN,
     INPUT4MIPS_TEMP_RES,
     CMIP6_TEMP_RES,
@@ -140,7 +140,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             **ds_kwargs,
         )
 
-    # this operates variable vise now....
+    # this operates on each variable (i.e. climateset and input4mips) now
     def load_into_mem(
         self,
         paths: List[List[str]],
@@ -157,7 +157,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             ).compute()  # .compute is not necessary but eh, doesn't hurt
             temp_data = (
                 temp_data.to_array().to_numpy()
-            )  # Should be of shape (vars, years*ensemble_members*num_scenarios, lon, lat)
+            )  # Should be of shape (vars, years*ensemble_members*num_scenarios, lat, lon)
             array_list.append(temp_data)
         temp_data = np.concatenate(array_list, axis=0)
 
@@ -184,8 +184,8 @@ class ClimateDataset(torch.utils.data.Dataset):
             new_shape_one = int(temp_data.shape[1] / seq_len)
 
         temp_data = temp_data.reshape(
-            num_vars, new_shape_one, seq_len, LON, LAT
-        )  # num_vars, num_scenarios*num_remainding_years, seq_len,lon,lat)
+            num_vars, new_shape_one, seq_len, LAT, LON
+        )  # num_vars, num_scenarios*num_remaining_years, seq_len, lat, lon)
         if seq_to_seq == False:
             temp_data = temp_data[:, :, -1, :, :]  # only take last time step
             temp_data = np.expand_dims(temp_data, axis=2)
@@ -193,7 +193,8 @@ class ClimateDataset(torch.utils.data.Dataset):
             temp_data = temp_data.transpose((1, 2, 3, 4, 0))
         else:
             temp_data = temp_data.transpose((1, 2, 0, 3, 4))
-        return temp_data  # (years*num_scenarios, seq_len, vars, lon, lat)
+
+        return temp_data  # (years*num_scenarios, seq_len, vars, lat, lon)
 
     def save_data_into_disk(
         self, data: np.ndarray, fname: str, output_save_dir: str
@@ -296,7 +297,7 @@ class ClimateDataset(torch.utils.data.Dataset):
             print("In testing mode, skipping statistics calculations.")
 
     def get_mean_std(self, data):
-        # data shape (years*scenarios, seq, vars, lon, lat)
+        # data shape (years*scenarios, seq, vars, lat, lon)
         if self.channels_last:
             data = np.moveaxis(data, -1, 0)
         else:
@@ -333,11 +334,11 @@ class ClimateDataset(torch.utils.data.Dataset):
         if self.channels_last:
             data = np.moveaxis(
                 data, -1, 0
-            )  # vars from last to 0 (num_vars, years, seq_len, lon, lat)
+            )  # vars from last to 0 (num_vars, years, seq_len, lat, lon)
         else:
             data = np.moveaxis(
                 data, 2, 0
-            )  # shape (years, seq_len, num_vars, lon, lat) -> (num_vars, years, seq_len, lon, lat)
+            )  # shape (years, seq_len, num_vars, lat, lon) -> (num_vars, years, seq_len, lat, lon)
 
         print("mean", stats["mean"].shape, "std", stats["std"].shape)
         norm_data = (data - stats["mean"]) / (stats["std"])

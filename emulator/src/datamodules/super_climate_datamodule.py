@@ -261,8 +261,8 @@ class SuperClimateDataModule(LightningDataModule):
         data_dir: Optional[str] = DATA_DIR,
         output_save_dir: Optional[str] = DATA_DIR,
         num_ensembles: int = 1,
-        lon: int = LON,
         lat: int = LAT,
+        lon: int = LON,
         num_levels: int = NUM_LEVELS,
         name: str = "super_climate"
     ):

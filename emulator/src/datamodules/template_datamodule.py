@@ -40,10 +40,10 @@ class DummyDataModule(LightningDataModule):
         ],  # do we want to implement keeping only certain years for testing?
         seq_len: int = 10,
         seq_to_seq: bool = True,  # if true maps from T->T else from T->1
-        lon: int = 32,
         lat: int = 32,
+        lon: int = 32,
         num_levels: int = 1,
-        channels_last: bool = True,  # wheather variables come last our after sequence lenght
+        channels_last: bool = True,  # whether variables come last or after the sequence length 
         train_scenarios: List[str] = ["historical", "ssp126"],
         test_scenarios: List[str] = ["ssp345"],
         val_scenarios: List[str] = ["ssp119"],
@@ -70,9 +70,8 @@ class DummyDataModule(LightningDataModule):
             out_var_ids: Lsit(str): Ids of output variables.
             seq_len (int): Lenght of the input sequence (in time).
             seq_to_seq (bool): If true maps from seq_len to seq_len else from seq_len to- 1.
-            lon (int): Longitude of grid.
             lat (int): Latitude of grid.
-
+            lon (int): Longitude of grid.
             batch_size (int): Batch size for the training dataloader
             eval_batch_size (int): Batch size for the test and validation dataloader's
             num_workers (int): Dataloader arg for higher efficiency
@@ -143,8 +142,8 @@ class DummyDataModule(LightningDataModule):
 
     # Probably we also just want a list of Train Dataloaders not just a single one so we can swith sets in our memory
     # resulting tensors sizes:
-    # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
-    # y: (batch_size, sequence_length, lon, lat, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lon, lat)
+    # x: (batch_size, sequence_length, lat, lon, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lat, lon)
+    # y: (batch_size, sequence_length, lat, lon, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lat, lon)
     def train_dataloader(self):
         return DataLoader(
             dataset=self._data_train,

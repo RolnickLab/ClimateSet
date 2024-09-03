@@ -67,8 +67,8 @@ class ClimateDataModule(LightningDataModule):
         seq_len: int = SEQ_LEN_MAPPING[TEMP_RES],
         output_save_dir: Optional[str] = DATA_DIR,
         num_ensembles: int = 1,  # 1 for first ensemble, -1 for all
-        lon: int = LON,
         lat: int = LAT,
+        lon: int = LON,
         num_levels: int = NUM_LEVELS,
         name: str = "climate",
         # input_transform: Optional[AbstractTransform] = None,
@@ -202,9 +202,9 @@ class ClimateDataModule(LightningDataModule):
         )
 
     # resulting tensors sizes:
-    # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
-    # y: (batch_size, sequence_length, lon, lat, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lon, lat)
-    def train_dataloader(self):
+    # x: (batch_size, sequence_length, lat, lon, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lat, lon)
+    # y: (batch_size, sequence_length, lat, lon, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lat, lon)
+    def train_dataloader(self): # TODO: does this really give us the right shape?
         return DataLoader(
             dataset=self._data_train,
             batch_size=self.hparams.batch_size,

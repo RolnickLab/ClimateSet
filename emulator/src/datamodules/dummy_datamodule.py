@@ -38,8 +38,8 @@ class DummyDataModule(LightningDataModule):
         out_var_ids: List[str] = ["pr", "tas"],
         seq_len: int = 10,
         seq_to_seq: bool = True,  # if true maps from T->T else from T->1
-        lon: int = 32,
         lat: int = 32,
+        lon: int = 32,
         num_levels: int = 1,
         channels_last: bool = True,  # wheather variables come last our after sequence lenght
         batch_size: int = 16,
@@ -66,9 +66,9 @@ class DummyDataModule(LightningDataModule):
             out_var_ids: Lsit(str): Ids of output variables.
             seq_len (int): Lenght of the input sequence (in time).
             seq_to_seq (bool): If true maps from seq_len to seq_len else from seq_len to- 1.
-            lon (int): Longitude of grid.
             lat (int): Latitude of grid.
-            channels_last (int): If true, shape of tensors (batch_size, time, lon, lat, channels) else (batch_size, time, channels, lon, lat). Important for some torch layers.
+            lon (int): Longitude of grid.
+            channels_last (int): If true, shape of tensors (batch_size, time, lat, lon, channels) else (batch_size, time, channels, lat, lon). Important for some torch layers.
             size (int): Size (num examples) of the dummy dataset.
             test_split (float): Fraction of data to use for testing.
             val_split (float): Fraction of data to use for evaluation.
@@ -115,8 +115,8 @@ class DummyDataModule(LightningDataModule):
                 size=(
                     self.hparams.size,
                     self.hparams.seq_len,
-                    self.hparams.lon,
                     self.hparams.lat,
+                    self.hparams.lon,
                     len(self.hparams.in_var_ids),
                 )
             )
@@ -124,8 +124,8 @@ class DummyDataModule(LightningDataModule):
                 size=(
                     self.hparams.size,
                     self.out_seq_len,
-                    self.hparams.lon,
                     self.hparams.lat,
+                    self.hparams.lon,
                     len(self.hparams.out_var_ids),
                 )
             )
@@ -136,8 +136,8 @@ class DummyDataModule(LightningDataModule):
                     self.hparams.size,
                     self.hparams.seq_len,
                     len(self.hparams.in_var_ids),
-                    self.hparams.lon,
                     self.hparams.lat,
+                    self.hparams.lon,
                 )
             )
             targets = torch.ones(
@@ -145,8 +145,8 @@ class DummyDataModule(LightningDataModule):
                     self.hparams.size,
                     self.out_seq_len,
                     len(self.hparams.out_var_ids),
-                    self.hparams.lon,
                     self.hparams.lat,
+                    self.hparams.lon,
                 )
             )
 
