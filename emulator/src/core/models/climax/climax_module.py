@@ -66,8 +66,8 @@ class ClimaX(BaseModel):
         self,
         climate_modeling: bool = True,  # always True with us...
         time_history: int = 1,
-        lon: int = 128,
-        lat: int = 256,
+        lat: int = 128,
+        lon: int = 256,
         patch_size: int = 16,
         drop_path: float = 0.1,
         drop_rate: float = 0.1,
@@ -103,14 +103,14 @@ class ClimaX(BaseModel):
                 in_vars = datamodule_config.get("in_var_ids")
             if datamodule_config.get("channels_last") is not None:
                 self.channels_last = datamodule_config.get("channels_last")
-            if datamodule_config.get("lon") is not None:
-                self.lon = datamodule_config.get("lon")
             if datamodule_config.get("lat") is not None:
                 self.lat = datamodule_config.get("lat")
+            if datamodule_config.get("lon") is not None:
+                self.lon = datamodule_config.get("lon")
 
         else:
-            self.lon = lon
             self.lat = lat
+            self.lon = lon
             self.channels_last = channels_last
 
         if climate_modeling:
@@ -119,7 +119,7 @@ class ClimaX(BaseModel):
         else:
             self.out_vars = in_vars
 
-        img_size = [self.lon, self.lat]
+        img_size = [self.lat, self.lon]
         # create class
         self.model = TokenizedViTContinuous(
             climate_modeling=climate_modeling,
@@ -199,7 +199,7 @@ class ClimaX(BaseModel):
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = ClimaX(no_time_aggregation=True, channels_last=True, lon=32, lat=32).to(
+    model = ClimaX(no_time_aggregation=True, channels_last=True, lat=32, lon=32).to(
         device
     )
     print(device)
