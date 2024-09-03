@@ -109,7 +109,7 @@ class BaseModel(LightningModule):
         self._start_epoch_time = time.time()
 
     def predict(self, X, idx, *args, **kwargs):
-        # x (batch_size, time, lon, lat, num_features)
+        # x (batch_size, time, lat, lon, num_features)
         # TODO if we want to apply any input normalization or other stuff we should do it here
         # if idx is None or if we do not have a decoder
 

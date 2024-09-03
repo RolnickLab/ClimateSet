@@ -108,7 +108,7 @@ class CNNLSTM_ClimateBench(BaseModel):
 
     def __init__(
         self,
-        lon,
+        lon, # TODO Change order of lon lat
         lat,
         in_var_ids,
         out_var_ids,
@@ -132,15 +132,15 @@ class CNNLSTM_ClimateBench(BaseModel):
         if datamodule_config is not None:
             if datamodule_config.get("channels_last") is not None:
                 self.channels_last = datamodule_config.get("channels_last")
-            if datamodule_config.get("lon") is not None:
-                self.lon = datamodule_config.get("lon")
             if datamodule_config.get("lat") is not None:
                 self.lat = datamodule_config.get("lat")
+            if datamodule_config.get("lon") is not None:
+                self.lon = datamodule_config.get("lon")
             if datamodule_config.get("seq_len") is not None:
                 self.seq_len = datamodule_config.get("seq_len")
         else:
-            self.lon = lon
             self.lat = lat
+            self.lon = lon
             self.channels_last = channels_last
             self.seq_len = seq_len
 
@@ -164,7 +164,7 @@ class CNNLSTM_ClimateBench(BaseModel):
             nn.ReLU(),  # , input_shape=(slider, width, height, num_input_vars)),
             TimeDistributed(nn.AvgPool2d(2)),
             # TimeDistributed(nn.AdaptiveAvgPool1d(())), ##nGlobalAvgPool2d(), does not exist in pytorch
-            TimeDistributed(nn.AvgPool2d((int(lon / 2), int(lat / 2)))),
+            TimeDistributed(nn.AvgPool2d((int(lat / 2), int(lon / 2)))), # fix issue-12: swapped lon lat
             nn.Flatten(start_dim=2),
             nn.LSTM(
                 input_size=num_conv_filters,
@@ -176,7 +176,7 @@ class CNNLSTM_ClimateBench(BaseModel):
             nn.ReLU(),
             nn.Linear(
                 in_features=lstm_hidden_size,
-                out_features=self.num_output_vars * lon * lat,
+                out_features=self.num_output_vars * lat * lon, # fix issue-12: swapped lon lat
             ),
         )
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -187,11 +187,13 @@ class CNNLSTM_ClimateBench(BaseModel):
         if self.channels_last:
             x = x.permute(
                 (0, 1, 4, 2, 3)
-            )  # torch con2d expects channels before height and witdth
+            )  # torch con2d expects channels before height and width
+            print("CURRENT X SHAPE: ", x.shape)
+            exit(0)
 
         x = self.model(x)
         x = torch.reshape(
-            x, (X.shape[0], self.out_seq_len, self.num_output_vars, self.lon, self.lat)
+            x, (X.shape[0], self.out_seq_len, self.num_output_vars, self.lat, self.lon) # fix issue-12: swapped lon lat
         )
         if self.channels_last:
             x = x.permute((0, 1, 3, 4, 2))
@@ -260,7 +262,7 @@ class UNet(BaseModel):
         self,
         in_var_ids: List[str],
         out_var_ids: List[str],
-        longitude: int = 32,
+        longitude: int = 32, # TODO change order of longitude and latitude
         latitude: int = 32,
         activation_function: Union[
             str, callable, None
@@ -279,32 +281,32 @@ class UNet(BaseModel):
         if datamodule_config is not None:
             if datamodule_config.get("channels_last") is not None:
                 self.channels_last = datamodule_config.get("channels_last")
-            if datamodule_config.get("lon") is not None:
-                self.lon = datamodule_config.get("lon")
             if datamodule_config.get("lat") is not None:
                 self.lat = datamodule_config.get("lat")
+            if datamodule_config.get("lon") is not None:
+                self.lon = datamodule_config.get("lon")
             if datamodule_config.get("seq_len") is not None:
                 self.seq_len = datamodule_config.get("seq_len")
         else:
-            self.lon = longitude
             self.lat = latitude
+            self.lon = longitude
             self.channels_last = channels_last
             self.seq_len = seq_len
         self.save_hyperparameters()
         self.num_output_vars = len(out_var_ids)
         self.num_input_vars = len(in_var_ids)
 
-        # determine padding -> lan and lot must be divisible by 32
-        pad_lon = int((np.ceil(self.lon / 32) * 32) - (self.lon / 32) * 32)
+        # determine padding -> lat and lon must be divisible by 32
         pad_lat = int((np.ceil(self.lat / 32)) * 32 - (self.lat / 32) * 32)
+        pad_lon = int((np.ceil(self.lon / 32) * 32) - (self.lon / 32) * 32)
 
         self.channels_last = channels_last
 
-        # ption 1: linear output layer
+        # option 1: linear output layer
         if readout == "linear":
             self.model = torch.nn.Sequential(
-                torch.nn.ConstantPad2d(
-                    (pad_lat, 0, pad_lon, 0), 0
+                torch.nn.ConstantPad2d( 
+                    (pad_lon, 0, pad_lat, 0), 0
                 ),  # zero padding along lon and lat
                 TimeDistributed(
                     smp.Unet(
@@ -319,12 +321,12 @@ class UNet(BaseModel):
                 torch.nn.Linear(
                     in_features=(
                         self.num_output_vars
-                        * (self.lon + pad_lon)
                         * (self.lat + pad_lat)
+                        * (self.lon + pad_lon)
                         * self.seq_len
                     ),
                     out_features=(
-                        self.num_output_vars * self.lon * self.lat * self.seq_len
+                        self.num_output_vars * self.lat * self.lon * self.seq_len
                     ),
                 ),  # map back to original size
             )
@@ -332,7 +334,7 @@ class UNet(BaseModel):
         elif readout == "pooling":
             self.model = torch.nn.Sequential(
                 torch.nn.ConstantPad2d(
-                    (pad_lat, 0, pad_lon, 0), 0
+                    (pad_lon, 0, pad_lat, 0), 0
                 ),  # zero padding along lon and lat
                 TimeDistributed(
                     smp.Unet(
@@ -344,7 +346,7 @@ class UNet(BaseModel):
                     )
                 ),
                 torch.nn.AdaptiveAvgPool3d(
-                    output_size=(self.num_output_vars, self.lon, self.lat)
+                    output_size=(self.num_output_vars, self.lat, self.lon)
                 ),  # map back to original size
             )
 
@@ -358,7 +360,7 @@ class UNet(BaseModel):
         self.model.to(device)
 
     def forward(self, x: Tensor) -> Tensor:
-        # x: (batch_size, sequence_length, lon, lat, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lon, lat)
+        # x: (batch_size, sequence_length, lat, lon, in_vars) if channels_last else (batch_size, sequence_lenght, in_vars, lat, lon)
         if self.channels_last:
             x = x.permute(
                 (0, 1, 4, 2, 3)
@@ -366,7 +368,7 @@ class UNet(BaseModel):
         # if images width not divisible by
         x = self.model(x)
         # only effective if linear readout
-        x = x.reshape((-1, self.seq_len, self.num_output_vars, self.lon, self.lat))
+        x = x.reshape((-1, self.seq_len, self.num_output_vars, self.lat, self.lon))
         if self.channels_last:
             x = x.permute((0, 1, 3, 4, 2))
         x = x.nan_to_num()
@@ -376,7 +378,7 @@ class UNet(BaseModel):
             x = x[:, -1, :]
             x = torch.unsqueeze(x, 1)
 
-        # returns (batch_size, sequence_length/1, lon, lat, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lon, lat)
+        # returns (batch_size, sequence_length/1, lat, lon, out_vars) if channels_last else (batch_size, sequence_lenght, out_vars, lat, lon)
         return x
 
 
@@ -385,8 +387,8 @@ if __name__ == "__main__":
     out_vars = ["pr", "tas"]
     in_time = 1
     # lead_time=3
-    lon = 96
-    lat = 144
+    lat = 96
+    lon = 144
     batch_size = 2
     num_con_layers = 20
     num_lstm_layers = 25
@@ -396,20 +398,20 @@ if __name__ == "__main__":
     num_out_vars = len(out_vars)
 
     if channels_last:
-        dummy = torch.rand(size=(batch_size, in_time, lon, lat, num_in_vars)).cuda()
+        dummy = torch.rand(size=(batch_size, in_time, lat, lon, num_in_vars)).cuda()
     else:
-        dummy = torch.rand(size=(batch_size, in_time, num_in_vars, lon, lat)).cuda()
+        dummy = torch.rand(size=(batch_size, in_time, num_in_vars, lat, lon)).cuda()
 
     unet = UNet(
         in_vars,
         out_vars,
         seq_to_seq=seq_to_seq,
         seq_len=in_time,
-        longitude=lon,
+        longitude=lon, # TODO change order here too
         latitude=lat,
         channels_last=channels_last,
     )
-    # lstm = CNNLSTM_ClimateBench(in_var_ids=in_vars, out_var_ids=out_vars, seq_len=in_time, seq_to_seq=seq_to_seq, channels_last=channels_last, lon=lon, lat=lat)
+    # lstm = CNNLSTM_ClimateBench(in_var_ids=in_vars, out_var_ids=out_vars, seq_len=in_time, seq_to_seq=seq_to_seq, channels_last=channels_last, lat=lat, lon=lon)
 
     out = unet(dummy)
     print("Out", out.size())
