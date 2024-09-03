@@ -55,8 +55,8 @@ Follow the following steps to create the environment for non-windows users:
 
 Not Climax: 
 ```bash
-python -m venv env_new_emulator
-source env_new_emulator/bin/activate
+python -m venv env
+source env/bin/activate
 pip install -r requirements.txt
 cd emulator 
 pip install -e .
@@ -64,8 +64,8 @@ pip install -e .
 
 Climax: 
 ```bash
-python -m venv env_old_emulator
-source env_old_emulator/bin/activate
+python -m venv env_climax
+source env_climax/bin/activate
 pip install -r requirements_climax.txt
 cd emulator
 pip install -e .
