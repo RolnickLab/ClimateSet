@@ -22,10 +22,19 @@ class PredictionPostProcessCallback:
             cur += size
 
     def split_vector_by_variable(
-        self, vector: Union[np.ndarray, torch.Tensor]
+        self, 
+        vector: Union[np.ndarray, torch.Tensor],
+        channels_last: bool,
     ) -> Dict[str, Union[np.ndarray, torch.Tensor]]:
         if isinstance(vector, dict):
             return vector
+        
+        # for split_vector_by_variable channels MUST be last, so it's permutated here
+        if not channels_last:
+            vector = vector.permute(
+                (0, 1, 3, 4, 2) # resulting in [batch, time, lat, lon, channels]
+            ) 
+
         splitted_vector = dict()
         for var_name, var_channel_limits in self.variable_to_channel.items():
             splitted_vector[var_name] = vector[

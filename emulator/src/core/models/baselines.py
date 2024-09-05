@@ -188,9 +188,7 @@ class CNNLSTM_ClimateBench(BaseModel):
             x = x.permute(
                 (0, 1, 4, 2, 3)
             )  # torch con2d expects channels before height and width
-            print("CURRENT X SHAPE: ", x.shape)
-            exit(0)
-
+        
         x = self.model(x)
         x = torch.reshape(
             x, (X.shape[0], self.out_seq_len, self.num_output_vars, self.lat, self.lon) # fix issue-12: swapped lon lat
