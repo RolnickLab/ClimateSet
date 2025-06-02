@@ -218,10 +218,10 @@ class BaseModel(LightningModule):
         self, outputs: List[Any]
     ) -> (Dict[str, np.ndarray], Dict[str, np.ndarray]):
         for batch in outputs:
-            print("MUST check shape for split_vector_by_variable:")
-            print("Shape should have channels last? ", self.channels_last)
-            print("Actual shape:", batch["targets"].shape)
-            exit(0)
+            # print("MUST check shape for split_vector_by_variable:")
+            # print("Shape should have channels last? ", self.channels_last)
+            #print("Actual shape:", batch["targets"].shape)
+            # exit(0)
             batch["targets"] = self.output_postprocesser.split_vector_by_variable(
                 batch["targets"], self.channels_last
             )  # TODO: we might want to remove that for the real data module
