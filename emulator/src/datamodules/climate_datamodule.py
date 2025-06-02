@@ -104,7 +104,7 @@ class ClimateDataModule(LightningDataModule):
             for model in self.test_models
         ]
         self.emissions_tracker = self.hparams.emissions_tracker
-        print("Test Sets: ", self.test_set_names)
+        #print("Test Sets: ", self.test_set_names)
 
         self._data_train = None
         self._data_val = None

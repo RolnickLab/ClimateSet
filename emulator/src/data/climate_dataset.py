@@ -1,25 +1,18 @@
-import copy
-import logging
 import os
 import glob
-import pickle
-import shutil
 import zipfile
-from typing import Dict, Optional, List, Callable, Tuple, Union
+from typing import Dict, Optional, List, Tuple, Union
 
 import numpy as np
 import xarray as xr
 import torch
-from torch import Tensor
 
 from emulator.src.utils.utils import get_logger, map_variables_targetmip
 from emulator.src.data.constants import (
     LAT,
     LON,
     SEQ_LEN,
-    INPUT4MIPS_TEMP_RES,
     CMIP6_TEMP_RES,
-    INPUT4MIPS_NOM_RES,
     CMIP6_NOM_RES,
     DATA_DIR,
     OPENBURNING_MODEL_MAPPING,
@@ -130,9 +123,9 @@ class ClimateDataset(torch.utils.data.Dataset):
             seq_len=seq_len,
         )
         # creates on cmip and on input4mip dataset
-        print("Creating input4mips...")
+        #print("Creating input4mips...")
         self.input4mips_ds = Input4MipsDataset(variables=in_variables_im, **ds_kwargs)
-        print("Creating cmip6...")
+        #print("Creating cmip6...")
         self.cmip6_ds = CMIP6Dataset(
             climate_model=climate_model,
             num_ensembles=num_ensembles,
@@ -151,7 +144,7 @@ class ClimateDataset(torch.utils.data.Dataset):
     ):  # -> np.ndarray():
         array_list = []
         for vlist in paths:
-            print("Number of files per var:", len(vlist))
+            #print("Number of files per var:", len(vlist))
             temp_data = xr.open_mfdataset(
                 vlist, concat_dim="time", combine="nested"
             ).compute()  # .compute is not necessary but eh, doesn't hurt
@@ -162,9 +155,9 @@ class ClimateDataset(torch.utils.data.Dataset):
         temp_data = np.concatenate(array_list, axis=0)
 
         if seq_len != SEQ_LEN:
-            print(
-                "Choosing a sequence length greater or lesser than the data sequence length."
-            )
+            # print(
+            #     "Choosing a sequence length greater or lesser than the data sequence length."
+            # )
             new_num_years = int(
                 np.floor(temp_data.shape[1] / seq_len / len(self.scenarios))
             )
@@ -272,10 +265,7 @@ class ClimateDataset(torch.utils.data.Dataset):
 
         """
         if len(years) != 9:
-            log.warn(
-                "Years string must be in the format xxxx-yyyy eg. 2015-2100 with string length 9. Please check the year string."
-            )
-            raise ValueError
+            raise ValueError("Years string must be in the format xxxx-yyyy eg. 2015-2100 with string length 9. Please check the year string.")
         splits = years.split("-")
         min_year, max_year = int(splits[0]), int(splits[1])
 
@@ -292,9 +282,9 @@ class ClimateDataset(torch.utils.data.Dataset):
                 min_val, max_val = self.get_min_max(data)
                 return min_val, max_val
             else:
-                print("Normalizing of type {0} has not been implemented!".format(type))
+                raise NotImplementedError(f"Normalizing of type {type} has not been implemented!")
         else:
-            print("In testing mode, skipping statistics calculations.")
+            log.warning("In testing mode, skipping statistics calculations.")
 
     def get_mean_std(self, data):
         # data shape (years*scenarios, seq, vars, lat, lon)
@@ -330,7 +320,7 @@ class ClimateDataset(torch.utils.data.Dataset):
         # z-norm: (data-mean)/(std + eps); eps=1e-9
         # min-max = (v - v.min()) / (v.max() - v.min())
 
-        print("Normalizing data...")
+        #print("Normalizing data...")
         if self.channels_last:
             data = np.moveaxis(
                 data, -1, 0
@@ -340,7 +330,7 @@ class ClimateDataset(torch.utils.data.Dataset):
                 data, 2, 0
             )  # shape (years, seq_len, num_vars, lat, lon) -> (num_vars, years, seq_len, lat, lon)
 
-        print("mean", stats["mean"].shape, "std", stats["std"].shape)
+        #print("mean", stats["mean"].shape, "std", stats["std"].shape)
         norm_data = (data - stats["mean"]) / (stats["std"])
 
         if self.channels_last:
@@ -395,9 +385,9 @@ class ClimateDataset(torch.utils.data.Dataset):
         return s
 
     def __len__(self):
-        print(
-            "Input4mips", self.input4mips_ds.length, "CMIP6 data", self.cmip6_ds.length
-        )
+        # print(
+        #     "Input4mips", self.input4mips_ds.length, "CMIP6 data", self.cmip6_ds.length
+        # )
         # cmip must be num_ensemble members times input4mips
         assert (
             self.input4mips_ds.length * self.num_ensembles == self.cmip6_ds.length
@@ -453,10 +443,7 @@ class CMIP6Dataset(ClimateDataset):
         if isinstance(climate_model, str):
             self.root_dir = os.path.join(self.root_dir, climate_model)
         else:
-            log.warn(
-                "For loading multiple climate models, please make sure to use the Super Climate Dataset Class."
-            )
-            raise NotImplementedError
+            raise NotImplementedError("For loading multiple climate models, please make sure to use the Super Climate Dataset Class.")
 
         if num_ensembles == 1:
             ensembles = os.listdir(self.root_dir)
@@ -464,7 +451,7 @@ class CMIP6Dataset(ClimateDataset):
                 os.path.join(self.root_dir, ensembles[0])
             ]  # Taking first ensemble member
         else:
-            print("Multiple ensembles", num_ensembles)
+            #print("Multiple ensembles", num_ensembles)
             self.ensemble_dir = []
             ensembles = os.listdir(self.root_dir)
             for i, folder in enumerate(ensembles):
@@ -484,7 +471,7 @@ class CMIP6Dataset(ClimateDataset):
             os.path.join(output_save_dir, fname)
         ):  # we first need to get the name here to test that...
             self.data_path = os.path.join(output_save_dir, fname)
-            print("path exists, reloading")
+            #print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
 
             # Load stats and normalize
@@ -516,13 +503,7 @@ class CMIP6Dataset(ClimateDataset):
                             )
                             files = glob.glob(var_dir + f"/*.nc", recursive=True)
                             if len(files) == 0:
-                                print(
-                                    "No files for this scenario, year, ensemble member pairing:",
-                                    exp,
-                                    y,
-                                    em,
-                                )
-                                exit(0)
+                                raise FileNotFoundError(f"No files could be found for scenario {exp}, year {y}, and ensemble member {em}. Check if climate model runs for that pairing actually exist.")
                             # loads all years!
                             output_nc_files += files
                 files_per_var.append(output_nc_files)
@@ -540,7 +521,6 @@ class CMIP6Dataset(ClimateDataset):
                 )
 
                 if os.path.isfile(stats_fname):
-                    print("Stats file already exists! Loading from memory.")
                     stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
@@ -552,7 +532,7 @@ class CMIP6Dataset(ClimateDataset):
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
-                    print("WROTE STATISTICS", save_file_name)
+                    #print("WROTE STATISTICS", save_file_name)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
@@ -630,14 +610,14 @@ class Input4MipsDataset(ClimateDataset):
             os.path.join(output_save_dir, fname)
         ):  # we first need to get the name here to test that...
             self.data_path = os.path.join(output_save_dir, fname)
-            print("path exists, reloading")
+            #print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
 
             # Load stats and normalize
             stats_fname = self.get_save_name_from_kwargs(
                 mode=mode, file="statistics", kwargs=fname_kwargs
             )
-            print(stats_fname)
+            #print(stats_fname)
             stats = self.load_dataset_statistics(
                 os.path.join(self.output_save_dir, stats_fname),
                 mode=self.mode,
@@ -705,7 +685,7 @@ class Input4MipsDataset(ClimateDataset):
                 )
 
                 if os.path.isfile(stats_fname):
-                    print("Stats file already exists! Loading from mempory.")
+                    #print("Stats file already exists! Loading from mempory.")
                     stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 

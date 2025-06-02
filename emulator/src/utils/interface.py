@@ -112,6 +112,8 @@ def get_datamodule(config: DictConfig) -> DummyDataModule:
     #    _recursive_=False
     # )
 
+    # hydra automaticall instantiates the right class type (specified in the config)
+    # to test this you can run print(type(data_module).__name__)
     data_module: DummyDataModule = hydra.utils.instantiate(
         config.datamodule,
         # input_transform=config.model.get("input_transform"),

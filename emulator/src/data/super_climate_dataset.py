@@ -1,17 +1,10 @@
-import copy
-import logging
 import os
 import glob
-import pickle
-import shutil
 import zipfile
-from typing import Dict, Optional, List, Callable, Tuple, Union
-import copy
+from typing import Dict, Optional, List, Tuple, Union
 import numpy as np
 import xarray as xr
 import torch
-from torch import Tensor
-import threading
 
 
 from emulator.src.utils.utils import get_logger, all_equal, map_variables_targetmip
@@ -19,14 +12,10 @@ from emulator.src.data.constants import (
     LON,
     LAT,
     SEQ_LEN,
-    INPUT4MIPS_TEMP_RES,
     CMIP6_TEMP_RES,
-    INPUT4MIPS_NOM_RES,
     CMIP6_NOM_RES,
     DATA_DIR,
-    OPENBURNING_MODEL_MAPPING,
     NO_OPENBURNING_VARS,
-    AVAILABLE_MODELS_FIRETYPE,
 )
 log = get_logger()
 from abc import ABC, abstractmethod
@@ -267,9 +256,9 @@ class ABC_Climate_Dataset(ABC, torch.utils.data.Dataset):
             elif norm_type == "minmax":
                 return self.get_min_max(data)
             else:
-                print(f"Normalization of type {norm_type} has not been implemented!")
+                raise NotImplementedError(f"Normalization of type {norm_type} has not been implemented!")
         else:
-            print("In testing mode, skipping statistics calculations.")
+            log.warning("In testing mode, skipping statistics calculations.")
 
     def get_mean_std(self, data: np.ndarray):
         """
@@ -329,8 +318,7 @@ class ABC_Climate_Dataset(ABC, torch.utils.data.Dataset):
         elif self.mode == 'val':
             return len(self.index_manager.val_indexes)
         else:
-            print(f"Unknown mode: {self.mode}")
-            raise ValueError
+            raise ValueError(f"Unknown mode: {self.mode}")
     
 
 class SuperClimateDataset(ABC_Climate_Dataset):
@@ -473,10 +461,7 @@ class SuperClimateDataset(ABC_Climate_Dataset):
 
         """
         if len(years) != 9:
-            log.warn(
-                "Years string must be in the format xxxx-yyyy eg. 2015-2100 with string length 9. Please check the year string."
-            )
-            raise ValueError
+            raise ValueError("Years string must be in the format xxxx-yyyy eg. 2015-2100 with string length 9. Please check the year string.")
         splits = years.split("-")
         min_year, max_year = int(splits[0]), int(splits[1])
 
@@ -519,8 +504,7 @@ class SuperClimateDataset(ABC_Climate_Dataset):
         return X, Y, model_id
 
     def __str__(self):
-        s = f" Super Emulator dataset: {len(self.index_manager.climate_models)} climate models with {self.index_manager.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
-        return s
+        return f" Super Emulator dataset: {len(self.index_manager.climate_models)} climate models with {self.index_manager.num_ensembles} ensemble members and {self.n_years} years used, with a total size of {len(self)} examples (in, out)."
 
     
     def __len__(self):
@@ -531,8 +515,7 @@ class SuperClimateDataset(ABC_Climate_Dataset):
         # elif self.mode=='train+val':
         #     return self.get_initial_length()
         else:
-            print("Unknown mode.", self.mode)
-            raise ValueError
+            raise ValueError(f"Unknown mode: {self.mode}")
 
 
 
@@ -588,7 +571,7 @@ class CMIP6Dataset(ABC_Climate_Dataset):
             os.path.join(output_save_dir, fname)
         ):  # we first need to get the name here to test that...
             self.data_path = os.path.join(output_save_dir, fname)
-            print("path exists, reloading")
+            #print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
 
             # Load stats and normalize
@@ -621,16 +604,7 @@ class CMIP6Dataset(ABC_Climate_Dataset):
                         )
                         files = glob.glob(var_dir + f"/*.nc", recursive=True)
                         if len(files) == 0:
-                            print(
-                                "No files for this climate model, ensemble member, var, year ,scenario:",
-                                climate_model,
-                                data_dir.split("/")[-1],
-                                var,
-                                y,
-                                exp,
-                            )
-                            print("Exiting! Please fix the data issue.")
-                            exit(0)
+                            raise FileNotFoundError(f"No files for climate model {climate_model}, ensemble member {data_dir.split("/")[-1]}, var {var}, year {y}, scenario {exp}. Please check if climate model runs for this exact pairing actually exist.")
                         # loads all years! implement splitting
                         output_nc_files += files
                 files_per_var.append(output_nc_files)
@@ -648,7 +622,7 @@ class CMIP6Dataset(ABC_Climate_Dataset):
                 )
 
                 if os.path.isfile(fname):
-                    print("Stats file already exists! Loading from memory.")
+                    #print("Stats file already exists! Loading from memory.")
                     stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
@@ -659,7 +633,7 @@ class CMIP6Dataset(ABC_Climate_Dataset):
                     stats = {"mean": stat1, "std": stat2}
                     self.norm_data = self.normalize_data(self.raw_data, stats)
                     save_file_name = self.write_dataset_statistics(stats_fname, stats)
-                    print("WROTE STATISTICS", save_file_name)
+                    #print("WROTE STATISTICS", save_file_name)
 
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
@@ -742,7 +716,7 @@ class Input4MipsDataset(ABC_Climate_Dataset):
             os.path.join(output_save_dir, fname)
         ):  # we first need to get the name here to test that...
             self.data_path = os.path.join(output_save_dir, fname)
-            print("path exists, reloading")
+            #print("path exists, reloading")
             self.Data = self._reload_data(self.data_path)
 
             # Load stats and normalize
@@ -813,7 +787,7 @@ class Input4MipsDataset(ABC_Climate_Dataset):
                 )
 
                 if os.path.isfile(stats_fname):
-                    print("Stats file already exists! Loading from mempory.")
+                    #print("Stats file already exists! Loading from mempory.")
                     stats = self.load_statistics_data(stats_fname)
                     self.norm_data = self.normalize_data(self.raw_data, stats)
 
