@@ -6,31 +6,7 @@ import gpytorch
 
 from pytorch_lightning.utilities import rank_zero_only
 
-# import problems from utils
-def get_logger(name=__name__, level=logging.INFO) -> logging.Logger:
-    """Initializes multi-GPU-friendly python logger."""
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-
-    # this ensures all logging levels get marked with the rank zero decorator
-    # otherwise logs would get multiplied for each GPU process in multi-GPU setup
-    for level in (
-        "debug",
-        "info",
-        "warning",
-        "error",
-        "exception",
-        "fatal",
-        "critical",
-    ):
-        setattr(logger, level, rank_zero_only(getattr(logger, level)))
-
-    return logger
-
-
-def diff_max_min(x, dim):
-    return torch.max(x, dim=dim) - torch.min(x, dim=dim)
-
+from emulator.src.utils.utils import get_logger
 
 log = get_logger()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -128,6 +104,8 @@ class ClimateSetLoss(nn.Module):
             pred (torch.Tensor): Predictions
             y (torch.Tensor): Targets
         """
+        if len(pred.shape) > 4:
+            log.warning("Tensors handed to loss function have more than 4 dimensions. Check if added channels need to be treated differently.")
         # Expected shape: [4, 12, 96, 144] -> [batch, time, latitude, longitude]
         if (pred.shape[-1] == 1) or (y[-1].shape == 1):
             raise ValueError("Loss function: Last dimension (values/channels) must be squeezed away")
@@ -249,6 +227,9 @@ class LLweighted_MSELoss_Climax(ClimateSetLoss):
         self.mask = mask
 
     def forward(self, pred: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        if self.mask is not None:
+            raise NotImplementedError("Masking is not supported in the loss functions anymore.")
+        
         self.check_lat_lon(pred, y)
         mse = self.mse(pred, y)
         weights = self.get_latitude_weights(y.shape[-2])
@@ -263,11 +244,8 @@ class LLweighted_MSELoss_Climax(ClimateSetLoss):
         # # ClimaX creates weird weights by dividing them by the mean 
         # #this leads to the climax rmse and mse to be the exact same like the unweighted mse / rmse
         #mean_weights = weights02 / weights02.mean()
-
-        if self.mask is not None:
-            error = (mse * weights * self.mask).sum() / self.mask.sum()
-        else:
-            error = (mse * weights).mean()
+        
+        error = (mse * weights).mean()
 
         return error
 
@@ -288,7 +266,10 @@ class LLweighted_RMSELoss_Climax(ClimateSetLoss):
     def forward(self, pred: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """ Latitude is expected to be on position -2
         """
+        if self.mask is not None:
+            raise NotImplementedError("Masking is not supported in the loss functions anymore.")
         self.check_lat_lon(pred, y)
+
         mse = self.mse(pred, y) # [batch, time, lat, lon]
         
         weights = self.get_latitude_weights(y.shape[-2])
@@ -298,15 +279,68 @@ class LLweighted_RMSELoss_Climax(ClimateSetLoss):
         # this leads to the climax rmse and mse to be the exact same like the unweighted mse / rmse
         #weights = weights / weights.mean() # ignored in this code
 
-        if self.mask is not None:
-            raise NotImplementedError("Masking is not supported in the loss functions anymore.")
-        
         # rmse for each month, and each batch
         error = torch.sqrt(torch.mean(mse * weights, dim=(-1, -2)))
         # mean over all months and batch samples
         error = error.mean()
 
         return error
+
+def get_loss_function(name, reduction="mean"): 
+    name = name.lower().strip().replace("-", "_")
+    if name in ["l1", "mae", "mean_absolute_error"]:
+        loss = nn.L1Loss(reduction=reduction)
+    elif name in ["l2", "mse", "mean_squared_error"]:
+        # TODO: clarify with time dimension
+        loss = nn.MSELoss(reduction=reduction)
+    elif name in ["rmse", "root_mean_squared_error"]:
+        loss = RMSELoss(reduction=reduction)
+    elif name in [
+        "nrmse_g_cb",
+        "weighted_nrmse_global",
+        "weighted_normalized_root_mean_squared_error_global",
+        "climate_bench_nrmse_global",
+    ]:
+        loss = NRMSELoss_g_ClimateBench()
+    elif name in [
+        "nrmse_s_cb",
+        "weighted_nrmse_spatial",
+        "weighted_normalized_root_mean_squared_error_spatial",
+        "climate_bench_nrmse_spatial",
+    ]:
+        loss = NRMSELoss_s_ClimateBench()
+    elif name in [
+        "nrmse_cb",
+        "weighted_nrmse",
+        "weighted_normalized_root_mean_squared_error",
+        "climate_bench_nrmse",
+    ]:
+        loss = NRMSELoss_ClimateBench()
+    elif name in [
+        "llrmse_wb",
+        "longitude_latitude_weighted_root_mean_squared_error_weather_bench",
+        "weather_bench_lon_lat_rmse",
+    ]:
+        loss = LLWeighted_RMSELoss_WeatherBench()
+    elif name in [
+        "llrmse_cx",
+        "longitude_latitude_weighted_root_mean_squared_error_climax",
+        "climax_lon_lat_rmse",
+    ]:
+        loss = LLweighted_RMSELoss_Climax()
+    elif name in [
+        "llmse_cx",
+        "longitude_latitude_weighted_mean_squared_error_climax",
+        "climax_lon_lat_mse",
+    ]:
+        loss = LLweighted_MSELoss_Climax()
+
+    elif name in ["smoothl1", "smooth"]:
+        loss = nn.SmoothL1Loss(reduction=reduction)
+    else:
+        raise ValueError(f"Unknown loss function {name}")
+    
+    return loss
 
 
 if __name__ == "__main__":
@@ -332,7 +366,7 @@ if __name__ == "__main__":
 
     llmse_cx = LLweighted_MSELoss_Climax()
     llrmse_cx = LLweighted_RMSELoss_Climax()
-    
+
     loss = mse(dummy, targets)
     print("MSE loss", loss, loss.size())
     # np_dummy = dummy.cpu().detach().numpy()
@@ -358,14 +392,6 @@ if __name__ == "__main__":
 
     loss = llrmse_cx(dummy, targets)
     print("CX rmse loss", loss, loss.size())
-
-
-# REFACTOR
-# - weight function should be one function
-
-# Same tests needed for metrics
-
-# Shape tests at the end of the whole pipeline??
 
 
 # How weights were created before:
