@@ -22,6 +22,10 @@ torch.backends.cudnn.benchmark = False
 
 PRECISION_VALUE = 0.0005
 
+# TODO add channel issue
+# TODO test weighting function
+# TODO test if numpy weights and torch weights are the same!
+
 @pytest.fixture 
 def rand_targets():
     return torch.rand(size=(batch_size, out_time, lat, lon))
@@ -87,7 +91,7 @@ def test_nrmse(rand_predics, rand_targets, ones_predics, ones_targets):
     expected_loss(loss_rand, 0.1142, 0.005)
 
 def test_wb_rmse(rand_predics, rand_targets, ones_predics, ones_targets):
-    error = LLWeighted_RMSELoss_WheatherBench()
+    error = LLWeighted_RMSELoss_WeatherBench()
     loss_ones = error(ones_predics, ones_targets) 
     loss_rand = error(rand_predics, rand_targets)
     expected_loss(loss_ones, 0.0795, PRECISION_VALUE)
@@ -112,7 +116,7 @@ def test_equality_ones(ones_predics, ones_targets):
     nrmse_s = NRMSELoss_s_ClimateBench()
     nrmse_g = NRMSELoss_g_ClimateBench()
     nrmse = NRMSELoss_ClimateBench()
-    wb_rmse = LLWeighted_RMSELoss_WheatherBench()
+    wb_rmse = LLWeighted_RMSELoss_WeatherBench()
     cx_rmse = LLweighted_RMSELoss_Climax()
 
     rmse_loss_ones = rmse(ones_predics, ones_targets)
@@ -127,7 +131,7 @@ def test_equality_ones(ones_predics, ones_targets):
     assert (nrmse_s_loss_ones.item() + 5 * nrmse_g_loss_ones.item()) == pytest.approx(nrmse_loss_ones.item(), abs=PRECISION_VALUE)
 
 def test_equality_rand(rand_predics, rand_targets):
-    wb_rmse = LLWeighted_RMSELoss_WheatherBench()
+    wb_rmse = LLWeighted_RMSELoss_WeatherBench()
     cx_rmse = LLweighted_RMSELoss_Climax()
     nrmse_s = NRMSELoss_s_ClimateBench()
     nrmse_g = NRMSELoss_g_ClimateBench()
@@ -143,4 +147,3 @@ def test_equality_rand(rand_predics, rand_targets):
     assert (nrmse_s_loss_rand.item() + 5 * nrmse_g_loss_rand.item()) == pytest.approx(nrmse_loss_rand.item(), abs=PRECISION_VALUE)
 
 
-# TODO add channel issue
