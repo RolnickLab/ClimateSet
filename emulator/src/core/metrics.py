@@ -10,26 +10,27 @@ def MSE(preds: np.ndarray, y: np.ndarray):
     return np.mean((preds - y) ** 2)
 
 
+# CHECKED and adapted
 def RMSE(preds: np.ndarray, y: np.ndarray):
-    return np.mean(np.sqrt(MSE(preds, y)))
+    return np.sqrt(MSE(preds, y))
 
-
+# CHCKED and adapted
 def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
-    Weigting to account for decreasing grid size towards the pole.
+    Weighting to account for decreasing grid size towards the pole.
     """
 
     # weighting to account for decreasing grid-cell area towards pole
-    # lattitude weights
+    # latitude weights
     lat_size = y.shape[-1]
-    lats = np.linspace(-90, 90, lat_size)
+    lats = np.linspace(-89.75, 89.75, lat_size)
     if deg2rad:
         weights = np.cos((np.pi * lats) / 180)
     else:
         weights = np.cos(lats)
 
-    # nrmses = sqrt((weights * (x_mean_t -y_mean_n_t)**2))_mean_s / ((weights*y)_mean_s)_mean_t_n
+    # nrmse = sqrt((weights * (pred_mean_b_t - y_mean_b_t)**2)_mean_s) / ((weights*y)_mean_s)_mean_b_t
     nrmse_s = np.sqrt(
         weighted_global_mean(
             (preds.mean(axis=(0, 1)) - y.mean(axis=(0, 1))) ** 2, weights
@@ -38,51 +39,49 @@ def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True)
 
     return nrmse_s
 
-
+# CHECKED and adapted
 def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
     Weigting to account for decreasing grid size towards the pole.
     """
-    # weighting to account for decreasing grid-cell area towards pole
-    # lattitude weights
+    # latitude weighting to account for decreasing grid-cell area towards pole
     lat_size = y.shape[-1]
-    lats = np.linspace(-90, 90, lat_size)
+    lats = np.linspace(-89.75, 89.75, lat_size)
     if deg2rad:
         weights = np.cos((np.pi * lats) / 180)
     else:
         weights = np.cos(lats)
 
-
-    denom = weighted_global_mean(y, weights).mean(axis=(0, 1))
-
     # denom is not alowed to be zero!
     if np.any(preds == 0):
-        log.warn("predictions contains zeros!! adding epsilon")
+        log.warning("Predictions contain zero-values, adding epsilon to metric.")
         preds[preds == 0] += 1e-6
 
     under_sqrt = (
         (
-            weighted_global_mean(preds.mean(axis=0), weights)
-            - weighted_global_mean(y.mean(axis=0), weights)
-        )
-        ** 2
-    ).mean(axis=0)
+            weighted_global_mean(preds, weights)
+            - weighted_global_mean(y, weights)
+        ) ** 2
+    ).mean(axis=(0, 1))
     if np.isnan(under_sqrt).sum() > 0:
         log.info("under sqrt is nan")
+        raise ValueError("NRMSE_g got nan under sqrt")
     nrmse_g = (
         np.sqrt(
             (
-                weighted_global_mean(preds.mean(axis=0), weights)
-                - weighted_global_mean(y.mean(axis=0), weights) ** 2
-            ).mean(axis=(0))
+                (
+                    weighted_global_mean(preds, weights)
+                    - weighted_global_mean(y, weights)
+                ) ** 2
+            ).mean(axis=(0, 1))
         )
-        / denom
+        / weighted_global_mean(y, weights).mean(axis=(0, 1))
     )
 
     return nrmse_g
 
-
+# CHECKED
 def NRMSE_ClimateBench(preds: np.ndarray, y: np.ndarray, alpha: int = 5):
     """
     Combination of global weighted and spatially weighted nrmse.
@@ -93,10 +92,10 @@ def NRMSE_ClimateBench(preds: np.ndarray, y: np.ndarray, alpha: int = 5):
     nrmse = nrmses + alpha * nrmseg
     return nrmse
 
-
+# CONTINUE HERE
 def LLWeighted_RMSE_WheatherBench(preds: np.ndarray, y: np.ndarray):
     """
-    Weigthed RMSE taken from Wheather Bench.
+    Weigthed RMSE taken from Weather Bench.
     Weighting to account for decreasing grid sizes towards the pole.
 
     rmse = mean over forecasts and time of np.sqrt( mean over lon lat L(lat_j)*)MSE(preds, y)
@@ -152,8 +151,7 @@ def LLweighted_RMSE_Climax(
     Applied per variable.
     If given a mask, normalized by sum of that.
     """
-
-    # lattitude weights
+    # latitude weights
     lat_size = y.shape[-1]
     lats = np.linspace(-90, 90, lat_size)
     if deg2rad:
@@ -177,15 +175,17 @@ def LLweighted_RMSE_Climax(
 if __name__ == "__main__":
     batch_size = 16
     out_time = 10
-    lon = 32
-    lat = 64
-    dummy = np.random.randn(batch_size, out_time, lon, lat)
+    lat = 96
+    lon = 144
+    # dummy = np.random.randn(batch_size, out_time, lat, lon)
+    # targets = np.random.randn(batch_size, out_time, lat, lon)  # .cuda()
 
-    targets = np.random.randn(batch_size, out_time, lon, lat)  # .cuda()
+    targets = np.ones(shape=(batch_size, out_time, lat, lon))
+    dummy = targets + 0.1
 
-    reduction = "mean"
+    #reduction = "mean"
     mse = MSE(dummy, targets)
-    # rmse=RMSE(reduction=reduction)
+    rmse = RMSE(dummy, targets)
 
     nrmse_g = NRMSE_g_ClimateBench(dummy, targets)
     nrmse_s = NRMSE_s_ClimateBench(dummy, targets)
@@ -196,20 +196,28 @@ if __name__ == "__main__":
     llmse_cx = LLweighted_MSE_Climax(dummy, targets)
     llrmse_cx = LLweighted_RMSE_Climax(dummy, targets)
 
+    loss = mse
+    print("MSE loss", loss, loss.shape)
+
+    loss = rmse
+    print("RMSE loss", loss, loss.shape)
+
     loss = nrmse_g
-    print("CB nrmse g loss", loss, loss.shape)
+    print("CB nrmse g metric", loss, loss.shape)
 
     loss = nrmse_s
-    print("CB nrmse s loss", loss, loss.shape)
+    print("CB nrmse s metric", loss, loss.shape)
 
     loss = nrmse
-    print("CB nrmse loss", loss, loss.shape)
+    print("CB nrmse metric", loss, loss.shape)
+
+    exit(0)
 
     loss = llrmse_wb
-    print("WB rmse loss", loss, loss.shape)
+    print("WB rmse metric", loss, loss.shape)
 
     loss = llmse_cx
-    print("CX mse loss", loss, loss.shape)
+    print("CX mse metric", loss, loss.shape)
 
     loss = llrmse_cx
-    print("CX nmse loss", loss, loss.shape)
+    print("CX nmse metric", loss, loss.shape)
