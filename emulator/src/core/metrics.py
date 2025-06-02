@@ -1,108 +1,80 @@
+import torch
 import numpy as np
-from emulator.src.utils.utils import get_logger, weighted_global_mean
+from emulator.src.utils.utils import get_logger
+from emulator.src.utils.metric_utils import weighted_global_mean_np, get_latitude_weights_np, check_lat_lon_np
 
 log = get_logger()
 
 # all functions assuming input dimensions (batch_size / N, time, lon, lat)
 
-
 def MSE(preds: np.ndarray, y: np.ndarray):
     return np.mean((preds - y) ** 2)
 
-
-# CHECKED and adapted
 def RMSE(preds: np.ndarray, y: np.ndarray):
     return np.sqrt(MSE(preds, y))
 
-# CHCKED and adapted
 def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
     Weighting to account for decreasing grid size towards the pole.
     """
-
-    # weighting to account for decreasing grid-cell area towards pole
-    # latitude weights
-    lat_size = y.shape[-1]
-    lats = np.linspace(-89.75, 89.75, lat_size)
-    weights = np.cos((np.pi * lats) / 180)
+    check_lat_lon_np(preds, y)
+    weights = get_latitude_weights_np(y.shape[-2])
 
     # nrmse = sqrt((weights * (pred_mean_b_t - y_mean_b_t)**2)_mean_s) / ((weights*y)_mean_s)_mean_b_t
     nrmse_s = np.sqrt(
-        weighted_global_mean(
+        weighted_global_mean_np(
             (preds.mean(axis=(0, 1)) - y.mean(axis=(0, 1))) ** 2, weights
         )
-    ) / weighted_global_mean(y, weights).mean(axis=(0, 1))
+    ) / weighted_global_mean_np(y, weights).mean(axis=(0, 1))
 
     return nrmse_s
 
-# CHECKED and adapted
 def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
     Weigting to account for decreasing grid size towards the pole.
     """
-    # latitude weighting to account for decreasing grid-cell area towards pole
-    lat_size = y.shape[-1]
-    lats = np.linspace(-89.75, 89.75, lat_size)
-    weights = np.cos((np.pi * lats) / 180)
+    check_lat_lon_np(preds, y)
+    weights = get_latitude_weights_np(y.shape[-2])
 
-    # denom is not alowed to be zero!
-    if np.any(preds == 0):
-        log.warning("Predictions contain zero-values, adding epsilon to metric.")
-        preds[preds == 0] += 1e-6
-
-    under_sqrt = (
-        (
-            weighted_global_mean(preds, weights)
-            - weighted_global_mean(y, weights)
-        ) ** 2
-    ).mean(axis=(0, 1))
-    if np.isnan(under_sqrt).sum() > 0:
-        log.info("under sqrt is nan")
-        raise ValueError("NRMSE_g got nan under sqrt")
     nrmse_g = (
         np.sqrt(
             (
                 (
-                    weighted_global_mean(preds, weights)
-                    - weighted_global_mean(y, weights)
+                    weighted_global_mean_np(preds, weights)
+                    - weighted_global_mean_np(y, weights)
                 ) ** 2
             ).mean(axis=(0, 1))
         )
-        / weighted_global_mean(y, weights).mean(axis=(0, 1))
+        / weighted_global_mean_np(y, weights).mean(axis=(0, 1))
     )
 
     return nrmse_g
 
-# CHECKED
 def NRMSE_ClimateBench(preds: np.ndarray, y: np.ndarray, alpha: int = 5):
     """
     Combination of global weighted and spatially weighted nrmse.
     """
-
+    check_lat_lon_np(preds, y)
     nrmseg = NRMSE_g_ClimateBench(preds, y)
     nrmses = NRMSE_s_ClimateBench(preds, y)
     nrmse = nrmses + alpha * nrmseg
     return nrmse
 
-# CONTINUE HERE
-def LLWeighted_RMSE_WheatherBench(preds: np.ndarray, y: np.ndarray):
+def LLWeighted_RMSE_WeatherBench(preds: np.ndarray, y: np.ndarray):
     """
     Weigthed RMSE taken from Weather Bench.
     Weighting to account for decreasing grid sizes towards the pole.
 
     rmse = mean over forecasts and time of np.sqrt( mean over lon lat L(lat_j)*)MSE(preds, y)
-    weights = cos(latitude)/cos(latitude).mean()
-    """
-    lat_size = y.shape[-1]
-    lats = np.linspace(-90, 90, lat_size)
     
-
-    weights = (np.cos(lats) / np.cos(lats)).mean()
-
-    rmse = np.sqrt(np.mean(weights * ((preds - y) ** 2), axis=(-1, -2))).mean()
-
+    original code does:     weights = cos(latitude)/cos(latitude).mean()
+    --> we are not doing that
+    """
+    check_lat_lon_np(preds, y)
+    weights = get_latitude_weights_np(y.shape[-2])
+    rmse = np.mean(np.sqrt(np.mean(weights * ((preds - y) ** 2), axis=(-2, -1))))
     return rmse
 
 
@@ -114,21 +86,13 @@ def LLweighted_MSE_Climax(
     Allows to weight the  by the cosine of the latitude to account for gridding differences at equator vs. poles.
     Applied per variable.
     If given a mask, normalized by sum of that.
-
     """
-
-    # lattitude weights
-    lat_size = y.shape[-1]
-    lats = np.linspace(-90, 90, lat_size)
-    weights = np.cos((np.pi * lats) / 180)
-
-    # they normalize the weights first
-    weights = weights / weights.mean()
-
+    check_lat_lon_np(preds, y)
     if mask is not None:
-        error = (((preds - y) ** 2) * weights * mask).sum() / mask.sum()
-    else:
-        error = (((preds - y) ** 2) * weights).mean()
+        raise NotImplementedError("Masking is not supported in the metric functions anymore.")
+        
+    weights = get_latitude_weights_np(y.shape[-2])
+    error = (((preds - y) ** 2) * weights).mean()
 
     return error
 
@@ -142,20 +106,18 @@ def LLweighted_RMSE_Climax(
     Applied per variable.
     If given a mask, normalized by sum of that.
     """
-    # latitude weights
-    lat_size = y.shape[-1]
-    lats = np.linspace(-90, 90, lat_size)
-    weights = np.cos((np.pi * lats) / 180)
-
-    # they normalize the weights first
-    weights = weights / weights.mean()
-
+    check_lat_lon_np(preds, y)
     if mask is not None:
-        error = (((preds - y) ** 2) * weights * mask).sum() / mask.sum()
-    else:
-        error = (((preds - y) ** 2) * weights).mean()
+        raise NotImplementedError("Masking is not supported in the metric functions anymore.")
+    weights = get_latitude_weights_np(y.shape[-2])
 
-    error = np.sqrt(error)
+    # if mask is not None:
+    #     error = (((preds - y) ** 2) * weights * mask).sum() / mask.sum()
+
+    # rmse for each month and each batch
+    error = np.sqrt(np.mean(((preds - y) ** 2) * weights, axis=(-1, -2)))
+    # mean over all months and batch samples
+    error = error.mean()
 
     return error
 
@@ -165,21 +127,28 @@ if __name__ == "__main__":
     out_time = 10
     lat = 96
     lon = 144
+    # try to get the same rand matrices 
+    dummy = torch.rand(size=(batch_size, out_time, lat, lon))#.cuda()
+    targets = torch.rand(size=(batch_size, out_time, lat, lon))
+    # and convert them to numpy arrays
+    dummy = dummy.numpy()
+    targets = targets.numpy()
+
     # dummy = np.random.randn(batch_size, out_time, lat, lon)
     # targets = np.random.randn(batch_size, out_time, lat, lon)  # .cuda()
 
-    targets = np.ones(shape=(batch_size, out_time, lat, lon))
-    dummy = targets + 0.1
+    # targets = np.ones(shape=(batch_size, out_time, lat, lon))
+    # dummy = targets + 0.1
 
     #reduction = "mean"
     mse = MSE(dummy, targets)
     rmse = RMSE(dummy, targets)
 
-    nrmse_g = NRMSE_g_ClimateBench(dummy, targets)
     nrmse_s = NRMSE_s_ClimateBench(dummy, targets)
+    nrmse_g = NRMSE_g_ClimateBench(dummy, targets)
     nrmse = NRMSE_ClimateBench(dummy, targets)
 
-    llrmse_wb = LLWeighted_RMSE_WheatherBench(dummy, targets)
+    llrmse_wb = LLWeighted_RMSE_WeatherBench(dummy, targets)
 
     llmse_cx = LLweighted_MSE_Climax(dummy, targets)
     llrmse_cx = LLweighted_RMSE_Climax(dummy, targets)
@@ -190,16 +159,14 @@ if __name__ == "__main__":
     loss = rmse
     print("RMSE loss", loss, loss.shape)
 
-    loss = nrmse_g
-    print("CB nrmse g metric", loss, loss.shape)
-
     loss = nrmse_s
     print("CB nrmse s metric", loss, loss.shape)
 
+    loss = nrmse_g
+    print("CB nrmse g metric", loss, loss.shape)
+
     loss = nrmse
     print("CB nrmse metric", loss, loss.shape)
-
-    exit(0)
 
     loss = llrmse_wb
     print("WB rmse metric", loss, loss.shape)
@@ -208,4 +175,4 @@ if __name__ == "__main__":
     print("CX mse metric", loss, loss.shape)
 
     loss = llrmse_cx
-    print("CX nmse metric", loss, loss.shape)
+    print("CX rmse metric", loss, loss.shape)
