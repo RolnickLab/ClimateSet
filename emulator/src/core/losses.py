@@ -3,8 +3,11 @@ import torch.nn as nn
 import logging
 import gpytorch
 
+import xarray as xr
+
 from pytorch_lightning.utilities import rank_zero_only
 
+import numpy as np
 
 # import problems from utils
 def get_logger(name=__name__, level=logging.INFO) -> logging.Logger:
@@ -49,7 +52,15 @@ class MLL(nn.Module):
     def forward(self, pred, y):
         return -self.mll(pred, y)
 
-
+class MSELoss(nn.Module): 
+    def __init__(self, reduction: str = "none", mask=None):
+        super().__init__()
+        self.mse = torch.nn.MSELoss(reduction=reduction)
+    
+    def forward(self, pred, y):
+        return self.mse(pred, y)
+    
+# CHECKED and adapted
 class RMSELoss(nn.Module):
     def __init__(self, reduction: str = "none", mask=None):
         super().__init__()
@@ -68,22 +79,27 @@ class RMSELoss(nn.Module):
         self.mse = nn.MSELoss(reduction="none")  # mean over all dimensions
 
     def forward(self, pred, y):
-        error = torch.sqrt(self.mse(pred, y))
+        error = self.mse(pred, y)
+
+        # TODO this one is not tested
         if self.mask is not None:
             error = (
                 error.mean(dim=1) * self.mask
-            ).sum() / self.mask.sum()  # TODO: check
+            ).sum() / self.mask.sum()
 
         if self.reduction_fn is not None:
             error = self.reduction_fn(error)
 
+        # apply root on overall error
+        error = torch.sqrt(error)
+
         return error
 
-
+# CHECKED and adapted
 class NRMSELoss_s_ClimateBench(nn.Module):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
-    Weigting to account for decreasing grid size towards the pole.
+    Weighting to account for decreasing grid size towards the poles.
     """
 
     def __init__(self, deg2rad: bool = True):
@@ -93,18 +109,26 @@ class NRMSELoss_s_ClimateBench(nn.Module):
         self.deg2rad = deg2rad
 
     def forward(self, pred, y):
-        # weighting to account for decreasing grid-cell area towards pole
-        # lattitude weights
-        lat_size = y.shape[-1]
-        lats = torch.linspace(-90, 90, lat_size)
+        # weighting to account for decreasing grid-cell area towards poles
+        # latitude weights
+        lat_size = y.shape[-2]
+        lats = torch.linspace(-89.75, 89.75, lat_size)
+ 
         if self.deg2rad:
+            # same like np.cos(np.deg2rad(lats))
             weights = torch.cos((torch.pi * lats) / 180)
         else:
             weights = torch.cos(lats)
+
+        weights = weights.unsqueeze(-1)
         weights = weights.to(device)
 
-        # nrmses = sqrt((weights * (x_mean_t -y_mean_n_t)**2))_mean_s / ((weights*y)_mean_s)_mean_t_n
-        # TODO: clarify with duncan why not mean over n with x..
+        # nrmses = sqrt((weights * (pred_mean_t - y_mean_n_t)**2)_mean_s) / ((weights*y)_mean_s)_mean_t_n
+        # n is for the different ensemble members in the target t. We don't have that here.
+        # we need to calculate the mean over the time dimension (1), but also over the batch dimension (0) [climatebench doesn't need to do that]
+        # so our adapted nrmse is :
+        # nrmse = sqrt((weights * (pred_mean_b_t - y_mean_b_t)**2)_mean_s) / ((weights*y)_mean_s)_mean_b_t
+        # with mean_s being the weighted global mean
         nrmse_s = torch.sqrt(
             self.weighted_global_mean(
                 (pred.mean(dim=(0, 1)) - y.mean(dim=(0, 1))) ** 2, weights
@@ -113,56 +137,59 @@ class NRMSELoss_s_ClimateBench(nn.Module):
 
         return nrmse_s
 
+    # CHECKED
     def weighted_global_mean(self, x, weights):
-        # weitghs * x summed over lon lat / lon+lat
+        # sum_lat(sum_lon(x * weights)) / N_lat * N_lon
+        # i.e.: sum(sum(x * weights)) / (96 * 144)
+        return torch.mean(x * weights, dim=(-2, -1)) # dims order does not matter
 
-        return torch.mean(x * weights, dim=(-2, -1))
-
-
+# CHECKED and adapted
 class NRMSELoss_g_ClimateBench(nn.Module):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
-    Weigting to account for decreasing grid size towards the pole.
+    Weighting to account for decreasing grid size towards the pole.
     """
 
     def __init__(self, deg2rad: bool = True):
         super().__init__()
         self.mse = nn.MSELoss(reduction="none")
-
         self.deg2rad = deg2rad
 
     def forward(self, pred, y):
-        # weighting to account for decreasing grid-cell area towards pole
-        # lattitude weights
+        #latitude weighting to account for decreasing grid-cell area towards pole
+        lat_size = y.shape[-2]
+        lats = torch.linspace(-89.75, 89.75, lat_size)
+ 
         if self.deg2rad:
-            weights = torch.cos((torch.pi * torch.arange(y.shape[-1])) / 180)
+            # same like np.cos(np.deg2rad(lats))
+            weights = torch.cos((torch.pi * lats) / 180)
         else:
-            weights = torch.cos(torch.arange(y.shape[-1]))
-
+            weights = torch.cos(lats)
+        weights = weights.unsqueeze(-1)
         weights = weights.to(device)
 
-        # nrmseg = sqrt(((x - ( (weights * y_mean_t)_mean_s)**2)_mean_t )  ) / ((weights*y)_mean_s)_mean_t_n
-        denom = self.weighted_global_mean(y, weights).mean(dim=(0, 1))
-
-        # TODO: clarify with duncan when to mean over samples for predictions? before or after sqrt?
+        # nrmseg = sqrt(
+        #   (((weights * x_mean) - (weights * y_mean))**2)_mean_t_b 
+        # ) / (weights*y)_mean_t_b
+        # we are meaning over the batches at the same time when averaging over the temporal scale
         nrmse_g = (
             torch.sqrt(
                 (
-                    self.weighted_global_mean(pred.mean(dim=0), weights)
-                    - self.weighted_global_mean(y.mean(dim=0), weights) ** 2
-                ).mean(dim=(0))
+                    (self.weighted_global_mean(pred, weights)
+                    - self.weighted_global_mean(y, weights)) ** 2
+                ).mean(dim=(0, 1))
             )
-            / denom
+            / self.weighted_global_mean(y, weights).mean(dim=(0, 1))
         )
-
+        # TODO understand: the values are in the same range like nrmse_s - why do we need to adapt them?
         return nrmse_g
 
     def weighted_global_mean(self, x, weights):
-        # weitghs * x summed over lon lat / lon+lat
-        # TODO dimensions are wrong here
+        # sum_lat(sum_lon(x * weights)) / N_lat * N_lon
+        # i.e.: sum(sum(x * weights)) / (144 * 96)
         return torch.mean(x * weights, dim=(-2, -1))
 
-
+# CHECKED
 class NRMSELoss_ClimateBench(nn.Module):
     """
     Combination of global weighted and spatially weighted nrmse.
@@ -182,11 +209,11 @@ class NRMSELoss_ClimateBench(nn.Module):
         nrmse = nrmses + self.alpha * nrmseg
         return nrmse
 
-
+# CHECKED
 class LLWeighted_RMSELoss_WheatherBench(nn.Module):
 
     """
-    Weigthed RMSE taken from Wheather Bench.
+    Weigthed RMSE taken from Weather Bench.
     Weighting to account for decreasing grid sizes towards the pole.
 
     rmse = mean over forecasts and time of torch.sqrt( mean over lon lat L(lat_j)*)MSE(pred, y)
@@ -199,16 +226,19 @@ class LLWeighted_RMSELoss_WheatherBench(nn.Module):
         self.mse = nn.MSELoss(reduction="none")
 
     def forward(self, pred, y):
-        weights = (
-            torch.cos(torch.arange(y.shape[-2])) / torch.cos(torch.arange(y.shape[-2]))
-        ).mean()
+
+        lat_size = y.shape[-2]
+        lats = torch.linspace(-89.75, 89.75, lat_size)
+        weights = torch.cos((torch.pi * lats) / 180)
+        weights = weights.unsqueeze(-1)
         weights = weights.to(device)
 
-        rmse = torch.sqrt(torch.mean(weights * self.mse(pred, y), dim=(-2, -1))).mean()
+        #rmse_before = torch.sqrt(torch.mean(weights * self.mse(pred, y), dim=(-2, -1))).mean()
+        rmse = torch.mean(torch.sqrt(torch.mean(weights * ((pred - y)**2), dim=([-2, -1]))))
 
         return rmse
 
-
+# CONTINUE HERE
 class LLweighted_MSELoss_Climax(nn.Module):
     """
     Latitude weighted mean squared error taken from ClimaX.
@@ -228,15 +258,27 @@ class LLweighted_MSELoss_Climax(nn.Module):
     def forward(self, pred, y):
         mse = self.mse(pred, y)
 
-        # latitude weights
+        lat_size = y.shape[-2]
+        lats = torch.linspace(-89.75, 89.75, lat_size)
+ 
         if self.deg2rad:
-            weights = torch.cos((torch.pi * torch.arange(y.shape[-3])) / 180)
+            # same like np.cos(np.deg2rad(lats))
+            weights = torch.cos((torch.pi * lats) / 180)
         else:
-            weights = torch.cos(torch.arange(y.shape[-1]))
-
-        # they normalize the weights first
-        weights = weights / weights.mean()
+            weights = torch.cos(lats)
+        weights = weights.unsqueeze(-1)
         weights = weights.to(device)
+
+        # how they create the weights (does not work for us, results make no sense)
+        # if self.deg2rad:
+        #     weights02 = torch.cos((torch.pi * torch.arange(y.shape[-2])) / 180)
+        # else:
+        #     weights02 = torch.cos(torch.arange(y.shape[-2]))
+
+        # # ClimaX creates weird weights by dividing them by the mean 
+        # #this leads to the climax rmse and mse to be the exact same like the unweighted mse / rmse
+        #mean_weights = weights02 / weights02.mean()
+
         if self.mask is not None:
             error = (mse * weights * self.mask).sum() / self.mask.sum()
         else:
@@ -273,19 +315,15 @@ class LLweighted_RMSELoss_Climax(nn.Module):
             raise ValueError("There are more latitude than longitude grid cells. Check if you swapped longitude and latitude.")
 
         mse = self.mse(pred, y) # [batch, time, lat, lon]
-
-        ## MY SPACE
-        latitudes = torch.linspace(-90, 90, lat_num_grid_cells)
+        
+        latitudes = torch.linspace(-89.75, 89.75, lat_num_grid_cells)
         # torch.abs: -90 and + 90 get -0.000X as weight -> make all weights positive
         weights = torch.abs(torch.cos(torch.deg2rad(latitudes))) 
+        weights = weights.unsqueeze(-1)
 
-        # ClimaX creates weird weights, by making the mean here it goes beyond 1
-        mean_weights = weights / weights.mean() # ignored in this code
-
-        # adapt weights to the right tensor shape (batch, time, lon, lat)
-        desired_weights_shape = [1] * len(mse.shape)
-        desired_weights_shape[-2] = lat_num_grid_cells
-        weights = weights.view(desired_weights_shape)
+        # ClimaX creates weird weights by dividing them by the mean 
+        # this leads to the climax rmse and mse to be the exact same like the unweighted mse / rmse
+        #weights = weights / weights.mean() # ignored in this code
 
         # move weights to device
         weights = weights.to(device)
@@ -294,13 +332,90 @@ class LLweighted_RMSELoss_Climax(nn.Module):
             raise NotImplementedError("Masking is not supported in the loss functions anymore.")
         
         # rmse for each month, and each batch
-        error = torch.sqrt(torch.mean(mse * weights, dim=(-2, -1)))
+        error = torch.sqrt(torch.mean(mse * weights, dim=(-1, -2)))
         # mean over all months and batch samples
         error = error.mean()
 
         return error
-    
-        ##### OLD CODE #####
+
+
+if __name__ == "__main__":
+    batch_size = 16
+    out_time = 12
+    lat = 96
+    lon = 144
+    dummy = torch.rand(size=(batch_size, out_time, lat, lon))#.cuda()
+    targets = torch.rand(size=(batch_size, out_time, lat, lon))#.cuda()
+
+    # targets = torch.ones(size=(batch_size, out_time, lat, lon))
+    # dummy = targets + 0.1
+
+    reduction = "mean"
+    mse = MSELoss(reduction=reduction)
+    rmse = RMSELoss(reduction=reduction)
+
+    nrmse_g = NRMSELoss_g_ClimateBench()
+    nrmse_s = NRMSELoss_s_ClimateBench()
+    nrmse = NRMSELoss_ClimateBench()
+
+    llrmse_wb = LLWeighted_RMSELoss_WheatherBench()
+
+    llmse_cx = LLweighted_MSELoss_Climax()
+    llrmse_cx = LLweighted_RMSELoss_Climax()
+
+    # MSE: CHECKED
+    loss = mse(dummy, targets)
+    print("MSE loss", loss, loss.size())
+    # np_dummy = dummy.cpu().detach().numpy()
+    # np_targets = targets.cpu().detach().numpy()
+
+    loss = rmse(dummy, targets)
+    print("RMSE loss", loss, loss.size())
+
+    loss = nrmse_s(dummy, targets)
+    print("CB nrmse s loss", loss, loss.size())
+
+    loss = nrmse_g(dummy, targets)
+    print("CB nrmse g loss", loss, loss.size())
+
+    loss = nrmse(dummy, targets)
+    print("CB nrmseloss", loss, loss.size())
+
+    loss = llrmse_wb(dummy, targets)
+    print("WB rmse loss", loss, loss.size())
+
+    loss = llmse_cx(dummy, targets)
+    print("CX mse loss", loss, loss.size())
+
+    loss = llrmse_cx(dummy, targets)
+    print("CX rmse loss", loss, loss.size())
+
+# TESTS for losses:
+# - with specific tensor of 1s + offset
+# - with specific random tensors
+# - make sure output size is only one number (except if several channels?)
+
+# - compare losses for ones: rmse == nrmse_g
+# - with channels for different variables (make sure it's not breaking) / doing whatever is needed
+# - make sure WB and CX rmse losses are the same
+
+# REFACTOR
+# - kick deg2rad
+# - weight function should be one function (utils)
+
+# Same tests needed for metrics
+
+# Shape tests at the end of the whole pipeline??
+
+
+# How weights were created before:
+
+        # weights = (
+        #     torch.cos(torch.arange(y.shape[-2])) / torch.cos(torch.arange(y.shape[-2]))
+        # ).mean()
+        # weights = weights.to(device)
+
+##### OLD CODE #####
         # mse = self.mse(pred, y)
         # # lattitude weights
         # if self.deg2rad:
@@ -317,50 +432,3 @@ class LLweighted_RMSELoss_Climax(nn.Module):
         # error = torch.sqrt(error)
         # return error
         ##### END OF OLD CODE #####
-
-
-if __name__ == "__main__":
-    batch_size = 16
-    out_time = 10
-    lat = 32
-    lon = 64
-    dummy = torch.rand(size=(batch_size, out_time, lat, lon)).cuda()
-
-    targets = torch.rand(size=(batch_size, out_time, lat, lon)).cuda()
-
-    reduction = "mean"
-    mse = torch.nn.MSELoss(reduction="mean")
-    rmse = RMSELoss(reduction=reduction)
-
-    nrmse_g = NRMSELoss_g_ClimateBench()
-    nrmse_s = NRMSELoss_s_ClimateBench()
-    nrmse = NRMSELoss_ClimateBench()
-
-    llrmse_wb = LLWeighted_RMSELoss_WheatherBench()
-
-    llmse_cx = LLweighted_MSELoss_Climax()
-    llrmse_cx = LLweighted_RMSELoss_Climax()
-
-    loss = mse(dummy, targets)
-    print("MSE loss", loss, loss.size())
-
-    loss = rmse(dummy, targets)
-    print("RMSE loss", loss, loss.size())
-
-    loss = nrmse_g(dummy, targets)
-    print("CB nrmse g loss", loss, loss.size())
-
-    loss = nrmse_s(dummy, targets)
-    print("CB nrmse s loss", loss, loss.size())
-
-    loss = nrmse(dummy, targets)
-    print("CB nrmseloss", loss, loss.size())
-
-    loss = llrmse_wb(dummy, targets)
-    print("WB rmse loss", loss, loss.size())
-
-    loss = llmse_cx(dummy, targets)
-    print("CX mse loss", loss, loss.size())
-
-    loss = llrmse_cx(dummy, targets)
-    print("CX rmse loss", loss, loss.size())
