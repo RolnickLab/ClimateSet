@@ -15,18 +15,6 @@ from emulator.src.data.meta_information.facet_options_cmip6 import variable_id a
 from emulator.src.data.meta_information.facet_options_input4mips import variable_id as input4mips_vars
 from itertools import groupby
 
-
-from emulator.src.core.losses import (
-    RMSELoss,
-    NRMSELoss_ClimateBench,
-    NRMSELoss_g_ClimateBench,
-    NRMSELoss_s_ClimateBench,
-    LLweighted_MSELoss_Climax,
-    LLweighted_RMSELoss_Climax,
-    LLWeighted_RMSELoss_WeatherBench,
-)
-
-
 def get_years_list(years: str, give_list: Optional[bool] = False):
     """
     Get a string of type 20xx-21xx.
@@ -69,7 +57,6 @@ def to_DictConfig(obj: Optional[Union[List, Dict]]):
         dict_config = OmegaConf.create()  # empty
 
     return dict_config
-
 
 def get_logger(name=__name__, level=logging.INFO) -> logging.Logger:
     """Initializes multi-GPU-friendly python logger."""
@@ -128,62 +115,6 @@ def get_activation_function(name: str, functional: bool = False, num: int = 1):
         return get_functional(name) if functional else get_nn(name)
     else:
         return [get_nn(name) for _ in range(num)]
-
-
-def get_loss_function(name, reduction="mean"):  # TODO: include further paremeters
-    name = name.lower().strip().replace("-", "_")
-    if name in ["l1", "mae", "mean_absolute_error"]:
-        loss = nn.L1Loss(reduction=reduction)
-    elif name in ["l2", "mse", "mean_squared_error"]:
-        # TODO: clarify with time dimension
-        loss = nn.MSELoss(reduction=reduction)
-    elif name in ["rmse", "root_mean_squared_error"]:
-        loss = RMSELoss(reduction=reduction)
-    elif name in [
-        "nrmse_g_cb",
-        "weighted_nrmse_global",
-        "weighted_normalized_root_mean_squared_error_global",
-        "climate_bench_nrmse_global",
-    ]:
-        loss = NRMSELoss_g_ClimateBench()
-    elif name in [
-        "nrmse_s_cb",
-        "weighted_nrmse_spatial",
-        "weighted_normalized_root_mean_squared_error_spatial",
-        "climate_bench_nrmse_spatial",
-    ]:
-        loss = NRMSELoss_s_ClimateBench()
-    elif name in [
-        "nrmse_cb",
-        "weighted_nrmse",
-        "weighted_normalized_root_mean_squared_error",
-        "climate_bench_nrmse",
-    ]:
-        loss = NRMSELoss_ClimateBench()
-    elif name in [
-        "llrmse_wb",
-        "longitude_latitude_weighted_root_mean_squared_error_wheather_ench",
-        "wheather_bench_lon_lat_rmse",
-    ]:
-        loss = LLWeighted_RMSELoss_WeatherBench()
-    elif name in [
-        "llrmse_cx",
-        "longitude_latitude_weighted_root_mean_squared_error_climax",
-        "climax_lon_lat_rmse",
-    ]:
-        loss = LLweighted_RMSELoss_Climax()
-    elif name in [
-        "llmse_cx",
-        "longitude_latitude_weighted_mean_squared_error_climax",
-        "climax_lon_lat_mse",
-    ]:
-        loss = LLweighted_MSELoss_Climax()
-
-    elif name in ["smoothl1", "smooth"]:
-        loss = nn.SmoothL1Loss(reduction=reduction)
-    else:
-        raise ValueError(f"Unknown loss function {name}")
-    return loss
 
 
 def get_trainable_params(model):
@@ -255,21 +186,6 @@ def random_split(dataset, lengths, generator=default_generator):
         for offset, length in zip(_accumulate(lengths), lengths)
     ]
 
-
-def diff_max_min(x, dim):
-    return torch.max(x, dim=dim) - torch.min(x, dim=dim)
-
-
-def diff_max_min_np(x, dim):
-    return np.max(x, axis=dim) - np.min(x, axis=dim)
-
-
-# CHECKED
-def weighted_global_mean(input, weights):
-    # weights * input summed over lon lat / lon+lat
-    return np.mean(input * weights, axis=(-2, -1)) # axis order doesn't matter
-
-
 def get_epoch_ckpt_or_last(ckpt_files: List[str], epoch: int = None):
     if epoch is None:
         if "last.ckpt" in ckpt_files:
@@ -301,8 +217,6 @@ def map_variables_targetmip(in_variables, out_variables):
         y_indexes=[]
 
         for var in in_variables:
-            # if variable in input4mips
-            
             if (var in cmip6_vars) or (var.split('_')[0] in cmip6_vars):
                 out_variables_im.append(var)
                 x_indexes.append(("out", len(out_variables_im)-1))
@@ -310,11 +224,8 @@ def map_variables_targetmip(in_variables, out_variables):
                 in_variables_im.append(var)
                 x_indexes.append(("in", len(in_variables_im)-1))
             else:
-                print(f"Unknown variable: {var}")
-                exit(0)
-        for var in out_variables:
-            # if variable input4mips
-            
+                raise ValueError(f"Unknown variable: {var}")
+        for var in out_variables:            
             if (var in cmip6_vars) or (var.split('_')[0] in cmip6_vars):
                 out_variables_im.append(var)
                 y_indexes.append(("out", len(out_variables_im)-1))
@@ -322,8 +233,7 @@ def map_variables_targetmip(in_variables, out_variables):
                 in_variables_im.append(var)
                 y_indexes.append(("in", len(in_variables_im)-1))
             else:
-                print(f"Unknown variable: {var}")
-                exit(0)
+                raise ValueError(f"Unknown variable: {var}")
         
         return in_variables_im, out_variables_im, x_indexes, y_indexes
 
