@@ -21,14 +21,16 @@ Any feedback, extensions & suggestions are welcome!
 ### Downloading the core dataset
 The preprocessed dataset is available on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca). You can opt to download the entire dataset or pick only specific climate models for targets. Please note that the core dataset entrails 1) two variables (precipitation (pr) & temperature (tas)), 2) 250 km nominal resolution, and 3) monthly data. This is the data that was used for the benchmarking. We will release code to preprocess other variables and other resolutions in a separate Python package and will update the HuggingFace data periodically.
 
-#### HuggingFace
+#### Option A: HuggingFace (recommended)
 To download the entire dataset, you can make use of the provided Python script:
 ```bash
 python scripts/download_climateset_huggingface.py
 ```
 If you wish to download only specific climate model data, please refer to the instructions on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
 
-#### Arbutus / DRAC
+*In case you are getting the following error ``No files for this scenario, year, ensemble member pairing: ssp126 2015`` during the cmip6 data creation: Remove the r3i1p1f1 and r2i1p1f1. To reproduce the benchmark, you only need the r1i1p1f1 ensemble member.*
+
+#### Option B: Arbutus / DRAC
 If you happen to be in Canada, you can also download the dataset via Arbutus (DRAC - Digital Research Alliance of Canada). Please note that this option is very slow for users located outside of Canada. We recommend this option mostly for users who are working directly on DRAC anyway.
 
 ##### 1. Setting your dataset path
@@ -121,7 +123,9 @@ Please note that you will have to run everything without a logger (including log
 To run the model, edit the [main config](emulator/configs/main_config.yaml) to fit what you want to run. 
 Executing the run.py script plain will use the main config. 
 
-The [configs folder](emulator/configs/) serves as a blueprint, listing all the modules available. To get a better understanding of our codebases structure please refer to the section on [Structure](#structure) 
+The [configs folder](emulator/configs/) serves as a blueprint, listing all the modules available. To get a better understanding of our codebases structure please refer to the section on [Structure](#structure).
+
+As default the training is run on gpus. If you want to change cpu / gpu settings, edit the ``trainer`` config used by your experiment.
 
 ```python
 # starting inside the emulator folder:

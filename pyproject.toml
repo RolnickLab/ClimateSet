@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "emulator"
+version = "1.0.0"
+dependencies = [
+]
+requires-python = ">=3.9"
+authors = [
+  {name = "Charlotte Lange"},
+  {name = "Julia Kaltenborn", email = "julia.kaltenborn@mail.mcgill.ca"},
+]
+description = "ClimateSet Emulator"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+classifiers = [
+  "Programming Language :: Python"
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.urls]
+
+[project.scripts]
+
+[project.gui-scripts]
+
+[project.entry-points."spam.magical"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "emulator", "src"
+]

@@ -76,17 +76,25 @@ fi
 echo "nothing"
 
 # Check if env_emulator folder exists
-if [ ! -d "env_new_emulator" ]; then
+if [ ! -d "env" ]; then
     # Create a virtual environment
-    python -m venv env_new_emulator || { echo "Failed to create virtual environment."; exit 1; }
+    python -m venv env || { echo "Failed to create virtual environment."; exit 1; }
 fi
-
 # Activate the virtual environment
-source env_new_emulator/bin/activate || { echo "Failed to activate virtual environment."; exit 1; }
-
+source env/bin/activate || { echo "Failed to activate virtual environment."; exit 1; }
 # Install requirements
 pip install -r requirements.txt || { echo "Failed to install requirements."; exit 1; }
-pip install -r requirements_climax.txt || { echo "Failed to install requirements."; exit 1; }
+deactivate
+
+# Check if env_climax folder exists
+if [ ! -d "env_climax" ]; then
+    # Create a virtual environment
+    python -m venv env_climax || { echo "Failed to create virtual ClimaX environment."; exit 1; }
+fi
+# Activate the virtual environment
+source env_climax/bin/activate || { echo "Failed to activate virtual ClimaX environment."; exit 1; }
+# Install requirements
+pip install -r requirements_climax.txt || { echo "Failed to install ClimaX requirements."; exit 1; }
 
 
 # Change directory to emulator folder
