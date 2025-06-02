@@ -1,7 +1,7 @@
 _target_: emulator.src.datamodules.dummy_datamodule.DummyDataModule
 
-lon: 32
 lat: 32
+lon: 32
 in_var_ids: ['BC', 'CO2', 'SO2', 'CH4']
 out_var_ids: ['pr', 'tas']
 seq_len: 3
