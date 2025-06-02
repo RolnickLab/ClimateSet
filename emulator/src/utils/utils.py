@@ -264,9 +264,10 @@ def diff_max_min_np(x, dim):
     return np.max(x, axis=dim) - np.min(x, axis=dim)
 
 
+# CHECKED
 def weighted_global_mean(input, weights):
-    # weitghs * input summed over lon lat / lon+lat
-    return np.mean(input * weights, axis=(-1, -2))
+    # weights * input summed over lon lat / lon+lat
+    return np.mean(input * weights, axis=(-2, -1)) # axis order doesn't matter
 
 
 def get_epoch_ckpt_or_last(ckpt_files: List[str], epoch: int = None):
