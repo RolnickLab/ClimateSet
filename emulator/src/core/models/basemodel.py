@@ -13,9 +13,10 @@ from pytorch_lightning import LightningModule
 import torch
 
 from emulator.src.core.evaluation import evaluate_preds, evaluate_per_target_variable
-from emulator.src.utils.utils import get_loss_function, get_logger, to_DictConfig
+from emulator.src.utils.utils import get_logger, to_DictConfig
+from emulator.src.core.losses import get_loss_function
 
-# from emulator.src.utils.interface import reload_model_from_id
+from emulator.src.utils.interface import reload_model_from_id
 from emulator.src.core.callbacks import PredictionPostProcessCallback
 from timm.optim import create_optimizer_v2
 
