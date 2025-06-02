@@ -23,7 +23,7 @@ from emulator.src.core.losses import (
     NRMSELoss_s_ClimateBench,
     LLweighted_MSELoss_Climax,
     LLweighted_RMSELoss_Climax,
-    LLWeighted_RMSELoss_WheatherBench,
+    LLWeighted_RMSELoss_WeatherBench,
 )
 
 
@@ -165,7 +165,7 @@ def get_loss_function(name, reduction="mean"):  # TODO: include further paremete
         "longitude_latitude_weighted_root_mean_squared_error_wheather_ench",
         "wheather_bench_lon_lat_rmse",
     ]:
-        loss = LLWeighted_RMSELoss_WheatherBench()
+        loss = LLWeighted_RMSELoss_WeatherBench()
     elif name in [
         "llrmse_cx",
         "longitude_latitude_weighted_root_mean_squared_error_climax",

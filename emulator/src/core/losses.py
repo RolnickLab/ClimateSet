@@ -60,7 +60,6 @@ class MSELoss(nn.Module):
     def forward(self, pred, y):
         return self.mse(pred, y)
     
-# CHECKED and adapted
 class RMSELoss(nn.Module):
     def __init__(self, reduction: str = "none", mask=None):
         super().__init__()
@@ -73,8 +72,7 @@ class RMSELoss(nn.Module):
         elif reduction == "sum":
             self.reduction_fn = torch.sum()
         else:
-            log.warn(f"Reduction type {reduction} not supported.")
-            raise NotImplementedError
+            raise ValueError(f"Reduction type {reduction} not supported.")
 
         self.mse = nn.MSELoss(reduction="none")  # mean over all dimensions
 
@@ -95,30 +93,22 @@ class RMSELoss(nn.Module):
 
         return error
 
-# CHECKED and adapted
 class NRMSELoss_s_ClimateBench(nn.Module):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
     Weighting to account for decreasing grid size towards the poles.
     """
 
-    def __init__(self, deg2rad: bool = True):
+    def __init__(self):
         super().__init__()
         self.mse = nn.MSELoss(reduction="none")
-
-        self.deg2rad = deg2rad
 
     def forward(self, pred, y):
         # weighting to account for decreasing grid-cell area towards poles
         # latitude weights
         lat_size = y.shape[-2]
         lats = torch.linspace(-89.75, 89.75, lat_size)
- 
-        if self.deg2rad:
-            # same like np.cos(np.deg2rad(lats))
-            weights = torch.cos((torch.pi * lats) / 180)
-        else:
-            weights = torch.cos(lats)
+        weights = torch.cos((torch.pi * lats) / 180)
 
         weights = weights.unsqueeze(-1)
         weights = weights.to(device)
@@ -137,34 +127,27 @@ class NRMSELoss_s_ClimateBench(nn.Module):
 
         return nrmse_s
 
-    # CHECKED
     def weighted_global_mean(self, x, weights):
         # sum_lat(sum_lon(x * weights)) / N_lat * N_lon
         # i.e.: sum(sum(x * weights)) / (96 * 144)
         return torch.mean(x * weights, dim=(-2, -1)) # dims order does not matter
 
-# CHECKED and adapted
 class NRMSELoss_g_ClimateBench(nn.Module):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
     Weighting to account for decreasing grid size towards the pole.
     """
 
-    def __init__(self, deg2rad: bool = True):
+    def __init__(self):
         super().__init__()
         self.mse = nn.MSELoss(reduction="none")
-        self.deg2rad = deg2rad
 
     def forward(self, pred, y):
         #latitude weighting to account for decreasing grid-cell area towards pole
         lat_size = y.shape[-2]
         lats = torch.linspace(-89.75, 89.75, lat_size)
- 
-        if self.deg2rad:
-            # same like np.cos(np.deg2rad(lats))
-            weights = torch.cos((torch.pi * lats) / 180)
-        else:
-            weights = torch.cos(lats)
+        # same like np.cos(np.deg2rad(lats))
+        weights = torch.cos((torch.pi * lats) / 180)
         weights = weights.unsqueeze(-1)
         weights = weights.to(device)
 
@@ -189,18 +172,17 @@ class NRMSELoss_g_ClimateBench(nn.Module):
         # i.e.: sum(sum(x * weights)) / (144 * 96)
         return torch.mean(x * weights, dim=(-2, -1))
 
-# CHECKED
 class NRMSELoss_ClimateBench(nn.Module):
     """
     Combination of global weighted and spatially weighted nrmse.
 
     """
 
-    def __init__(self, deg2rad: bool = True, alpha: int = 5):
+    def __init__(self, alpha: int = 5):
         super().__init__()
 
-        self.nrmse_g = NRMSELoss_g_ClimateBench(deg2rad)
-        self.nrmse_s = NRMSELoss_s_ClimateBench(deg2rad)
+        self.nrmse_g = NRMSELoss_g_ClimateBench()
+        self.nrmse_s = NRMSELoss_s_ClimateBench()
         self.alpha = alpha
 
     def forward(self, pred, y):
@@ -209,8 +191,7 @@ class NRMSELoss_ClimateBench(nn.Module):
         nrmse = nrmses + self.alpha * nrmseg
         return nrmse
 
-# CHECKED
-class LLWeighted_RMSELoss_WheatherBench(nn.Module):
+class LLWeighted_RMSELoss_WeatherBench(nn.Module):
 
     """
     Weigthed RMSE taken from Weather Bench.
@@ -238,7 +219,6 @@ class LLWeighted_RMSELoss_WheatherBench(nn.Module):
 
         return rmse
 
-# CONTINUE HERE
 class LLweighted_MSELoss_Climax(nn.Module):
     """
     Latitude weighted mean squared error taken from ClimaX.
@@ -248,11 +228,10 @@ class LLweighted_MSELoss_Climax(nn.Module):
 
     """
 
-    def __init__(self, deg2rad: bool = True, mask=None):
+    def __init__(self, mask=None):
         super().__init__()
 
         self.mse = nn.MSELoss(reduction="none")
-        self.deg2rad = deg2rad
         self.mask = mask
 
     def forward(self, pred, y):
@@ -260,12 +239,7 @@ class LLweighted_MSELoss_Climax(nn.Module):
 
         lat_size = y.shape[-2]
         lats = torch.linspace(-89.75, 89.75, lat_size)
- 
-        if self.deg2rad:
-            # same like np.cos(np.deg2rad(lats))
-            weights = torch.cos((torch.pi * lats) / 180)
-        else:
-            weights = torch.cos(lats)
+        weights = torch.cos((torch.pi * lats) / 180)
         weights = weights.unsqueeze(-1)
         weights = weights.to(device)
 
@@ -300,7 +274,6 @@ class LLweighted_RMSELoss_Climax(nn.Module):
 
         self.mse = nn.MSELoss(reduction="none")
         self.mask = mask
-        self.deg2rad = True
 
     def forward(self, pred, y):
         """ Latitude is expected to be on position -2
@@ -358,7 +331,7 @@ if __name__ == "__main__":
     nrmse_s = NRMSELoss_s_ClimateBench()
     nrmse = NRMSELoss_ClimateBench()
 
-    llrmse_wb = LLWeighted_RMSELoss_WheatherBench()
+    llrmse_wb = LLWeighted_RMSELoss_WeatherBench()
 
     llmse_cx = LLweighted_MSELoss_Climax()
     llrmse_cx = LLweighted_RMSELoss_Climax()
@@ -400,7 +373,6 @@ if __name__ == "__main__":
 # - make sure WB and CX rmse losses are the same
 
 # REFACTOR
-# - kick deg2rad
 # - weight function should be one function (utils)
 
 # Same tests needed for metrics

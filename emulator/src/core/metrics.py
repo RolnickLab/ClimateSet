@@ -15,7 +15,7 @@ def RMSE(preds: np.ndarray, y: np.ndarray):
     return np.sqrt(MSE(preds, y))
 
 # CHCKED and adapted
-def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True):
+def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
     Weighting to account for decreasing grid size towards the pole.
@@ -25,10 +25,7 @@ def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True)
     # latitude weights
     lat_size = y.shape[-1]
     lats = np.linspace(-89.75, 89.75, lat_size)
-    if deg2rad:
-        weights = np.cos((np.pi * lats) / 180)
-    else:
-        weights = np.cos(lats)
+    weights = np.cos((np.pi * lats) / 180)
 
     # nrmse = sqrt((weights * (pred_mean_b_t - y_mean_b_t)**2)_mean_s) / ((weights*y)_mean_s)_mean_b_t
     nrmse_s = np.sqrt(
@@ -40,7 +37,7 @@ def NRMSE_s_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True)
     return nrmse_s
 
 # CHECKED and adapted
-def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True):
+def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray):
     """
     Spatial normalized weighted RMSE taken from Climate Bench.
     Weigting to account for decreasing grid size towards the pole.
@@ -48,10 +45,7 @@ def NRMSE_g_ClimateBench(preds: np.ndarray, y: np.ndarray, deg2rad: bool = True)
     # latitude weighting to account for decreasing grid-cell area towards pole
     lat_size = y.shape[-1]
     lats = np.linspace(-89.75, 89.75, lat_size)
-    if deg2rad:
-        weights = np.cos((np.pi * lats) / 180)
-    else:
-        weights = np.cos(lats)
+    weights = np.cos((np.pi * lats) / 180)
 
     # denom is not alowed to be zero!
     if np.any(preds == 0):
@@ -113,7 +107,7 @@ def LLWeighted_RMSE_WheatherBench(preds: np.ndarray, y: np.ndarray):
 
 
 def LLweighted_MSE_Climax(
-    preds: np.ndarray, y: np.ndarray, deg2rad: bool = True, mask=None
+    preds: np.ndarray, y: np.ndarray, mask=None
 ):
     """
     Latitude weighted mean squared error taken from ClimaX.
@@ -126,10 +120,7 @@ def LLweighted_MSE_Climax(
     # lattitude weights
     lat_size = y.shape[-1]
     lats = np.linspace(-90, 90, lat_size)
-    if deg2rad:
-        weights = np.cos((np.pi * lats) / 180)
-    else:
-        weights = np.cos(lats)
+    weights = np.cos((np.pi * lats) / 180)
 
     # they normalize the weights first
     weights = weights / weights.mean()
@@ -143,7 +134,7 @@ def LLweighted_MSE_Climax(
 
 
 def LLweighted_RMSE_Climax(
-    preds: np.ndarray, y: np.ndarray, deg2rad: bool = True, mask=None
+    preds: np.ndarray, y: np.ndarray, mask=None
 ):
     """
     Latitude weighted root mean squared error taken from ClimaX.
@@ -154,10 +145,7 @@ def LLweighted_RMSE_Climax(
     # latitude weights
     lat_size = y.shape[-1]
     lats = np.linspace(-90, 90, lat_size)
-    if deg2rad:
-        weights = np.cos((np.pi * lats) / 180)
-    else:
-        weights = np.cos(lats)
+    weights = np.cos((np.pi * lats) / 180)
 
     # they normalize the weights first
     weights = weights / weights.mean()
