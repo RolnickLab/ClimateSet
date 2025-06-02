@@ -4,8 +4,8 @@ defaults:
 
 _target_: emulator.src.core.models.climax.climax_module.ClimaX
 
-lon: ${datamodule.lon}
 lat: ${datamodule.lat}
+lon: ${datamodule.lon}
 in_vars: ${datamodule.in_var_ids}
 out_vars: ${datamodule.out_var_ids}
 climate_modeling: True

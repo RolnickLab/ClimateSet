@@ -6,8 +6,8 @@ _target_: emulator.src.core.models.baselines.CNNLSTM_ClimateBench
 
 #monitor: ${val_metric}
 
-lon: ${datamodule.lon}
 lat: ${datamodule.lat}
+lon: ${datamodule.lon}
 in_var_ids: ${datamodule.in_var_ids}
 out_var_ids: ${datamodule.out_var_ids}
 num_conv_filters: 20
