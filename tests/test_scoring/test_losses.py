@@ -22,9 +22,7 @@ torch.backends.cudnn.benchmark = False
 
 PRECISION_VALUE = 0.0005
 
-# TODO add channel issue
-# TODO test weighting function
-# TODO test if numpy weights and torch weights are the same!
+# TODO test channel issue
 
 @pytest.fixture 
 def rand_targets():
@@ -41,6 +39,15 @@ def ones_targets():
 @pytest.fixture
 def ones_predics():
     return torch.ones(size=(batch_size, out_time, lat, lon)) + 0.1
+
+def test_weights(ones_targets):
+    lat_size = int(ones_targets.shape[-2])
+    parent_loss = ClimateSetLoss()
+    torch_weights = parent_loss.get_latitude_weights(lat_size)
+    assert torch_weights[0] == pytest.approx(0.0044, abs=0.0001)
+    assert torch_weights[-1] == pytest.approx(0.0044, abs=0.0001)
+    assert torch_weights[0] == torch_weights[-1]
+    assert torch_weights[int(lat_size/2)] == pytest.approx(1, abs=0.001)
 
 def expected_loss(loss_obj, expected_loss_value, precision_threshold):
     assert loss_obj.item() == pytest.approx(expected_loss_value, abs=precision_threshold)
