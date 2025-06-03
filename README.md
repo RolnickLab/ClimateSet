@@ -44,9 +44,39 @@ bash scripts/download_climateset_arbutus.sh
 ```
 *Please note that this by default only downloads NorESM2-LM data. To download data for all climate models, please uncomment the line with the for loop.*
 
-You should now see a newly created directory called "Climateset_DATA" containing inputs and targets. This folder will be referenced within the emulator pipeline. 
+You should now see a newly created directory called "Climateset_DATA" containing inputs and targets. This folder will be referenced within the emulator pipeline.
 
-### Setting up the environment
+### For ClimaX: Download pre-trained checkpoints
+
+To work with ClimaX, you will need to download the pre-trained checkpoints from the original release and place them in the correct folder. To do so, execute the following command:
+
+```bash
+bash scripts/download_climax_checkpoints.sh
+```
+
+
+### Automatic Set-up
+
+When you use the repo for the first the time:
+```bash
+bash setup.sh
+```
+Add `-n` at the end to indicate that you are not on a (mila) cluster, `-w` if you are on a Windows system. Checkout the `-h` help flag for more options.
+
+The setup file automatically creates the environment and installs all dependencies.
+
+### Activate Environment
+
+Before running anything else, please activate the environment that was created during the automatic set-up:
+```bash
+source env_emulator/bin/activate
+```
+or if you are on Windows:
+```bash
+env_emulator/Scripts/activate
+```
+
+<!-- ### OUTDATED: Manual Environment Set-up
 
 To setup the environment for causalpaca, we use ```python>=3.10```. There are two separate requirements file for creating environments.
 
@@ -81,16 +111,9 @@ env_emulator/Scripts/activate
 pip install -r requirements.txt
 cd emulator 
 pip install -e .
-```
+``` -->
 
-### For ClimaX: Download pre-trained checkpoints
-
-To work with ClimaX, you will need to download the pre-trained checkpoints from the original release and place them in the correct folder. To do so, execute the following command:
-
-```bash
-bash scripts/download_climax_checkpoints.sh
-```
-
+<!-- 
 ### Pythonpath
 It might be the case that the Python variable has to be modified to contain the root folder of the ClimateSet project for the emulator to work.
 
@@ -111,7 +134,7 @@ $env:PYTHONPATH = "home/user/myproject"
 
 #Check for success with: 
 echo $env:PYTHONPATH
-```
+``` -->
 
 
 ## Running a model
