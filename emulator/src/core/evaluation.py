@@ -2,7 +2,7 @@ from typing import Dict
 import numpy as np
 from emulator.src.core.metrics import MSE
 
-from emulator.src.utils.utils import get_logger
+from emulator.src.utils.log import get_logger
 from emulator.src.core.metrics import (
     RMSE,
     NRMSE_s_ClimateBench,
@@ -17,12 +17,11 @@ log = get_logger(__name__)
 
 
 def evaluate_preds(Ytrue: np.ndarray, preds: np.ndarray):
-    # compute all stats for evaluation
-
     # get rid of empty var dimension
     preds = np.squeeze(preds)
     Ytrue = np.squeeze(Ytrue)
 
+    # compute all stats for evaluation
     mse = MSE(preds, Ytrue)
     rmse = RMSE(preds, Ytrue)
     nrmse_g_climate_bench = NRMSE_g_ClimateBench(preds, Ytrue)

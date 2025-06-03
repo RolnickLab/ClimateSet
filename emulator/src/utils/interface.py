@@ -1,26 +1,27 @@
 import os
-from typing import Optional, Dict, Sequence, Any
-
-import hydra
 import torch
-from omegaconf import DictConfig
+import hydra
 import wandb
 
-from emulator.src.datamodules.dummy_datamodule import DummyDataModule
-from emulator.src.utils.utils import get_logger
+from omegaconf import DictConfig
+from typing import Optional, Dict, Sequence, Any
+
+import emulator.src.utils.config_utils as cfg_utils
+
 from emulator.src.utils.wandb_api import (
     load_hydra_config_from_wandb,
     restore_model_from_wandb_cloud,
     get_wandb_ckpt_name,
 )
-import emulator.src.utils.config_utils as cfg_utils
+from emulator.src.utils.log import get_logger
 from emulator.src.core.models.decoder_wrapper import DecoderWrapper
+from emulator.src.datamodules.dummy_datamodule import DummyDataModule
+
+log = get_logger()
 
 """
 In this file you can find helper functions to avoid model/data loading and reloading boilerplate code
 """
-log = get_logger()
-
 
 def get_model(config: DictConfig, **kwargs):
     """
@@ -238,7 +239,7 @@ def reload_model_from_id(
         group: Wandb group
         project: Wandb project
         override_kwargs: A list of strings (of the form "key=value") to override the given/reloaded config with.
-        allow_resume: Wheather resuming of training is allowed or a new instance should be created.
+        allow_resume: Weather resuming of training is allowed or a new instance should be created.
 
     """
     run_path = f"{group}/{project}/{run_id}"

@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from emulator.src.utils.utils import get_logger
+from emulator.src.utils.log import get_logger
 from emulator.src.utils.metric_utils import weighted_global_mean_np, get_latitude_weights_np, check_lat_lon_np
 
 log = get_logger()

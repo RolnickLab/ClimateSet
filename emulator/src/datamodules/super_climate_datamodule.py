@@ -1,12 +1,13 @@
-import logging
-import copy
-from typing import Optional, List, Callable, Union, Dict
 import os
-from pytorch_lightning import LightningDataModule
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS
-from torch.utils.data import DataLoader
-from emulator.src.data.super_climate_dataset import (SuperClimateDataset,CMIP6Dataset,Input4MipsDataset)
+import copy
 import torch
+import numpy as np
+
+from torch.utils.data import DataLoader
+from typing import Optional, List, Union, Dict
+from pytorch_lightning import LightningDataModule
+
+from emulator.src.data.super_climate_dataset import (SuperClimateDataset,CMIP6Dataset,Input4MipsDataset)
 from emulator.src.data.constants import (
     TEMP_RES,
     SEQ_LEN_MAPPING,
@@ -17,9 +18,7 @@ from emulator.src.data.constants import (
     OPENBURNING_MODEL_MAPPING,
     AVAILABLE_MODELS_FIRETYPE
 )
-from emulator.src.utils.utils import get_logger,all_equal
-import numpy as np
-#, random_split, random_split_super
+from emulator.src.utils.log import get_logger
 
 log = get_logger()
 

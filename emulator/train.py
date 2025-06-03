@@ -7,10 +7,10 @@ from pytorch_lightning import seed_everything
 
 import emulator.src.utils.config_utils as cfg_utils
 from emulator.src.utils.interface import get_model_and_data
-from emulator.src.utils.utils import get_logger
+from emulator.src.utils.log import get_logger
 from pytorch_lightning.profilers import PyTorchProfiler
 from datetime import datetime
-from torch.profiler import profile, record_function, ProfilerActivity, tensorboard_trace_handler, schedule
+from torch.profiler import ProfilerActivity, tensorboard_trace_handler, schedule
 from codecarbon import EmissionsTracker
 
 

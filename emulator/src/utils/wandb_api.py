@@ -3,26 +3,18 @@ This code is adapted from the original codebase that can be found at: https://gi
 Adaptations include the insertion of functions and classes, altering functions and classes, inserting comments and other changes.
 
 """
-
-import json
-import logging
 import os
-import pathlib
-from os.path import isdir, isfile
-from typing import Union, Callable, List, Optional, Sequence
-
+import json
 import wandb
 import pandas as pd
-from omegaconf import OmegaConf, DictConfig
 
-from emulator.src.utils.config_utils import (
-    print_config,
-    get_config_from_hydra_compose_overrides,
-)
-from emulator.src.utils.utils import (
-    get_logger,
-    get_epoch_ckpt_or_last,
-)
+from omegaconf import OmegaConf, DictConfig
+from typing import Union, Callable, List, Optional, Sequence
+
+from emulator.src.utils.log import get_logger
+from emulator.src.utils.utils import get_epoch_ckpt_or_last
+from emulator.src.utils.config_utils import get_config_from_hydra_compose_overrides
+
 
 DF_MAPPING = Callable[[pd.DataFrame], pd.DataFrame]
 log = get_logger(__name__)

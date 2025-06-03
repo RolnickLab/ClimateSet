@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from emulator.src.utils.utils import get_logger 
+from emulator.src.utils.log import get_logger 
 
 log = get_logger()
 

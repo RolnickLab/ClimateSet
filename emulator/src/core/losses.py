@@ -1,12 +1,8 @@
-import abc
 import torch
 import torch.nn as nn
-import logging
 import gpytorch
 
-from pytorch_lightning.utilities import rank_zero_only
-
-from emulator.src.utils.utils import get_logger
+from emulator.src.utils.log import get_logger
 
 log = get_logger()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

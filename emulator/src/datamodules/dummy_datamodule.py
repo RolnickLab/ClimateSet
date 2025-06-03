@@ -1,14 +1,12 @@
-import logging
-from typing import Optional, List, Callable
-
-from pytorch_lightning import LightningDataModule
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS
-from torch.utils.data import DataLoader
-
-
 import torch
 
-from emulator.src.utils.utils import get_logger, random_split
+from typing import Optional, List
+from torch.utils.data import DataLoader
+from pytorch_lightning import LightningDataModule
+from pytorch_lightning.utilities.types import EVAL_DATALOADERS
+
+from emulator.src.utils.log import get_logger
+from emulator.src.utils.utils import random_split
 
 log = get_logger()
 
@@ -41,7 +39,7 @@ class DummyDataModule(LightningDataModule):
         lat: int = 32,
         lon: int = 32,
         num_levels: int = 1,
-        channels_last: bool = True,  # wheather variables come last our after sequence lenght
+        channels_last: bool = True,  # weather variables come last our after sequence lenght
         batch_size: int = 16,
         eval_batch_size: int = 64,
         num_workers: int = 0,

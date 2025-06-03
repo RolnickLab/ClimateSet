@@ -1,13 +1,13 @@
 import os
 import glob
+import torch
 import zipfile
-from typing import Dict, Optional, List, Tuple, Union
 import numpy as np
 import xarray as xr
-import torch
 
+from abc import ABC, abstractmethod
+from typing import Dict, Optional, List, Tuple, Union
 
-from emulator.src.utils.utils import get_logger, all_equal, map_variables_targetmip
 from emulator.src.data.constants import (
     LON,
     LAT,
@@ -17,8 +17,10 @@ from emulator.src.data.constants import (
     DATA_DIR,
     NO_OPENBURNING_VARS,
 )
+from emulator.src.utils.log import get_logger
+from emulator.src.utils.utils import map_variables_targetmip
+
 log = get_logger()
-from abc import ABC, abstractmethod
 
 class ABC_Climate_Dataset(ABC, torch.utils.data.Dataset):
     """

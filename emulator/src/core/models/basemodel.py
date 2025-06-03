@@ -1,25 +1,19 @@
+import time
+import torch
 import hydra
-
+import omegaconf
 import numpy as np
 
-import time
-
-from typing import Optional, List, Any, Dict, Tuple, Union
-from codecarbon import EmissionsTracker
-
 from omegaconf import DictConfig
-import omegaconf
-from pytorch_lightning import LightningModule
-import torch
-
-from emulator.src.core.evaluation import evaluate_preds, evaluate_per_target_variable
-from emulator.src.utils.utils import get_logger, to_DictConfig
-from emulator.src.core.losses import get_loss_function
-
-from emulator.src.utils.interface import reload_model_from_id
-from emulator.src.core.callbacks import PredictionPostProcessCallback
 from timm.optim import create_optimizer_v2
+from pytorch_lightning import LightningModule
+from typing import Optional, List, Any, Dict, Union
 
+from emulator.src.utils.log import get_logger
+from emulator.src.utils.utils import to_DictConfig
+from emulator.src.core.losses import get_loss_function
+from emulator.src.core.callbacks import PredictionPostProcessCallback
+from emulator.src.core.evaluation import evaluate_preds, evaluate_per_target_variable
 
 
 class BaseModel(LightningModule):
@@ -141,7 +135,11 @@ class BaseModel(LightningModule):
             X, Y = batch
             idx = None
 
+        # #TODO check shapes HERE!!! Julia
+        # print("X", X.shape)
+        # print("Y", Y.shape)
         preds = self.predict(X, idx)
+        # exit(0)
 
         # dict with keys being the output var ids
         Y = self.output_postprocesser.split_vector_by_variable(
@@ -217,12 +215,8 @@ class BaseModel(LightningModule):
 
     def _evaluation_get_preds(
         self, outputs: List[Any]
-    ) -> (Dict[str, np.ndarray], Dict[str, np.ndarray]):
+    ) -> tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
         for batch in outputs:
-            # print("MUST check shape for split_vector_by_variable:")
-            # print("Shape should have channels last? ", self.channels_last)
-            #print("Actual shape:", batch["targets"].shape)
-            # exit(0)
             batch["targets"] = self.output_postprocesser.split_vector_by_variable(
                 batch["targets"], self.channels_last
             )  # TODO: we might want to remove that for the real data module
@@ -242,8 +236,6 @@ class BaseModel(LightningModule):
         }
 
         # any additional information from input we want should be extracted here
-        # TODO
-
         return {"targets": Y, "preds": preds}
 
     def on_validation_epoch_start(self):
@@ -419,6 +411,7 @@ class BaseModel(LightningModule):
 
 
 if __name__ == "__main__":
+    from emulator.src.utils.interface import reload_model_from_id
     pretrained_run_id = "3usp9c7m"
     pretrained_ckpt_dir = "emulator/emulator/"
     base_model, _ = reload_model_from_id(

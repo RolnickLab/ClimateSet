@@ -1,8 +1,6 @@
-import logging
 from omegaconf import DictConfig, OmegaConf
 
-from typing import Union, Sequence, List, Dict, Optional, Callable
-from pytorch_lightning.utilities import rank_zero_only
+from typing import Union, List, Dict, Optional, Callable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,6 +12,11 @@ import numpy as np
 from emulator.src.data.meta_information.facet_options_cmip6 import variable_id as cmip6_vars
 from emulator.src.data.meta_information.facet_options_input4mips import variable_id as input4mips_vars
 from itertools import groupby
+
+from emulator.src.utils.log import get_logger
+
+log = get_logger()
+
 
 def get_years_list(years: str, give_list: Optional[bool] = False):
     """
@@ -57,27 +60,6 @@ def to_DictConfig(obj: Optional[Union[List, Dict]]):
         dict_config = OmegaConf.create()  # empty
 
     return dict_config
-
-def get_logger(name=__name__, level=logging.INFO) -> logging.Logger:
-    """Initializes multi-GPU-friendly python logger."""
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-
-    # this ensures all logging levels get marked with the rank zero decorator
-    # otherwise logs would get multiplied for each GPU process in multi-GPU setup
-    for level in (
-        "debug",
-        "info",
-        "warning",
-        "error",
-        "exception",
-        "fatal",
-        "critical",
-    ):
-        setattr(logger, level, rank_zero_only(getattr(logger, level)))
-
-    return logger
-
 
 def get_activation_function(name: str, functional: bool = False, num: int = 1):
     name = name.lower().strip()
@@ -169,7 +151,7 @@ def random_split(dataset, lengths, generator=default_generator):
         lengths = subset_lengths
         for i, length in enumerate(lengths):
             if length == 0:
-                warnings.warn(
+                log.warning(
                     f"Length of split at index {i} is 0. "
                     f"This might result in an empty dataset."
                 )
@@ -197,7 +179,7 @@ def get_epoch_ckpt_or_last(ckpt_files: List[str], epoch: int = None):
             model_ckpt_filename = [
                 name for name in ckpt_files if str(max_epoch) in name
             ][0]
-        logging.warning(
+        log.warning(
             f"Multiple ckpt files exist: {ckpt_files}. Using latest epoch: {model_ckpt_filename}"
         )
     else:

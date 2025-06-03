@@ -12,7 +12,7 @@ from emulator.src.utils.pos_embed import (
     interpolate_channel_embed,
     interpolate_pos_embed,
 )
-from emulator.src.utils.utils import get_logger
+from emulator.src.utils.log import get_logger
 
 from torchvision.transforms import transforms
 

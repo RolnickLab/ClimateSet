@@ -11,18 +11,18 @@ class MultiHeadDecoder(nn.Module):
         self.num_output_vars = len(out_var_ids)
         if test_models is None:
             test_models = []
-        if(len(list(train_models + test_models))>len(list(set(train_models + test_models)))):
+        if(len(list(train_models + test_models)) > len(list(set(train_models + test_models)))):
             print("Model Duplicates Found - only use during Profiling")
             # in order to allow duplicated heads
             # otherwise replace: total_models = list(train_models + test_models)
         total_models = list(train_models)
         self.n_heads = len(total_models)
-        print("Setting up decoder for the following models:", total_models)
-        print(f"{self.n_heads} total heads")
+        #print("Setting up decoder for the following models:", total_models)
+        #print(f"{self.n_heads} total heads")
         model_name_to_head_num = dict()
         for i, m in enumerate(total_models):
             model_name_to_head_num[m] = i
-        print(model_name_to_head_num)
+        #print(model_name_to_head_num)
         self.model_name_to_head_num = model_name_to_head_num
 
         self.hidden_dim = hidden_dim

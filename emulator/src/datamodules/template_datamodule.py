@@ -1,17 +1,10 @@
-import logging
-from typing import Optional, List, Callable
-
+from typing import Optional, List
+from torch.utils.data import DataLoader
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS
-from torch.utils.data import DataLoader
 
-
-import torch
-
-from emulator.src.utils.utils import get_logger, random_split
-
+from emulator.src.utils.log import get_logger
 log = get_logger()
-
 
 class DummyDataModule(LightningDataModule):
     """

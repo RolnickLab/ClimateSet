@@ -1,7 +1,7 @@
-from typing import List, Sequence, Union, Dict
 import torch
 import numpy as np
 
+from typing import List, Sequence, Union, Dict
 
 class PredictionPostProcessCallback:
     # PostProcessing Outputs
@@ -23,7 +23,7 @@ class PredictionPostProcessCallback:
 
     def split_vector_by_variable(
         self, 
-        vector: Union[np.ndarray, torch.Tensor],
+        vector: Union[np.ndarray, torch.Tensor, dict],
         channels_last: bool,
     ) -> Dict[str, Union[np.ndarray, torch.Tensor]]:
         if isinstance(vector, dict):

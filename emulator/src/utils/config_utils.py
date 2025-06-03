@@ -1,16 +1,16 @@
 import os
 import time
-import warnings
-from typing import Union, Sequence, List
-
-import omegaconf
-import pytorch_lightning as pl
 import wandb
+import warnings
+
+import pytorch_lightning as pl
+
+from typing import Union, Sequence, List
 from omegaconf import DictConfig, OmegaConf, open_dict
 
-
+from emulator.src.utils.utils import no_op
+from emulator.src.utils.log import get_logger
 from emulator.src.utils.naming import get_group_name, get_detailed_name
-from emulator.src.utils.utils import no_op, get_logger
 
 log = get_logger(__name__)
 

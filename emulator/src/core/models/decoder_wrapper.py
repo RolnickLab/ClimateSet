@@ -1,16 +1,4 @@
-import hydra
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
-from emulator.src.utils.utils import to_DictConfig, get_logger
 from emulator.src.core.models.basemodel import BaseModel
-from emulator.src.core.models.multihead_decoder import MultiHeadDecoder
-
-
-log_text = get_logger()
-
 
 class DecoderWrapper(BaseModel):
     def __init__(self, model, multihead_decoder, channels_last=True, **kwargs):

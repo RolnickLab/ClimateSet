@@ -1,12 +1,8 @@
-import logging
-from typing import Optional, List, Callable, Union
-
+from torch.utils.data import DataLoader
+from typing import Optional, List, Union
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS
-from torch.utils.data import DataLoader
 
-from emulator.src.data.climate_dataset import ClimateDataset
-import torch
 from emulator.src.data.constants import (
     TEMP_RES,
     SEQ_LEN_MAPPING,
@@ -15,10 +11,11 @@ from emulator.src.data.constants import (
     NUM_LEVELS,
     DATA_DIR,
 )
-from emulator.src.utils.utils import get_logger, random_split
+from emulator.src.utils.log import get_logger
+from emulator.src.utils.utils import random_split
+from emulator.src.data.climate_dataset import ClimateDataset
 
 log = get_logger()
-
 
 class ClimateDataModule(LightningDataModule):
     """
@@ -48,7 +45,7 @@ class ClimateDataModule(LightningDataModule):
         ] = "2090-2100",  # do we want to implement keeping only certain years for testing?
         val_split: float = 0.1,  # fraction of testing to split for valdation
         seq_to_seq: bool = True,  # if true maps from T->T else from T->1
-        channels_last: bool = False,  # wheather variables come last our after sequence lenght
+        channels_last: bool = False,  # weather variables come last our after sequence lenght
         train_scenarios: List[str] = ["historical", "ssp126"],
         test_scenarios: List[str] = ["ssp370", "ssp126"],
         train_models: List[str] = ["NorESM2-LM"],
