@@ -1,7 +1,6 @@
 # ClimateSet Emulation
 
-This repository contains the code for running the climate model emulation benchmark experiments on the core ClimateSet data. 
-Here we provide documentation on installation, setup, and a quickstart guide to reproduce our experiments and run your own experiments.
+This repository contains the code for running the climate model emulation benchmark experiments on the core ClimateSet data. Here we provide documentation on installation, setup, and a quickstart guide to reproduce our experiments and run your own experiments.
 
 
 **Important information:**
@@ -10,60 +9,32 @@ Here we provide documentation on installation, setup, and a quickstart guide to 
 - [Core dataset on HuggingFace](https://huggingface.co/datasets/climateset/climateset)
 - [Pre-trained models on HuggingFace](https://huggingface.co/climateset/causalpaca_models)
 - [Readthedocs](https://climateset.readthedocs.io/en/latest/index.html) *(Contains some basic intro and explanations regarding climate modeling. More technical information will follow.)*
-- **Dataset Extension Pipeline**: Currently under active development. Python package expected to be released in January 2025.
 
 
-This repository is currently under active development and you may encounter bugs with some functionality. 
-Any feedback, extensions & suggestions are welcome!
+This repository is currently under active development and you may encounter bugs with some functionality. The package is not very actively maintained, but feedback, extensions & suggestions are always welcome! 
 
 
-## Getting started
-### Downloading the core dataset
-The preprocessed dataset is available on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca). You can opt to download the entire dataset or pick only specific climate models for targets. Please note that the core dataset entrails 1) two variables (precipitation (pr) & temperature (tas)), 2) 250 km nominal resolution, and 3) monthly data. This is the data that was used for the benchmarking. We will release code to preprocess other variables and other resolutions in a separate Python package and will update the HuggingFace data periodically.
+## Quick Start
 
-#### Option A: HuggingFace (recommended)
-To download the entire dataset, you can make use of the provided Python script:
-```bash
-python scripts/download_climateset_huggingface.py
-```
-If you wish to download only specific climate model data, please refer to the instructions on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
-
-*In case you are getting the following error ``No files for this scenario, year, ensemble member pairing: ssp126 2015`` during the cmip6 data creation: Remove the r3i1p1f1 and r2i1p1f1. To reproduce the benchmark, you only need the r1i1p1f1 ensemble member.*
-
-#### Option B: Arbutus / DRAC
-If you happen to be in Canada, you can also download the dataset via Arbutus (DRAC - Digital Research Alliance of Canada). Please note that this option is very slow for users located outside of Canada. We recommend this option mostly for users who are working directly on DRAC anyway.
-
-##### 1. Setting your dataset path
-Set the path where you want your dataset to be downloaded in:
-- `constants.py` AND
-- `scripts/download_climateset_arbutus.sh`
-
-##### 2. Download the data via bash script
-```bash
-bash scripts/download_climateset_arbutus.sh 
-```
-*Please note that this by default only downloads NorESM2-LM data. To download data for all climate models, please uncomment the line with the for loop.*
-
-You should now see a newly created directory called "Climateset_DATA" containing inputs and targets. This folder will be referenced within the emulator pipeline.
-
-### For ClimaX: Download pre-trained checkpoints
-
-To work with ClimaX, you will need to download the pre-trained checkpoints from the original release and place them in the correct folder. To do so, execute the following command:
-
-```bash
-bash scripts/download_climax_checkpoints.sh
-```
-
-
-### Automatic Set-up
-
+### Set-up
 When you use the repo for the first the time:
 ```bash
 bash setup.sh
 ```
-Add `-n` at the end to indicate that you are not on a (mila) cluster, `-w` if you are on a Windows system. Checkout the `-h` help flag for more options.
+Add `-r` at the end to indicate that you are on a remote (mila) cluster, `-w` if you are on a Windows system. The setup file automatically creates the environment and installs all dependencies.
 
-The setup file automatically creates the environment and installs all dependencies.
+### Downloads
+You can use the set up bash script to download the data:
+```bash 
+bash setup.sh -d
+```
+Options:
+- `-d` to download climateset data
+- `-m` to download pretrained models
+- `-c` to download ClimaX checkpoints
+
+All of this happens through huggingface. Check out the [Data section](#Data) for other options and more details.
+
 
 ### Activate Environment
 
@@ -75,6 +46,14 @@ or if you are on Windows:
 ```bash
 env_emulator/Scripts/activate
 ```
+
+### Run Experiments
+Copy the [experiment template](emulator/configs/experiment/template.yaml) in `configs/experiment/` and give it a new name, e.g. `my-test-run.yaml`. Then run:
+
+```bash
+python emulator/run.py experiment=my-test-run # will run whatever is specified by the configs/experiment/my-test-run.yml file
+```
+
 
 <!-- ### OUTDATED: Manual Environment Set-up
 
@@ -136,6 +115,48 @@ $env:PYTHONPATH = "home/user/myproject"
 echo $env:PYTHONPATH
 ``` -->
 
+## Data
+### Downloading the core dataset
+The preprocessed dataset is available on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca). You can opt to download the entire dataset or pick only specific climate models for targets. Please note that the core dataset entrails 1) two variables (precipitation (pr) & temperature (tas)), 2) 250 km nominal resolution, and 3) monthly data. This is the data that was used for the benchmarking. We will release code to preprocess other variables and other resolutions in a separate Python package and will update the HuggingFace data periodically.
+
+#### Option A: HuggingFace (recommended)
+To download the entire dataset, you can make use of the provided Python script:
+```bash
+python scripts/download_climateset_huggingface.py
+```
+If you wish to download only specific climate model data, please refer to the instructions on [HuggingFace](https://huggingface.co/datasets/climateset/causalpaca/blob/main/README.md).
+
+*In case you are getting the following error ``No files for this scenario, year, ensemble member pairing: ssp126 2015`` during the cmip6 data creation: Remove the r3i1p1f1 and r2i1p1f1. To reproduce the benchmark, you only need the r1i1p1f1 ensemble member.*
+
+#### Option B: Arbutus / DRAC
+If you happen to be in Canada, you can also download the dataset via Arbutus (DRAC - Digital Research Alliance of Canada). Please note that this option is very slow for users located outside of Canada. We recommend this option mostly for users who are working directly on DRAC anyway.
+
+##### 1. Setting your dataset path
+Set the path where you want your dataset to be downloaded in:
+- `constants.py` AND
+- `scripts/download_climateset_arbutus.sh`
+
+##### 2. Download the data via bash script
+```bash
+bash scripts/download_climateset_arbutus.sh 
+```
+*Please note that this by default only downloads NorESM2-LM data. To download data for all climate models, please uncomment the line with the for loop.*
+
+You should now see a newly created directory called "Climateset_DATA" containing inputs and targets. This folder will be referenced within the emulator pipeline.
+
+#### For ClimaX: Download pre-trained checkpoints
+
+To work with ClimaX, you will need to download the pre-trained checkpoints from the original release and place them in the correct folder. To do so, execute the following command:
+
+```bash
+bash scripts/download_climax_checkpoints.sh
+```
+
+#### Download Pretrained Models 
+
+```bash
+bash scripts/download_pretrained_models_huggingface.py
+```
 
 ## Running a model
 
