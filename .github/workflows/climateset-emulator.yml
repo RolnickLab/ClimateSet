@@ -1,4 +1,4 @@
-name: ssp package
+name: ClimateSet Emulator Checks
 
 on: [push, pull_request]
 
@@ -26,17 +26,18 @@ jobs:
     - name: Setup environment 
       run: |
         bash setup.sh
-    - name: Download data 
-      run: |
-        bash setup.sh -d
-    - name: Test if you can run one single model
-      run: |
-        source env_emulator/bin/activate
-        python emulator/run.py experiment=github_workflow.yaml
     - name: Test metrics and losses
       run: |
         cd tests
         pytest
+    # - name: Download data from original source
+    #   run: |
+    #     bash setup.sh -d
+    - name: Test if you can run one single model
+      run: |
+        source env_emulator/bin/activate
+        python emulator/run.py experiment=github_workflow.yaml
+    
     # - name: Pipx build
     # - name: check dist
     # - name: publish dist (on TestPyPi)

@@ -13,7 +13,7 @@ on_cluster=false
 on_windows=false
 
 # Parse command line options
-while getopts pbcnh opt; do
+while getopts dmcrwh opt; do
   case ${opt} in
     d )
       get_data=true

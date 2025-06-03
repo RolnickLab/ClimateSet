@@ -8,7 +8,7 @@ defaults:
   - override /model: conv_lstm.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: none.yaml
-  - override /datamodule: climate.yaml # standard datamodule configurations
+  - override /datamodule: mini-climate.yaml # standard datamodule configurations
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -21,7 +21,7 @@ seed: 42
 
 trainer:
   min_epochs: 1
-  max_epochs: 3
+  max_epochs: 10
 
 model:
   loss_function: "climax_lon_lat_rmse"
@@ -30,12 +30,12 @@ model:
   pretrained_run_id: null 
   pretrained_ckpt_dir: null 
 
-datamodule: 
-   in_var_ids: ['BC_sum', 'CO2_sum', 'SO2_sum', 'CH4_sum']
-   out_var_ids: ['tas', 'pr']
-   train_historical_years: "1850-2010"
-   train_models:  ["NorESM2-LM"]
-   seq_to_seq: True 
-   batch_size: 4
-   channels_last: False
-   eval_batch_size: 4
+# datamodule: 
+#    in_var_ids: ['BC_sum', 'CO2_sum', 'SO2_sum', 'CH4_sum']
+#    out_var_ids: ['tas', 'pr']
+#    train_historical_years: "1850-2010"
+#    train_models:  ["NorESM2-LM"]
+#    seq_to_seq: True 
+#    batch_size: 4
+#    channels_last: False
+#    eval_batch_size: 4
