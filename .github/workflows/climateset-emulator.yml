@@ -28,6 +28,7 @@ jobs:
         bash setup.sh
     - name: Test metrics and losses
       run: |
+        source env_emulator/bin/activate
         cd tests
         pytest
     # - name: Download data from original source
