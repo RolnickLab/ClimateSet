@@ -450,25 +450,6 @@ class CMIP6Dataset(ClimateDataset):
         else:
             raise NotImplementedError("For loading multiple climate models, please make sure to use the Super Climate Dataset Class.")
 
-        if num_ensembles == 1:
-            ensembles = os.listdir(self.root_dir)
-            self.ensemble_dir = [
-                os.path.join(self.root_dir, ensembles[0])
-            ]  # Taking first ensemble member
-        else:
-            #print("Multiple ensembles", num_ensembles)
-            self.ensemble_dir = []
-            ensembles = os.listdir(self.root_dir)
-            for i, folder in enumerate(ensembles):
-                self.ensemble_dir.append(
-                    os.path.join(self.root_dir, folder)
-                )  # Taking multiple ensemble members
-                if i == (num_ensembles - 1):
-                    break  # if num_ensemble ==-1 we take all
-        
-        for ens_dir in self.ensemble_dir:
-            Path(ens_dir).mkdir(parents=True, exist_ok=True)
-
         # Check here if os.path.isfile($SCRATCH/data.npz) exists
         # if it does, use self._reload data(path)
         fname = self.get_save_name_from_kwargs(
@@ -495,6 +476,26 @@ class CMIP6Dataset(ClimateDataset):
             self.Data = self.normalize_data(self.Data, stats)
 
         else:
+            # retrieving ensembles from outputs dir (cmip6 raw data)
+            if num_ensembles == 1:
+                ensembles = os.listdir(self.root_dir)
+                self.ensemble_dir = [
+                    os.path.join(self.root_dir, ensembles[0])
+                ]  # Taking first ensemble member
+            else:
+                #print("Multiple ensembles", num_ensembles)
+                self.ensemble_dir = []
+                ensembles = os.listdir(self.root_dir)
+                for i, folder in enumerate(ensembles):
+                    self.ensemble_dir.append(
+                        os.path.join(self.root_dir, folder)
+                    )  # Taking multiple ensemble members
+                    if i == (num_ensembles - 1):
+                        break  # if num_ensemble ==-1 we take all
+            
+            for ens_dir in self.ensemble_dir:
+                Path(ens_dir).mkdir(parents=True, exist_ok=True)
+
             # Getting list of file names per variable for open and merging
             files_per_var = []
             for var in variables:
