@@ -5,6 +5,7 @@ import zipfile
 import numpy as np
 import xarray as xr
 
+from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, List, Tuple, Union
 
@@ -363,6 +364,7 @@ class SuperClimateDataset(ABC_Climate_Dataset):
         super().__init__()
         self.index_manager = index_manager
         self.output_save_dir = output_save_dir
+        Path(self.output_save_dir).mkdir(parents=True, exist_ok=True)
         self.channels_last = channels_last
         self.load_data_into_mem = load_data_into_mem
 
@@ -545,6 +547,7 @@ class CMIP6Dataset(ABC_Climate_Dataset):
     ):
         self.mode = mode
         self.output_save_dir = output_save_dir
+        Path(output_save_dir).mkdir(parents=True, exist_ok=True)
 
         self.input_nc_files = []
         self.output_nc_files = []
@@ -604,6 +607,7 @@ class CMIP6Dataset(ABC_Climate_Dataset):
                         var_dir = os.path.join(
                             data_dir, exp, var, f"{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}"
                         )
+                        Path(var_dir).mkdir(parents=True, exist_ok=True)
                         files = glob.glob(var_dir + f"/*.nc", recursive=True)
                         if len(files) == 0:
                             raise FileNotFoundError(f"No files for climate model {climate_model}, ensemble member {data_dir.split("/")[-1]}, var {var}, year {y}, scenario {exp}. Please check if climate model runs for this exact pairing actually exist.")
@@ -689,8 +693,10 @@ class Input4MipsDataset(ABC_Climate_Dataset):
         self.channels_last = channels_last
 
         self.mode = mode
-        self.root_dir = os.path.join(data_dir, "inputs/input4mips")
+        self.root_dir = Path(data_dir) / "inputs" / "input4mips"
+        self.root_dir.mkdir(parents=True, exist_ok=True)
         self.output_save_dir = output_save_dir
+        Path(self.output_save_dir).mkdir(parents=True, exist_ok=True)
         self.input_nc_files = []
         self.output_nc_files = []
 
@@ -749,6 +755,7 @@ class Input4MipsDataset(ABC_Climate_Dataset):
                             var,
                             f"{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}",
                         )
+                        Path(var_dir).mkdir(parents=True, exist_ok=True)
 
                 output_nc_files = []
                 for exp in scenarios:
@@ -769,6 +776,7 @@ class Input4MipsDataset(ABC_Climate_Dataset):
                             var,
                             f"{CMIP6_NOM_RES}/{CMIP6_TEMP_RES}/{y}",
                         )
+                        Path(var_dir).mkdir(parents=True, exist_ok=True)
                         files = glob.glob(
                             var_dir + f"/**/*{filter_path_by}*.nc", recursive=True
                         )

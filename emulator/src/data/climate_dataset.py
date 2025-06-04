@@ -5,6 +5,7 @@ import zipfile
 import numpy as np
 import xarray as xr
 
+from pathlib import Path
 from typing import Dict, Optional, List, Tuple, Union
 
 from emulator.src.data.constants import (
@@ -64,6 +65,7 @@ class ClimateDataset(torch.utils.data.Dataset):
 
         self.test_dir = output_save_dir
         self.output_save_dir = output_save_dir
+        Path(self.output_save_dir).mkdir(parents=True, exist_ok=True)
 
         self.channels_last = channels_last
         self.load_data_into_mem = load_data_into_mem
@@ -421,7 +423,8 @@ class CMIP6Dataset(ClimateDataset):
     ):
         self.mode = mode
         self.output_save_dir = output_save_dir
-        self.root_dir = os.path.join(data_dir, "outputs/CMIP6")
+        self.root_dir = Path(data_dir) / "outputs" / "CMIP6"
+        self.root_dir.mkdir(parents=True, exist_ok=True)
 
         self.input_nc_files = []
         self.output_nc_files = []
@@ -442,7 +445,8 @@ class CMIP6Dataset(ClimateDataset):
         )
 
         if isinstance(climate_model, str):
-            self.root_dir = os.path.join(self.root_dir, climate_model)
+            self.root_dir = self.root_dir / climate_model
+            self.root_dir.mkdir(parents=True, exist_ok=True)
         else:
             raise NotImplementedError("For loading multiple climate models, please make sure to use the Super Climate Dataset Class.")
 
@@ -461,6 +465,9 @@ class CMIP6Dataset(ClimateDataset):
                 )  # Taking multiple ensemble members
                 if i == (num_ensembles - 1):
                     break  # if num_ensemble ==-1 we take all
+        
+        for ens_dir in self.ensemble_dir:
+            Path(ens_dir).mkdir(parents=True, exist_ok=True)
 
         # Check here if os.path.isfile($SCRATCH/data.npz) exists
         # if it does, use self._reload data(path)
@@ -584,8 +591,10 @@ class Input4MipsDataset(ClimateDataset):
         self.channels_last = channels_last
 
         self.mode = mode
-        self.root_dir = os.path.join(data_dir, "inputs/input4mips")
-        self.output_save_dir = output_save_dir
+        self.root_dir = Path(data_dir) / "inputs" / "input4mips"
+        self.root_dir.mkdir(parents=True, exist_ok=True)
+        self.output_save_dir = Path(output_save_dir)
+        self.output_save_dir.mkdir(parents=True, exist_ok=True)
         self.input_nc_files = []
         self.output_nc_files = []
 
@@ -710,7 +719,7 @@ class Input4MipsDataset(ClimateDataset):
                 self.norm_data = self.normalize_data(self.raw_data, stats)
 
             self.data_path = self.save_data_into_disk(
-                self.raw_data, fname, output_save_dir
+                self.raw_data, fname, str(output_save_dir)
             )
 
             self.copy_to_slurm(self.data_path)
