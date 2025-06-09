@@ -90,5 +90,6 @@ if [ ! -d "env_emulator" ]; then
         env_emulator/Scripts/activate || { echo "Failed to activate virtual environment."; exit 1; }
     fi 
     # Install the emulator package in editable mode 
+    export PYTHONPATH=$(pwd)
     poetry install --all-groups || { echo "Failed to install emulator package."; exit 1; }
 fi
