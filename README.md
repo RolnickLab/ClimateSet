@@ -144,6 +144,19 @@ bash scripts/download_climateset_arbutus.sh
 
 You should now see a newly created directory called "Climateset_DATA" containing inputs and targets. This folder will be referenced within the emulator pipeline.
 
+#### Option C: Mila cluster users only
+If you happen to work on the Mila cluster, you can use the dataset provided on `/network/datasets/climateset`.
+
+```
+module --quiet load anaconda/3
+conda create -n get_data_env python=3.10
+conda activate get_data_env
+pip install hatch
+hatch run /network/datasets/climateset/scripts/extract_climateset.py --dest $SCRATCH/climateset_data
+```
+
+You can either extract it once on scratch and use that path for your data handling. Alternatively, you can extract it on each slurm job to have the data directly available on the computing node.
+
 #### For ClimaX: Download pre-trained checkpoints
 
 To work with ClimaX, you will need to download the pre-trained checkpoints from the original release and place them in the correct folder. To do so, execute the following command:
