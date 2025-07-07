@@ -7,7 +7,7 @@ defaults:
   - override /trainer: debug_local.yaml
   - override /model: unet.yaml # put the desired model name here
   - override /callbacks: default.yaml
-  - override /logger: none.yaml #wandb.yaml
+  - override /logger: wandb.yaml #wandb.yaml
   - override /datamodule: climate.yaml # standard datamodule configurations
 
 # all parameters below will be merged with parameters from default configurations set above

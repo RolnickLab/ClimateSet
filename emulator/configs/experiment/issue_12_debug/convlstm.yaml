@@ -23,7 +23,7 @@ seed: 22201
 
 trainer:
   min_epochs: 1
-  max_epochs: 1 #50
+  max_epochs: 10 #50
 
 model:
   loss_function: "climax_lon_lat_rmse"

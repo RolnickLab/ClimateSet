@@ -3,7 +3,7 @@
 # specify here default training configuration
 defaults:
   - _self_
-  - trainer: debug.yaml
+  - trainer: debug_local.yaml
   - model: unet.yaml
   - datamodule: climate.yaml
   - decoder: null
