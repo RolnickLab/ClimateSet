@@ -1,16 +1,16 @@
 import numpy as np
 import torch
 
-
+# TODO This cannot work??? what's up with mean_out and std_out
 class Normalize_z:
     """Normalize a tensor image with mean and standard deviation.
 
     Args:
-        mean (tuple): means for each variable.
-        std (tuple): standard deviations for each variable.
+        mean_in (tuple): means for each variable.
+        std_in (tuple): standard deviations for each variable.
     """
 
-    def __init__(self, stats_path):
+    def __init__(self, stats_path, mean_in, std_in):
         self.mean_in = np.expand_dims(mean_in, axis=(1, 1, 1))
         self.std_in = np.expand_dims(std_in, axis=(1, 1, 1))
         self.eps = 1e-9

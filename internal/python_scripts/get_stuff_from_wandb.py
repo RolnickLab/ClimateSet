@@ -371,7 +371,7 @@ def get_best_run_per_unique_tag(verbose=0):
     # TODO:
     # check datamodule/seq_len -> same for all? -> think we only ran seq-to-seq for now
     # what metrics to choose best model for? currently: val/llmse_climax
-    # could also be val/llrmse_wheather_bench or test_metrics -> adjust in top_k function if wanted
+    # could also be val/llrmse_weather_bench or test_metrics -> adjust in top_k function if wanted
 
     df_best_per_tag=df_best_per_tag[new_column_list]
     df_best_per_tag.to_csv("scores/best_per_tag_checkpoints.csv")
@@ -418,7 +418,7 @@ def get_averages(metrics= ['llrmse_climax'], experiment = 'finetuning_emulator',
     """
     
 
-def get_single_averages(metrics= ['llrmse_climax','mse','rmse','llrmse_wheather_bench', 'nrmse_climate_bench'], test_scenarios=['ssp245'], variables= ['pr', 'tas'], eval_metric="llrmse_climax"):
+def get_single_averages(metrics= ['llrmse_climax','mse','rmse','llrmse_weather_bench', 'nrmse_climate_bench'], test_scenarios=['ssp245'], variables= ['pr', 'tas'], eval_metric="llrmse_climax"):
 
     df = get_runs_df(run_pre_filters=['has_finished', 'not_test_tag', 'user'])#,'warmup_epochs_climax',  'no_model_target'])
 
@@ -484,7 +484,7 @@ def get_single_averages(metrics= ['llrmse_climax','mse','rmse','llrmse_wheather_
 
 if __name__=="__main__":
 
-    metrics= ['llrmse_climax','mse','rmse','llrmse_wheather_bench']#, 'nrmse_climate_bench']
+    metrics= ['llrmse_climax','mse','rmse','llrmse_weather_bench']#, 'nrmse_climate_bench']
     variables= ['pr', 'tas']
     test_scenarios=['ssp245']
     finetuning_model=['NorESM2-LM']
