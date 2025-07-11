@@ -55,8 +55,8 @@ export HYDRA_FULL_ERROR=1
 # prepare dependencies
 if [ "$on_cluster" = true ]; then
   # Load Python 3.10 module
-  module load python/3.10 || { echo "Python module cannot be loaded."; exit 1; }
-  module load libffi/3.2.1 || { echo "libffi module cannot be loaded."; exit 1; }
+  module load python/3.9 || { echo "Python module cannot be loaded."; exit 1; }
+  #module load libffi/3.2.1 || { echo "libffi module cannot be loaded."; exit 1; }
   # Set PYTHONPATH to current directory
   # export PYTHONPATH=$(pwd)
   # on the cluster we already have poetry
