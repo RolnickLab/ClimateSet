@@ -4,11 +4,11 @@
 
 defaults:
   - override /mode: exp.yaml
-  - override /trainer: debug_local.yaml
+  - override /trainer: debug.yaml
   - override /model: unet.yaml # put the desired model name here
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml #wandb.yaml
-  - override /datamodule: climate.yaml # standard datamodule configurations
+  - override /datamodule: mini-climate.yaml # standard datamodule configurations
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -23,7 +23,7 @@ seed: 22201
 
 trainer:
   min_epochs: 1
-  max_epochs: 1 #50
+  max_epochs: 10 #50
 
 model:
   loss_function: "climax_lon_lat_rmse"
@@ -48,4 +48,4 @@ datamodule: # overwrite what stuff to train on
 logger:
   wandb:
           group: "Debug-issue-12"
-          tags: ["issue-12", "single_emulator", "unet", "NorESM2-LM", "tas+pr", "run1"] # set your tags here
+          tags: ["issue-12", "mila-test", "single_emulator", "unet", "NorESM2-LM", "tas+pr", "run1"] # set your tags here

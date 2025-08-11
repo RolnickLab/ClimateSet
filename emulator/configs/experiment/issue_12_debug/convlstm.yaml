@@ -4,11 +4,11 @@
 
 defaults:
   - override /mode: exp.yaml
-  - override /trainer: debug_local.yaml
+  - override /trainer: debug.yaml
   - override /model: conv_lstm.yaml # put the desired model name here
   - override /callbacks: default.yaml
-  - override /logger: none.yaml
-  - override /datamodule: climate.yaml # standard datamodule configurations
+  - override /logger: wandb.yaml
+  - override /datamodule: mini-climate.yaml # standard datamodule configurations
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -49,4 +49,4 @@ logger:
   wandb:
           #offline: True
           group: "Debug-issue-12"
-          tags: ["issue-12", "single_emulator", "conv_lstm", "NorESM2-LM", "tas+pr", "run1"] # set your tags here
+          tags: ["issue-12", "mila-test", "single_emulator", "conv_lstm", "NorESM2-LM", "tas+pr", "run1"] # set your tags here

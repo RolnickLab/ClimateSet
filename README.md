@@ -152,10 +152,10 @@ module --quiet load anaconda/3
 conda create -n get_data_env python=3.10
 conda activate get_data_env
 pip install hatch
-hatch run /network/datasets/climateset/scripts/extract_climateset.py --dest $SCRATCH/climateset_data
+hatch run /network/datasets/climateset/scripts/extract_climateset.py --dest $SCRATCH/ClimateSet
 ```
 
-You can either extract it once on scratch and use that path for your data handling. Alternatively, you can extract it on each slurm job to have the data directly available on the computing node.
+We recommend extracting the data into your ClimateSet repo, so you have the data available where it is expected.
 
 #### For ClimaX: Download pre-trained checkpoints
 
